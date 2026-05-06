@@ -17,4 +17,5 @@ app.use('/admin/auth', require('./routes/admin/adminAuthRoutes'));
 app.use('/api', require('./routes/api/testRoutes'));
 app.use('/api', require('./routes/api/merchantRoutes'));
 app.use('/api', require('./routes/api/branchRoutes'));
+app.use('/api', require('./routes/api/receptionistRoutes'));
 module.exports = app;

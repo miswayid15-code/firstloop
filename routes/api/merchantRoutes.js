@@ -5,13 +5,16 @@ const controller = require('../../controllers/api/merchantController');
 const upload = require('../../middleware/upload');
 const auth = require('../../middleware/auth');
 
-router.post('/merchant/register-step1', controller.registerStep1);
+router.post('/merchant/register-step1', (req, res, next) => {
+  req.uploadFolder = 'merchant';
+  next();
+}, upload, controller.registerStep1);
 router.post(
   '/merchant/register-step2',
   auth,
 
   (req, res, next) => {
-    req.uploadFolder = 'merchant'; 
+    req.uploadFolder = 'merchant';
     next();
   },
 

@@ -42,18 +42,20 @@ module.exports = (sequelize, DataTypes) => {
   });
 
   // ✅ FIX HERE
-Merchant.associate = (models) => {
+  Merchant.associate = (models) => {
 
-  Merchant.hasMany(models.RefreshToken, {
-    foreignKey: 'user_id',
-    constraints: false
-  });
+    Merchant.hasMany(models.RefreshToken, {
+      foreignKey: 'user_id',
+      constraints: false
+    });
 
-  Merchant.hasMany(models.Branch, {
-    foreignKey: 'merchant_id'
-  });
-
-};
+    Merchant.hasMany(models.Branch, {
+      foreignKey: 'merchant_id'
+    });
+    Merchant.hasMany(models.Receptionist, {
+      foreignKey: 'merchant_id'
+    });
+  };
 
   return Merchant;
 };

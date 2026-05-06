@@ -11,34 +11,68 @@ exports.registerStep1 = async (req, res) => {
 
         const { name, email, phone, password } = req.body;
 
-
         let phoneNumber;
+
         try {
+
             const num = parsePhoneNumber(phone);
+
             if (!num.isValid()) {
                 return res.json({ status: 0, message: "Invalid phone" });
             }
+
             phoneNumber = num.number;
+
         } catch {
             return res.json({ status: 0, message: "Invalid phone format" });
         }
 
 
+        const phexists = await Merchant.findOne({
+            where: { phone: phoneNumber }
+        });
+
+        if (phexists) {
+            return res.json({
+                status: 0,
+                message: "Phone already exists"
+            });
+        }
+
         const exists = await Merchant.findOne({ where: { email } });
+
         if (exists) {
             return res.json({ status: 0, message: "Email already exists" });
         }
 
 
+        // profile image upload
+        let profileImage = '';
+
+        if (req.files && req.files.length > 0) {
+
+            const profileFile = req.files.find(
+                file => file.fieldname === 'profile_image'
+            );
+
+            if (profileFile) {
+                profileImage = profileFile.path.replace(/\\/g, '/');
+            }
+        }
+
+
         const hashedPassword = await bcrypt.hash(password, 10);
+
 
         const merchant = await Merchant.create({
             name,
             email,
             phone: phoneNumber,
             password: hashedPassword,
+            profile_image: profileImage,
             status: 0
         });
+
 
         const accessToken = jwt.sign(
             { id: merchant.id, email: merchant.email },
@@ -48,10 +82,14 @@ exports.registerStep1 = async (req, res) => {
 
 
         const refreshToken = jwt.sign(
-            { id: merchant.id },
+            {
+                id: merchant.id,
+                type: 'merchant'
+            },
             process.env.JWT_SECRET,
             { expiresIn: '7d' }
         );
+
 
         await RefreshToken.create({
             user_id: merchant.id,
@@ -59,6 +97,7 @@ exports.registerStep1 = async (req, res) => {
             token: refreshToken,
             expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
         });
+
 
         return res.json({
             status: 1,
@@ -70,11 +109,16 @@ exports.registerStep1 = async (req, res) => {
         });
 
     } catch (err) {
+
         console.log(err);
-        return res.json({ status: 0, message: "Error" });
+
+        return res.json({
+            status: 0,
+            message: "Error"
+        });
+
     }
 };
-
 
 exports.registerStep2 = async (req, res) => {
     try {
@@ -85,7 +129,7 @@ exports.registerStep2 = async (req, res) => {
             return res.json({ status: 0, message: "Merchant not found" });
         }
 
-        // ✅ get uploaded files directly
+
         let fileData = {
             profile_image: merchant.profile_image,
             brand_image: merchant.brand_image,
@@ -167,27 +211,38 @@ exports.fetchmerchant = async (req, res) => {
 exports.refreshAccessToken = async (req, res) => {
     try {
 
-        const { refresh_token } = req.body;
+        const authHeader = req.headers.authorization;
 
-        if (!refresh_token) {
-            return res.json({ status: 0, message: "Refresh token required" });
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.json({
+                status: 0,
+                message: "Refresh token required"
+            });
         }
 
+        const refresh_token = authHeader.split(' ')[1];
 
         const stored = await RefreshToken.findOne({
             where: { token: refresh_token }
         });
 
         if (!stored) {
-            return res.json({ status: 0, message: "Invalid refresh token" });
+            return res.json({
+                status: 0,
+                message: "Invalid refresh token"
+            });
         }
 
-
-        const decoded = jwt.verify(refresh_token, process.env.JWT_SECRET);
-
+        const decoded = jwt.verify(
+            refresh_token,
+            process.env.JWT_SECRET
+        );
 
         const newAccessToken = jwt.sign(
-            { id: decoded.id },
+            {
+                id: decoded.id,
+                user_type: stored.user_type
+            },
             process.env.JWT_SECRET,
             { expiresIn: '1h' }
         );
@@ -198,12 +253,16 @@ exports.refreshAccessToken = async (req, res) => {
         });
 
     } catch (err) {
-        return res.json({ status: 0, message: "Token expired" });
+
+        return res.json({
+            status: 0,
+            message: "Token expired"
+        });
+
     }
 };
-
 exports.login = async (req, res) => {
-    
+
     try {
         const { email, password } = req.body;
         const merchant = await Merchant.findOne({ where: { email } })
@@ -217,7 +276,10 @@ exports.login = async (req, res) => {
             return res.json({ status: 0, message: "Invalid email or password" });
         }
         const refreshToken = jwt.sign(
-            { id: merchant.id },
+            {
+                id: merchant.id,
+                type: 'merchant'
+            },
             process.env.JWT_SECRET,
             { expiresIn: '7d' }
         );
@@ -245,8 +307,6 @@ exports.login = async (req, res) => {
         return res.json({ status: 0, message: "Error" });
     }
 }
-
-
 
 exports.logout = async (req, res) => {
     try {
