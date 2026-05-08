@@ -55,6 +55,9 @@ module.exports = (sequelize, DataTypes) => {
     Merchant.hasMany(models.Receptionist, {
       foreignKey: 'merchant_id'
     });
+    Merchant.hasMany(models.Coupon, {
+      foreignKey: 'merchant_id'
+    });
   };
 
   return Merchant;

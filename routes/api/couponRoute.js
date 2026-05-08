@@ -1,0 +1,14 @@
+const express = require('express');
+const router = express.Router();
+
+const controller = require('../../controllers/api/couponController');
+const upload = require('../../middleware/upload');
+const auth = require('../../middleware/auth');
+
+
+
+router.post('/coupon-create', auth,controller.create_coupon);
+router.post('/coupon-update', auth,controller.update_coupon);
+router.get('/coupon-fetch', auth,controller.fetch_coupon);
+router.post('/coupon-check', auth,controller.check_coupon);
+module.exports = router;

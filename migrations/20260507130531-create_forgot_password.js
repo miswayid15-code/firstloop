@@ -2,26 +2,29 @@
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
+
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('categories', {
+
+    await queryInterface.createTable('merchant_fp', {
+
       id: {
         type: Sequelize.INTEGER,
-        allowNull: false,
         autoIncrement: true,
-        primaryKey: true
+        primaryKey: true,
+        allowNull: false
       },
 
-      name: {
-        type: Sequelize.STRING,
+      mer_id: {
+        type: Sequelize.INTEGER,
+        allowNull: false
+      },
+
+      otp: {
+        type: Sequelize.INTEGER,
         allowNull: false
       },
 
       status: {
-        type: Sequelize.INTEGER,
-        defaultValue: 1
-      },
-
-      del_status: {
         type: Sequelize.INTEGER,
         defaultValue: 0
       },
@@ -37,10 +40,15 @@ module.exports = {
         type: Sequelize.DATE,
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
       }
+
     });
+
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('categories');
+
+    await queryInterface.dropTable('merchant_fp');
+
   }
+
 };

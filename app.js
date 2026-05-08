@@ -4,11 +4,13 @@ const cors = require('cors');
 const app = express();
 
 app.use(cors());
-app.use(express.json());
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
 app.use('/uploads', express.static('uploads'));
-// test route
+
+
 app.get('/', (req, res) => {
     res.send('Dealora API Running 🚀');
 });
@@ -18,4 +20,7 @@ app.use('/api', require('./routes/api/testRoutes'));
 app.use('/api', require('./routes/api/merchantRoutes'));
 app.use('/api', require('./routes/api/branchRoutes'));
 app.use('/api', require('./routes/api/receptionistRoutes'));
+app.use('/api', require('./routes/api/categoryRoutes'));
+app.use('/api', require('./routes/api/couponRoute'));
+
 module.exports = app;

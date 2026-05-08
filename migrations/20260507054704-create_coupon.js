@@ -3,7 +3,9 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('categories', {
+
+    await queryInterface.createTable('coupons', {
+
       id: {
         type: Sequelize.INTEGER,
         allowNull: false,
@@ -11,9 +13,43 @@ module.exports = {
         primaryKey: true
       },
 
-      name: {
-        type: Sequelize.STRING,
+      merchant_id: {
+        type: Sequelize.INTEGER,
         allowNull: false
+      },
+
+      code: {
+        type: Sequelize.STRING,
+        allowNull: false,
+        unique: true
+      },
+
+      percentage: {
+        type: Sequelize.FLOAT,
+        allowNull: false,
+        defaultValue: 0
+      },
+
+      min_amount: {
+        type: Sequelize.FLOAT,
+        allowNull: false,
+        defaultValue: 0
+      },
+
+      usage_limit: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        defaultValue: 0
+      },
+
+      start_date: {
+        type: Sequelize.DATE,
+        allowNull: true
+      },
+
+      end_date: {
+        type: Sequelize.DATE,
+        allowNull: true
       },
 
       status: {
@@ -37,10 +73,14 @@ module.exports = {
         type: Sequelize.DATE,
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
       }
+
     });
+
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('categories');
+
+    await queryInterface.dropTable('coupons');
+
   }
 };
