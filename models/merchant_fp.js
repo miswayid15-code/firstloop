@@ -20,7 +20,8 @@ module.exports = (sequelize, DataTypes) => {
 
         status: {
             type: DataTypes.INTEGER,
-            defaultValue: 0
+            defaultValue: 0,
+            comment: '0 = Pending, 1 = Complete, 2 = Rejected'
         }
 
     }, {
@@ -31,12 +32,10 @@ module.exports = (sequelize, DataTypes) => {
     });
 
     MerchantFp.associate = (models) => {
-
         MerchantFp.belongsTo(models.Merchant, {
             foreignKey: 'mer_id'
         });
 
     };
-
     return MerchantFp;
 };

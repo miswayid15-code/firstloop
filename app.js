@@ -22,5 +22,7 @@ app.use('/api', require('./routes/api/branchRoutes'));
 app.use('/api', require('./routes/api/receptionistRoutes'));
 app.use('/api', require('./routes/api/categoryRoutes'));
 app.use('/api', require('./routes/api/couponRoute'));
+app.use('/api', require('./routes/api/customerRoute'));
+app.use('/api', require('./routes/api/additionalRoute'));
 
 module.exports = app;

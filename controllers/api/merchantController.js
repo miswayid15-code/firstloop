@@ -3,10 +3,12 @@ const bcrypt = require('bcryptjs');
 const { parsePhoneNumber } = require('libphonenumber-js');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
+const admin = require('../../config/firebase');
 const crypto = require('crypto');
 const sendMail = require('../../helpers/sendMail');
 const { otpTemplate } = require('../../helpers/mailTemplate');
-
+const ResetsTemplate = require('../../helpers/ResetsTemplate');
+const RegisterTemplate = require('../../helpers/RegisterTemplate');
 // const mapFiles = require('../../helpers/merchantFileMapper');
 
 const fs = require('fs');
@@ -112,6 +114,21 @@ exports.registerStep1 = async (req, res) => {
             access_token: accessToken,
             refresh_token: refreshToken
         });
+        // try {
+
+        //     await sendMail(
+        //         email,
+        //         'Merchant Registration Successful',
+        //         RegisterTemplate('merchant', merchant.name)
+        //     );
+
+        //     console.log("Registration mail sent");
+
+        // } catch (mailErr) {
+
+        //     console.log("MAIL ERROR:", mailErr);
+
+        // }
 
     } catch (err) {
 
@@ -497,56 +514,49 @@ exports.forget_password = async (req, res) => {
         const { email } = req.body;
 
         if (!email) {
-            return res.json({
+
+            return res.status(400).json({
                 status: 0,
                 message: "Email is required"
             });
+
         }
 
         const merchant = await Merchant.findOne({
-            where: {
-                email
-            }
+            where: { email }
         });
 
         if (!merchant) {
-            return res.json({
+
+            return res.status(404).json({
                 status: 0,
                 message: "Merchant not found"
             });
+
         }
+
+        // expire old pending otp
+        await MerchantFp.update(
+            {
+                status: 2
+            },
+            {
+                where: {
+                    mer_id: merchant.id,
+                    status: 0
+                }
+            }
+        );
 
         const otp = Math.floor(100000 + Math.random() * 900000);
 
-        await merchant.update({
-            otp: otp
+        // create new otp
+        await MerchantFp.create({
+            mer_id: merchant.id,
+            otp: otp,
+            status: 0,
+            expires_at: new Date(Date.now() + 10 * 60 * 1000) // 10 mins
         });
-
-        // check existing pending otp
-        const existingOtp = await MerchantFp.findOne({
-            where: {
-                mer_id: merchant.id,
-                status: 0
-            }
-        });
-
-        // if already exists update
-        if (existingOtp) {
-
-            await existingOtp.update({
-                otp: otp
-            });
-
-        } else {
-
-            // otherwise insert new
-            await MerchantFp.create({
-                mer_id: merchant.id,
-                otp: otp,
-                status: 0
-            });
-
-        }
 
         // send mail
         await sendMail(
@@ -555,7 +565,7 @@ exports.forget_password = async (req, res) => {
             otpTemplate(otp, 'merchant')
         );
 
-        return res.json({
+        return res.status(200).json({
             status: 1,
             message: "OTP sent successfully"
         });
@@ -564,7 +574,7 @@ exports.forget_password = async (req, res) => {
 
         console.log("ERROR:", err);
 
-        return res.json({
+        return res.status(500).json({
             status: 0,
             message: err.message
         });
@@ -573,75 +583,97 @@ exports.forget_password = async (req, res) => {
 
 };
 
+
+
 exports.reset_ps = async (req, res) => {
 
     try {
 
-        const { otp, password } = req.body;
+        const { email, otp, password } = req.body;
 
-        if (!otp || !password) {
-            return res.json({
+        // validation
+        if (!email || !otp || !password) {
+
+            return res.status(400).json({
                 status: 0,
-                message: "OTP and password are required"
+                message: "Email, OTP and password are required"
             });
+
         }
 
+
+        const merchant = await Merchant.findOne({
+            where: {
+                email: email
+            }
+        });
+
+        if (!merchant) {
+
+            return res.status(404).json({
+                status: 0,
+                message: "Merchant not found"
+            });
+
+        }
+
+        // check otp
         const otp_check = await MerchantFp.findOne({
             where: {
+                mer_id: merchant.id,
                 otp: otp,
                 status: 0
             }
         });
 
         if (!otp_check) {
-            return res.json({
+
+            return res.status(400).json({
                 status: 0,
                 message: "Invalid OTP"
             });
+
         }
 
-        // check otp expiry (10 minutes)
-        const otpTime = new Date(otp_check.updatedAt).getTime();
-        const currentTime = new Date().getTime();
-
-        const diffMinutes = (currentTime - otpTime) / (1000 * 60);
-
-        // expired
-        if (diffMinutes > 10) {
+        // check expiry
+        if (new Date() > new Date(otp_check.expires_at)) {
 
             await otp_check.update({
-                status: 2 // expired
+                status: 2
             });
 
-            return res.json({
+            return res.status(400).json({
                 status: 0,
                 message: "OTP expired"
             });
 
         }
 
-        const merchant = await Merchant.findByPk(otp_check.mer_id);
+        // hash password
+        const hashedPassword = await bcrypt.hash(
+            password.toString(),
+            10
+        );
 
-        if (!merchant) {
-            return res.json({
-                status: 0,
-                message: "Merchant not found"
-            });
-        }
-
-        const hashedPassword = await bcrypt.hash(password.toString(), 10);
-
-        // update password
+        // update merchant password
         await merchant.update({
             password: hashedPassword
         });
 
-        // mark otp as used
+        // mark otp completed
         await otp_check.update({
             status: 1
         });
 
-        return res.json({
+        // send success mail
+        await sendMail(
+            email,
+            'Password Reset Successful',
+            ResetsTemplate('merchant')
+        );
+
+        // final response
+        return res.status(200).json({
             status: 1,
             message: "Password reset successfully"
         });
@@ -650,7 +682,162 @@ exports.reset_ps = async (req, res) => {
 
         console.log("ERROR:", err);
 
-        return res.json({
+        return res.status(500).json({
+            status: 0,
+            message: err.message
+        });
+
+    }
+
+};
+
+exports.firebase_reg = async (req, res) => {
+
+    try {
+
+        console.log("\n========== FIREBASE GOOGLE LOGIN ==========");
+
+        console.log("\nREQUEST BODY:");
+        console.log(req.body);
+
+        const {
+            provider,
+            idToken,
+            email,
+            name
+        } = req.body;
+
+        console.log("\nVALIDATING REQUEST...");
+
+        // validation
+        if (!provider || !idToken || !email || !name) {
+
+            console.log("\nVALIDATION FAILED");
+
+            return res.status(400).json({
+                status: 0,
+                message: "All fields are required"
+            });
+
+        }
+
+        console.log("\nVERIFYING FIREBASE TOKEN...");
+
+        // verify firebase token
+        const decodedToken = await admin
+            .auth()
+            .verifyIdToken(idToken);
+
+        console.log("\nTOKEN VERIFIED");
+
+        console.log("\nDECODED TOKEN:");
+        console.log(decodedToken);
+
+        // verify email
+        if (decodedToken.email !== email) {
+
+            console.log("\nEMAIL VERIFICATION FAILED");
+
+            return res.status(401).json({
+                status: 0,
+                message: "Invalid firebase user"
+            });
+
+        }
+
+        console.log("\nEMAIL VERIFIED");
+
+        const firebase_uid = decodedToken.uid;
+
+        console.log("\nCHECKING EXISTING MERCHANT...");
+
+        // check existing merchant
+        let merchant = await Merchant.findOne({
+            where: {
+                email: email
+            }
+        });
+
+        // create merchant
+        if (!merchant) {
+
+            console.log("\nCREATING NEW MERCHANT...");
+
+            merchant = await Merchant.create({
+                name: name,
+                email: email,
+                providerId: provider,
+                firebase_uid: firebase_uid,
+                login_type: 'google',
+                password: null,
+                status: 1
+            });
+
+            console.log("\nNEW MERCHANT CREATED");
+
+        } else {
+
+            console.log("\nMERCHANT ALREADY EXISTS");
+
+        }
+
+        console.log("\nGENERATING ACCESS TOKEN...");
+
+        // generate access token
+        const accessToken = jwt.sign(
+            {
+                id: merchant.id,
+                email: merchant.email
+            },
+            process.env.JWT_SECRET,
+            {
+                expiresIn: '1h'
+            }
+        );
+
+        console.log("\nGENERATING REFRESH TOKEN...");
+
+        // generate refresh token
+        const refreshToken = jwt.sign(
+            {
+                id: merchant.id,
+                type: 'merchant'
+            },
+            process.env.JWT_SECRET,
+            {
+                expiresIn: '7d'
+            }
+        );
+
+        console.log("\nSAVING REFRESH TOKEN...");
+
+        // save refresh token
+        await RefreshToken.create({
+            user_id: merchant.id,
+            user_type: 'merchant',
+            token: refreshToken,
+            expires_at: new Date(
+                Date.now() + 7 * 24 * 60 * 60 * 1000
+            )
+        });
+
+        console.log("\nLOGIN SUCCESS");
+
+        return res.status(200).json({
+            status: 1,
+            message: "Google login success",
+            access_token: accessToken,
+            refresh_token: refreshToken,
+            data: merchant
+        });
+
+    } catch (err) {
+
+        console.log("\n========== FIREBASE LOGIN ERROR ==========");
+        console.log(err);
+        console.log("=========================================\n");
+
+        return res.status(500).json({
             status: 0,
             message: err.message
         });

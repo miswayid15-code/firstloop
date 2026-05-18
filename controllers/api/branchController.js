@@ -332,7 +332,7 @@ exports.branch_id = async (req, res) => {
     try {
 
         const branch_id = req.params.id;
-        
+
 
         if (!branch_id) {
             return res.json({

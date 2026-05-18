@@ -31,4 +31,5 @@ router.get('/merchant/branch-list', auth, controller.branch_list);
 router.get('/merchant/Receptionist-list', auth, controller.receptionist_list);
 router.post('/merchant/forget-password', controller.forget_password);
 router.post('/merchant/reset-password', controller.reset_ps);
+router.post('/merchant/oauth-login', controller.firebase_reg);
 module.exports = router;
