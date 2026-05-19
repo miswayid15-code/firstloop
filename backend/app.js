@@ -10,8 +10,10 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use('/uploads', express.static('uploads'));
 
-
 app.get('/', (req, res) => {
+    res.send('Dealora API Running 🚀');
+});
+app.get('/backend', (req, res) => {
     res.send('Dealora API Running 🚀');
 });
 

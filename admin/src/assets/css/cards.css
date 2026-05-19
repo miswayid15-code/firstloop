@@ -1,0 +1,382 @@
+/* Cards and Widgets Stylesheet - Dealora Design System */
+
+/* Standard white card with premium pink shadow */
+.card {
+    background: var(--bg-surface);
+    border-radius: var(--border-radius-lg);
+    border: var(--border-glass);
+    padding: 24px;
+    box-shadow: var(--shadow-md);
+    transition: var(--transition-bounce);
+    position: relative;
+    overflow: hidden;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-premium);
+    border-color: rgba(255, 77, 128, 0.2);
+}
+
+/* Glassmorphism accent card */
+.card-glass {
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: var(--glass-backdrop-blur);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow: var(--shadow-sm);
+}
+
+.card-glass:hover {
+    background: rgba(255, 255, 255, 0.8);
+    box-shadow: var(--shadow-lg);
+}
+
+/* Header within standard cards */
+.card-header {
+    display: flex;
+    align-items: center;
+    justify-content: justify-between;
+    margin-bottom: 20px;
+}
+
+.card-title {
+    font-family: var(--font-heading);
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.card-subtitle {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+/* Stat-specific cards layout */
+.stat-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 140px;
+}
+
+.stat-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.stat-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+}
+
+.stat-value {
+    font-family: var(--font-heading);
+    font-size: 1.95rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-top: 10px;
+    line-height: 1;
+}
+
+.stat-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--border-radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    transition: var(--transition-smooth);
+}
+
+/* Color thematic styles for stat icons */
+.stat-icon.pink {
+    background: var(--primary-light);
+    color: var(--primary);
+}
+
+.stat-icon.blue {
+    background: var(--status-info-bg);
+    color: var(--status-info);
+}
+
+.stat-icon.green {
+    background: var(--status-success-bg);
+    color: var(--status-success);
+}
+
+.stat-icon.orange {
+    background: var(--status-warning-bg);
+    color: var(--status-warning);
+}
+
+.stat-icon.purple {
+    background: rgba(156, 39, 176, 0.08);
+    color: #9c27b0;
+}
+
+/* Unique Box Design: Watermark Icon */
+.stat-bg-icon {
+    position: absolute;
+    right: -10px;
+    bottom: -15px;
+    font-size: 110px;
+    opacity: 0.03;
+    pointer-events: none;
+    transform: rotate(-10deg);
+    transition: var(--transition-smooth);
+}
+
+.stat-card:hover .stat-bg-icon {
+    transform: scale(1.1) rotate(0deg);
+    opacity: 0.05;
+}
+
+.stat-footer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 14px;
+    font-size: 0.78rem;
+    font-weight: 500;
+}
+
+.stat-trend {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 6px;
+}
+
+.stat-trend.up {
+    color: var(--status-success);
+    background: var(--status-success-bg);
+}
+
+.stat-trend.down {
+    color: var(--status-danger);
+    background: var(--status-danger-bg);
+}
+
+.stat-desc {
+    color: var(--text-muted);
+}
+
+/* ---------------------------------------------------- */
+/* Colorful Gradient Stat Cards (Image-based UI) */
+/* ---------------------------------------------------- */
+.stat-card.bg-gradient-pink { background: linear-gradient(135deg, #FF4D80, #FF758C); }
+.stat-card.bg-gradient-purple { background: linear-gradient(135deg, #8E2DE2, #4A00E0); }
+.stat-card.bg-gradient-blue { background: linear-gradient(135deg, #36D1DC, #5B86E5); }
+.stat-card.bg-gradient-orange { background: linear-gradient(135deg, #FFB75E, #ED8F03); }
+.stat-card.bg-gradient-teal { background: linear-gradient(135deg, #11998e, #38ef7d); }
+
+.stat-card[class*="bg-gradient-"] {
+    border: none;
+}
+
+.stat-card[class*="bg-gradient-"] .stat-title,
+.stat-card[class*="bg-gradient-"] .stat-desc {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.stat-card[class*="bg-gradient-"] .stat-value {
+    color: #ffffff;
+}
+
+.stat-card[class*="bg-gradient-"] .stat-icon {
+    background: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+}
+
+.stat-card[class*="bg-gradient-"] .stat-trend {
+    background: rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+}
+
+.stat-card[class*="bg-gradient-"] .stat-bg-icon {
+    color: #ffffff;
+    opacity: 0.15;
+}
+
+.stat-card[class*="bg-gradient-"]:hover .stat-bg-icon {
+    opacity: 0.25;
+}
+
+/* Custom Hover Shadows for Colorful Cards */
+.stat-card.bg-gradient-pink:hover { box-shadow: 0 12px 24px rgba(255, 77, 128, 0.35); transform: translateY(-5px); }
+.stat-card.bg-gradient-purple:hover { box-shadow: 0 12px 24px rgba(142, 45, 226, 0.35); transform: translateY(-5px); }
+.stat-card.bg-gradient-blue:hover { box-shadow: 0 12px 24px rgba(91, 134, 229, 0.35); transform: translateY(-5px); }
+.stat-card.bg-gradient-orange:hover { box-shadow: 0 12px 24px rgba(237, 143, 3, 0.35); transform: translateY(-5px); }
+.stat-card.bg-gradient-teal:hover { box-shadow: 0 12px 24px rgba(17, 153, 142, 0.35); transform: translateY(-5px); }
+
+
+/* Modern Gradient Accents */
+.card-gradient-top::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--gradient-primary);
+}
+
+/* Chart Container Cards */
+.chart-container {
+    position: relative;
+    width: 100%;
+    height: 240px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 10px 0;
+}
+
+/* Beautiful custom CSS graphs placeholders */
+.bar-chart-mock {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-around;
+    width: 100%;
+    height: 100%;
+    gap: 12px;
+}
+
+.bar-column {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    height: 100%;
+    justify-content: flex-end;
+}
+
+.bar-fill {
+    width: 100%;
+    background: var(--gradient-soft);
+    border-radius: var(--border-radius-sm) var(--border-radius-sm) 0 0;
+    transition: var(--transition-smooth);
+    position: relative;
+    cursor: pointer;
+    min-height: 5px;
+}
+
+.bar-fill:hover {
+    background: var(--gradient-primary);
+    box-shadow: 0 4px 12px rgba(233, 30, 99, 0.2);
+}
+
+.bar-fill:hover::after {
+    content: attr(data-value);
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--text-primary);
+    color: var(--text-light);
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+    z-index: 10;
+}
+
+.bar-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+/* Merchant profile summary card layout styling */
+.merchant-profile-card {
+    margin-bottom: 30px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 32px;
+}
+
+.merchant-profile-info {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.merchant-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    font-size: 1.8rem;
+    box-shadow: 0 4px 16px rgba(233, 30, 99, 0.15);
+    background: var(--bg-hover);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.merchant-title-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.merchant-title-row h2 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    font-family: var(--font-heading);
+}
+
+.merchant-subtext {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-top: 4px;
+}
+
+.merchant-profile-stats {
+    display: flex;
+    gap: 30px;
+    flex-wrap: wrap;
+}
+
+.merchant-stat-item {
+    text-align: center;
+}
+
+.merchant-stat-item.border-left {
+    border-left: 1px solid #F1ECEF;
+    padding-left: 30px;
+}
+
+.merchant-stat-val {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: block;
+    line-height: 1;
+}
+
+.merchant-stat-val.val-primary {
+    color: var(--primary);
+}
+
+.merchant-stat-lbl {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-top: 6px;
+    display: block;
+}

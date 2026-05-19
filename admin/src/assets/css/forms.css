@@ -1,0 +1,452 @@
+/* Forms, Controls, and Modals Stylesheet - Dealora Design System */
+
+/* Button System */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-radius: var(--border-radius-md);
+    transition: var(--transition-bounce);
+    border: 1px solid transparent;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+.btn-primary {
+    background: var(--gradient-primary);
+    color: var(--text-light);
+    box-shadow: 0 4px 14px rgba(233, 30, 99, 0.25);
+}
+
+.btn-primary:hover {
+    box-shadow: 0 8px 20px rgba(233, 30, 99, 0.4);
+}
+
+.btn-secondary {
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    border: var(--border-light);
+}
+
+.btn-secondary:hover {
+    background: var(--bg-hover);
+    color: var(--primary);
+    border-color: rgba(255, 77, 128, 0.15);
+}
+
+.btn-light-pink {
+    background: var(--primary-light);
+    color: var(--primary);
+}
+
+.btn-light-pink:hover {
+    background: rgba(255, 77, 128, 0.2);
+}
+
+.btn-danger {
+    background: var(--status-danger-bg);
+    color: var(--status-danger);
+}
+
+.btn-danger:hover {
+    background: rgba(239, 68, 68, 0.25);
+}
+
+/* Floating Form Control Group */
+.form-group {
+    position: relative;
+    margin-bottom: 14px;
+    width: 100%;
+}
+
+.form-control {
+    width: 100%;
+    height: 40px;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    border-radius: var(--border-radius-md);
+    border: var(--border-light);
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-inset);
+    transition: var(--transition-smooth);
+}
+
+.form-control:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+/* Label styling */
+.form-label {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    font-weight: 500;
+    pointer-events: none;
+    transition: var(--transition-smooth);
+}
+
+/* Float logic */
+.form-control:focus ~ .form-label,
+.form-control:not(:placeholder-shown) ~ .form-label {
+    top: 0;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--primary);
+    background: var(--bg-surface);
+    padding: 0 4px;
+    border-radius: 4px;
+    transform: translateY(-50%) scale(0.95);
+    left: 8px;
+}
+
+/* Classic Standard Label Form Fields */
+.form-group-classic {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 14px;
+}
+
+.form-label-classic {
+    font-size: 0.76rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+}
+
+.form-select {
+    width: 100%;
+    height: 40px;
+    padding: 0 12px;
+    border-radius: var(--border-radius-md);
+    border: var(--border-light);
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236F6F7F' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5' /%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 14px;
+}
+
+.form-select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+/* Form Row Grid Utility */
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.form-row .form-group,
+.form-row .form-group-classic {
+    margin-bottom: 0;
+}
+
+@media (max-width: 576px) {
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+    
+    .modal-header {
+        padding: 14px 16px;
+    }
+    
+    .modal-body {
+        padding: 16px;
+    }
+    
+    .modal-footer {
+        padding: 12px 16px;
+    }
+}
+
+/* Search Bar Wrapper */
+.search-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 320px;
+}
+
+.search-input {
+    width: 100%;
+    height: 38px;
+    padding: 0 14px 0 38px;
+    font-size: 0.86rem;
+    border-radius: var(--border-radius-md);
+    border: var(--border-light);
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    transition: var(--transition-smooth);
+    box-sizing: border-box;
+    line-height: 38px;
+}
+
+.search-input:focus {
+    border-color: var(--primary);
+    max-width: 380px;
+    box-shadow: 0 4px 12px rgba(233, 30, 99, 0.04);
+}
+
+.search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    pointer-events: none;
+}
+
+/* Elegant Modal Popups */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: var(--transition-smooth);
+    padding: 16px;
+}
+
+.modal.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.modal-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(44, 44, 53, 0.3);
+    backdrop-filter: var(--glass-backdrop-blur);
+}
+
+.modal-content {
+    position: relative;
+    background: var(--bg-surface);
+    border-radius: var(--border-radius-lg);
+    border: var(--border-glass);
+    width: 100%;
+    max-width: 480px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow-premium);
+    transform: scale(0.9);
+    transition: var(--transition-bounce);
+    overflow: hidden;
+}
+
+.modal.active .modal-content {
+    transform: scale(1);
+}
+
+.modal-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(255, 77, 128, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+}
+
+.modal-title {
+    font-family: var(--font-heading);
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.modal-close {
+    font-size: 1.15rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.modal-close:hover {
+    color: var(--primary);
+    transform: rotate(90deg);
+}
+
+.modal-body {
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.modal-footer {
+    padding: 14px 20px;
+    background: rgba(255, 77, 128, 0.01);
+    border-top: 1px solid rgba(255, 77, 128, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+/* Modal Content Size Helpers */
+.modal-content.modal-content-lg {
+    max-width: 620px;
+}
+
+/* Target Audience pills/badges */
+.audience-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.audience-checkbox {
+    display: none !important;
+}
+
+.audience-badge-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 77, 128, 0.12);
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    user-select: none;
+}
+
+.audience-badge-label:hover {
+    border-color: var(--primary);
+    background: rgba(255, 77, 128, 0.02);
+}
+
+.audience-checkbox:checked + .audience-badge-label {
+    background: var(--primary-light);
+    color: var(--primary);
+    border-color: var(--primary);
+    box-shadow: 0 4px 12px rgba(255, 77, 128, 0.1);
+    font-weight: 600;
+}
+
+/* Branch Front Image upload dropzone style */
+.image-upload-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.image-upload-dropzone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    border: 2px dashed rgba(255, 77, 128, 0.2);
+    border-radius: var(--border-radius-md);
+    background: rgba(255, 77, 128, 0.01);
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    text-align: center;
+    box-sizing: border-box;
+}
+
+.image-upload-dropzone:hover {
+    border-color: var(--primary);
+    background: rgba(255, 77, 128, 0.04);
+}
+
+.upload-icon {
+    font-size: 1.8rem;
+    color: var(--primary);
+    margin-bottom: 8px;
+    transition: transform 0.25s ease;
+}
+
+.image-upload-dropzone:hover .upload-icon {
+    transform: translateY(-3px);
+}
+
+.upload-text {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.upload-hint {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+.image-preview-container {
+    position: relative;
+    width: 100%;
+    height: 160px;
+    border-radius: var(--border-radius-md);
+    overflow: hidden;
+    border: 1px solid rgba(255, 77, 128, 0.15);
+    box-sizing: border-box;
+}
+
+.image-preview-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.remove-image-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(239, 68, 68, 0.9);
+    border: none;
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.remove-image-btn:hover {
+    transform: scale(1.1);
+    background: rgb(239, 68, 68);
+}
