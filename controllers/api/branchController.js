@@ -1,135 +1,273 @@
-const { Branch, Merchant, BranchImage } = require('../../models');
+const { Branch, Merchant, BranchImage,MenuImage } = require('../../models');
 const { parsePhoneNumber } = require('libphonenumber-js');
 
 const fs = require('fs');
 const path = require('path');
+
 exports.register = async (req, res) => {
+
     try {
 
-        const { name, email, phone, lat, lon, address } = req.body;
+        const {
+            name,
+            email,
+            phone,
+            lat,
+            lon,
+            address,
+            description,
+            open_time,
+            close_time
+        } = req.body;
+
         const merchant_id = req.user.id;
 
-        if (!name || !email || !phone) {
+        // ✅ Required Fields
+        if (
+            !name ||
+            !email ||
+            !phone
+        ) {
+
             return res.json({
                 status: 0,
                 message: "Required fields missing"
             });
+
         }
 
-        // ✅ phone validation
+        // ✅ Time Validation
+        if (
+            open_time &&
+            close_time &&
+            open_time >= close_time
+        ) {
+
+            return res.json({
+                status: 0,
+                message: "Close time must be greater than open time"
+            });
+
+        }
+
+        // ✅ Phone Validation
         let phoneNumber;
+
         try {
-            const num = parsePhoneNumber(phone);
+
+            const num =
+                parsePhoneNumber(phone);
+
             if (!num.isValid()) {
-                return res.json({ status: 0, message: "Invalid phone" });
+
+                return res.json({
+                    status: 0,
+                    message: "Invalid phone"
+                });
+
             }
+
             phoneNumber = num.number;
+
         } catch {
-            return res.json({ status: 0, message: "Invalid phone format" });
+
+            return res.json({
+                status: 0,
+                message: "Invalid phone format"
+            });
+
         }
 
-        // ✅ check email
-        const exists = await Branch.findOne({ where: { email } });
+        // ✅ Email Check
+        const exists =
+            await Branch.findOne({
+
+                where: { email }
+
+            });
+
         if (exists) {
-            return res.json({ status: 0, message: "Email already exists" });
+
+            return res.json({
+                status: 0,
+                message: "Email already exists"
+            });
+
         }
 
-        // ✅ check merchant
-        const merchant = await Merchant.findByPk(merchant_id);
+        // ✅ Merchant Check
+        const merchant =
+            await Merchant.findByPk(
+                merchant_id
+            );
+
         if (!merchant) {
-            return res.json({ status: 0, message: "Invalid merchant" });
+
+            return res.json({
+                status: 0,
+                message: "Invalid merchant"
+            });
+
         }
 
-        // ✅ create branch
-        const branch = await Branch.create({
-            name,
-            email,
-            phone: phoneNumber,
-            lat,
-            lon,
-            address,
-            merchant_id,
-            status: 1,
-            del_status: 0
-        });
+        const files =
+            req.files || [];
 
-        // ✅ use uploaded files directly
-        const files = req.files || [];
+        // ✅ Profile Image
+        const profile_image =
+            files.length > 0
+                ? files[0].path.replace(/\\/g, '/')
+                : null;
 
+        // ✅ Create Branch
+        const branch =
+            await Branch.create({
+
+                name,
+
+                email,
+
+                phone: phoneNumber,
+
+                profile_image,
+
+                lat,
+
+                lon,
+
+                address,
+
+                description,
+
+                open_time,
+
+                close_time,
+
+                merchant_id,
+
+                status: 1,
+
+                del_status: 0
+
+            });
+
+        // ✅ Branch Images
         if (files.length > 0) {
 
-            const imageData = files.map(f => ({
-                branch_id: branch.id,
-                image: f.path.replace(/\\/g, '/')
-            }));
+            const imageData =
+                files.map(f => ({
 
-            await BranchImage.bulkCreate(imageData);
+                    branch_id: branch.id,
+
+                    image:
+                        f.path.replace(/\\/g, '/')
+
+                }));
+
+            await BranchImage.bulkCreate(
+                imageData
+            );
+
         }
 
         return res.json({
+
             status: 1,
-            message: "Branch created successfully",
+
+            message:
+                "Branch created successfully",
+
             branch_id: branch.id
+
         });
 
     } catch (err) {
-        console.log("BRANCH ERROR:", err);
-        return res.json({ status: 0, message: err.message });
+
+        console.log(
+            "BRANCH ERROR:",
+            err
+        );
+
+        return res.json({
+
+            status: 0,
+
+            message: err.message
+
+        });
+
     }
+
 };
 
-
-
 exports.fetch_list = async (req, res) => {
+
     try {
 
         const merchant_id = req.user.id;
+
         const baseUrl = process.env.APP_URL;
 
         const branches = await Branch.findAll({
+
             where: {
                 merchant_id,
                 del_status: 0
             },
+
             include: [{
                 model: BranchImage,
                 attributes: ['id', 'image']
             }],
+
             attributes: [
                 'id',
                 'name',
                 'email',
                 'phone',
+                'profile_image',
                 'lat',
                 'lon',
                 'address',
                 'merchant_id'
             ],
+
             order: [['id', 'DESC']]
+
         });
 
         if (!branches || branches.length === 0) {
+
             return res.json({
                 status: 0,
                 message: "Branch list not found"
             });
-        }
 
+        }
 
         const data = branches.map(branch => {
 
             const branchData = branch.toJSON();
 
+            // ✅ profile image url
+            branchData.profile_image = branchData.profile_image
+                ? baseUrl + '/' + branchData.profile_image.replace(/\\/g, '/')
+                : null;
+
+            // ✅ branch images
             if (branchData.BranchImages && branchData.BranchImages.length > 0) {
+
                 branchData.BranchImages = branchData.BranchImages.map(img => ({
                     ...img,
                     image: img.image
                         ? baseUrl + '/' + img.image.replace(/\\/g, '/')
                         : null
                 }));
+
             }
 
             return branchData;
+
         });
 
         return res.json({
@@ -138,61 +276,107 @@ exports.fetch_list = async (req, res) => {
         });
 
     } catch (err) {
+
         console.log("FETCH ERROR:", err);
-        return res.json({ status: 0, message: err.message });
+
+        return res.json({
+            status: 0,
+            message: err.message
+        });
+
     }
+
 };
 
 exports.delete_branch = async (req, res) => {
+
     try {
 
         const merchant_id = req.user.id;
-        const branch_id = req.body.branch_id; // or req.params.id
+
+        const branch_id = req.body.branch_id;
 
         if (!branch_id) {
+
             return res.json({
                 status: 0,
                 message: "Branch ID is required"
             });
+
         }
 
         // ✅ check branch
         const branch = await Branch.findOne({
+
             where: {
                 id: branch_id,
                 merchant_id,
                 del_status: 0
             }
+
         });
 
         if (!branch) {
+
             return res.json({
                 status: 0,
                 message: "Branch not found"
             });
+
         }
 
-        // ✅ get images
+        // ✅ delete profile image
+        if (branch.profile_image) {
+
+            const profilePath = path.join(__dirname, '../../', branch.profile_image);
+
+            if (fs.existsSync(profilePath)) {
+
+                try {
+
+                    fs.unlinkSync(profilePath);
+
+                } catch (err) {
+
+                    console.log("Profile delete error:", err.message);
+
+                }
+
+            }
+
+        }
+
+        // ✅ get branch images
         const images = await BranchImage.findAll({
             where: { branch_id }
         });
 
-        // ✅ delete files from server
+        // ✅ delete image files
         images.forEach(img => {
+
             if (img.image) {
+
                 const filePath = path.join(__dirname, '../../', img.image);
 
                 if (fs.existsSync(filePath)) {
+
                     try {
+
                         fs.unlinkSync(filePath);
+
                     } catch (err) {
+
                         console.log("File delete error:", err.message);
+
                     }
+
                 }
+
             }
+
         });
 
-        // ✅ delete image records (or use soft delete if you have column)
+        // ✅ delete image records
         await BranchImage.destroy({
             where: { branch_id }
         });
@@ -204,182 +388,361 @@ exports.delete_branch = async (req, res) => {
 
         return res.json({
             status: 1,
-            message: "Branch and images deleted successfully"
+            message: "Branch deleted successfully"
         });
 
     } catch (err) {
+
         console.log("BRANCH ERROR:", err);
-        return res.json({ status: 0, message: err.message });
+
+        return res.json({
+            status: 0,
+            message: err.message
+        });
+
     }
+
 };
-0
 
 exports.update_branch = async (req, res) => {
+
     try {
 
-        const { branch_id, name, email, phone, lat, lon, address } = req.body;
+        const {
+            branch_id,
+            name,
+            email,
+            phone,
+            lat,
+            lon,
+            address,
+            description,
+            open_time,
+            close_time
+        } = req.body;
+
         const merchant_id = req.user.id;
 
+        // ✅ Branch ID Check
         if (!branch_id) {
+
             return res.json({
                 status: 0,
                 message: "Branch ID required"
             });
+
         }
 
-        // ✅ find branch
+        // ✅ Find Branch
         const branch = await Branch.findOne({
+
             where: {
                 id: branch_id,
                 merchant_id,
                 del_status: 0
             }
+
         });
 
         if (!branch) {
+
             return res.json({
                 status: 0,
                 message: "Branch not found"
             });
+
         }
 
-        // ✅ email check (exclude current)
+        // ✅ Email Check
         if (email) {
+
             const exists = await Branch.findOne({
+
                 where: {
                     email,
-                    id: { [require('sequelize').Op.ne]: branch_id }
+                    id: {
+                        [require('sequelize').Op.ne]: branch_id
+                    }
                 }
+
             });
 
             if (exists) {
+
                 return res.json({
                     status: 0,
                     message: "Email already exists"
                 });
+
             }
+
         }
 
-        // ✅ phone validation
+        // ✅ Phone Validation
         let phoneNumber = branch.phone;
+
         if (phone) {
+
             try {
+
                 const num = parsePhoneNumber(phone);
+
                 if (!num.isValid()) {
-                    return res.json({ status: 0, message: "Invalid phone" });
+
+                    return res.json({
+                        status: 0,
+                        message: "Invalid phone"
+                    });
+
                 }
+
                 phoneNumber = num.number;
+
             } catch {
-                return res.json({ status: 0, message: "Invalid phone format" });
+
+                return res.json({
+                    status: 0,
+                    message: "Invalid phone format"
+                });
+
             }
+
         }
 
-        // ✅ update branch
-        await branch.update({
-            name: name || branch.name,
-            email: email || branch.email,
-            phone: phoneNumber,
-            lat: lat || branch.lat,
-            lon: lon || branch.lon,
-            address: address || branch.address
-        });
+        // ✅ Time Validation
+        if (
+            open_time &&
+            close_time &&
+            open_time >= close_time
+        ) {
 
+            return res.json({
+                status: 0,
+                message: "Close time must be greater than open time"
+            });
+
+        }
 
         const files = req.files || [];
 
+        let profile_image = branch.profile_image;
+
+        // ✅ Update Profile Image
         if (files.length > 0) {
 
-            // 🔥 OPTION: delete old images (replace mode)
-            const oldImages = await BranchImage.findAll({
-                where: { branch_id }
-            });
+            // delete old profile image
+            if (branch.profile_image) {
+
+                const oldProfile = path.join(
+                    __dirname,
+                    '../../',
+                    branch.profile_image
+                );
+
+                if (fs.existsSync(oldProfile)) {
+
+                    try {
+
+                        fs.unlinkSync(oldProfile);
+
+                    } catch (err) {
+
+                        console.log(
+                            "Profile delete error:",
+                            err.message
+                        );
+
+                    }
+
+                }
+
+            }
+
+            profile_image =
+                files[0].path.replace(/\\/g, '/');
+
+        }
+
+        // ✅ Update Branch
+        await branch.update({
+
+            name: name || branch.name,
+
+            email: email || branch.email,
+
+            phone: phoneNumber,
+
+            profile_image,
+
+            lat: lat || branch.lat,
+
+            lon: lon || branch.lon,
+
+            address: address || branch.address,
+
+            description:
+                description || branch.description,
+
+            open_time:
+                open_time || branch.open_time,
+
+            close_time:
+                close_time || branch.close_time
+
+        });
+
+        // ✅ Replace Branch Images
+        if (files.length > 0) {
+
+            const oldImages =
+                await BranchImage.findAll({
+
+                    where: { branch_id }
+
+                });
 
             oldImages.forEach(img => {
-                const filePath = path.join(__dirname, '../../', img.image);
+
+                const filePath = path.join(
+                    __dirname,
+                    '../../',
+                    img.image
+                );
+
                 if (fs.existsSync(filePath)) {
+
                     try {
+
                         fs.unlinkSync(filePath);
+
                     } catch (err) {
-                        console.log("Delete error:", err.message);
+
+                        console.log(
+                            "Delete error:",
+                            err.message
+                        );
+
                     }
+
                 }
+
             });
 
-            await BranchImage.destroy({ where: { branch_id } });
+            await BranchImage.destroy({
 
-            // ✅ insert new images
+                where: { branch_id }
+
+            });
+
             const imageData = files.map(f => ({
+
                 branch_id,
-                image: f.path.replace(/\\/g, '/')
+
+                image:
+                    f.path.replace(/\\/g, '/')
+
             }));
 
-            await BranchImage.bulkCreate(imageData);
+            await BranchImage.bulkCreate(
+                imageData
+            );
+
         }
 
         return res.json({
+
             status: 1,
             message: "Branch updated successfully"
+
         });
 
     } catch (err) {
-        console.log("UPDATE ERROR:", err);
-        return res.json({ status: 0, message: err.message });
+
+        console.log(
+            "UPDATE ERROR:",
+            err
+        );
+
+        return res.json({
+
+            status: 0,
+            message: err.message
+
+        });
+
     }
+
 };
 
-
 exports.branch_id = async (req, res) => {
+
     try {
 
         const branch_id = req.params.id;
 
-
         if (!branch_id) {
+
             return res.json({
                 status: 0,
                 message: "Branch ID required"
             });
+
         }
 
         const branch = await Branch.findOne({
+
             where: {
                 id: branch_id,
                 del_status: 0
             },
+
             include: [{
                 model: BranchImage,
                 attributes: ['id', 'image']
             }],
+
             attributes: [
                 'id',
                 'name',
                 'email',
                 'phone',
+                'profile_image',
                 'lat',
                 'lon',
                 'address',
                 'merchant_id'
             ]
+
         });
 
         if (!branch) {
+
             return res.json({
                 status: 0,
                 message: "Branch not found"
             });
+
         }
 
         const baseUrl = process.env.APP_URL;
+
         const data = branch.toJSON();
 
-        // ✅ format image URL
+        // ✅ profile image url
+        data.profile_image = data.profile_image
+            ? baseUrl + '/' + data.profile_image.replace(/\\/g, '/')
+            : null;
+
+        // ✅ branch images url
         if (data.BranchImages) {
+
             data.BranchImages = data.BranchImages.map(img => ({
                 ...img,
                 image: img.image
                     ? baseUrl + '/' + img.image.replace(/\\/g, '/')
                     : null
             }));
+
         }
 
         return res.json({
@@ -388,7 +751,454 @@ exports.branch_id = async (req, res) => {
         });
 
     } catch (err) {
+
         console.log("BRANCH FETCH ERROR:", err);
-        return res.json({ status: 0, message: err.message });
+
+        return res.json({
+            status: 0,
+            message: err.message
+        });
+
     }
+
+};
+
+
+// ================= REGISTER MENU IMAGE =================
+
+exports.register_menu_image = async (req, res) => {
+
+    try {
+
+        const merchant_id = req.user.id;
+
+        const branch_id = req.body?.branch_id;
+
+        if (!branch_id) {
+
+            return res.json({
+                status: 0,
+                message: "Branch ID required"
+            });
+
+        }
+
+        
+        const branch = await Branch.findOne({
+
+            where: {
+                id: branch_id,
+                merchant_id,
+                del_status: 0
+            }
+
+        });
+
+        if (!branch) {
+
+            return res.json({
+                status: 0,
+                message: "Branch not found or unauthorized"
+            });
+
+        }
+
+        const files = req.files || [];
+
+        if (files.length === 0) {
+
+            return res.json({
+                status: 0,
+                message: "Images required"
+            });
+
+        }
+
+        const imageData = files.map(file => ({
+
+            branch_id,
+
+            image: file.path.replace(/\\/g, '/'),
+
+            status: 1
+
+        }));
+
+        await MenuImage.bulkCreate(imageData);
+
+        return res.json({
+            status: 1,
+            message: "Menu images added successfully"
+        });
+
+    } catch (err) {
+
+        console.log("MENU IMAGE ERROR:", err);
+
+        return res.json({
+            status: 0,
+            message: err.message
+        });
+
+    }
+
+};
+
+
+// ================= FETCH MENU IMAGES =================
+
+exports.fetch_menu_images = async (req, res) => {
+
+    try {
+
+        const merchant_id = req.user.id;
+
+        const branch_id = req.params.branch_id;
+
+        if (!branch_id) {
+
+            return res.json({
+                status: 0,
+                message: "Branch ID required"
+            });
+
+        }
+
+        // check branch belongs to merchant
+        const branch = await Branch.findOne({
+
+            where: {
+                id: branch_id,
+                merchant_id,
+                del_status: 0
+            }
+
+        });
+
+        if (!branch) {
+
+            return res.json({
+                status: 0,
+                message: "Branch not found or unauthorized"
+            });
+
+        }
+
+        const baseUrl = process.env.APP_URL;
+
+        const images = await MenuImage.findAll({
+
+            where: {
+                branch_id
+            },
+
+            attributes: [
+                'id',
+                'branch_id',
+                'image',
+                'status'
+            ],
+
+            order: [['id', 'DESC']]
+
+        });
+
+        const data = images.map(item => ({
+
+            id: item.id,
+
+            branch_id: item.branch_id,
+
+            image: item.image
+                ? baseUrl + '/' + item.image.replace(/\\/g, '/')
+                : null,
+
+            status: item.status
+
+        }));
+
+        return res.json({
+            status: 1,
+            data
+        });
+
+    } catch (err) {
+
+        console.log("FETCH MENU ERROR:", err);
+
+        return res.json({
+            status: 0,
+            message: err.message
+        });
+
+    }
+
+};
+
+
+// ================= UPDATE MENU IMAGE =================
+
+exports.update_menu_image = async (req, res) => {
+
+    try {
+
+        const merchant_id = req.user.id;
+
+        const branch_id = req.body?.branch_id;
+
+        let update_ids = req.body?.update_ids || [];
+
+        // convert string array
+        if (typeof update_ids === 'string') {
+
+            update_ids = JSON.parse(update_ids);
+
+        }
+
+        if (!branch_id) {
+
+            return res.json({
+                status: 0,
+                message: "Branch ID required"
+            });
+
+        }
+
+        // check branch belongs to merchant
+        const branch = await Branch.findOne({
+
+            where: {
+                id: branch_id,
+                merchant_id,
+                del_status: 0
+            }
+
+        });
+
+        if (!branch) {
+
+            return res.json({
+                status: 0,
+                message: "Branch not found or unauthorized"
+            });
+
+        }
+
+        const files = req.files || [];
+
+        if (files.length === 0) {
+
+            return res.json({
+                status: 0,
+                message: "Images required"
+            });
+
+        }
+
+        // update existing images
+        for (let i = 0; i < update_ids.length; i++) {
+
+            const image_id = update_ids[i];
+
+            const file = files[i];
+
+            if (!file) {
+                continue;
+            }
+
+            const menuImage = await MenuImage.findOne({
+
+                where: {
+                    id: image_id,
+                    branch_id
+                }
+
+            });
+
+            if (!menuImage) {
+                continue;
+            }
+
+            // delete old image
+            if (menuImage.image) {
+
+                const oldPath = path.join(
+                    __dirname,
+                    '../../',
+                    menuImage.image
+                );
+
+                if (fs.existsSync(oldPath)) {
+
+                    try {
+
+                        fs.unlinkSync(oldPath);
+
+                    } catch (err) {
+
+                        console.log(err.message);
+
+                    }
+
+                }
+
+            }
+
+            // update image
+            await menuImage.update({
+
+                image: file.path.replace(/\\/g, '/')
+
+            });
+
+        }
+
+        // insert extra new images
+        if (files.length > update_ids.length) {
+
+            const newFiles = files.slice(update_ids.length);
+
+            const imageData = newFiles.map(file => ({
+
+                branch_id,
+
+                image: file.path.replace(/\\/g, '/'),
+
+                status: 1
+
+            }));
+
+            await MenuImage.bulkCreate(imageData);
+
+        }
+
+        return res.json({
+            status: 1,
+            message: "Menu images updated successfully"
+        });
+
+    } catch (err) {
+
+        console.log("UPDATE MENU ERROR:", err);
+
+        return res.json({
+            status: 0,
+            message: err.message
+        });
+
+    }
+
+};
+
+// ================= DELETE MENU IMAGE =================
+
+exports.delete_menu_image = async (req, res) => {
+
+    try {
+
+        const merchant_id = req.user.id;
+       
+
+        const { id, branch_id } = req.body;
+
+        // check image id
+        if (!id) {
+
+            return res.json({
+                status: 0,
+                message: "Image ID required"
+            });
+
+        }
+
+        // check branch id
+        if (!branch_id) {
+
+            return res.json({
+                status: 0,
+                message: "Branch ID required"
+            });
+
+        }
+
+        // check branch belongs to merchant
+        const branch = await Branch.findOne({
+
+            where: {
+                id: branch_id,
+                merchant_id,
+                del_status: 0
+            }
+
+        });
+
+        if (!branch) {
+
+            return res.json({
+                status: 0,
+                message: "Branch not found or unauthorized"
+            });
+
+        }
+
+        // check image exists
+        const menu = await MenuImage.findOne({
+
+            where: {
+                id,
+                branch_id
+            }
+
+        });
+
+        if (!menu) {
+
+            return res.json({
+                status: 0,
+                message: "Image not found"
+            });
+
+        }
+
+        // image full path
+        const filePath = path.join(
+            __dirname,
+            '../../',
+            menu.image
+        );
+
+        // delete image file
+        if (menu.image && fs.existsSync(filePath)) {
+
+            try {
+
+                fs.unlinkSync(filePath);
+
+            } catch (err) {
+
+                console.log("FILE DELETE ERROR:", err.message);
+
+            }
+
+        }
+
+        // delete db row
+        await menu.destroy();
+
+        return res.json({
+            status: 1,
+            message: "Image deleted successfully"
+        });
+
+    } catch (err) {
+
+        console.log("DELETE MENU ERROR:", err);
+
+        return res.json({
+            status: 0,
+            message: err.message
+        });
+
+    }
+
 };

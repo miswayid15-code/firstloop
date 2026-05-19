@@ -10,97 +10,189 @@ exports.create_coupon = async (req, res) => {
             percentage,
             min_amount,
             usage_limit,
-            start_date,
+            start_time,
             branch_ids,
-            end_date
+            end_time
         } = req.body;
 
-        const merchant = await Merchant.findByPk(req.user.id);
+        // ✅ Merchant ID
+        const merchant_id = req.user.id;
 
-        if (!merchant) {
+        console.log("======");
+        console.log(merchant_id);
+        console.log("======");
+
+        // ✅ Merchant Check
+        if (!merchant_id) {
+
             return res.json({
                 status: 0,
                 message: "Merchant not found"
             });
+
         }
 
+        // ✅ Required Fields
+        if (
+            !code ||
+            !percentage ||
+            !start_time ||
+            !end_time
+        ) {
+
+            return res.json({
+                status: 0,
+                message: "Required fields missing"
+            });
+
+        }
+
+        // ✅ Branch Check
+        if (
+            !branch_ids ||
+            !Array.isArray(branch_ids) ||
+            branch_ids.length === 0
+        ) {
+
+            return res.json({
+                status: 0,
+                message: "Please select branches"
+            });
+
+        }
+
+        // ✅ Coupon Exists
         const coupon_check = await Coupon.findOne({
+
             where: {
                 code
             }
+
         });
 
         if (coupon_check) {
+
             return res.json({
                 status: 0,
                 message: "Coupon already exists"
             });
+
         }
 
+        // ✅ Percentage Validation
+        if (
+            percentage < 0 ||
+            percentage > 100
+        ) {
+
+            return res.json({
+                status: 0,
+                message: "Percentage must be between 0 and 100"
+            });
+
+        }
+
+        // ✅ Minimum Amount Validation
         if (min_amount < 0) {
+
             return res.json({
                 status: 0,
                 message: "Minimum amount must be greater than or equal to 0"
             });
+
         }
 
+        // ✅ Usage Limit Validation
         if (usage_limit < 0) {
+
             return res.json({
                 status: 0,
                 message: "Usage limit must be greater than or equal to 0"
             });
+
         }
 
-        if (new Date(start_date) > new Date(end_date)) {
+        // ✅ Time Validation
+        if (start_time >= end_time) {
+
             return res.json({
                 status: 0,
-                message: "End date must be greater than start date"
+                message: "End time must be greater than start time"
             });
+
         }
-        // check valid branch ids
+
+        // ✅ Validate Branches
         const valid_branches = await Branch.findAll({
+
             where: {
                 id: branch_ids,
-                merchant_id: merchant.id,
+                merchant_id: merchant_id,
                 del_status: 0
             },
+
             attributes: ['id']
+
         });
 
-        if (valid_branches.length !== branch_ids.length) {
+        if (
+            valid_branches.length !==
+            branch_ids.length
+        ) {
+
             return res.json({
                 status: 0,
                 message: "Invalid branch selected"
             });
+
         }
+
+        // ✅ Create Coupon
         const coupon = await Coupon.create({
 
-            merchant_id: merchant.id,
+            merchant_id: merchant_id,
+
             branch_ids: JSON.stringify(branch_ids || []),
+
             code,
+
             percentage,
+
             min_amount,
+
             usage_limit,
-            start_date,
-            end_date,
+
+            start_time,
+
+            end_time,
+
             status: 1,
+
             del_status: 0
 
         });
 
         return res.json({
+
             status: 1,
             message: "Coupon created successfully",
             data: coupon
+
         });
 
-    } catch (err) {
+    }
+    catch (err) {
 
-        console.log("FETCH ERROR:", err);
+        console.log(
+            "CREATE COUPON ERROR:",
+            err
+        );
 
         return res.json({
+
             status: 0,
             message: err.message
+
         });
 
     }
@@ -119,11 +211,13 @@ exports.update_coupon = async (req, res) => {
             percentage,
             min_amount,
             usage_limit,
-            start_date,
-            end_date
+            start_time,
+            end_time
         } = req.body;
 
-        const merchant = await Merchant.findByPk(req.user.id);
+        const merchant = req.user.id;
+
+        
 
         if (!merchant) {
             return res.json({
@@ -176,7 +270,7 @@ exports.update_coupon = async (req, res) => {
             });
         }
 
-        if (new Date(start_date) > new Date(end_date)) {
+        if (new Date(start_time) > new Date(end_time)) {
             return res.json({
                 status: 0,
                 message: "End date must be greater than start date"
@@ -205,8 +299,8 @@ exports.update_coupon = async (req, res) => {
             percentage,
             min_amount,
             usage_limit,
-            start_date,
-            end_date
+            start_time,
+            end_time
 
         });
 
@@ -232,7 +326,7 @@ exports.fetch_coupon = async (req, res) => {
 
     try {
 
-        const merchant = await Merchant.findByPk(req.user.id);
+        const merchant = req.user.id;
 
         if (!merchant) {
             return res.json({
@@ -247,8 +341,8 @@ exports.fetch_coupon = async (req, res) => {
                 'percentage',
                 'min_amount',
                 'usage_limit',
-                'start_date',
-                'end_date'
+                'start_time',
+                'end_time'
             ],
             where: {
                 del_status: 0,
@@ -261,7 +355,7 @@ exports.fetch_coupon = async (req, res) => {
 
             const cpn = item.toJSON();
 
-            cpn.is_expired = new Date() > new Date(cpn.end_date) ? 1 : 0;
+            cpn.is_expired = new Date() > new Date(cpn.end_time) ? 1 : 0;
 
             return cpn;
         });
@@ -289,7 +383,7 @@ exports.check_coupon = async (req, res) => {
 
     try {
 
-        const merchant = await Merchant.findByPk(req.user.id);
+        const merchant = req.user.id;
 
         if (!merchant) {
             return res.json({

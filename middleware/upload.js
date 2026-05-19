@@ -14,18 +14,21 @@ const storage = multer.diskStorage({
     let folder = `uploads/${baseFolder}/`;
 
     // ✅ subfolder logic
-    if (file.fieldname === 'profile_image') {
-      folder += 'profile/';
-    }
-    else if (file.fieldname === 'brand_image') {
-      folder += 'brand/';
-    }
-    else if (file.fieldname === 'document') {
-      folder += 'documents/';
-    }
-    else {
-      folder += 'images/';
-    }
+if (file.fieldname === 'profile_image') {
+  folder += 'profile/';
+}
+else if (file.fieldname === 'brand_image') {
+  folder += 'brand/';
+}
+else if (file.fieldname === 'document') {
+  folder += 'documents/';
+}
+else if (file.fieldname === 'image') {
+  folder += '';
+}
+else {
+  folder += 'images/';
+}
 
     // ✅ ensure folder exists
     if (!fs.existsSync(folder)) {

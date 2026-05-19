@@ -6,7 +6,11 @@ const {
     Receptionist,
     CustomerFp,
     Customer,
-    Banner
+    Banner,
+    BranchImage,
+    MenuImage,
+    CouponApplied,
+    Wishlist
 } = require('../../models');
 
 const bcrypt = require('bcryptjs');
@@ -18,6 +22,11 @@ const RegisterTemplate = require('../../helpers/RegisterTemplate');
 const ResetsTemplate = require('../../helpers/ResetsTemplate');
 const { otpTemplate } = require('../../helpers/mailTemplate');
 const { Op } = require('sequelize');
+const axios = require("axios");
+const moment = require('moment');
+const {
+    getDistanceDuration
+} = require('../../helpers/distanceHelper');
 exports.register = async (req, res) => {
 
     try {
@@ -33,10 +42,12 @@ exports.register = async (req, res) => {
             lat,
             lon
         } = req.body;
-
+        // console.log("======================================");
+        // console.log(req.body);
+        // console.log("======================================");
         let phoneNumber;
 
-        // validate phone
+
         try {
 
             const num = parsePhoneNumber(phone);
@@ -794,18 +805,47 @@ exports.fetch_list = async (req, res) => {
 
 };
 
+
 exports.home = async (req, res) => {
 
     try {
 
-        const lat = req.body?.lat || null;
+        const lat = req.body?.lat || req.query?.lat || null;
+        const lon = req.body?.lon || req.query?.lon || null;
 
-        const lon = req.body?.lon || null;
-
-        // optional customer login
-        const customerId = req.user ? req.user.id : null;
+        const customer_id =
+            req.user?.id ||
+            req.body?.customer_id ||
+            req.query?.customer_id ||
+            null;
 
         const baseUrl = process.env.APP_URL;
+        const googleApiKey = process.env.GOOGLE_MAP_KEY;
+
+        // ✅ Check Customer
+        if (customer_id) {
+
+            const customer = await Customer.findOne({
+
+                where: {
+                    id: customer_id,
+                    status: 1,
+                    del_status: 0
+                }
+
+            });
+
+            if (!customer) {
+
+                return res.json({
+                    status: 0,
+                    message: "Invalid customer"
+                });
+
+            }
+
+        }
+
 
         const branches = await Branch.findAll({
 
@@ -817,12 +857,10 @@ exports.home = async (req, res) => {
             attributes: [
                 'id',
                 'name',
-                'email',
-                'phone',
                 'lat',
                 'lon',
                 'address',
-                
+                'profile_image'
             ],
 
             order: [['id', 'DESC']]
@@ -838,16 +876,80 @@ exports.home = async (req, res) => {
 
         }
 
-        const data = branches.map(branch => {
+        const data = await Promise.all(
 
-            const item = branch.toJSON();
+            branches.map(async (branch) => {
 
-     
+                const item = branch.toJSON();
 
-            // optional user lat/lon
-            item.user_lat = lat;
 
-            item.user_lon = lon;
+                item.profile_image = item.profile_image
+                    ? `${baseUrl}/${item.profile_image.replace(/\\/g, '/')}`
+                    : null;
+
+
+                item.user_lat = lat;
+                item.user_lon = lon;
+                item.customer_id = customer_id;
+
+
+                item.distance = null;
+                item.duration = null;
+                item.distance_value = null;
+
+
+                if (
+                    lat &&
+                    lon &&
+                    item.lat &&
+                    item.lon &&
+                    !isNaN(Number(lat)) &&
+                    !isNaN(Number(lon)) &&
+                    !isNaN(Number(item.lat)) &&
+                    !isNaN(Number(item.lon))
+                ) {
+
+                    const distanceData =
+                        await getDistanceDuration(
+
+                            lat,
+                            lon,
+
+                            item.lat,
+                            item.lon,
+
+                            googleApiKey
+
+                        );
+
+                    item.distance =
+                        distanceData.distance;
+
+                    item.duration =
+                        distanceData.duration;
+
+                }
+
+                return item;
+
+            })
+
+        );
+
+
+        data.sort((a, b) => {
+
+            return (
+                (a.distance_value || 999999999) -
+                (b.distance_value || 999999999)
+            );
+
+        });
+
+
+        const finalData = data.map(item => {
+
+            delete item.distance_value;
 
             return item;
 
@@ -856,10 +958,8 @@ exports.home = async (req, res) => {
         return res.json({
 
             status: 1,
-
-            customer_id: customerId,
-
-            data
+            message: "Successfully fetched details",
+            data: finalData
 
         });
 
@@ -868,11 +968,1037 @@ exports.home = async (req, res) => {
         console.log("FETCH ERROR:", err);
 
         return res.json({
+
             status: 0,
             message: err.message
+
         });
 
     }
 
 };
 
+
+exports.branch_details = async (req, res) => {
+
+    try {
+
+        const branch_id =
+            req.body?.branch_id ||
+            req.query?.branch_id ||
+            null;
+
+        const lat =
+            req.body?.lat ||
+            req.query?.lat ||
+            null;
+
+        const lon =
+            req.body?.lon ||
+            req.query?.lon ||
+            null;
+
+        const customer_id =
+            req.user?.id ||
+            req.body?.customer_id ||
+            req.query?.customer_id ||
+            null;
+
+
+        if (!branch_id) {
+
+            return res.json({
+                status: 0,
+                message: "Branch ID required"
+            });
+
+        }
+        if (customer_id) {
+
+            const customer = await Customer.findOne({
+
+                where: {
+                    id: customer_id,
+                    status: 1,
+                    del_status: 0
+                }
+
+            });
+
+            if (!customer) {
+
+                return res.json({
+                    status: 0,
+                    message: "Invalid customer"
+                });
+
+            }
+
+        }
+
+
+        const branch = await Branch.findOne({
+
+            where: {
+                id: branch_id,
+                del_status: 0,
+                status: 1
+            },
+
+            attributes: [
+                'id',
+                'name',
+                'lat',
+                'lon',
+                'address',
+                'merchant_id',
+                'description',
+                'open_time',
+                'close_time',
+                'profile_image'
+            ],
+
+            include: [
+
+                {
+                    model: BranchImage,
+                    attributes: [
+                        'id',
+                        'branch_id',
+                        'image'
+                    ]
+                },
+
+                {
+                    model: MenuImage,
+                    attributes: [
+                        'id',
+                        'branch_id',
+                        'image'
+                    ]
+                }
+
+            ]
+
+        });
+
+        // ✅ Branch Not Found
+        if (!branch) {
+
+            return res.json({
+                status: 0,
+                message: "Branch not found"
+            });
+
+        }
+
+        const baseUrl =
+            process.env.APP_URL;
+
+        const googleApiKey =
+            process.env.GOOGLE_MAP_KEY;
+
+        const item =
+            branch.toJSON();
+
+
+
+        const current_time =
+            moment().format('HH:mm:ss');
+
+        item.is_open =
+            current_time >= item.open_time &&
+                current_time <= item.close_time
+                ? 1
+                : 0;
+
+
+        item.open_time = item.open_time
+            ? moment(
+                item.open_time,
+                'HH:mm:ss'
+            ).format('hh:mm A')
+            : null;
+
+        item.close_time = item.close_time
+            ? moment(
+                item.close_time,
+                'HH:mm:ss'
+            ).format('hh:mm A')
+            : null;
+
+
+        const coupons =
+            await Coupon.findAll({
+
+                where: {
+
+                    status: 1,
+
+                    del_status: 0,
+
+                    branch_ids: {
+                        [Op.like]:
+                            `%${branch_id}%`
+                    }
+
+                },
+
+                attributes: [
+                    'id',
+                    'branch_ids',
+                    'code',
+                    'percentage',
+                    'min_amount',
+                    'usage_limit',
+                    'start_time',
+                    'end_time'
+                ]
+
+            });
+
+        // ✅ Coupon Data
+        item.Coupons =
+            coupons.map(coupon => {
+
+                const c =
+                    coupon.toJSON();
+
+                const now =
+                    moment().format(
+                        'HH:mm:ss'
+                    );
+
+
+                c.is_active =
+                    now >= c.start_time &&
+                        now <= c.end_time
+                        ? 1
+                        : 0;
+
+
+                c.start_time =
+                    c.start_time
+                        ? moment(
+                            c.start_time,
+                            'HH:mm:ss'
+                        ).format('hh:mm A')
+                        : null;
+
+                c.end_time =
+                    c.end_time
+                        ? moment(
+                            c.end_time,
+                            'HH:mm:ss'
+                        ).format('hh:mm A')
+                        : null;
+
+                return c;
+
+            });
+
+
+        item.profile_image =
+            item.profile_image
+                ? `${baseUrl}/${item.profile_image.replace(/\\/g, '/')}`
+                : null;
+
+
+        item.BranchImages =
+            (item.BranchImages || [])
+                .map(img => {
+
+                    img.image =
+                        img.image
+                            ? `${baseUrl}/${img.image.replace(/\\/g, '/')}`
+                            : null;
+
+                    return img;
+
+                });
+
+
+        item.MenuImages =
+            (item.MenuImages || [])
+                .map(img => {
+
+                    img.image =
+                        img.image
+                            ? `${baseUrl}/${img.image.replace(/\\/g, '/')}`
+                            : null;
+
+                    return img;
+
+                });
+
+
+        item.user_lat = lat;
+
+        item.user_lon = lon;
+
+        item.customer_id =
+            customer_id;
+
+
+        item.distance = null;
+
+        item.duration = null;
+
+
+        if (
+            lat &&
+            lon &&
+            item.lat &&
+            item.lon &&
+            !isNaN(Number(lat)) &&
+            !isNaN(Number(lon)) &&
+            !isNaN(Number(item.lat)) &&
+            !isNaN(Number(item.lon))
+        ) {
+
+            const distanceData =
+                await getDistanceDuration(
+
+                    lat,
+                    lon,
+
+                    item.lat,
+                    item.lon,
+
+                    googleApiKey
+
+                );
+
+            item.distance =
+                distanceData.distance;
+
+            item.duration =
+                distanceData.duration;
+
+        }
+        const wishlist =
+            await Wishlist.findOne({
+
+                where: {
+
+                    customer_id,
+
+                    branch_id:
+                        item.id,
+
+                    del_status: 0
+
+                }
+
+            });
+
+        item.is_wishlist =
+            wishlist ? 1 : 0;
+
+        // ✅ Final Response
+        return res.json({
+
+            status: 1,
+
+            message:
+                "Successfully fetched details",
+
+            data: item
+
+        });
+
+    }
+    catch (err) {
+
+        console.log(
+            "FETCH ERROR:",
+            err
+        );
+
+        return res.json({
+
+            status: 0,
+
+            message: err.message
+
+        });
+
+    }
+
+};
+
+
+exports.coupon_apply = async (req, res) => {
+
+    try {
+
+        const customer_id =
+            req.user.id;
+
+        const coupon_id =
+            req.body?.coupon_id ||
+            req.query?.coupon_id ||
+            null;
+
+
+        if (!coupon_id) {
+
+            return res.json({
+
+                status: 0,
+
+                message:
+                    "Coupon ID is required"
+
+            });
+
+        }
+        if (customer_id) {
+
+            const customer = await Customer.findOne({
+
+                where: {
+                    id: customer_id,
+                    status: 1,
+                    del_status: 0
+                }
+
+            });
+
+            if (!customer) {
+
+                return res.json({
+                    status: 0,
+                    message: "Invalid customer"
+                });
+
+            }
+
+        }
+
+
+        const coupon =
+            await Coupon.findOne({
+
+                where: {
+
+                    id: coupon_id,
+
+                    status: 1,
+
+                    del_status: 0
+
+                }
+
+            });
+
+
+        if (!coupon) {
+
+            return res.json({
+
+                status: 0,
+
+                message:
+                    "Coupon not found"
+
+            });
+
+        }
+
+        // ✅ Current Time
+        const now =
+            moment().format(
+                'HH:mm:ss'
+            );
+
+        // ✅ Coupon Active Check
+        const is_active =
+            now >= coupon.start_time &&
+            now <= coupon.end_time;
+
+        if (!is_active) {
+
+            return res.json({
+
+                status: 0,
+
+                message:
+                    "Coupon expired"
+
+            });
+
+        }
+
+        // ✅ Usage Limit Check
+        const applied_count =
+            await CouponApplied.count({
+
+                where: {
+
+                    coupon_id:
+                        coupon.id,
+                    cus_id:
+                        customer_id,
+
+                    status: 1,
+
+                    del_status: 0
+
+                }
+
+            });
+
+        if (
+            applied_count >=
+            coupon.usage_limit
+        ) {
+
+            return res.json({
+
+                status: 0,
+
+                message:
+                    "Coupon usage limit exceeded"
+
+            });
+
+        }
+
+        // ✅ Already Applied Check
+        // const already_applied =
+        //     await CouponApplied.findOne({
+
+        //         where: {
+
+        //             cus_id:
+        //                 customer_id,
+
+        //             coupon_id:
+        //                 coupon.id,
+
+        //             status: 1,
+
+        //             del_status: 0
+
+        //         }
+
+        //     });
+
+        // if (already_applied) {
+
+        //     return res.json({
+
+        //         status: 0,
+
+        //         message:
+        //             "Coupon already applied"
+
+        //     });
+
+        // }
+
+        // ✅ Store Coupon Apply
+        await CouponApplied.create({
+
+            cus_id:
+                customer_id,
+
+            coupon_id:
+                coupon.id,
+
+            coupon_code:
+                coupon.code,
+
+            percentage:
+                coupon.percentage,
+
+            used_at:
+                null,
+
+            status: 0,
+
+            del_status: 0
+
+        });
+
+
+        return res.json({
+
+            status: 1,
+
+            message:
+                "Coupon applied successfully",
+
+            data: {
+
+                coupon_id:
+                    coupon.id,
+
+                coupon_code:
+                    coupon.code,
+
+                percentage:
+                    coupon.percentage
+
+            }
+
+        });
+
+    }
+    catch (err) {
+
+        console.log(
+            "FETCH ERROR:",
+            err
+        );
+
+        return res.json({
+
+            status: 0,
+
+            message:
+                err.message
+
+        });
+
+    }
+
+};
+
+exports.Coupon_list = async (req, res) => {
+
+    try {
+
+        const customer_id =
+            req.user.id;
+
+        // ✅ Check Customer
+        const customer =
+            await Customer.findOne({
+
+                where: {
+
+                    id: customer_id,
+
+                    status: 1,
+
+                    del_status: 0
+
+                }
+
+            });
+
+        if (!customer) {
+
+            return res.json({
+
+                status: 0,
+
+                message:
+                    "Invalid customer"
+
+            });
+
+        }
+
+        // ✅ Fetch Applied Coupons
+        const applied_coupons =
+            await CouponApplied.findAll({
+
+                where: {
+
+                    cus_id:
+                        customer_id,
+
+                    del_status: 0
+
+                },
+
+                attributes: [
+                    'id',
+                    'cus_id',
+                    'coupon_id',
+                    'coupon_code',
+                    'percentage',
+                    'used_at',
+                    'status'
+                ],
+
+                include: [
+
+                    {
+                        model: Coupon,
+
+                        attributes: [
+                            'id',
+                            'branch_ids',
+                            'code',
+                            'percentage',
+                            'start_time',
+                            'end_time'
+                        ]
+                    }
+
+                ],
+
+                order: [
+                    ['id', 'DESC']
+                ]
+
+            });
+
+        // ✅ Final Data
+        const finalData =
+            await Promise.all(
+
+                applied_coupons.map(
+                    async item => {
+
+                        const data =
+                            item.toJSON();
+
+                        // ✅ Used Date Format
+                        data.used_at =
+                            data.used_at
+                                ? moment(
+                                    data.used_at
+                                ).format(
+                                    'DD-MM-YYYY hh:mm A'
+                                )
+                                : null;
+
+                        // ✅ Coupon Time Format
+                        if (data.Coupon) {
+
+                            data.Coupon.start_time =
+                                data.Coupon.start_time
+                                    ? moment(
+                                        data.Coupon.start_time,
+                                        'HH:mm:ss'
+                                    ).format(
+                                        'hh:mm A'
+                                    )
+                                    : null;
+
+                            data.Coupon.end_time =
+                                data.Coupon.end_time
+                                    ? moment(
+                                        data.Coupon.end_time,
+                                        'HH:mm:ss'
+                                    ).format(
+                                        'hh:mm A'
+                                    )
+                                    : null;
+
+                        }
+
+                        let branch_data = [];
+
+                        // ✅ Branch Fetch
+                        if (
+                            data.Coupon &&
+                            data.Coupon.branch_ids
+                        ) {
+
+                            let branch_ids = [];
+
+                            try {
+
+                                branch_ids =
+                                    JSON.parse(
+                                        data.Coupon.branch_ids
+                                    );
+
+                            } catch (e) {
+
+                                branch_ids = [];
+
+                            }
+
+                            branch_data =
+                                await Branch.findAll({
+
+                                    where: {
+                                        id:
+                                            branch_ids
+                                    },
+
+                                    attributes: [
+                                        'id',
+                                        'name',
+                                        'open_time',
+                                        'close_time'
+                                    ]
+
+                                });
+
+                            // ✅ Branch Time Format
+                            branch_data =
+                                branch_data.map(
+                                    branch => {
+
+                                        const b =
+                                            branch.toJSON();
+
+                                        b.open_time =
+                                            b.open_time
+                                                ? moment(
+                                                    b.open_time,
+                                                    'HH:mm:ss'
+                                                ).format(
+                                                    'hh:mm A'
+                                                )
+                                                : null;
+
+                                        b.close_time =
+                                            b.close_time
+                                                ? moment(
+                                                    b.close_time,
+                                                    'HH:mm:ss'
+                                                ).format(
+                                                    'hh:mm A'
+                                                )
+                                                : null;
+
+                                        return b;
+
+                                    }
+                                );
+
+                        }
+
+                        // ✅ Branch Data
+                        data.branches =
+                            branch_data;
+
+                        return data;
+
+                    }
+                )
+
+            );
+
+        // ✅ Response
+        return res.json({
+
+            status: 1,
+
+            message:
+                "Coupon List Fetch Successfully",
+
+            data:
+                finalData
+
+        });
+
+    }
+    catch (err) {
+
+        console.log(
+            "FETCH ERROR:",
+            err
+        );
+
+        return res.json({
+
+            status: 0,
+
+            message:
+                err.message
+
+        });
+
+    }
+
+};
+
+
+exports.wishlist = async (req, res) => {
+
+    try {
+
+        const customer_id =
+            req.user.id;
+
+        const branch_id =
+            req.body?.branch_id ||
+            req.query?.branch_id ||
+            null;
+
+        // ✅ Branch ID Check
+        if (!branch_id) {
+
+            return res.json({
+
+                status: 0,
+
+                message:
+                    "Branch ID is required"
+
+            });
+
+        }
+
+        // ✅ Customer Check
+        const customer =
+            await Customer.findOne({
+
+                where: {
+
+                    id: customer_id,
+
+                    status: 1,
+
+                    del_status: 0
+
+                }
+
+            });
+
+        if (!customer) {
+
+            return res.json({
+
+                status: 0,
+
+                message:
+                    "Invalid customer"
+
+            });
+
+        }
+
+        // ✅ Branch Check
+        const branch =
+            await Branch.findOne({
+
+                where: {
+
+                    id: branch_id,
+
+                    status: 1,
+
+                    del_status: 0
+
+                }
+
+            });
+
+        if (!branch) {
+
+            return res.json({
+
+                status: 0,
+
+                message:
+                    "Branch not found"
+
+            });
+
+        }
+
+        // ✅ Already Wishlist Check
+        const already_exists =
+            await Wishlist.findOne({
+
+                where: {
+
+                    customer_id,
+
+                    branch_id,
+
+                    del_status: 0
+
+                }
+
+            });
+
+        // ✅ Remove Wishlist
+        if (already_exists) {
+
+            await already_exists.update({
+
+                del_status: 1
+
+            });
+
+            return res.json({
+
+                status: 1,
+
+                message:
+                    "Wishlist removed successfully",
+
+                data: {
+
+                    branch_id:
+                        branch.id,
+
+                    wishlist_id:
+                        already_exists.id,
+
+                    is_wishlist: 0
+
+                }
+
+            });
+
+        }
+
+        // ✅ Create Wishlist
+        const wishlist =
+            await Wishlist.create({
+
+                customer_id,
+
+                branch_id,
+
+                status: 1,
+
+                del_status: 0
+
+            });
+
+        // ✅ Response
+        return res.json({
+
+            status: 1,
+
+            message:
+                "Wishlist added successfully",
+
+            data: {
+
+                branch_id:
+                    branch.id,
+
+                wishlist_id:
+                    wishlist.id,
+
+                is_wishlist: 1
+
+            }
+
+        });
+
+    }
+    catch (err) {
+
+        console.log(
+            "FETCH ERROR:",
+            err
+        );
+
+        return res.json({
+
+            status: 0,
+
+            message:
+                err.message
+
+        });
+
+    }
+
+};

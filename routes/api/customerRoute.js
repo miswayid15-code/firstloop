@@ -29,4 +29,34 @@ router.get(
     '/customer/home',
     controller.home
 );
+
+router.post(
+    '/customer/home',
+    auth,
+    controller.home
+);
+router.get(
+    '/branch-details',
+    controller.branch_details
+);
+router.post(
+   '/branch-details',
+    auth,
+    controller.branch_details
+);
+router.post(
+   '/customer/coupon-apply',
+    auth,
+    controller.coupon_apply
+);
+router.post(
+   '/customer/coupon-list',
+    auth,
+    controller.Coupon_list
+);
+router.post(
+   '/customer/wishlist',
+    auth,
+    controller.wishlist 
+);
 module.exports = router;

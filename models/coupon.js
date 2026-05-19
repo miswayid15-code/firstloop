@@ -39,16 +39,13 @@ module.exports = (sequelize, DataTypes) => {
             defaultValue: 0
         },
 
-        start_date: {
-            type: DataTypes.DATE,
-            allowNull: true
+        start_time: {
+            type: DataTypes.TIME
         },
 
-        end_date: {
-            type: DataTypes.DATE,
-            allowNull: true
+        end_time: {
+            type: DataTypes.TIME
         },
-
         status: {
             type: DataTypes.INTEGER,
             defaultValue: 1

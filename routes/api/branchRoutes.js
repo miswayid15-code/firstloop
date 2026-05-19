@@ -30,4 +30,45 @@ router.post(
 router.get('/branch/fetch-branch', auth, controller.fetch_list);
 router.post('/branch/delete', auth, controller.delete_branch);
 router.get('/branch/:id', controller.branch_id);
+router.post(
+    '/branch/create_menu_image',
+    auth,
+
+    (req, res, next) => {
+        req.uploadFolder = 'branch/menu';
+        next();
+    },
+
+    upload,
+    controller.register_menu_image
+);
+
+router.get(
+    '/branch/fetch_menu_images/:branch_id',
+    auth,
+    controller.fetch_menu_images
+);
+
+router.post(
+    '/branch/update_menu_image',
+    auth,
+
+    (req, res, next) => {
+
+        req.uploadFolder = 'branch/menu';
+
+        next();
+
+    },
+
+    upload,
+
+    controller.update_menu_image
+);
+
+router.delete(
+    '/branch/delete_menu_image',
+    auth,
+    controller.delete_menu_image
+);
 module.exports = router;

@@ -1,44 +1,68 @@
 module.exports = (sequelize, DataTypes) => {
 
-  const Branch = sequelize.define('Branch', {
+    const Branch = sequelize.define('Branch', {
 
-    id: {
-      type: DataTypes.BIGINT,
-      autoIncrement: true,
-      primaryKey: true
-    },
+        id: {
+            type: DataTypes.BIGINT,
+            autoIncrement: true,
+            primaryKey: true
+        },
 
-    name: DataTypes.STRING,
-    email: DataTypes.STRING,
-    phone: DataTypes.STRING,
+        name: DataTypes.STRING,
 
-    lat: DataTypes.STRING,
-    lon: DataTypes.STRING,
+        email: DataTypes.STRING,
 
-    address: DataTypes.TEXT,
+        phone: DataTypes.STRING,
 
-    merchant_id: DataTypes.BIGINT,
+        profile_image: DataTypes.STRING,
 
-    status: DataTypes.INTEGER,
-    del_status: DataTypes.INTEGER
+        lat: DataTypes.STRING,
 
-  }, {
-    tableName: 'branches',
-    timestamps: true,
-    createdAt: 'created_at',
-    updatedAt: 'updated_at'
-  });
+        lon: DataTypes.STRING,
 
-  // ✅ association
-  Branch.associate = (models) => {
-    Branch.belongsTo(models.Merchant, {
-      foreignKey: 'merchant_id'
+        address: DataTypes.TEXT,
+
+        // ✅ Added
+        open_time: DataTypes.TIME,
+
+        close_time: DataTypes.TIME,
+
+        description: DataTypes.TEXT,
+
+        merchant_id: DataTypes.BIGINT,
+
+        status: DataTypes.INTEGER,
+
+        del_status: DataTypes.INTEGER
+
+    }, {
+
+        tableName: 'branches',
+
+        timestamps: true,
+
+        createdAt: 'created_at',
+
+        updatedAt: 'updated_at'
+
     });
-  };
-Branch.associate = (models) => {
-  Branch.hasMany(models.BranchImage, {
-    foreignKey: 'branch_id'
-  });
-};
-  return Branch;
+
+    Branch.associate = (models) => {
+
+        Branch.belongsTo(models.Merchant, {
+            foreignKey: 'merchant_id'
+        });
+
+        Branch.hasMany(models.BranchImage, {
+            foreignKey: 'branch_id'
+        });
+
+        Branch.hasMany(models.MenuImage, {
+            foreignKey: 'branch_id'
+        });
+
+    };
+
+    return Branch;
+
 };
