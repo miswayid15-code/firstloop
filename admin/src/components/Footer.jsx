@@ -1,21 +1,9 @@
-// src/components/Footer.jsx
+export default function Footer() {
+    const currentYear = new Date().getFullYear()
 
-import React from "react";
-
-function Footer() {
-  return (
-    <footer
-      style={{
-        background: "#222",
-        color: "#fff",
-        padding: "15px 30px",
-        textAlign: "center",
-        marginTop: "20px",
-      }}
-    >
-      <p>© 2026 My Website. All Rights Reserved.</p>
-    </footer>
-  );
+    return (
+        <footer className="app-footer">
+            <p>&copy; {currentYear} Minsway Solutions Pvt Ltd</p>
+        </footer>
+    )
 }
-
-export default Footer;

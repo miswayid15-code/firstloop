@@ -1,123 +1,42 @@
-import './App.css'
-
-import './assets/css/variables.css'
-import './assets/css/reset.css'
-import './assets/css/layout.css'
-import './assets/css/forms.css'
-
-import logo from './assets/image/logo.png'
-
-import { useNavigate } from "react-router-dom";
+import { Routes, Route, Navigate } from 'react-router-dom'
+import Layout from './components/Layout'
+import Login from './pages/Login'
+import Dashboard from './pages/Dashboard'
+import Merchants from './pages/Merchants'
+import Customers from './pages/Customers'
+import Categories from './pages/Categories'
+import Appointments from './pages/Appointments'
+import Reports from './pages/Reports'
+import Notifications from './pages/Notifications'
+import Profile from './pages/Profile'
+import AddMerchant from './pages/AddMerchant'
+import EditMerchant from './pages/EditMerchant'
+import Branches from './pages/Branches'
+import Receptionists from './pages/Receptionists'
+import ViewMerchant from './pages/ViewMerchant'
 
 function App() {
-
-  const navigate = useNavigate();
-
-  const handleLogin = (e) => {
-
-    e.preventDefault();
-
-    navigate("/dashboard");
-  };
-
-  return (
-
-    <div className="login-page">
-
-      {/* Background blobs */}
-      <div className="deco-blob blob-1"></div>
-      <div className="deco-blob blob-2"></div>
-
-      <div className="login-card">
-
-        <div className="login-header">
-
-          <div className="login-logo">
-
-            <img
-              src={logo}
-              alt="Dealora"
-              style={{
-                width: "32px",
-                height: "32px",
-                objectFit: "contain"
-              }}
-            />
-
-          </div>
-
-          <h1 className="login-title">
-            Dealora
-          </h1>
-
-          <p className="login-subtitle">
-            Enterprise Merchant & Campaign Platform
-          </p>
-
-        </div>
-
-        <form onSubmit={handleLogin}>
-
-          <div className="form-group">
-
-            <input
-              type="email"
-              id="email"
-              className="form-control"
-              placeholder="Email Address"
-              defaultValue="admin@dealora.com"
-              required
-            />
-
-          </div>
-
-          <div className="form-group">
-
-            <input
-              type="password"
-              id="password"
-              className="form-control"
-              placeholder="Password"
-              required
-            />
-
-          </div>
-
-          <button
-            type="submit"
-            className="btn btn-primary"
-            style={{
-              width: "100%",
-              height: "50px",
-              fontSize: "0.95rem"
-            }}
-          >
-            Login
-
-            <i
-              className="fas fa-arrow-right"
-              style={{
-                marginLeft: "4px"
-              }}
-            ></i>
-
-          </button>
-
-        </form>
-
-        <div className="login-footer">
-
-          <span>
-            Designed & Secured by
-            <strong> Minsway Solutions Pvt Ltd</strong>
-          </span>
-
-        </div>
-
-      </div>
-
-    </div>
-  );
+    return (
+        <Routes>
+            <Route path="/" element={<Login />} />
+            <Route element={<Layout />}>
+                <Route path="dashboard" element={<Dashboard />} />
+                <Route path="merchants" element={<Merchants />} />
+                <Route path="customers" element={<Customers />} />
+                <Route path="categories" element={<Categories />} />
+                <Route path="appointments" element={<Appointments />} />
+                <Route path="reports" element={<Reports />} />
+                <Route path="notifications" element={<Notifications />} />
+                <Route path="profile" element={<Profile />} />
+                <Route path="add-merchant" element={<AddMerchant />} />
+                <Route path="edit-merchant" element={<EditMerchant />} />
+                <Route path="view-merchant" element={<ViewMerchant />} />
+                <Route path="branches" element={<Branches />} />
+                <Route path="receptionists" element={<Receptionists />} />
+            </Route>
+            <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+    )
 }
 
-export default App;
+export default App
