@@ -1,4 +1,5 @@
 import './App.css'
+
 import './assets/css/variables.css'
 import './assets/css/reset.css'
 import './assets/css/layout.css'
@@ -6,13 +7,17 @@ import './assets/css/forms.css'
 
 import logo from './assets/image/logo.png'
 
+import { useNavigate } from "react-router-dom";
+
 function App() {
+
+  const navigate = useNavigate();
 
   const handleLogin = (e) => {
 
     e.preventDefault();
 
-    window.location.href = "/dashboard";
+    navigate("/dashboard");
   };
 
   return (
@@ -88,6 +93,14 @@ function App() {
             }}
           >
             Login
+
+            <i
+              className="fas fa-arrow-right"
+              style={{
+                marginLeft: "4px"
+              }}
+            ></i>
+
           </button>
 
         </form>
