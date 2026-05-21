@@ -1,11 +1,11 @@
 const { Coupon, Merchant, Branch } = require('../../models');
 const { Op, where } = require('sequelize');
-
+ const baseUrl = process.env.APP_URL;
 exports.create_coupon = async (req, res) => {
 
     try {
 
-        const {
+        let {
             code,
             percentage,
             min_amount,
@@ -15,24 +15,10 @@ exports.create_coupon = async (req, res) => {
             end_time
         } = req.body;
 
-        
+        // ✅ Merchant ID
         const merchant_id = req.user.id;
 
-        
-        let banner_image = null;
-
-        if (
-            req.files &&
-            req.files.banner_image &&
-            req.files.banner_image[0]
-        ) {
-
-            banner_image =
-                req.files.banner_image[0].filename;
-
-        }
-
-       
+        // ✅ Merchant Check
         if (!merchant_id) {
 
             return res.json({
@@ -42,7 +28,22 @@ exports.create_coupon = async (req, res) => {
 
         }
 
-       
+        // ✅ Convert branch_ids string to array
+        if (typeof branch_ids === "string") {
+
+            try {
+
+                branch_ids = JSON.parse(branch_ids);
+
+            } catch (err) {
+
+                branch_ids = [];
+
+            }
+
+        }
+
+        // ✅ Required Fields
         if (
             !code ||
             !percentage ||
@@ -57,30 +58,11 @@ exports.create_coupon = async (req, res) => {
 
         }
 
-// ✅ Branch Parse
-let branch_array = [];
-
-if (typeof branch_ids === 'string') {
-
-    branch_array = branch_ids
-        .replace('[', '')
-        .replace(']', '')
-        .split(',')
-        .map(id => parseInt(id.trim()))
-        .filter(id => !isNaN(id));
-
-}
-else if (Array.isArray(branch_ids)) {
-
-    branch_array = branch_ids.map(id => parseInt(id));
-
-}
-
         // ✅ Branch Check
         if (
-            !branch_array ||
-            !Array.isArray(branch_array) ||
-            branch_array.length === 0
+            !branch_ids ||
+            !Array.isArray(branch_ids) ||
+            branch_ids.length === 0
         ) {
 
             return res.json({
@@ -90,11 +72,11 @@ else if (Array.isArray(branch_ids)) {
 
         }
 
-        // ✅ Coupon Exists
+        // ✅ Coupon Exists Check
         const coupon_check = await Coupon.findOne({
 
             where: {
-                code
+                code: code
             }
 
         });
@@ -108,12 +90,61 @@ else if (Array.isArray(branch_ids)) {
 
         }
 
+        // ✅ Percentage Validation
+        if (
+            Number(percentage) < 0 ||
+            Number(percentage) > 100
+        ) {
+
+            return res.json({
+                status: 0,
+                message: "Percentage must be between 0 and 100"
+            });
+
+        }
+
+        // ✅ Minimum Amount Validation
+        if (
+            min_amount &&
+            Number(min_amount) < 0
+        ) {
+
+            return res.json({
+                status: 0,
+                message: "Minimum amount must be greater than or equal to 0"
+            });
+
+        }
+
+        // ✅ Usage Limit Validation
+        if (
+            usage_limit &&
+            Number(usage_limit) < 0
+        ) {
+
+            return res.json({
+                status: 0,
+                message: "Usage limit must be greater than or equal to 0"
+            });
+
+        }
+
+        // ✅ Time Validation
+        if (start_time >= end_time) {
+
+            return res.json({
+                status: 0,
+                message: "End time must be greater than start time"
+            });
+
+        }
+
         // ✅ Validate Branches
         const valid_branches = await Branch.findAll({
 
             where: {
-                id: branch_array,
-                merchant_id,
+                id: branch_ids,
+                merchant_id: merchant_id,
                 del_status: 0
             },
 
@@ -122,8 +153,7 @@ else if (Array.isArray(branch_ids)) {
         });
 
         if (
-            valid_branches.length !==
-            branch_array.length
+            valid_branches.length !== branch_ids.length
         ) {
 
             return res.json({
@@ -133,26 +163,35 @@ else if (Array.isArray(branch_ids)) {
 
         }
 
+        // ✅ Banner Image
+        const bannerFile = req.files.find(
+            file => file.fieldname === "banner_image"
+        );
+
+        const banner_image = bannerFile
+            ? bannerFile.path.replace(/\\/g, '/')
+            : null;
+
         // ✅ Create Coupon
         const coupon = await Coupon.create({
 
-            merchant_id,
+            merchant_id: merchant_id,
 
-            branch_ids: branch_array,
+            branch_ids: branch_ids,
 
-            banner_image,
+            code: code,
 
-            code,
+            percentage: percentage,
 
-            percentage,
+            min_amount: min_amount || 0,
 
-            min_amount,
+            usage_limit: usage_limit || 0,
 
-            usage_limit,
+            start_time: start_time,
 
-            start_time,
+            end_time: end_time,
 
-            end_time,
+            banner_image: banner_image,
 
             status: 1,
 
@@ -171,11 +210,6 @@ else if (Array.isArray(branch_ids)) {
     }
     catch (err) {
 
-        console.log(
-            "CREATE COUPON ERROR:",
-            err
-        );
-
         return res.json({
 
             status: 0,
@@ -186,13 +220,11 @@ else if (Array.isArray(branch_ids)) {
     }
 
 };
-
-
 exports.update_coupon = async (req, res) => {
 
     try {
 
-        const {
+        let {
             coupon_id,
             branch_ids,
             code,
@@ -203,125 +235,250 @@ exports.update_coupon = async (req, res) => {
             end_time
         } = req.body;
 
-        const merchant = req.user.id;
+        // ✅ Merchant ID
+        const merchant_id = req.user.id;
 
+        // ✅ Merchant Check
+        if (!merchant_id) {
 
-
-        if (!merchant) {
             return res.json({
                 status: 0,
                 message: "Merchant not found"
             });
+
         }
 
+        // ✅ Convert branch_ids string to array
+        if (typeof branch_ids === "string") {
+
+            try {
+
+                branch_ids = JSON.parse(branch_ids);
+
+            } catch (err) {
+
+                branch_ids = [];
+
+            }
+
+        }
+
+        // ✅ Required Fields
+        if (
+            !coupon_id ||
+            !code ||
+            !percentage
+            //|| !start_time ||
+            // !end_time
+        ) {
+
+            return res.json({
+                status: 0,
+                message: "Required fields missing"
+            });
+
+        }
+
+        // ✅ Branch Check
+        if (
+            !branch_ids ||
+            !Array.isArray(branch_ids) ||
+            branch_ids.length === 0
+        ) {
+
+            return res.json({
+                status: 0,
+                message: "Please select branches"
+            });
+
+        }
+
+        // ✅ Coupon Exists
         const exist_coupon = await Coupon.findOne({
+
             where: {
                 id: coupon_id,
-                merchant_id: merchant.id
+                merchant_id: merchant_id,
+                del_status: 0
             }
+
         });
 
         if (!exist_coupon) {
+
             return res.json({
                 status: 0,
                 message: "Coupon not found"
             });
+
         }
 
+        // ✅ Duplicate Code Check
         const coupon_check = await Coupon.findOne({
+
             where: {
-                code,
+
+                code: code,
+
                 id: {
                     [Op.ne]: coupon_id
                 }
+
             }
+
         });
 
         if (coupon_check) {
+
             return res.json({
                 status: 0,
                 message: "Coupon already exists"
             });
+
         }
 
-        if (min_amount < 0) {
+        // ✅ Percentage Validation
+        if (
+            Number(percentage) < 0 ||
+            Number(percentage) > 100
+        ) {
+
+            return res.json({
+                status: 0,
+                message: "Percentage must be between 0 and 100"
+            });
+
+        }
+
+        // ✅ Minimum Amount Validation
+        if (
+            min_amount &&
+            Number(min_amount) < 0
+        ) {
+
             return res.json({
                 status: 0,
                 message: "Minimum amount must be greater than or equal to 0"
             });
+
         }
 
-        if (usage_limit < 0) {
+        // ✅ Usage Limit Validation
+        if (
+            usage_limit &&
+            Number(usage_limit) < 0
+        ) {
+
             return res.json({
                 status: 0,
                 message: "Usage limit must be greater than or equal to 0"
             });
+
         }
 
-        if (new Date(start_time) > new Date(end_time)) {
+        // ✅ Time Validation
+        if (start_time >= end_time) {
+
             return res.json({
                 status: 0,
-                message: "End date must be greater than start date"
+                message: "End time must be greater than start time"
             });
+
         }
-        // check valid branch ids
+
+        // ✅ Validate Branches
         const valid_branches = await Branch.findAll({
+
             where: {
                 id: branch_ids,
-                merchant_id: merchant.id,
+                merchant_id: merchant_id,
                 del_status: 0
             },
+
             attributes: ['id']
+
         });
 
-        if (valid_branches.length !== branch_ids.length) {
+        if (
+            valid_branches.length !== branch_ids.length
+        ) {
+
             return res.json({
                 status: 0,
                 message: "Invalid branch selected"
             });
+
         }
+
+        // ✅ Banner Image
+        let banner_image = exist_coupon.banner_image;
+
+        const bannerFile = req.files.find(
+            file => file.fieldname === "banner_image"
+        );
+
+        if (bannerFile) {
+
+            banner_image = bannerFile.path.replace(/\\/g, '/');
+
+        }
+
+        // ✅ Update Coupon
         await exist_coupon.update({
 
-           branch_ids: branch_ids,
-            code,
-            percentage,
-            min_amount,
-            usage_limit,
-            start_time,
-            end_time
+            branch_ids: branch_ids,
+
+            code: code,
+
+            percentage: percentage,
+
+            min_amount: min_amount || 0,
+
+            usage_limit: usage_limit || 0,
+
+            start_time: start_time,
+
+            end_time: end_time,
+
+            banner_image: banner_image
 
         });
 
         return res.json({
+
             status: 1,
             message: "Coupon updated successfully",
             data: exist_coupon
+
         });
 
-    } catch (err) {
-
-        console.log("FETCH ERROR:", err);
+    }
+    catch (err) {
 
         return res.json({
+
             status: 0,
             message: err.message
+
         });
 
     }
 
 };
+
 exports.fetch_coupon = async (req, res) => {
 
     try {
 
-        const merchant = req.user.id;
+        const merchant_id = req.user.id;
 
-        if (!merchant) {
+        if (!merchant_id) {
             return res.json({
                 status: 0,
                 message: "Merchant not found"
             });
         }
+
         const coupon = await Coupon.findAll({
             attributes: [
                 'merchant_id',
@@ -330,20 +487,28 @@ exports.fetch_coupon = async (req, res) => {
                 'min_amount',
                 'usage_limit',
                 'start_time',
+                'banner_image',
                 'end_time'
             ],
             where: {
                 del_status: 0,
-                merchant_id: merchant.id
+                merchant_id: merchant_id
             },
             order: [['id', 'DESC']]
         });
+
+        const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
 
         const data = coupon.map(item => {
 
             const cpn = item.toJSON();
 
-            cpn.is_expired = new Date() > new Date(cpn.end_time) ? 1 : 0;
+            cpn.banner_image = cpn.banner_image
+                ? baseUrl + '/' + cpn.banner_image.replace(/\\/g, '/')
+                : null;
+
+            cpn.is_expired =
+                new Date() > new Date(cpn.end_time) ? 1 : 0;
 
             return cpn;
         });
@@ -439,7 +604,7 @@ exports.generate_coupon = async (req, res) => {
         let couponCode = '';
         let coupon_check = null;
 
-        
+
         do {
 
             couponCode = shortName + Math.floor(1000 + Math.random() * 9000);

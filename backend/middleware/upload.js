@@ -26,6 +26,9 @@ else if (file.fieldname === 'document') {
 else if (file.fieldname === 'image') {
   folder += '';
 }
+else if (file.fieldname === 'banner_image') {
+  folder += 'banner/';
+}
 else {
   folder += 'images/';
 }
