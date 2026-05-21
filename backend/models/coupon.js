@@ -14,9 +14,9 @@ module.exports = (sequelize, DataTypes) => {
         },
 
         branch_ids: {
-    type: DataTypes.ARRAY(DataTypes.INTEGER),
-    allowNull: true
-},
+            type: DataTypes.ARRAY(DataTypes.INTEGER),
+            allowNull: true
+        },
 
         code: {
             type: DataTypes.STRING,
@@ -37,6 +37,10 @@ module.exports = (sequelize, DataTypes) => {
         usage_limit: {
             type: DataTypes.INTEGER,
             defaultValue: 0
+        },
+        banner_image: {
+            type: DataTypes.STRING,
+            allowNull: true
         },
 
         start_time: {

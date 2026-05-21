@@ -15,14 +15,24 @@ exports.create_coupon = async (req, res) => {
             end_time
         } = req.body;
 
-        // ✅ Merchant ID
+        
         const merchant_id = req.user.id;
 
-        console.log("======");
-        console.log(merchant_id);
-        console.log("======");
+        
+        let banner_image = null;
 
-        // ✅ Merchant Check
+        if (
+            req.files &&
+            req.files.banner_image &&
+            req.files.banner_image[0]
+        ) {
+
+            banner_image =
+                req.files.banner_image[0].filename;
+
+        }
+
+       
         if (!merchant_id) {
 
             return res.json({
@@ -32,7 +42,7 @@ exports.create_coupon = async (req, res) => {
 
         }
 
-        // ✅ Required Fields
+       
         if (
             !code ||
             !percentage ||
@@ -47,11 +57,20 @@ exports.create_coupon = async (req, res) => {
 
         }
 
+        // ✅ Branch Parse
+        let branch_array = branch_ids;
+
+        if (typeof branch_ids === 'string') {
+
+            branch_array = JSON.parse(branch_ids);
+
+        }
+
         // ✅ Branch Check
         if (
-            !branch_ids ||
-            !Array.isArray(branch_ids) ||
-            branch_ids.length === 0
+            !branch_array ||
+            !Array.isArray(branch_array) ||
+            branch_array.length === 0
         ) {
 
             return res.json({
@@ -60,7 +79,6 @@ exports.create_coupon = async (req, res) => {
             });
 
         }
-        console.log("Branch IDs:", branch_ids);
 
         // ✅ Coupon Exists
         const coupon_check = await Coupon.findOne({
@@ -80,55 +98,12 @@ exports.create_coupon = async (req, res) => {
 
         }
 
-        // ✅ Percentage Validation
-        if (
-            percentage < 0 ||
-            percentage > 100
-        ) {
-
-            return res.json({
-                status: 0,
-                message: "Percentage must be between 0 and 100"
-            });
-
-        }
-
-        // ✅ Minimum Amount Validation
-        if (min_amount < 0) {
-
-            return res.json({
-                status: 0,
-                message: "Minimum amount must be greater than or equal to 0"
-            });
-
-        }
-
-        // ✅ Usage Limit Validation
-        if (usage_limit < 0) {
-
-            return res.json({
-                status: 0,
-                message: "Usage limit must be greater than or equal to 0"
-            });
-
-        }
-
-        // ✅ Time Validation
-        if (start_time >= end_time) {
-
-            return res.json({
-                status: 0,
-                message: "End time must be greater than start time"
-            });
-
-        }
-
         // ✅ Validate Branches
         const valid_branches = await Branch.findAll({
 
             where: {
-                id: branch_ids,
-                merchant_id: merchant_id,
+                id: branch_array,
+                merchant_id,
                 del_status: 0
             },
 
@@ -138,7 +113,7 @@ exports.create_coupon = async (req, res) => {
 
         if (
             valid_branches.length !==
-            branch_ids.length
+            branch_array.length
         ) {
 
             return res.json({
@@ -151,10 +126,11 @@ exports.create_coupon = async (req, res) => {
         // ✅ Create Coupon
         const coupon = await Coupon.create({
 
-            merchant_id: merchant_id,
+            merchant_id,
 
-            // branch_ids: JSON.stringify(branch_ids || []),
-            branch_ids: branch_ids,
+            branch_ids: branch_array,
+
+            banner_image,
 
             code,
 
@@ -296,7 +272,7 @@ exports.update_coupon = async (req, res) => {
         }
         await exist_coupon.update({
 
-            branch_ids: JSON.stringify(branch_ids || []),
+           branch_ids: branch_ids,
             code,
             percentage,
             min_amount,

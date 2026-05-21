@@ -7,7 +7,11 @@ const auth = require('../../middleware/auth');
 
 
 
-router.post('/coupon-create', auth,controller.create_coupon);
+router.post('/coupon-create',       (req, res, next) => {
+    req.uploadFolder = 'coupon';
+    next();
+  },
+    upload,auth,controller.create_coupon);
 router.post('/coupon-update', auth,controller.update_coupon);
 router.get('/coupon-fetch', auth,controller.fetch_coupon);
 router.post('/coupon-check', auth,controller.check_coupon);
