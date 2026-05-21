@@ -1226,8 +1226,7 @@ exports.branch_details = async (req, res) => {
                     del_status: 0,
 
                     branch_ids: {
-                        [Op.like]:
-                            `%${branch_id}%`
+                         [Op.contains]: [parseInt(branch_id)]
                     }
 
                 },

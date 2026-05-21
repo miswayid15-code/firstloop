@@ -110,16 +110,16 @@ exports.registerStep1 = async (req, res) => {
             expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
         });
 
-console.log("++++++++++++++++++++++++++++++++++++++++");
-console.log("registerStep1 response:", {
-    status: 1,
-    message: "Basic Info Saved",
-    user_id: merchant.id,
-    user_type: 'merchant',
-    access_token: accessToken,
-    refresh_token: refreshToken
-});
-console.log("++++++++++++++++++++++++++++++++++++++++");
+// console.log("++++++++++++++++++++++++++++++++++++++++");
+// console.log("registerStep1 response:", {
+//     status: 1,
+//     message: "Basic Info Saved",
+//     user_id: merchant.id,
+//     user_type: 'merchant',
+//     access_token: accessToken,
+//     refresh_token: refreshToken
+// });
+// console.log("++++++++++++++++++++++++++++++++++++++++");
         return res.json({
             status: 1,
             message: "Basic Info Saved",
