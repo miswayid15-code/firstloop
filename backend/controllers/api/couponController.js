@@ -217,7 +217,7 @@ exports.update_coupon = async (req, res) => {
 
         const merchant = req.user.id;
 
-        
+
 
         if (!merchant) {
             return res.json({
@@ -425,3 +425,33 @@ exports.check_coupon = async (req, res) => {
     }
 
 };
+
+exports.generate_coupon = async (req, res) => {
+    try {
+        const merchant = req.user.id;
+
+        if (!merchant) {
+            return res.json({
+                status: 0,
+                message: "Merchant not found"
+            });
+        }
+
+        return res.json({
+            status: 1,
+            message: "Coupon gENERATED",
+            data: {
+                code: "DEALORA10"
+            }
+        });
+
+    }
+    catch (err) {
+        console.log("FETCH ERROR:", err);
+
+        return res.json({
+            status: 0,
+            message: err.message
+        });
+    }
+};  

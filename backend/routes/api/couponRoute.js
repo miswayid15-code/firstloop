@@ -11,4 +11,5 @@ router.post('/coupon-create', auth,controller.create_coupon);
 router.post('/coupon-update', auth,controller.update_coupon);
 router.get('/coupon-fetch', auth,controller.fetch_coupon);
 router.post('/coupon-check', auth,controller.check_coupon);
+router.post('/coupon-generate', auth,controller.generate_coupon);
 module.exports = router;
