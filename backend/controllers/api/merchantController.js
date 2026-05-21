@@ -81,17 +81,22 @@ exports.registerStep1 = async (req, res) => {
         });
 
 
-        const accessToken = jwt.sign(
-            { id: merchant.id, email: merchant.email },
-            process.env.JWT_SECRET,
-            { expiresIn: '1h' }
-        );
+      const accessToken = jwt.sign(
+    {
+        id: merchant.id,
+        email: merchant.email,
+        token_type: 'access'
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: '1h' }
+);
 
 
         const refreshToken = jwt.sign(
             {
                 id: merchant.id,
-                type: 'merchant'
+                email: merchant.email,
+                token_type: 'refresh'
             },
             process.env.JWT_SECRET,
             { expiresIn: '7d' }
@@ -301,7 +306,8 @@ exports.login = async (req, res) => {
         const refreshToken = jwt.sign(
             {
                 id: merchant.id,
-                type: 'merchant'
+                email: merchant.email,
+                token_type: 'refresh'
             },
             process.env.JWT_SECRET,
             { expiresIn: '7d' }
@@ -313,11 +319,15 @@ exports.login = async (req, res) => {
             token: refreshToken,
             expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
         });
-        const accessToken = jwt.sign(
-            { id: merchant.id, email: merchant.email },
-            process.env.JWT_SECRET,
-            { expiresIn: '1h' }
-        );
+      const accessToken = jwt.sign(
+    {
+        id: merchant.id,
+        email: merchant.email,
+        token_type: 'access'
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: '1h' }
+);
         return res.json({
             status: 1,
             message: "Login successful",
@@ -784,16 +794,15 @@ exports.firebase_reg = async (req, res) => {
         console.log("\nGENERATING ACCESS TOKEN...");
 
         // generate access token
-        const accessToken = jwt.sign(
-            {
-                id: merchant.id,
-                email: merchant.email
-            },
-            process.env.JWT_SECRET,
-            {
-                expiresIn: '1h'
-            }
-        );
+      const accessToken = jwt.sign(
+    {
+        id: merchant.id,
+        email: merchant.email,
+        token_type: 'access'
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: '1h' }
+);
 
         console.log("\nGENERATING REFRESH TOKEN...");
 
@@ -801,7 +810,8 @@ exports.firebase_reg = async (req, res) => {
         const refreshToken = jwt.sign(
             {
                 id: merchant.id,
-                type: 'merchant'
+                email: merchant.email,
+                token_type: 'refresh'
             },
             process.env.JWT_SECRET,
             {

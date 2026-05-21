@@ -129,11 +129,13 @@ exports.register = async (req, res) => {
         });
 
         // access token
+        // access token
         const accessToken = jwt.sign(
             {
                 id: receptionist.id,
                 email: receptionist.email,
-                user_type: 'receptionist'
+                user_type: 'receptionist',
+                token_type: 'access'
             },
             process.env.JWT_SECRET,
             { expiresIn: '1h' }
@@ -143,12 +145,12 @@ exports.register = async (req, res) => {
         const refreshToken = jwt.sign(
             {
                 id: receptionist.id,
-                type: 'receptionist'
+                user_type: 'receptionist',
+                token_type: 'refresh'
             },
-            process.env.JWT_SECRET,
+            process.env.JWT_REFRESH_SECRET,
             { expiresIn: '7d' }
         );
-
         // save refresh token
         await RefreshToken.create({
 
@@ -202,9 +204,10 @@ exports.login = async (req, res) => {
         const refreshToken = jwt.sign(
             {
                 id: receptionist.id,
-                user_type: 'receptionist'
+                user_type: 'receptionist',
+                token_type: 'refresh'
             },
-            process.env.JWT_SECRET,
+            process.env.JWT_REFRESH_SECRET,
             { expiresIn: '7d' }
         );
         await RefreshToken.create({
@@ -215,7 +218,12 @@ exports.login = async (req, res) => {
             expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
         });
         const accessToken = jwt.sign(
-            { id: receptionist.id, email: receptionist.email },
+            {
+                id: receptionist.id,
+                email: receptionist.email,
+                user_type: 'receptionist',
+                token_type: 'access'
+            },
             process.env.JWT_SECRET,
             { expiresIn: '1h' }
         );

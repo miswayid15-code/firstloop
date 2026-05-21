@@ -8,7 +8,7 @@ const sendMail = async (to, subject, html) => {
 
         const response = await resend.emails.send({
 
-            from: 'onboarding@resend.dev',
+            from: 'amogamart03@gmail.com',
 
             to,
 

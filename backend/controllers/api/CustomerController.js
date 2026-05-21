@@ -175,7 +175,9 @@ exports.register = async (req, res) => {
         const accessToken = jwt.sign(
             {
                 id: customer.id,
-                email: customer.email
+                email: customer.email,
+                type: 'customer',
+                token_type: 'access'
             },
             process.env.JWT_SECRET,
             {
@@ -191,13 +193,15 @@ exports.register = async (req, res) => {
         const refreshToken = jwt.sign(
             {
                 id: customer.id,
-                type: 'customer'
+                type: 'customer',
+                token_type: 'refresh'
             },
-            process.env.JWT_SECRET,
+            process.env.JWT_REFRESH_SECRET,
             {
                 expiresIn: '7d'
             }
         );
+
 
         // console.log("REFRESH TOKEN CREATED");
 
@@ -350,7 +354,8 @@ exports.login = async (req, res) => {
         const refreshToken = jwt.sign(
             {
                 id: customer.id,
-                type: 'customer'
+                type: 'customer',
+                token_type: 'refresh'
             },
             process.env.JWT_SECRET,
             {
@@ -372,7 +377,9 @@ exports.login = async (req, res) => {
         const accessToken = jwt.sign(
             {
                 id: customer.id,
-                email: customer.email
+                email: customer.email,
+                type: 'customer',
+                token_type: 'access'
             },
             process.env.JWT_SECRET,
             {
