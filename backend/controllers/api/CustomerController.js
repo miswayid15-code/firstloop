@@ -219,24 +219,7 @@ exports.register = async (req, res) => {
 
         console.log("REFRESH TOKEN SAVED");
 
-        // send mail
-        console.log("Sending registration mail...");
-
-        try {
-
-            await sendMail(
-                email,
-                'Customer Registration Successful',
-                RegisterTemplate('customer', customer.name)
-            );
-
-            console.log("REGISTRATION MAIL SENT");
-
-        } catch (mailErr) {
-
-            console.log("MAIL ERROR:", mailErr);
-
-        }
+ 
 
         console.log("FINAL RESPONSE:");
 
@@ -263,6 +246,24 @@ exports.register = async (req, res) => {
             refresh_token: refreshToken
 
         });
+               // send mail
+        console.log("Sending registration mail...");
+
+        try {
+
+            await sendMail(
+                email,
+                'Customer Registration Successful',
+                RegisterTemplate('customer', customer.name)
+            );
+
+            console.log("REGISTRATION MAIL SENT");
+
+        } catch (mailErr) {
+
+            console.log("MAIL ERROR:", mailErr);
+
+        }
 
     } catch (err) {
 
