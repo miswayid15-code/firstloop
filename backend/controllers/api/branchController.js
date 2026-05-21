@@ -713,7 +713,10 @@ exports.branch_id = async (req, res) => {
                 'lat',
                 'lon',
                 'address',
-                'merchant_id'
+                'merchant_id',
+                'description',
+            'open_time',
+            'close_time'
             ]
 
         });
