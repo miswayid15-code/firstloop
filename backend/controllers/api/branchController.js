@@ -229,7 +229,10 @@ exports.fetch_list = async (req, res) => {
                 'lat',
                 'lon',
                 'address',
-                'merchant_id'
+                'merchant_id',
+                'description',
+            'open_time',
+            'close_time'
             ],
 
             order: [['id', 'DESC']]
