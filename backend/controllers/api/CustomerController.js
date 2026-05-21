@@ -173,7 +173,7 @@ exports.register = async (req, res) => {
             )
 
         });
-
+console.log("Mail Start");
         // send mail
         try {
 
@@ -190,7 +190,7 @@ exports.register = async (req, res) => {
             console.log("MAIL ERROR:", mailErr);
 
         }
-
+console.log("Mail Start");
         return res.json({
 
             status: 1,
