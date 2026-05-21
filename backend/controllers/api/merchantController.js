@@ -14,7 +14,12 @@ const RegisterTemplate = require('../../helpers/RegisterTemplate');
 const fs = require('fs');
 const path = require('path');
 exports.registerStep1 = async (req, res) => {
+
+    console.log("========== REGISTER STEP 1 START ==========");
+
     try {
+
+        console.log("REQ BODY:", req.body);
 
         const { name, email, phone, password } = req.body;
 
@@ -22,39 +27,79 @@ exports.registerStep1 = async (req, res) => {
 
         try {
 
+            console.log("Parsing phone:", phone);
+
             const num = parsePhoneNumber(phone);
 
+            console.log("Parsed Number:", num.number);
+
             if (!num.isValid()) {
-                return res.json({ status: 0, message: "Invalid phone" });
+
+                console.log("Invalid phone number");
+
+                return res.json({
+                    status: 0,
+                    message: "Invalid phone"
+                });
+
             }
 
             phoneNumber = num.number;
 
-        } catch {
-            return res.json({ status: 0, message: "Invalid phone format" });
+            console.log("Valid Phone:", phoneNumber);
+
+        } catch (phoneErr) {
+
+            console.log("PHONE ERROR:", phoneErr);
+
+            return res.json({
+                status: 0,
+                message: "Invalid phone format"
+            });
+
         }
 
+
+        console.log("Checking existing phone...");
 
         const phexists = await Merchant.findOne({
             where: { phone: phoneNumber }
         });
 
+        console.log("PHONE EXISTS:", phexists);
+
         if (phexists) {
+
             return res.json({
                 status: 0,
                 message: "Phone already exists"
             });
+
         }
 
-        const exists = await Merchant.findOne({ where: { email } });
+
+        console.log("Checking existing email...");
+
+        const exists = await Merchant.findOne({
+            where: { email }
+        });
+
+        console.log("EMAIL EXISTS:", exists);
 
         if (exists) {
-            return res.json({ status: 0, message: "Email already exists" });
+
+            return res.json({
+                status: 0,
+                message: "Email already exists"
+            });
+
         }
 
 
         // profile image upload
         let profileImage = '';
+
+        console.log("FILES:", req.files);
 
         if (req.files && req.files.length > 0) {
 
@@ -62,14 +107,26 @@ exports.registerStep1 = async (req, res) => {
                 file => file.fieldname === 'profile_image'
             );
 
+            console.log("PROFILE FILE:", profileFile);
+
             if (profileFile) {
+
                 profileImage = profileFile.path.replace(/\\/g, '/');
+
             }
         }
 
+        console.log("PROFILE IMAGE:", profileImage);
+
+
+        console.log("Hashing password...");
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        console.log("PASSWORD HASHED");
+
+
+        console.log("Creating merchant...");
 
         const merchant = await Merchant.create({
             name,
@@ -80,13 +137,26 @@ exports.registerStep1 = async (req, res) => {
             status: 0
         });
 
+        console.log("MERCHANT CREATED:", merchant);
+
+
+        console.log("Generating access token...");
 
         const accessToken = jwt.sign(
-            { id: merchant.id, email: merchant.email },
+            {
+                id: merchant.id,
+                email: merchant.email
+            },
             process.env.JWT_SECRET,
-            { expiresIn: '1h' }
+            {
+                expiresIn: '1h'
+            }
         );
 
+        console.log("ACCESS TOKEN CREATED");
+
+
+        console.log("Generating refresh token...");
 
         const refreshToken = jwt.sign(
             {
@@ -94,9 +164,15 @@ exports.registerStep1 = async (req, res) => {
                 type: 'merchant'
             },
             process.env.JWT_SECRET,
-            { expiresIn: '7d' }
+            {
+                expiresIn: '7d'
+            }
         );
 
+        console.log("REFRESH TOKEN CREATED");
+
+
+        console.log("Saving refresh token...");
 
         await RefreshToken.create({
             user_id: merchant.id,
@@ -105,16 +181,22 @@ exports.registerStep1 = async (req, res) => {
             expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
         });
 
-console.log("-------------------");
-console.log({
-    status: 1,
-    message: "Basic Info Saved",
-    user_id: merchant.id,
-    user_type: 'merchant',
-    access_token: accessToken,
-    refresh_token: refreshToken
-});
-console.log("-------------------");
+        console.log("REFRESH TOKEN SAVED");
+
+
+        console.log("FINAL RESPONSE:");
+
+        console.log({
+            status: 1,
+            message: "Basic Info Saved",
+            user_id: merchant.id,
+            user_type: 'merchant',
+            access_token: accessToken,
+            refresh_token: refreshToken
+        });
+
+        console.log("========== REGISTER STEP 1 SUCCESS ==========");
+
         return res.json({
             status: 1,
             message: "Basic Info Saved",
@@ -123,29 +205,21 @@ console.log("-------------------");
             access_token: accessToken,
             refresh_token: refreshToken
         });
-        // try {
-
-        //     await sendMail(
-        //         email,
-        //         'Merchant Registration Successful',
-        //         RegisterTemplate('merchant', merchant.name)
-        //     );
-
-        //     console.log("Registration mail sent");
-
-        // } catch (mailErr) {
-
-        //     console.log("MAIL ERROR:", mailErr);
-
-        // }
 
     } catch (err) {
 
-        console.log(err);
+        console.log("========== REGISTER STEP 1 ERROR ==========");
+
+        console.log("ERROR:", err);
+
+        console.log("ERROR MESSAGE:", err.message);
+
+        console.log("ERROR STACK:", err.stack);
 
         return res.json({
             status: 0,
-            message: "Error"
+            message: "Error",
+            error: err.message
         });
 
     }
