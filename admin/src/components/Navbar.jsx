@@ -80,11 +80,11 @@ export default function Navbar() {
                         </div>
                         <span className="brand-name">Dealora</span>
                         <img
-    src={Dealora}
-    alt="Dealora"
-    className="mobile-logo-img"
-    style={{ display: 'none', height: 32, objectFit: 'contain' }}
-/>
+                            src={Dealora}
+                            alt="Dealora"
+                            className="mobile-logo-img"
+                            style={{ display: 'none', height: 32, objectFit: 'contain' }}
+                        />
                     </NavLink>
                 </div>
 
@@ -118,22 +118,24 @@ export default function Navbar() {
                                     {notifications.length === 0 ? (
                                         <div className="dropdown-empty">No new notifications.</div>
                                     ) : (
-                                        notifications.map((notification) => (
-                                            <div key={notification.id} className={`dropdown-item${notification.unread ? ' unread' : ''}`}>
-                                                <div className={`dropdown-item-icon ${notification.category}`}>
-                                                    <i className={`fas ${notification.category === 'success' ? 'fa-check-circle' : notification.category === 'alert' ? 'fa-exclamation-triangle' : 'fa-info-circle'}`} />
-                                                </div>
-                                                <div className="dropdown-item-content">
-                                                    <h4 className="dropdown-item-title">{notification.title}</h4>
-                                                    <p className="dropdown-item-desc">{notification.desc}</p>
-                                                    <span className="dropdown-item-time">{notification.time}</span>
-                                                </div>
-                                            </div>
-                                        ))
+                                        <ul className="dropdown-notification-list" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+                                            {notifications.map((notification) => (
+                                                <li key={notification.id} className={`dropdown-item${notification.unread ? ' unread' : ''}`}>
+                                                    <div className={`dropdown-item-icon ${notification.category}`}>
+                                                        <i className={`fas ${notification.category === 'success' ? 'fa-check-circle' : notification.category === 'alert' ? 'fa-exclamation-triangle' : 'fa-info-circle'}`} />
+                                                    </div>
+                                                    <div className="dropdown-item-content">
+                                                        <h4 className="dropdown-item-title">{notification.title}</h4>
+                                                        <p className="dropdown-item-desc">{notification.desc}</p>
+                                                        <span className="dropdown-item-time">{notification.time}</span>
+                                                    </div>
+                                                </li>
+                                            ))}
+                                        </ul>
                                     )}
                                 </div>
                                 <div className="dropdown-footer">
-                                    <NavLink to="/notifications">Go to notifications</NavLink>
+                                    <NavLink to="/notification-list">Go to notification list</NavLink>
                                 </div>
                             </div>
                         </div>

@@ -8,6 +8,7 @@ import Categories from './pages/Categories'
 import Appointments from './pages/Appointments'
 import Reports from './pages/Reports'
 import Notifications from './pages/Notifications'
+import NotificationList from './pages/NotificationList'
 import Profile from './pages/Profile'
 import AddMerchant from './pages/AddMerchant'
 import EditMerchant from './pages/EditMerchant'
@@ -27,6 +28,7 @@ function App() {
                 <Route path="appointments" element={<Appointments />} />
                 <Route path="reports" element={<Reports />} />
                 <Route path="notifications" element={<Notifications />} />
+                <Route path="notification-list" element={<NotificationList />} />
                 <Route path="profile" element={<Profile />} />
                 <Route path="add-merchant" element={<AddMerchant />} />
                 <Route path="edit-merchant" element={<EditMerchant />} />
