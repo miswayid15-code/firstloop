@@ -430,7 +430,9 @@ exports.generate_coupon = async (req, res) => {
     try {
 
         const merchant = req.user.id;
-        const merchantName = req.user.name || "MERCHANT";
+
+
+        const merchantName = req.user.bus_name || req.user.name || "MERCHANT";
 
         if (!merchant) {
             return res.json({
@@ -439,20 +441,34 @@ exports.generate_coupon = async (req, res) => {
             });
         }
 
-        // remove spaces and convert to uppercase
-        const cleanName = merchantName
-            .replace(/\s+/g, '')
+
+        const shortName = merchantName
+            .split(' ')
+            .map(word => word.charAt(0))
+            .join('')
             .toUpperCase();
 
-        // generate coupon code
-        const couponCode = cleanName + Math.floor(1000 + Math.random() * 9000);
+        let couponCode = '';
+        let coupon_check = null;
+
+        
+        do {
+
+            couponCode = shortName + Math.floor(1000 + Math.random() * 9000);
+
+            coupon_check = await Coupon.findOne({
+                where: {
+                    code: couponCode,
+                    del_status: 0
+                }
+            });
+
+        } while (coupon_check);
 
         return res.json({
             status: 1,
             message: "Coupon Generated Successfully",
             data: {
-                merchant_id: merchant,
-                merchant_name: merchantName,
                 code: couponCode
             }
         });

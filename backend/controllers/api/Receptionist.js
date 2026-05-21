@@ -138,7 +138,7 @@ exports.register = async (req, res) => {
                 token_type: 'access'
             },
             process.env.JWT_SECRET,
-            { expiresIn: '1h' }
+            { expiresIn: '1d' }
         );
 
         // refresh token
@@ -225,7 +225,7 @@ exports.login = async (req, res) => {
                 token_type: 'access'
             },
             process.env.JWT_SECRET,
-            { expiresIn: '1h' }
+            { expiresIn: '1d' }
         );
         return res.json({
             status: 1,
@@ -300,7 +300,7 @@ exports.refreshAccessToken = async (req, res) => {
                 user_type: stored.user_type
             },
             process.env.JWT_SECRET,
-            { expiresIn: '1h' }
+            { expiresIn: '1d' }
         );
 
         return res.json({
