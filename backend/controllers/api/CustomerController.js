@@ -226,32 +226,7 @@ exports.register = async (req, res) => {
             process.env.MAIL_PASS ? "YES" : "NO"
         );
 
-        console.log("========== MAIL START ==========");
-
-        // send mail
-        try {
-
-            await sendMail(
-                email,
-                'Customer Registration Successful',
-                RegisterTemplate('customer', customer.name)
-            );
-
-            console.log("REGISTRATION MAIL SENT");
-
-        } catch (mailErr) {
-
-            console.log("========== MAIL ERROR ==========");
-
-            console.log("MAIL ERROR:", mailErr);
-
-            console.log("MAIL ERROR MESSAGE:", mailErr.message);
-
-            console.log("MAIL ERROR STACK:", mailErr.stack);
-
-        }
-
-        console.log("========== MAIL END ==========");
+      
 
         console.log("FINAL RESPONSE:");
 
@@ -278,6 +253,32 @@ exports.register = async (req, res) => {
             refresh_token: refreshToken
 
         });
+          console.log("========== MAIL START ==========");
+
+        // send mail
+        try {
+
+            await sendMail(
+                email,
+                'Customer Registration Successful',
+                RegisterTemplate('customer', customer.name)
+            );
+
+            console.log("REGISTRATION MAIL SENT");
+
+        } catch (mailErr) {
+
+            console.log("========== MAIL ERROR ==========");
+
+            console.log("MAIL ERROR:", mailErr);
+
+            console.log("MAIL ERROR MESSAGE:", mailErr.message);
+
+            console.log("MAIL ERROR STACK:", mailErr.stack);
+
+        }
+
+        console.log("========== MAIL END ==========");
 
     } catch (err) {
 
