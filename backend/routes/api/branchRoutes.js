@@ -29,7 +29,7 @@ router.post(
 );
 router.get('/branch/fetch-branch', auth, controller.fetch_list);
 router.post('/branch/delete', auth, controller.delete_branch);
-router.get('/branch/:id', controller.branch_id);
+router.get('/branch/:id', auth,controller.branch_id);
 router.post(
     '/branch/create_menu_image',
     auth,

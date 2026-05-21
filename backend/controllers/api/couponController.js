@@ -428,7 +428,9 @@ exports.check_coupon = async (req, res) => {
 
 exports.generate_coupon = async (req, res) => {
     try {
+
         const merchant = req.user.id;
+        const merchantName = req.user.name || "MERCHANT";
 
         if (!merchant) {
             return res.json({
@@ -437,21 +439,32 @@ exports.generate_coupon = async (req, res) => {
             });
         }
 
+        // remove spaces and convert to uppercase
+        const cleanName = merchantName
+            .replace(/\s+/g, '')
+            .toUpperCase();
+
+        // generate coupon code
+        const couponCode = cleanName + Math.floor(1000 + Math.random() * 9000);
+
         return res.json({
             status: 1,
-            message: "Coupon gENERATED",
+            message: "Coupon Generated Successfully",
             data: {
-                code: "DEALORA10"
+                merchant_id: merchant,
+                merchant_name: merchantName,
+                code: couponCode
             }
         });
 
-    }
-    catch (err) {
-        console.log("FETCH ERROR:", err);
+    } catch (err) {
+
+        console.log("COUPON GENERATE ERROR:", err);
 
         return res.json({
             status: 0,
             message: err.message
         });
+
     }
-};  
+};
