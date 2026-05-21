@@ -152,7 +152,7 @@ exports.create_coupon = async (req, res) => {
 
             merchant_id: merchant_id,
 
-            branch_ids: JSON.stringify(branch_ids || []),
+            branch_ids: branch_ids,
 
             code,
 
