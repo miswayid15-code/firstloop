@@ -29,7 +29,7 @@ const {
 } = require('../../helpers/distanceHelper');
 exports.register = async (req, res) => {
 
-    console.log("========== CUSTOMER REGISTER START ==========");
+    // console.log("========== CUSTOMER REGISTER START ==========");
 
     try {
 
@@ -82,7 +82,7 @@ exports.register = async (req, res) => {
         }
 
         // check phone exists
-        console.log("Checking phone exists...");
+        // console.log("Checking phone exists...");
 
         const phoneExists = await Customer.findOne({
             where: { phone: phoneNumber }
@@ -100,13 +100,13 @@ exports.register = async (req, res) => {
         }
 
         // check email exists
-        console.log("Checking email exists...");
+        // console.log("Checking email exists...");
 
         const emailExists = await Customer.findOne({
             where: { email }
         });
 
-        console.log("EMAIL EXISTS:", emailExists);
+        // console.log("EMAIL EXISTS:", emailExists);
 
         if (emailExists) {
 
@@ -120,7 +120,7 @@ exports.register = async (req, res) => {
         // profile image upload
         let profileImage = '';
 
-        console.log("FILES:", req.files);
+        // console.log("FILES:", req.files);
 
         if (req.files && req.files.length > 0) {
 
@@ -128,7 +128,7 @@ exports.register = async (req, res) => {
                 file => file.fieldname === 'profile_image'
             );
 
-            console.log("PROFILE FILE:", profileFile);
+            // console.log("PROFILE FILE:", profileFile);
 
             if (profileFile) {
 
@@ -138,17 +138,17 @@ exports.register = async (req, res) => {
 
         }
 
-        console.log("PROFILE IMAGE:", profileImage);
+        // console.log("PROFILE IMAGE:", profileImage);
 
         // password hash
-        console.log("Hashing password...");
+        // console.log("Hashing password...");
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        console.log("PASSWORD HASHED");
+        // console.log("PASSWORD HASHED");
 
         // create customer
-        console.log("Creating customer...");
+        // console.log("Creating customer...");
 
         const customer = await Customer.create({
 
@@ -167,10 +167,10 @@ exports.register = async (req, res) => {
 
         });
 
-        console.log("CUSTOMER CREATED:", customer.id);
+        // console.log("CUSTOMER CREATED:", customer.id);
 
         // access token
-        console.log("Generating access token...");
+        // console.log("Generating access token...");
 
         const accessToken = jwt.sign(
             {
@@ -183,10 +183,10 @@ exports.register = async (req, res) => {
             }
         );
 
-        console.log("ACCESS TOKEN CREATED");
+        // console.log("ACCESS TOKEN CREATED");
 
         // refresh token
-        console.log("Generating refresh token...");
+        // console.log("Generating refresh token...");
 
         const refreshToken = jwt.sign(
             {
@@ -199,10 +199,10 @@ exports.register = async (req, res) => {
             }
         );
 
-        console.log("REFRESH TOKEN CREATED");
+        // console.log("REFRESH TOKEN CREATED");
 
         // save refresh token
-        console.log("Saving refresh token...");
+        // console.log("Saving refresh token...");
 
         await RefreshToken.create({
 
@@ -215,17 +215,17 @@ exports.register = async (req, res) => {
 
         });
 
-        console.log("REFRESH TOKEN SAVED");
+        // console.log("REFRESH TOKEN SAVED");
 
         // mail env logs
-        console.log("MAIL USER:", process.env.MAIL_USER);
+        // console.log("MAIL USER:", process.env.MAIL_USER);
 
-        console.log(
-            "MAIL PASS EXISTS:",
-            process.env.MAIL_PASS ? "YES" : "NO"
-        );
+        // console.log(
+        //     "MAIL PASS EXISTS:",
+        //     process.env.MAIL_PASS ? "YES" : "NO"
+        // );
 
-        console.log("========== MAIL START ==========");
+        // console.log("========== MAIL START ==========");
 
         // send mail
         try {
@@ -236,36 +236,36 @@ exports.register = async (req, res) => {
                 RegisterTemplate('customer', customer.name)
             );
 
-            console.log("REGISTRATION MAIL SENT");
+            // console.log("REGISTRATION MAIL SENT");
 
         } catch (mailErr) {
 
-            console.log("========== MAIL ERROR ==========");
+            // console.log("========== MAIL ERROR ==========");
 
-            console.log("MAIL ERROR:", mailErr);
+            // console.log("MAIL ERROR:", mailErr);
 
-            console.log("MAIL ERROR MESSAGE:", mailErr.message);
+            // console.log("MAIL ERROR MESSAGE:", mailErr.message);
 
-            console.log("MAIL ERROR STACK:", mailErr.stack);
+            // console.log("MAIL ERROR STACK:", mailErr.stack);
 
         }
 
-        console.log("========== MAIL END ==========");
+        // console.log("========== MAIL END ==========");
 
-        console.log("FINAL RESPONSE:");
+        // console.log("FINAL RESPONSE:");
 
-        console.log({
+        // console.log({
 
-            status: 1,
-            message: "Customer Registered Successfully",
-            user_id: customer.id,
-            user_type: 'customer',
-            access_token: accessToken,
-            refresh_token: refreshToken
+        //     status: 1,
+        //     message: "Customer Registered Successfully",
+        //     user_id: customer.id,
+        //     user_type: 'customer',
+        //     access_token: accessToken,
+        //     refresh_token: refreshToken
 
-        });
+        // });
 
-        console.log("========== CUSTOMER REGISTER SUCCESS ==========");
+        // console.log("========== CUSTOMER REGISTER SUCCESS ==========");
 
         return res.json({
 
@@ -280,11 +280,9 @@ exports.register = async (req, res) => {
 
     } catch (err) {
 
-        console.log("========== CUSTOMER REGISTER ERROR ==========");
+        // console.log("========== CUSTOMER REGISTER ERROR ==========");
 
-        console.log("ERROR:", err);
-
-        console.log("ERROR MESSAGE:", err.message);
+        // console.log("ERROR:", err);
 
         console.log("ERROR STACK:", err.stack);
 
