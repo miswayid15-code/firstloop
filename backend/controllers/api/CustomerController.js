@@ -28,7 +28,7 @@ const {
     getDistanceDuration
 } = require('../../helpers/distanceHelper');
 exports.register = async (req, res) => {
-
+console.log("Customer Registration Start");
     try {
 
         const {
@@ -190,7 +190,7 @@ console.log("Mail Start");
             console.log("MAIL ERROR:", mailErr);
 
         }
-console.log("Mail Start");
+console.log("Mail end");
         return res.json({
 
             status: 1,
