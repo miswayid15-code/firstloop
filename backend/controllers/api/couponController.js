@@ -57,14 +57,24 @@ exports.create_coupon = async (req, res) => {
 
         }
 
-        // ✅ Branch Parse
-        let branch_array = branch_ids;
+// ✅ Branch Parse
+let branch_array = [];
 
-        if (typeof branch_ids === 'string') {
+if (typeof branch_ids === 'string') {
 
-            branch_array = JSON.parse(branch_ids);
+    branch_array = branch_ids
+        .replace('[', '')
+        .replace(']', '')
+        .split(',')
+        .map(id => parseInt(id.trim()))
+        .filter(id => !isNaN(id));
 
-        }
+}
+else if (Array.isArray(branch_ids)) {
+
+    branch_array = branch_ids.map(id => parseInt(id));
+
+}
 
         // ✅ Branch Check
         if (
