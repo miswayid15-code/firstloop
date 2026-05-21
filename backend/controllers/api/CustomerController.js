@@ -29,7 +29,11 @@ const {
 } = require('../../helpers/distanceHelper');
 exports.register = async (req, res) => {
 
+    console.log("========== CUSTOMER REGISTER START ==========");
+
     try {
+
+        console.log("REQ BODY:", req.body);
 
         const {
             name,
@@ -42,17 +46,20 @@ exports.register = async (req, res) => {
             lat,
             lon
         } = req.body;
-        // console.log("======================================");
-        // console.log(req.body);
-        // console.log("======================================");
-        let phoneNumber;
 
+        let phoneNumber;
 
         try {
 
+            console.log("Parsing phone:", phone);
+
             const num = parsePhoneNumber(phone);
 
+            console.log("Parsed Number:", num.number);
+
             if (!num.isValid()) {
+
+                console.log("Invalid phone number");
 
                 return res.json({
                     status: 0,
@@ -63,7 +70,11 @@ exports.register = async (req, res) => {
 
             phoneNumber = num.number;
 
-        } catch {
+            console.log("Valid Phone:", phoneNumber);
+
+        } catch (phoneErr) {
+
+            console.log("PHONE ERROR:", phoneErr);
 
             return res.json({
                 status: 0,
@@ -73,9 +84,13 @@ exports.register = async (req, res) => {
         }
 
         // check phone exists
+        console.log("Checking phone exists...");
+
         const phoneExists = await Customer.findOne({
             where: { phone: phoneNumber }
         });
+
+        console.log("PHONE EXISTS:", phoneExists);
 
         if (phoneExists) {
 
@@ -87,9 +102,13 @@ exports.register = async (req, res) => {
         }
 
         // check email exists
+        console.log("Checking email exists...");
+
         const emailExists = await Customer.findOne({
             where: { email }
         });
+
+        console.log("EMAIL EXISTS:", emailExists);
 
         if (emailExists) {
 
@@ -103,11 +122,15 @@ exports.register = async (req, res) => {
         // profile image upload
         let profileImage = '';
 
+        console.log("FILES:", req.files);
+
         if (req.files && req.files.length > 0) {
 
             const profileFile = req.files.find(
                 file => file.fieldname === 'profile_image'
             );
+
+            console.log("PROFILE FILE:", profileFile);
 
             if (profileFile) {
 
@@ -117,10 +140,18 @@ exports.register = async (req, res) => {
 
         }
 
+        console.log("PROFILE IMAGE:", profileImage);
+
         // password hash
+        console.log("Hashing password...");
+
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        console.log("PASSWORD HASHED");
+
         // create customer
+        console.log("Creating customer...");
+
         const customer = await Customer.create({
 
             name,
@@ -138,7 +169,11 @@ exports.register = async (req, res) => {
 
         });
 
+        console.log("CUSTOMER CREATED:", customer);
+
         // access token
+        console.log("Generating access token...");
+
         const accessToken = jwt.sign(
             {
                 id: customer.id,
@@ -150,7 +185,11 @@ exports.register = async (req, res) => {
             }
         );
 
+        console.log("ACCESS TOKEN CREATED");
+
         // refresh token
+        console.log("Generating refresh token...");
+
         const refreshToken = jwt.sign(
             {
                 id: customer.id,
@@ -162,7 +201,11 @@ exports.register = async (req, res) => {
             }
         );
 
+        console.log("REFRESH TOKEN CREATED");
+
         // save refresh token
+        console.log("Saving refresh token...");
+
         await RefreshToken.create({
 
             user_id: customer.id,
@@ -174,7 +217,11 @@ exports.register = async (req, res) => {
 
         });
 
+        console.log("REFRESH TOKEN SAVED");
+
         // send mail
+        console.log("Sending registration mail...");
+
         try {
 
             await sendMail(
@@ -183,13 +230,28 @@ exports.register = async (req, res) => {
                 RegisterTemplate('customer', customer.name)
             );
 
-            console.log("Registration mail sent");
+            console.log("REGISTRATION MAIL SENT");
 
         } catch (mailErr) {
 
             console.log("MAIL ERROR:", mailErr);
 
         }
+
+        console.log("FINAL RESPONSE:");
+
+        console.log({
+
+            status: 1,
+            message: "Customer Registered Successfully",
+            user_id: customer.id,
+            user_type: 'customer',
+            access_token: accessToken,
+            refresh_token: refreshToken
+
+        });
+
+        console.log("========== CUSTOMER REGISTER SUCCESS ==========");
 
         return res.json({
 
@@ -204,11 +266,18 @@ exports.register = async (req, res) => {
 
     } catch (err) {
 
-        console.log(err);
+        console.log("========== CUSTOMER REGISTER ERROR ==========");
+
+        console.log("ERROR:", err);
+
+        console.log("ERROR MESSAGE:", err.message);
+
+        console.log("ERROR STACK:", err.stack);
 
         return res.json({
             status: 0,
-            message: "Error"
+            message: "Error",
+            error: err.message
         });
 
     }
