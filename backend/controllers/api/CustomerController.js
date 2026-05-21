@@ -28,7 +28,9 @@ const {
     getDistanceDuration
 } = require('../../helpers/distanceHelper');
 exports.register = async (req, res) => {
-console.log("Customer Registration Start");
+
+    console.log("========== CUSTOMER REGISTER START ==========");
+
     try {
 
         const {
@@ -42,17 +44,20 @@ console.log("Customer Registration Start");
             lat,
             lon
         } = req.body;
-        // console.log("======================================");
-        // console.log(req.body);
-        // console.log("======================================");
+
+        console.log("REQ BODY:", req.body);
+
         let phoneNumber;
 
-
         try {
+
+            console.log("Parsing phone:", phone);
 
             const num = parsePhoneNumber(phone);
 
             if (!num.isValid()) {
+
+                console.log("Invalid phone");
 
                 return res.json({
                     status: 0,
@@ -63,7 +68,11 @@ console.log("Customer Registration Start");
 
             phoneNumber = num.number;
 
-        } catch {
+            console.log("Valid Phone:", phoneNumber);
+
+        } catch (phoneErr) {
+
+            console.log("PHONE ERROR:", phoneErr);
 
             return res.json({
                 status: 0,
@@ -73,9 +82,13 @@ console.log("Customer Registration Start");
         }
 
         // check phone exists
+        console.log("Checking phone exists...");
+
         const phoneExists = await Customer.findOne({
             where: { phone: phoneNumber }
         });
+
+        console.log("PHONE EXISTS:", phoneExists);
 
         if (phoneExists) {
 
@@ -87,9 +100,13 @@ console.log("Customer Registration Start");
         }
 
         // check email exists
+        console.log("Checking email exists...");
+
         const emailExists = await Customer.findOne({
             where: { email }
         });
+
+        console.log("EMAIL EXISTS:", emailExists);
 
         if (emailExists) {
 
@@ -103,11 +120,15 @@ console.log("Customer Registration Start");
         // profile image upload
         let profileImage = '';
 
+        console.log("FILES:", req.files);
+
         if (req.files && req.files.length > 0) {
 
             const profileFile = req.files.find(
                 file => file.fieldname === 'profile_image'
             );
+
+            console.log("PROFILE FILE:", profileFile);
 
             if (profileFile) {
 
@@ -117,10 +138,18 @@ console.log("Customer Registration Start");
 
         }
 
+        console.log("PROFILE IMAGE:", profileImage);
+
         // password hash
+        console.log("Hashing password...");
+
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        console.log("PASSWORD HASHED");
+
         // create customer
+        console.log("Creating customer...");
+
         const customer = await Customer.create({
 
             name,
@@ -138,7 +167,11 @@ console.log("Customer Registration Start");
 
         });
 
+        console.log("CUSTOMER CREATED:", customer.id);
+
         // access token
+        console.log("Generating access token...");
+
         const accessToken = jwt.sign(
             {
                 id: customer.id,
@@ -150,7 +183,11 @@ console.log("Customer Registration Start");
             }
         );
 
+        console.log("ACCESS TOKEN CREATED");
+
         // refresh token
+        console.log("Generating refresh token...");
+
         const refreshToken = jwt.sign(
             {
                 id: customer.id,
@@ -162,7 +199,11 @@ console.log("Customer Registration Start");
             }
         );
 
+        console.log("REFRESH TOKEN CREATED");
+
         // save refresh token
+        console.log("Saving refresh token...");
+
         await RefreshToken.create({
 
             user_id: customer.id,
@@ -173,7 +214,20 @@ console.log("Customer Registration Start");
             )
 
         });
-console.log("Mail Start");
+
+        console.log("REFRESH TOKEN SAVED");
+
+        // mail env logs
+        console.log("MAIL HOST:", process.env.MAIL_HOST);
+        console.log("MAIL PORT:", process.env.MAIL_PORT);
+        console.log("MAIL USER:", process.env.MAIL_USER);
+        console.log(
+            "MAIL PASS EXISTS:",
+            process.env.MAIL_PASS ? "YES" : "NO"
+        );
+
+        console.log("========== MAIL START ==========");
+
         // send mail
         try {
 
@@ -183,14 +237,37 @@ console.log("Mail Start");
                 RegisterTemplate('customer', customer.name)
             );
 
-            console.log("Registration mail sent");
+            console.log("REGISTRATION MAIL SENT");
 
         } catch (mailErr) {
 
+            console.log("========== MAIL ERROR ==========");
+
             console.log("MAIL ERROR:", mailErr);
 
+            console.log("MAIL ERROR MESSAGE:", mailErr.message);
+
+            console.log("MAIL ERROR STACK:", mailErr.stack);
+
         }
-console.log("Mail end");
+
+        console.log("========== MAIL END ==========");
+
+        console.log("FINAL RESPONSE:");
+
+        console.log({
+
+            status: 1,
+            message: "Customer Registered Successfully",
+            user_id: customer.id,
+            user_type: 'customer',
+            access_token: accessToken,
+            refresh_token: refreshToken
+
+        });
+
+        console.log("========== CUSTOMER REGISTER SUCCESS ==========");
+
         return res.json({
 
             status: 1,
@@ -204,11 +281,18 @@ console.log("Mail end");
 
     } catch (err) {
 
-        console.log(err);
+        console.log("========== CUSTOMER REGISTER ERROR ==========");
+
+        console.log("ERROR:", err);
+
+        console.log("ERROR MESSAGE:", err.message);
+
+        console.log("ERROR STACK:", err.stack);
 
         return res.json({
             status: 0,
-            message: "Error"
+            message: "Error",
+            error: err.message
         });
 
     }
