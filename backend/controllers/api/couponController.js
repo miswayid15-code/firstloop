@@ -60,6 +60,7 @@ exports.create_coupon = async (req, res) => {
             });
 
         }
+        console.log("Branch IDs:", branch_ids);
 
         // ✅ Coupon Exists
         const coupon_check = await Coupon.findOne({
@@ -152,6 +153,7 @@ exports.create_coupon = async (req, res) => {
 
             merchant_id: merchant_id,
 
+            // branch_ids: JSON.stringify(branch_ids || []),
             branch_ids: branch_ids,
 
             code,

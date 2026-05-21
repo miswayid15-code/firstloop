@@ -14,9 +14,9 @@ module.exports = (sequelize, DataTypes) => {
         },
 
         branch_ids: {
-            type: DataTypes.STRING,
-            allowNull: true
-        },
+    type: DataTypes.ARRAY(DataTypes.INTEGER),
+    allowNull: true
+},
 
         code: {
             type: DataTypes.STRING,
