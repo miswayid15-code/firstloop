@@ -1661,7 +1661,7 @@ exports.Coupon_list = async (req, res) => {
 
         const customer_id =
             req.user.id;
-
+console.log("CUSTOMER ID:", customer_id);
         // ✅ Check Customer
         const customer =
             await Customer.findOne({
