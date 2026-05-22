@@ -11,7 +11,7 @@ const ResetsTemplate = require('../../helpers/ResetsTemplate');
 const RegisterTemplate = require('../../helpers/RegisterTemplate');
 // const mapFiles = require('../../helpers/merchantFileMapper');
 const baseUrl = process.env.APP_URL;
-
+const { Op } = require('sequelize');
 const fs = require('fs');
 const path = require('path');
 exports.registerStep1 = async (req, res) => {
