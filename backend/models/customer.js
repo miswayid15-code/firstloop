@@ -42,6 +42,17 @@ module.exports = (sequelize, DataTypes) => {
       tableName: 'customers',
     }
   );
+Customer.associate = (models) => {
 
+    Customer.hasMany(models.RefreshToken, {
+        foreignKey: 'user_id',
+        constraints: false
+    });
+
+    Customer.hasMany(models.Appointment, {
+        foreignKey: 'cus_id'
+    });
+
+};
   return Customer;
 };

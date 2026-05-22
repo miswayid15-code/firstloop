@@ -59,4 +59,19 @@ router.post(
     auth,
     controller.wishlist 
 );
+router.post(
+   '/customer/book-appointment',
+    auth,
+    controller.appointment 
+);
+router.get(
+   '/customer/fetch-appointment',
+    auth,
+    controller.fetch_appointment 
+);
+router.post(
+   '/customer/fetch-appointment-details',
+    auth,
+    controller.fetch_appointment_details 
+);
 module.exports = router;

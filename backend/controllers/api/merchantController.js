@@ -10,6 +10,7 @@ const { otpTemplate } = require('../../helpers/mailTemplate');
 const ResetsTemplate = require('../../helpers/ResetsTemplate');
 const RegisterTemplate = require('../../helpers/RegisterTemplate');
 // const mapFiles = require('../../helpers/merchantFileMapper');
+const baseUrl = process.env.APP_URL;
 
 const fs = require('fs');
 const path = require('path');
@@ -417,10 +418,29 @@ exports.dashboard = async (req, res) => {
             });
         }
 
+                const data = merchant.toJSON();
+
+        
+        if (data.profile_image) {
+
+            data.profile_image =
+                baseUrl + '/' +
+                data.profile_image.replace(/\\/g, '/');
+
+        } else {
+
+            data.profile_image = null;
+
+        }
+
         return res.json({
             status: 1,
             message: "Dashboard data fetched successfully",
             data: {
+                merchant_name: merchant.bus_name || merchant.name,
+                merchant_status: merchant.status,
+                merchant_id: merchant.id,
+                merchant_profile_image: merchant.profile_image,
 
                 count_coupon: merchant.Coupons.length,
                 count_branch: merchant.Branches.length,

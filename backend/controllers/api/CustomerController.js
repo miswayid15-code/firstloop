@@ -10,7 +10,8 @@ const {
     BranchImage,
     MenuImage,
     CouponApplied,
-    Wishlist
+    Wishlist,
+    Appointment
 } = require('../../models');
 
 const bcrypt = require('bcryptjs');
@@ -1226,7 +1227,7 @@ exports.branch_details = async (req, res) => {
                     del_status: 0,
 
                     branch_ids: {
-                         [Op.contains]: [parseInt(branch_id)]
+                        [Op.contains]: [parseInt(branch_id)]
                     }
 
                 },
@@ -2089,3 +2090,398 @@ exports.wishlist = async (req, res) => {
     }
 
 };
+
+exports.appointment = async (req, res) => {
+
+    try {
+
+        const customer_id = req.user.id;
+
+        const branch_id =
+            req.body?.branch_id ||
+            req.query?.branch_id ||
+            null;
+
+        const {
+            appointment_date,
+            slot
+        } = req.body;
+
+
+        if (!branch_id) {
+
+            return res.json({
+
+                status: 0,
+                message: "Branch ID is required"
+
+            });
+
+        }
+
+
+        if (!appointment_date || !slot) {
+
+            return res.json({
+
+                status: 0,
+                message: "Appointment date and slot are required"
+
+            });
+
+        }
+
+
+        const customer = await Customer.findOne({
+
+            where: {
+
+                id: customer_id,
+                status: 1,
+                del_status: 0
+
+            }
+
+        });
+
+        if (!customer) {
+
+            return res.json({
+
+                status: 0,
+                message: "Invalid customer"
+
+            });
+
+        }
+
+
+        const branch = await Branch.findOne({
+
+            where: {
+
+                id: branch_id,
+                status: 1,
+                del_status: 0
+
+            }
+
+        });
+
+        if (!branch) {
+
+            return res.json({
+
+                status: 0,
+                message: "Branch not found"
+
+            });
+
+        }
+
+
+        const alreadyAppointment = await Appointment.findOne({
+
+            where: {
+
+                cus_id: customer_id,
+                br_id: branch_id,
+                appointment_date: appointment_date,
+                slot: slot
+
+            }
+
+        });
+
+        if (alreadyAppointment) {
+
+            return res.json({
+
+                status: 0,
+                message: "Appointment already booked for this slot"
+
+            });
+
+        }
+
+
+        const appointment = await Appointment.create({
+
+            cus_id: customer_id,
+
+            br_id: branch_id,
+
+            br_name: branch.branch_name || branch.name,
+
+            appointment_date: appointment_date,
+
+            slot: slot,
+
+            status: 0,
+
+            cancel_by: null,
+
+            cancel_reason: null
+
+        });
+
+        return res.json({
+
+            status: 1,
+            message: "Appointment booked successfully",
+            data: appointment
+
+        });
+
+    } catch (err) {
+
+        console.log("APPOINTMENT ERROR:", err);
+
+        return res.json({
+
+            status: 0,
+            message: err.message
+
+        });
+
+    }
+
+};
+
+exports.fetch_appointment = async (req, res) => {
+
+    try {
+
+        const customer_id = req.user.id;
+
+        const appointments = await Appointment.findAll({
+
+            where: {
+                cus_id: customer_id
+            },
+            attributes: [
+                'id',
+                'cus_id',
+                'br_id',
+                'br_name',
+                'appointment_date',
+                'slot',
+                'status',
+                'cancel_by',
+                'cancel_reason',
+
+            ],
+
+            order: [['id', 'DESC']]
+
+        });
+
+        // ✅ Format Date & Slot
+        const formattedAppointments = appointments.map(item => {
+
+            const data = item.toJSON();
+
+            return {
+
+                ...data,
+
+                appointment_date:
+                    new Date(data.appointment_date)
+                        .toLocaleDateString('en-US', {
+
+                            month: 'long',
+                            day: '2-digit',
+                            year: 'numeric'
+
+                        }),
+
+                slot:
+                    new Date(`1970-01-01T${data.slot}`)
+                        .toLocaleTimeString('en-US', {
+
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: true
+
+                        })
+
+            };
+
+        });
+
+        return res.json({
+
+            status: 1,
+
+            message: "Appointments fetched successfully",
+
+            data: formattedAppointments
+
+        });
+
+    } catch (err) {
+
+        console.log("FETCH APPOINTMENT ERROR:", err);
+
+        return res.json({
+
+            status: 0,
+
+            message: err.message
+
+        });
+
+    }
+
+};
+
+
+exports.fetch_appointment_details = async (req, res) => {
+
+    try {
+
+        const appointment_id =
+            req.body?.appointment_id ||
+            req.query?.appointment_id ||
+            null;
+// console.log("APPOINTMENT ID:", appointment_id);
+        const customer_id = req.user.id;
+
+       
+        if (!appointment_id) {
+
+            return res.json({
+
+                status: 0,
+                message: "Appointment ID is required"
+
+            });
+
+        }
+
+      
+        const customer = await Customer.findOne({
+
+            where: {
+
+                id: customer_id,
+                status: 1,
+                del_status: 0
+
+            }
+
+        });
+
+        if (!customer) {
+
+            return res.json({
+
+                status: 0,
+                message: "Invalid customer"
+
+            });
+
+        }
+
+       
+        const appointment = await Appointment.findOne({
+
+            where: {
+
+                id: appointment_id,
+                cus_id: customer_id
+
+            },
+            attributes: [
+                'id',
+                'cus_id',
+                'br_id',
+                'br_name',
+                'appointment_date',
+                'slot',
+                'status',
+                'cancel_by',
+                'cancel_reason',
+            ],
+
+            include: [
+
+                {
+
+                    model: Branch,
+
+                    attributes: [
+                        'id',
+                        'name',
+                        'address',
+                        'phone',
+                        'lat',
+                        'lon'
+                    ]
+
+                }
+
+            ]
+
+        });
+
+        if (!appointment) {
+
+            return res.json({
+
+                status: 0,
+                message: "Invalid appointment"
+
+            });
+
+        }
+
+        const data = appointment.toJSON();
+
+    
+        data.appointment_date =
+            new Date(data.appointment_date)
+            .toLocaleDateString('en-US', {
+
+                month: 'long',
+                day: '2-digit',
+                year: 'numeric'
+
+            });
+
+       
+        data.slot =
+            new Date(`1970-01-01T${data.slot}`)
+            .toLocaleTimeString('en-US', {
+
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+
+            });
+
+        return res.json({
+
+            status: 1,
+
+            message: "Appointment details fetched successfully",
+
+            data: data
+
+        });
+
+    }
+    catch (err) {
+
+        console.log("FETCH APPOINTMENT DETAILS ERROR:", err);
+
+        return res.json({
+
+            status: 0,
+            message: err.message
+
+        });
+
+    }
+
+}
