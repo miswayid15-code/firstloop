@@ -440,7 +440,7 @@ exports.dashboard = async (req, res) => {
                 merchant_name: merchant.bus_name || merchant.name,
                 merchant_status: merchant.status,
                 merchant_id: merchant.id,
-                merchant_profile_image: merchant.profile_image,
+                merchant_profile_image: data.profile_image,
 
                 count_coupon: merchant.Coupons.length,
                 count_branch: merchant.Branches.length,
