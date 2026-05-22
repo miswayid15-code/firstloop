@@ -1501,7 +1501,7 @@ exports.coupon_apply = async (req, res) => {
 
         // ✅ Coupon Active Check
         const is_active =
-            now >= coupon.start_time &&
+            now >= Coupon.start_date &&
             now <= coupon.end_time;
 
         if (!is_active) {
@@ -1758,10 +1758,10 @@ exports.Coupon_list = async (req, res) => {
                         // ✅ Coupon Time Format
                         if (data.Coupon) {
 
-                            data.Coupon.start_time =
-                                data.Coupon.start_time
+                            data.Coupon.start_date =
+                                data.Coupon.start_date
                                     ? moment(
-                                        data.Coupon.start_time,
+                                        data.Coupon.start_date,
                                         'HH:mm:ss'
                                     ).format(
                                         'hh:mm A'

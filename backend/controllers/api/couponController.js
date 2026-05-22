@@ -15,10 +15,10 @@ exports.create_coupon = async (req, res) => {
             end_date
         } = req.body;
 
-        // ✅ Merchant ID
+       
         const merchant_id = req.user.id;
 
-        // ✅ Merchant Check
+      
         if (!merchant_id) {
 
             return res.json({
@@ -28,7 +28,7 @@ exports.create_coupon = async (req, res) => {
 
         }
 
-        // ✅ Convert branch_ids string to array
+        
         if (typeof branch_ids === "string") {
 
             try {
@@ -43,7 +43,7 @@ exports.create_coupon = async (req, res) => {
 
         }
 
-        // ✅ Required Fields
+       
         if (
             !code ||
             !percentage ||
@@ -58,7 +58,7 @@ exports.create_coupon = async (req, res) => {
 
         }
 
-        // ✅ Branch Check
+       
         if (
             !branch_ids ||
             !Array.isArray(branch_ids) ||
@@ -72,7 +72,7 @@ exports.create_coupon = async (req, res) => {
 
         }
 
-        // ✅ Coupon Exists Check
+      
         const coupon_check = await Coupon.findOne({
 
             where: {
@@ -90,7 +90,7 @@ exports.create_coupon = async (req, res) => {
 
         }
 
-        // ✅ Percentage Validation
+    
         if (
             Number(percentage) < 0 ||
             Number(percentage) > 100
@@ -103,7 +103,7 @@ exports.create_coupon = async (req, res) => {
 
         }
 
-        // ✅ Minimum Amount Validation
+        
         if (
             min_amount &&
             Number(min_amount) < 0
@@ -116,7 +116,7 @@ exports.create_coupon = async (req, res) => {
 
         }
 
-        // ✅ Usage Limit Validation
+   
         if (
             usage_limit &&
             Number(usage_limit) < 0
@@ -129,7 +129,7 @@ exports.create_coupon = async (req, res) => {
 
         }
 
-        // ✅ Time Validation
+  
         if (start_date >= end_date) {
 
             return res.json({
@@ -139,7 +139,7 @@ exports.create_coupon = async (req, res) => {
 
         }
 
-        // ✅ Validate Branches
+    
         const valid_branches = await Branch.findAll({
 
             where: {
@@ -163,7 +163,7 @@ exports.create_coupon = async (req, res) => {
 
         }
 
-        // ✅ Banner Image
+  
         const bannerFile = req.files.find(
             file => file.fieldname === "banner_image"
         );
@@ -208,9 +208,9 @@ exports.create_coupon = async (req, res) => {
 start_date = formatDate(start_date);
 end_date = formatDate(end_date);
 
-console.log(start_date);
-console.log(end_date);
-        // ✅ Create Coupon
+// console.log(start_date);
+// console.log(end_date);
+   
         const coupon = await Coupon.create({
 
             merchant_id: merchant_id,
@@ -248,8 +248,8 @@ console.log(end_date);
     }
 catch (err) {
 
-    console.log("ERROR MESSAGE:", err.message);
-    console.log("ERROR STACK:", err.stack);
+    // console.log("ERROR MESSAGE:", err.message);
+    // console.log("ERROR STACK:", err.stack);
     console.log("FULL ERROR:", err);
 
     return res.json({
@@ -277,10 +277,10 @@ exports.update_coupon = async (req, res) => {
             end_date
         } = req.body;
 
-        // ✅ Merchant ID
+       
         const merchant_id = req.user.id;
 
-        // ✅ Merchant Check
+      
         if (!merchant_id) {
 
             return res.json({
@@ -290,7 +290,7 @@ exports.update_coupon = async (req, res) => {
 
         }
 
-        // ✅ Convert branch_ids string to array
+
         if (typeof branch_ids === "string") {
 
             try {
@@ -305,7 +305,7 @@ exports.update_coupon = async (req, res) => {
 
         }
 
-        // ✅ Required Fields
+
         if (
             !coupon_id ||
             !code ||
@@ -321,7 +321,7 @@ exports.update_coupon = async (req, res) => {
 
         }
 
-        // ✅ Branch Check
+
         if (
             !branch_ids ||
             !Array.isArray(branch_ids) ||
@@ -335,7 +335,7 @@ exports.update_coupon = async (req, res) => {
 
         }
 
-        // ✅ Coupon Exists
+
         const exist_coupon = await Coupon.findOne({
 
             where: {
@@ -355,7 +355,7 @@ exports.update_coupon = async (req, res) => {
 
         }
 
-        // ✅ Duplicate Code Check
+
         const coupon_check = await Coupon.findOne({
 
             where: {
@@ -379,7 +379,7 @@ exports.update_coupon = async (req, res) => {
 
         }
 
-        // ✅ Percentage Validation
+       
         if (
             Number(percentage) < 0 ||
             Number(percentage) > 100
@@ -392,7 +392,7 @@ exports.update_coupon = async (req, res) => {
 
         }
 
-        // ✅ Minimum Amount Validation
+        
         if (
             min_amount &&
             Number(min_amount) < 0
@@ -405,7 +405,7 @@ exports.update_coupon = async (req, res) => {
 
         }
 
-        // ✅ Usage Limit Validation
+        
         if (
             usage_limit &&
             Number(usage_limit) < 0
@@ -418,7 +418,7 @@ exports.update_coupon = async (req, res) => {
 
         }
 
-        // ✅ Time Validation
+   
         if (start_date >= end_date) {
 
             return res.json({
@@ -428,7 +428,7 @@ exports.update_coupon = async (req, res) => {
 
         }
 
-        // ✅ Validate Branches
+       
         const valid_branches = await Branch.findAll({
 
             where: {
@@ -452,7 +452,7 @@ exports.update_coupon = async (req, res) => {
 
         }
 
-        // ✅ Banner Image
+        
         let banner_image = exist_coupon.banner_image;
 
         const bannerFile = req.files.find(
@@ -465,7 +465,47 @@ exports.update_coupon = async (req, res) => {
 
         }
 
-        // ✅ Update Coupon
+
+        
+const formatDate = (date) => {
+
+    if (!date) return null;
+
+   
+    if (date.includes('/')) {
+
+        const parts = date.split('/');
+
+        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+
+    }
+
+  
+    if (date.includes('-')) {
+
+        const parts = date.split('-');
+
+        // already YYYY-MM-DD
+        if (parts[0].length === 4) {
+
+            return date;
+
+        }
+
+        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+
+    }
+
+    return null;
+
+};
+
+start_date = formatDate(start_date);
+end_date = formatDate(end_date);
+
+// console.log("START DATE:", start_date);
+// console.log("END DATE:", end_date);
+       
         await exist_coupon.update({
 
             branch_ids: branch_ids,
