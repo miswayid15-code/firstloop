@@ -1423,6 +1423,7 @@ exports.coupon_apply = async (req, res) => {
         const customer_id =
             req.user.id;
 
+console.log("CUSTOMER ID:", customer_id);
         const coupon_id =
             req.body?.coupon_id ||
             req.query?.coupon_id ||
