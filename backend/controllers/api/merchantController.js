@@ -238,6 +238,7 @@ exports.registerStep2 = async (req, res) => {
                 }
 
                 phoneNumber = num.number;
+                console.log("VALIDATED PHONE NUMBER:", phoneNumber);
 
             } catch (err) {
 
@@ -328,6 +329,7 @@ exports.fetchmerchant = async (req, res) => {
         }
 
         const data = merchant.toJSON();
+
         const baseUrl = process.env.APP_URL;
 
         ['profile_image', 'brand_image', 'document'].forEach(field => {
