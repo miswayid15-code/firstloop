@@ -446,7 +446,7 @@ exports.dashboard = async (req, res) => {
                 count_branch: merchant.Branches.length,
                 count_receptionist: merchant.Receptionists.length,
 
-                redeemed_users: 0,
+                redeemed_users:data.Coupons.filter(item => item.status === 2).length,
 
                 branch_list: merchant.Branches,
                 receptionist_list: merchant.Receptionists
