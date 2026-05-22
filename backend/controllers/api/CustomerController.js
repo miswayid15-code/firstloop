@@ -1427,7 +1427,7 @@ exports.coupon_apply = async (req, res) => {
             req.body?.coupon_id ||
             req.query?.coupon_id ||
             null;
-        console.log("COUPON ID:", coupon_id);
+        // console.log("COUPON ID:", coupon_id);
 
         if (!coupon_id) {
 
@@ -1480,7 +1480,7 @@ exports.coupon_apply = async (req, res) => {
 
             });
 
-
+console.log("COUPON:", coupon);
         if (!coupon) {
 
             return res.json({
