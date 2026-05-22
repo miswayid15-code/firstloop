@@ -17,22 +17,41 @@ const path = require('path');
 exports.registerStep1 = async (req, res) => {
     try {
 
-        const { name, email, phone, password } = req.body;
+        const { name, email, phone, password, country_code } = req.body;
 
         let phoneNumber;
 
         try {
 
-            const num = parsePhoneNumber(phone);
+            const cleanPhone = phone.replace(/\s+/g, '');
+
+            // if phone already contains + then use directly
+            const fullPhone = cleanPhone.startsWith('+')
+                ? cleanPhone
+                : country_code + cleanPhone;
+
+            const num = parsePhoneNumber(fullPhone);
 
             if (!num.isValid()) {
-                return res.json({ status: 0, message: "Invalid phone" });
+
+                return res.json({
+                    status: 0,
+                    message: "Invalid phone number"
+                });
+
             }
 
             phoneNumber = num.number;
 
-        } catch {
-            return res.json({ status: 0, message: "Invalid phone format" });
+        } catch (err) {
+
+            console.log("PHONE ERROR:", err);
+
+            return res.json({
+                status: 0,
+                message: "Invalid phone format"
+            });
+
         }
 
 
@@ -78,19 +97,20 @@ exports.registerStep1 = async (req, res) => {
             phone: phoneNumber,
             password: hashedPassword,
             profile_image: profileImage,
+            country_code: country_code,
             status: 0
         });
 
 
-      const accessToken = jwt.sign(
-    {
-        id: merchant.id,
-        email: merchant.email,
-        token_type: 'access'
-    },
-    process.env.JWT_SECRET,
-    { expiresIn: '1d' }
-);
+        const accessToken = jwt.sign(
+            {
+                id: merchant.id,
+                email: merchant.email,
+                token_type: 'access'
+            },
+            process.env.JWT_SECRET,
+            { expiresIn: '1d' }
+        );
 
 
         const refreshToken = jwt.sign(
@@ -111,16 +131,16 @@ exports.registerStep1 = async (req, res) => {
             expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
         });
 
-// console.log("++++++++++++++++++++++++++++++++++++++++");
-// console.log("registerStep1 response:", {
-//     status: 1,
-//     message: "Basic Info Saved",
-//     user_id: merchant.id,
-//     user_type: 'merchant',
-//     access_token: accessToken,
-//     refresh_token: refreshToken
-// });
-// console.log("++++++++++++++++++++++++++++++++++++++++");
+        // console.log("++++++++++++++++++++++++++++++++++++++++");
+        // console.log("registerStep1 response:", {
+        //     status: 1,
+        //     message: "Basic Info Saved",
+        //     user_id: merchant.id,
+        //     user_type: 'merchant',
+        //     access_token: accessToken,
+        //     refresh_token: refreshToken
+        // });
+        // console.log("++++++++++++++++++++++++++++++++++++++++");
         return res.json({
             status: 1,
             message: "Basic Info Saved",
@@ -191,6 +211,88 @@ exports.registerStep2 = async (req, res) => {
                 }
 
             });
+        }
+
+
+        if (req.body.phone) {
+
+            let phoneNumber;
+
+            try {
+
+                const cleanPhone = req.body.phone.replace(/\s+/g, '');
+
+                const fullPhone = cleanPhone.startsWith('+')
+                    ? cleanPhone
+                    : req.body.country_code + cleanPhone;
+
+                const num = parsePhoneNumber(fullPhone);
+
+                if (!num.isValid()) {
+
+                    return res.json({
+                        status: 0,
+                        message: "Invalid phone number"
+                    });
+
+                }
+
+                phoneNumber = num.number;
+
+            } catch (err) {
+
+                return res.json({
+                    status: 0,
+                    message: "Invalid phone format"
+                });
+
+            }
+
+            // phone duplicate check
+            const phoneExists = await Merchant.findOne({
+                where: {
+                    phone: phoneNumber,
+                    id: {
+                        [Op.ne]: merchant.id
+                    }
+                }
+            });
+
+            if (phoneExists) {
+
+                return res.json({
+                    status: 0,
+                    message: "Phone number already exists"
+                });
+
+            }
+
+            req.body.phone = phoneNumber;
+
+        }
+
+
+        // email duplicate check
+        if (req.body.email) {
+
+            const emailExists = await Merchant.findOne({
+                where: {
+                    email: req.body.email,
+                    id: {
+                        [Op.ne]: merchant.id
+                    }
+                }
+            });
+
+            if (emailExists) {
+
+                return res.json({
+                    status: 0,
+                    message: "Email already exists"
+                });
+
+            }
+
         }
 
         await merchant.update({
@@ -329,15 +431,15 @@ exports.login = async (req, res) => {
             token: refreshToken,
             expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
         });
-      const accessToken = jwt.sign(
-    {
-        id: merchant.id,
-        email: merchant.email,
-        token_type: 'access'
-    },
-    process.env.JWT_SECRET,
-    { expiresIn: '1d' }
-);
+        const accessToken = jwt.sign(
+            {
+                id: merchant.id,
+                email: merchant.email,
+                token_type: 'access'
+            },
+            process.env.JWT_SECRET,
+            { expiresIn: '1d' }
+        );
         return res.json({
             status: 1,
             message: "Login successful",
@@ -395,6 +497,7 @@ exports.dashboard = async (req, res) => {
                         del_status: 0,
                         status: 1
                     },
+                    attributes: ['id', 'name', 'address', 'phone', 'profile_image', 'lat', 'lon', 'status', 'open_time', 'close_time', 'merchant_id', 'status'],
                     required: false
                 },
 
@@ -404,6 +507,7 @@ exports.dashboard = async (req, res) => {
                         del_status: 0,
                         status: 1
                     },
+                    attributes: ['id', 'name', 'email', 'phone', 'profile_image', 'branch_id', 'status'],
                     required: false
                 }
 
@@ -418,9 +522,9 @@ exports.dashboard = async (req, res) => {
             });
         }
 
-                const data = merchant.toJSON();
+        const data = merchant.toJSON();
 
-        
+
         if (data.profile_image) {
 
             data.profile_image =
@@ -446,7 +550,7 @@ exports.dashboard = async (req, res) => {
                 count_branch: merchant.Branches.length,
                 count_receptionist: merchant.Receptionists.length,
 
-                redeemed_users:data.Coupons.filter(item => item.status === 2).length,
+                redeemed_users: data.Coupons.filter(item => item.status === 2).length,
 
                 branch_list: merchant.Branches,
                 receptionist_list: merchant.Receptionists
@@ -823,15 +927,15 @@ exports.firebase_reg = async (req, res) => {
         console.log("\nGENERATING ACCESS TOKEN...");
 
         // generate access token
-      const accessToken = jwt.sign(
-    {
-        id: merchant.id,
-        email: merchant.email,
-        token_type: 'access'
-    },
-    process.env.JWT_SECRET,
-    { expiresIn: '1d' }
-);
+        const accessToken = jwt.sign(
+            {
+                id: merchant.id,
+                email: merchant.email,
+                token_type: 'access'
+            },
+            process.env.JWT_SECRET,
+            { expiresIn: '1d' }
+        );
 
         console.log("\nGENERATING REFRESH TOKEN...");
 
