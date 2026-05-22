@@ -21,6 +21,7 @@ module.exports = (sequelize, DataTypes) => {
         lon: DataTypes.STRING,
 
         address: DataTypes.TEXT,
+            country_code: DataTypes.STRING,
 
         // ✅ Added
         open_time: DataTypes.TIME,

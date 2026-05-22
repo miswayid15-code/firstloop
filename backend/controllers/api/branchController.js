@@ -52,20 +52,22 @@ exports.register = async (req, res) => {
         }
 
         // ✅ Phone Validation
-        let phoneNumber;
         let nationalNumber;
         let callingCode;
+        let phoneNumber;
 
         try {
 
-            const cleanPhone = phone.replace(/\s+/g, '');
+            const cleanPhone =
+                phone.replace(/\s+/g, '');
 
-            // if phone already contains + then use directly
-            const fullPhone = cleanPhone.startsWith('+')
-                ? cleanPhone
-                : country_code + cleanPhone;
+            const fullPhone =
+                cleanPhone.startsWith('+')
+                    ? cleanPhone
+                    : country_code + cleanPhone;
 
-            const num = parsePhoneNumber(fullPhone);
+            const num =
+                parsePhoneNumber(fullPhone);
 
             if (!num.isValid()) {
 
@@ -76,16 +78,21 @@ exports.register = async (req, res) => {
 
             }
 
-            callingCode = `+${num.countryCallingCode}`;
+            callingCode =
+                `+${num.countryCallingCode}`;
 
-            nationalNumber = num.nationalNumber;
+            nationalNumber =
+                num.nationalNumber;
 
-            // full international format
-            phoneNumber = num.number;
+            phoneNumber =
+                num.number;
 
         } catch (err) {
 
-            console.log("PHONE ERROR:", err);
+            console.log(
+                "PHONE ERROR:",
+                err
+            );
 
             return res.json({
                 status: 0,
@@ -94,19 +101,48 @@ exports.register = async (req, res) => {
 
         }
 
-        // ✅ Email Check
-        const exists =
+        // ✅ Email Exists Check
+        const emailExists =
             await Branch.findOne({
 
                 where: { email }
 
             });
 
-        if (exists) {
+        if (emailExists) {
 
             return res.json({
+
                 status: 0,
+
                 message: "Email already exists"
+
+            });
+
+        }
+
+        // ✅ Phone Exists Check
+        const phoneExists =
+            await Branch.findOne({
+
+                where: {
+
+                    country_code: callingCode,
+
+                    phone: nationalNumber
+
+                }
+
+            });
+
+        if (phoneExists) {
+
+            return res.json({
+
+                status: 0,
+
+                message: "Phone already exists"
+
             });
 
         }
@@ -120,16 +156,22 @@ exports.register = async (req, res) => {
         if (!merchant) {
 
             return res.json({
+
                 status: 0,
+
                 message: "Invalid merchant"
+
             });
 
         }
 
+        // ✅ Files
         const files =
             req.files || [];
 
-        // ✅ Profile Image
+        console.log("FILES:", files);
+
+        // ✅ First image as profile image
         const profile_image =
             files.length > 0
                 ? files[0].path.replace(/\\/g, '/')
@@ -143,7 +185,9 @@ exports.register = async (req, res) => {
 
                 email,
 
-                phone: phoneNumber,
+                country_code: callingCode,
+
+                phone: nationalNumber,
 
                 profile_image,
 
@@ -160,24 +204,23 @@ exports.register = async (req, res) => {
                 close_time,
 
                 merchant_id,
-                country_code,
 
                 status: 1,
 
                 del_status: 0
 
             });
-console.log("file:", files);
-        // ✅ Branch Images
+
+        // ✅ Save Multiple Images
         if (files.length > 0) {
 
             const imageData =
-                files.map(f => ({
+                files.map(file => ({
 
                     branch_id: branch.id,
 
                     image:
-                        f.path.replace(/\\/g, '/')
+                        file.path.replace(/\\/g, '/')
 
                 }));
 
