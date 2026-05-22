@@ -172,6 +172,44 @@ exports.create_coupon = async (req, res) => {
             ? bannerFile.path.replace(/\\/g, '/')
             : null;
 
+            const formatDate = (date) => {
+
+    if (!date) return null;
+
+    // already YYYY-MM-DD
+    if (date.includes('/')) {
+
+        const parts = date.split('/');
+
+        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+
+    }
+
+    if (date.includes('-')) {
+
+        const parts = date.split('-');
+
+        // DD-MM-YYYY
+        if (parts[0].length === 2) {
+
+            return `${parts[2]}-${parts[1]}-${parts[0]}`;
+
+        }
+
+        // already YYYY-MM-DD
+        return date;
+
+    }
+
+    return null;
+
+};
+
+start_date = formatDate(start_date);
+end_date = formatDate(end_date);
+
+console.log(start_date);
+console.log(end_date);
         // ✅ Create Coupon
         const coupon = await Coupon.create({
 
