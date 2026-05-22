@@ -41,19 +41,13 @@ router.get(
 
 
 // ================= APPOINTMENT LIST =================
-router.get(
-    '/branch/appointment-list',
-    auth,
-    controller.appointment_list
+router.post('/branch/update-appointment',auth,(req,res,next)=>{
+        console.log("UPDATE APPOINTMENT ROUTE HIT");
+        next();
+    },controller.update_appointment_status
 );
 
 
-// ================= UPDATE APPOINTMENT =================
-router.post(
-    '/branch/update-appointment',
-    auth,
-    controller.update_appointment_status
-);
 
 
 // ================= DELETE BRANCH =================
@@ -106,10 +100,6 @@ router.delete(
 );
 
 
-router.get(
-    '/branch/:id',
-    auth,
-    controller.branch_id
-);
+router.get('/branch/details/:id', auth, controller.branch_id);
 
 module.exports = router;

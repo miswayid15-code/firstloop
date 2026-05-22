@@ -7,7 +7,7 @@ exports.register = async (req, res) => {
 
     try {
 
-        const { name, email, phone, password, branch_id } = req.body;
+        const { name, email, phone, password, branch_id, } = req.body;
 
         // merchant check
         const merchant = await Merchant.findByPk(req.user.id);

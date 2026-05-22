@@ -11,7 +11,7 @@ module.exports = {
     dialect: 'postgres',
 
     pool: {
-      max: 5,
+      max: 3,
       min: 0,
       acquire: 30000,
       idle: 10000
@@ -61,7 +61,7 @@ module.exports = {
     dialect: 'postgres',
 
     pool: {
-      max: 5,
+      max: 3,
       min: 0,
       acquire: 30000,
       idle: 10000

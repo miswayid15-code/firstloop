@@ -17,7 +17,8 @@ exports.register = async (req, res) => {
             address,
             description,
             open_time,
-            close_time
+            close_time,
+            country_code
         } = req.body;
 
         const merchant_id = req.user.id;
