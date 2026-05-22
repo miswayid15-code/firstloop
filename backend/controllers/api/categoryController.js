@@ -1,4 +1,4 @@
-const { Category } = require('../../models');
+    const { Category } = require('../../models');
 
 exports.fetch_list = async (req, res) => {
     try {

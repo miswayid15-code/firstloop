@@ -1480,7 +1480,7 @@ exports.coupon_apply = async (req, res) => {
 
             });
 
-console.log("COUPON:", coupon);
+        console.log("COUPON:", coupon);
         if (!coupon) {
 
             return res.json({
@@ -1495,18 +1495,15 @@ console.log("COUPON:", coupon);
         }
 
         // ✅ Current Time
-        const now =
-            moment().format(
-                'HH:mm:ss'
-            );
+        const today =
+            moment().format('YYYY-MM-DD');
 
-        // ✅ Coupon Active Check
         const is_active =
-            now >= coupon.start_date &&
-            now <= coupon.end_date;
-console.log("CURRENT TIME:", now);
-console.log("COUPON START:", coupon.start_date);
-console.log("COUPON END:", coupon.end_date);
+            today >= coupon.start_date &&
+            today <= coupon.end_date;
+        // console.log("CURRENT TIME:", now);
+        console.log("COUPON START:", coupon.start_date);
+        console.log("COUPON END:", coupon.end_date);
         console.log("IS ACTIVE:", is_active);
 
         if (!is_active) {

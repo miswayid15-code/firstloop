@@ -53,24 +53,39 @@ exports.register = async (req, res) => {
 
         // ✅ Phone Validation
         let phoneNumber;
+        let nationalNumber;
+        let callingCode;
 
         try {
 
-            const num =
-                parsePhoneNumber(phone);
+            const cleanPhone = phone.replace(/\s+/g, '');
+
+            // if phone already contains + then use directly
+            const fullPhone = cleanPhone.startsWith('+')
+                ? cleanPhone
+                : country_code + cleanPhone;
+
+            const num = parsePhoneNumber(fullPhone);
 
             if (!num.isValid()) {
 
                 return res.json({
                     status: 0,
-                    message: "Invalid phone"
+                    message: "Invalid phone number"
                 });
 
             }
 
+            callingCode = `+${num.countryCallingCode}`;
+
+            nationalNumber = num.nationalNumber;
+
+            // full international format
             phoneNumber = num.number;
 
-        } catch {
+        } catch (err) {
+
+            console.log("PHONE ERROR:", err);
 
             return res.json({
                 status: 0,
@@ -145,13 +160,14 @@ exports.register = async (req, res) => {
                 close_time,
 
                 merchant_id,
+                country_code,
 
                 status: 1,
 
                 del_status: 0
 
             });
-
+console.log("file:", files);
         // ✅ Branch Images
         if (files.length > 0) {
 
