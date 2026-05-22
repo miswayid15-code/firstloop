@@ -15,17 +15,30 @@ const { Op } = require('sequelize');
 const fs = require('fs');
 const path = require('path');
 exports.registerStep1 = async (req, res) => {
+
     try {
 
-        const { name, email, phone, password, country_code } = req.body;
+        const {
+            name,
+            email,
+            phone,
+            password,
+            country_code
+        } = req.body;
 
         let phoneNumber;
+        let nationalNumber;
+        let callingCode;
+
+        // =========================
+        // PHONE VALIDATION
+        // =========================
 
         try {
 
             const cleanPhone = phone.replace(/\s+/g, '');
 
-            // if phone already contains + then use directly
+            
             const fullPhone = cleanPhone.startsWith('+')
                 ? cleanPhone
                 : country_code + cleanPhone;
@@ -41,7 +54,15 @@ exports.registerStep1 = async (req, res) => {
 
             }
 
+            callingCode = `+${num.countryCallingCode}`;
+            nationalNumber = num.nationalNumber;
+
+            
             phoneNumber = num.number;
+
+            console.log("FULL PHONE:", phoneNumber);
+            console.log("COUNTRY CODE:", callingCode);
+            console.log("PHONE:", nationalNumber);
 
         } catch (err) {
 
@@ -54,26 +75,49 @@ exports.registerStep1 = async (req, res) => {
 
         }
 
+        // =========================
+        // PHONE EXISTS CHECK
+        // =========================
 
         const phexists = await Merchant.findOne({
-            where: { phone: phoneNumber }
+
+            where: {
+                country_code: callingCode,
+                phone: nationalNumber
+            }
+
         });
 
         if (phexists) {
+
             return res.json({
                 status: 0,
                 message: "Phone already exists"
             });
+
         }
 
-        const exists = await Merchant.findOne({ where: { email } });
+        // =========================
+        // EMAIL EXISTS CHECK
+        // =========================
+
+        const exists = await Merchant.findOne({
+            where: { email }
+        });
 
         if (exists) {
-            return res.json({ status: 0, message: "Email already exists" });
+
+            return res.json({
+                status: 0,
+                message: "Email already exists"
+            });
+
         }
 
+        // =========================
+        // PROFILE IMAGE UPLOAD
+        // =========================
 
-        // profile image upload
         let profileImage = '';
 
         if (req.files && req.files.length > 0) {
@@ -83,78 +127,115 @@ exports.registerStep1 = async (req, res) => {
             );
 
             if (profileFile) {
+
                 profileImage = profileFile.path.replace(/\\/g, '/');
+
             }
+
         }
 
+        // =========================
+        // PASSWORD HASH
+        // =========================
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        // =========================
+        // CREATE MERCHANT
+        // =========================
 
         const merchant = await Merchant.create({
+
             name,
             email,
-            phone: phoneNumber,
+
+            // separated storage
+            country_code: callingCode,
+            phone: nationalNumber,
+
             password: hashedPassword,
+
             profile_image: profileImage,
-            country_code: country_code,
+
             status: 0
+
         });
 
+        // =========================
+        // ACCESS TOKEN
+        // =========================
 
         const accessToken = jwt.sign(
+
             {
                 id: merchant.id,
                 email: merchant.email,
                 token_type: 'access'
             },
+
             process.env.JWT_SECRET,
-            { expiresIn: '1d' }
+
+            {
+                expiresIn: '1d'
+            }
+
         );
 
+        // =========================
+        // REFRESH TOKEN
+        // =========================
 
         const refreshToken = jwt.sign(
+
             {
                 id: merchant.id,
                 email: merchant.email,
                 token_type: 'refresh'
             },
+
             process.env.JWT_SECRET,
-            { expiresIn: '7d' }
+
+            {
+                expiresIn: '7d'
+            }
+
         );
 
+        // =========================
+        // SAVE REFRESH TOKEN
+        // =========================
 
         await RefreshToken.create({
+
             user_id: merchant.id,
+
             user_type: 'merchant',
+
             token: refreshToken,
-            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+
+            expires_at: new Date(
+                Date.now() + 7 * 24 * 60 * 60 * 1000
+            )
+
         });
 
-        // console.log("++++++++++++++++++++++++++++++++++++++++");
-        // console.log("registerStep1 response:", {
-        //     status: 1,
-        //     message: "Basic Info Saved",
-        //     user_id: merchant.id,
-        //     user_type: 'merchant',
-        //     access_token: accessToken,
-        //     refresh_token: refreshToken
-        // });
-        // console.log("++++++++++++++++++++++++++++++++++++++++");
-        return res.json({
-            status: 1,
-            message: "Basic Info Saved",
-            user_id: merchant.id,
-            user_type: 'merchant',
-            access_token: accessToken,
-            refresh_token: refreshToken
-        });
+        // =========================
+        // SEND MAIL
+        // =========================
+
         try {
 
             await sendMail(
+
                 email,
+
                 'Merchant Registration Successful',
-                RegisterTemplate('merchant', merchant.name)
+
+                RegisterTemplate(
+                    'merchant',
+                    merchant.name
+                )
+
             );
 
             console.log("Registration mail sent");
@@ -165,16 +246,40 @@ exports.registerStep1 = async (req, res) => {
 
         }
 
+        // =========================
+        // RESPONSE
+        // =========================
+
+        return res.json({
+
+            status: 1,
+
+            message: "Basic Info Saved",
+
+            user_id: merchant.id,
+
+            user_type: 'merchant',
+
+            access_token: accessToken,
+
+            refresh_token: refreshToken
+
+        });
+
     } catch (err) {
 
         console.log(err);
 
         return res.json({
+
             status: 0,
+
             message: "Error"
+
         });
 
     }
+
 };
 
 exports.registerStep2 = async (req, res) => {
@@ -216,15 +321,18 @@ exports.registerStep2 = async (req, res) => {
 
         if (req.body.phone) {
 
-            let phoneNumber;
-
             try {
 
+                // remove spaces
                 const cleanPhone = req.body.phone.replace(/\s+/g, '');
 
+                // separate country code
+                const countryCode = req.body.country_code || '';
+
+                // full number for validation
                 const fullPhone = cleanPhone.startsWith('+')
                     ? cleanPhone
-                    : req.body.country_code + cleanPhone;
+                    : countryCode + cleanPhone;
 
                 const num = parsePhoneNumber(fullPhone);
 
@@ -237,8 +345,12 @@ exports.registerStep2 = async (req, res) => {
 
                 }
 
-                phoneNumber = num.number;
-                console.log("VALIDATED PHONE NUMBER:", phoneNumber);
+                // save separately
+                req.body.country_code = `+${num.countryCallingCode}`;
+                req.body.phone = num.nationalNumber;
+
+                console.log("COUNTRY CODE:", req.body.country_code);
+                console.log("PHONE:", req.body.phone);
 
             } catch (err) {
 
@@ -249,14 +361,21 @@ exports.registerStep2 = async (req, res) => {
 
             }
 
-            // phone duplicate check
+            // duplicate check
             const phoneExists = await Merchant.findOne({
+
                 where: {
-                    phone: cleanPhone,
+
+                    country_code: req.body.country_code,
+
+                    phone: req.body.phone,
+
                     id: {
                         [Op.ne]: merchant.id
                     }
+
                 }
+
             });
 
             if (phoneExists) {
@@ -268,12 +387,10 @@ exports.registerStep2 = async (req, res) => {
 
             }
 
-            req.body.phone = cleanPhone;
-
         }
 
 
-        
+
         if (req.body.email) {
 
             const emailExists = await Merchant.findOne({
