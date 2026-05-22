@@ -129,21 +129,21 @@ exports.registerStep1 = async (req, res) => {
             access_token: accessToken,
             refresh_token: refreshToken
         });
-        // try {
+        try {
 
-        //     await sendMail(
-        //         email,
-        //         'Merchant Registration Successful',
-        //         RegisterTemplate('merchant', merchant.name)
-        //     );
+            await sendMail(
+                email,
+                'Merchant Registration Successful',
+                RegisterTemplate('merchant', merchant.name)
+            );
 
-        //     console.log("Registration mail sent");
+            console.log("Registration mail sent");
 
-        // } catch (mailErr) {
+        } catch (mailErr) {
 
-        //     console.log("MAIL ERROR:", mailErr);
+            console.log("MAIL ERROR:", mailErr);
 
-        // }
+        }
 
     } catch (err) {
 

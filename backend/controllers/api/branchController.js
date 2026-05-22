@@ -1,4 +1,4 @@
-const { Branch, Merchant, BranchImage,MenuImage } = require('../../models');
+const { Branch, Merchant, BranchImage, MenuImage, Receptionist, Appointment } = require('../../models');
 const { parsePhoneNumber } = require('libphonenumber-js');
 
 const fs = require('fs');
@@ -231,8 +231,8 @@ exports.fetch_list = async (req, res) => {
                 'address',
                 'merchant_id',
                 'description',
-            'open_time',
-            'close_time'
+                'open_time',
+                'close_time'
             ],
 
             order: [['id', 'DESC']]
@@ -715,8 +715,8 @@ exports.branch_id = async (req, res) => {
                 'address',
                 'merchant_id',
                 'description',
-            'open_time',
-            'close_time'
+                'open_time',
+                'close_time'
             ]
 
         });
@@ -789,7 +789,7 @@ exports.register_menu_image = async (req, res) => {
 
         }
 
-        
+
         const branch = await Branch.findOne({
 
             where: {
@@ -1103,7 +1103,7 @@ exports.delete_menu_image = async (req, res) => {
     try {
 
         const merchant_id = req.user.id;
-       
+
 
         const { id, branch_id } = req.body;
 
@@ -1203,6 +1203,289 @@ exports.delete_menu_image = async (req, res) => {
         return res.json({
             status: 0,
             message: err.message
+        });
+
+    }
+
+};
+
+
+exports.appointment_list = async (req, res) => {
+
+    try {
+
+
+        const receptionist_id = req.user.id;
+
+
+        const receptionist =
+            await Receptionist.findOne({
+
+                where: {
+
+                    id: receptionist_id,
+
+                    status: 1,
+
+                    del_status: 0
+
+                }
+
+            });
+
+        if (!receptionist) {
+
+            return res.json({
+
+                status: 0,
+                message: "Invalid receptionist"
+
+            });
+
+        }
+
+
+        const branch_id =
+            receptionist.branch_id;
+        // console.log("BRANCH ID:", branch_id);
+
+        const appointments =
+            await Appointment.findAll({
+
+                where: {
+                    br_id: branch_id
+                },
+                attributes: [
+                    'id',
+                    'cus_id',
+                    'br_id',
+                    'br_name',
+                    'appointment_date',
+                    'slot',
+                    'status',
+                    'cancel_by',
+                    'cancel_reason',
+                    'approved_by',
+                    'approved_by_id',
+
+                ],
+
+                order: [['id', 'DESC']]
+
+            });
+        // console.log("APPOINTMENTS:", appointments);
+
+        if (
+            !appointments ||
+            appointments.length === 0
+        ) {
+
+            return res.json({
+
+                status: 0,
+                message: "No appointments found",
+                data: []
+
+            });
+
+        }
+
+
+        const formattedAppointments =
+            appointments.map(item => {
+
+                const data =
+                    item.toJSON();
+
+                return {
+
+                    ...data,
+
+                    appointment_date:
+                        new Date(data.appointment_date)
+                            .toLocaleDateString('en-US', {
+
+                                month: 'long',
+                                day: '2-digit',
+                                year: 'numeric'
+
+                            }),
+
+                    slot:
+                        new Date(`1970-01-01T${data.slot}`)
+                            .toLocaleTimeString('en-US', {
+
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                hour12: true
+
+                            })
+
+                };
+
+            });
+
+        return res.json({
+
+            status: 1,
+
+            message: "Successfully fetched",
+
+            data: formattedAppointments
+
+        });
+
+    } catch (err) {
+
+        console.log(
+            "APPOINTMENT ERROR:",
+            err
+        );
+
+        return res.json({
+
+            status: 0,
+            message: err.message
+
+        });
+
+    }
+
+};
+
+
+exports.update_appointment_status = async (req, res) => {
+
+    try {
+
+        const receptionist_id = req.user.id;
+
+        const {
+            appointment_id,
+            status,
+            cancel_reason
+        } = req.body;
+
+
+        if (
+            !appointment_id ||
+            status === undefined
+        ) {
+
+            return res.json({
+
+                status: 0,
+                message: "Appointment ID and status are required"
+
+            });
+
+        }
+
+
+        const receptionist =
+            await Receptionist.findOne({
+
+                where: {
+
+                    id: receptionist_id,
+                    status: 1,
+                    del_status: 0
+
+                }
+
+            });
+
+        if (!receptionist) {
+
+            return res.json({
+
+                status: 0,
+                message: "Invalid receptionist"
+
+            });
+
+        }
+
+
+        const appointment =
+            await Appointment.findOne({
+
+                where: {
+
+                    id: appointment_id,
+                    br_id: receptionist.branch_id
+
+                }
+
+            });
+
+        if (!appointment) {
+
+            return res.json({
+
+                status: 0,
+                message: "Appointment not found"
+
+            });
+
+        }
+
+
+        const updateData = {
+
+            status: status
+
+        };
+
+
+        if (Number(status) === 1) {
+
+            updateData.approved_by =
+                'receptionist';
+
+            updateData.approved_by_id =
+                receptionist_id;
+
+        }
+
+
+        if (Number(status) === 3) {
+
+            updateData.cancel_by =
+                'receptionist';
+
+            updateData.cancel_reason =
+                cancel_reason || null;
+
+        }
+
+
+        await appointment.update(updateData);
+
+        return res.json({
+
+            status: 1,
+
+            message: "Appointment status updated successfully",
+
+            data: appointment
+
+        });
+
+    }
+
+    catch (err) {
+
+        console.log(
+            "APPOINTMENT UPDATE ERROR:",
+            err
+        );
+
+        return res.json({
+
+            status: 0,
+            message: err.message
+
         });
 
     }

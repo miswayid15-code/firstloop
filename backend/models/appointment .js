@@ -33,11 +33,20 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false
         },
 
+        // 0 = Pending
+        // 1 = Approved
+        // 2 = Completed
+        // 3 = Cancelled
+        // 4 = Rejected
         status: {
             type: DataTypes.INTEGER,
             defaultValue: 0
         },
 
+        // customer
+        // merchant
+        // receptionist
+        // admin
         cancel_by: {
             type: DataTypes.STRING,
             allowNull: true
@@ -45,6 +54,19 @@ module.exports = (sequelize, DataTypes) => {
 
         cancel_reason: {
             type: DataTypes.TEXT,
+            allowNull: true
+        },
+
+        // admin
+        // merchant
+        // receptionist
+        approved_by: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+
+        approved_by_id: {
+            type: DataTypes.INTEGER,
             allowNull: true
         }
 

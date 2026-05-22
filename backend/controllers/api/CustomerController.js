@@ -1427,7 +1427,7 @@ exports.coupon_apply = async (req, res) => {
             req.body?.coupon_id ||
             req.query?.coupon_id ||
             null;
-
+        console.log("COUPON ID:", coupon_id);
 
         if (!coupon_id) {
 
@@ -2344,10 +2344,10 @@ exports.fetch_appointment_details = async (req, res) => {
             req.body?.appointment_id ||
             req.query?.appointment_id ||
             null;
-// console.log("APPOINTMENT ID:", appointment_id);
+        // console.log("APPOINTMENT ID:", appointment_id);
         const customer_id = req.user.id;
 
-       
+
         if (!appointment_id) {
 
             return res.json({
@@ -2359,7 +2359,7 @@ exports.fetch_appointment_details = async (req, res) => {
 
         }
 
-      
+
         const customer = await Customer.findOne({
 
             where: {
@@ -2383,7 +2383,7 @@ exports.fetch_appointment_details = async (req, res) => {
 
         }
 
-       
+
         const appointment = await Appointment.findOne({
 
             where: {
@@ -2438,27 +2438,27 @@ exports.fetch_appointment_details = async (req, res) => {
 
         const data = appointment.toJSON();
 
-    
+
         data.appointment_date =
             new Date(data.appointment_date)
-            .toLocaleDateString('en-US', {
+                .toLocaleDateString('en-US', {
 
-                month: 'long',
-                day: '2-digit',
-                year: 'numeric'
+                    month: 'long',
+                    day: '2-digit',
+                    year: 'numeric'
 
-            });
+                });
 
-       
+
         data.slot =
             new Date(`1970-01-01T${data.slot}`)
-            .toLocaleTimeString('en-US', {
+                .toLocaleTimeString('en-US', {
 
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: true
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
 
-            });
+                });
 
         return res.json({
 

@@ -28,6 +28,12 @@ router.post(
   controller.update_branch
 );
 router.get('/branch/fetch-branch', auth, controller.fetch_list);
+router.get('/branch/appointment-list', auth, controller.appointment_list);
+router.post(
+    '/branch/update-appointment',
+    auth,
+    controller.update_appointment_status
+);
 router.post('/branch/delete', auth, controller.delete_branch);
 router.get('/branch/:id', auth,controller.branch_id);
 router.post(
@@ -71,4 +77,6 @@ router.delete(
     auth,
     controller.delete_menu_image
 );
+
+
 module.exports = router;
