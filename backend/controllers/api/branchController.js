@@ -481,7 +481,8 @@ exports.update_branch = async (req, res) => {
             address,
             description,
             open_time,
-            close_time
+            close_time,
+            country_code
         } = req.body;
 
         const merchant_id = req.user.id;
@@ -516,16 +517,20 @@ exports.update_branch = async (req, res) => {
 
         }
 
-        // ✅ Email Check
+        // ✅ Email Exists Check
         if (email) {
 
             const exists = await Branch.findOne({
 
                 where: {
+
                     email,
+
                     id: {
-                        [require('sequelize').Op.ne]: branch_id
+                        [require('sequelize').Op.ne]:
+                            branch_id
                     }
+
                 }
 
             });
@@ -543,29 +548,80 @@ exports.update_branch = async (req, res) => {
 
         // ✅ Phone Validation
         let phoneNumber = branch.phone;
+        let nationalNumber = branch.phone;
+        let callingCode = branch.country_code;
 
         if (phone) {
 
             try {
 
-                const num = parsePhoneNumber(phone);
+                const cleanPhone =
+                    phone.replace(/\s+/g, '');
+
+                const fullPhone =
+                    cleanPhone.startsWith('+')
+                        ? cleanPhone
+                        : country_code + cleanPhone;
+
+                const num =
+                    parsePhoneNumber(fullPhone);
 
                 if (!num.isValid()) {
 
                     return res.json({
                         status: 0,
-                        message: "Invalid phone"
+                        message: "Invalid phone number"
                     });
 
                 }
 
-                phoneNumber = num.number;
+                callingCode =
+                    `+${num.countryCallingCode}`;
 
-            } catch {
+                nationalNumber =
+                    num.nationalNumber;
+
+                phoneNumber =
+                    num.number;
+
+            } catch (err) {
+
+                console.log(
+                    "PHONE ERROR:",
+                    err
+                );
 
                 return res.json({
                     status: 0,
                     message: "Invalid phone format"
+                });
+
+            }
+
+            // ✅ Phone Exists Check
+            const phoneExists =
+                await Branch.findOne({
+
+                    where: {
+
+                        country_code: callingCode,
+
+                        phone: nationalNumber,
+
+                        id: {
+                            [require('sequelize').Op.ne]:
+                                branch_id
+                        }
+
+                    }
+
+                });
+
+            if (phoneExists) {
+
+                return res.json({
+                    status: 0,
+                    message: "Phone already exists"
                 });
 
             }
@@ -581,14 +637,17 @@ exports.update_branch = async (req, res) => {
 
             return res.json({
                 status: 0,
-                message: "Close time must be greater than open time"
+                message:
+                    "Close time must be greater than open time"
             });
 
         }
 
+        // ✅ Files
         const files = req.files || [];
 
-        let profile_image = branch.profile_image;
+        let profile_image =
+            branch.profile_image;
 
         // ✅ Update Profile Image
         if (files.length > 0) {
@@ -596,11 +655,12 @@ exports.update_branch = async (req, res) => {
             // delete old profile image
             if (branch.profile_image) {
 
-                const oldProfile = path.join(
-                    __dirname,
-                    '../../',
-                    branch.profile_image
-                );
+                const oldProfile =
+                    path.join(
+                        __dirname,
+                        '../../',
+                        branch.profile_image
+                    );
 
                 if (fs.existsSync(oldProfile)) {
 
@@ -629,19 +689,28 @@ exports.update_branch = async (req, res) => {
         // ✅ Update Branch
         await branch.update({
 
-            name: name || branch.name,
+            name:
+                name || branch.name,
 
-            email: email || branch.email,
+            email:
+                email || branch.email,
 
-            phone: phoneNumber,
+            country_code:
+                callingCode,
+
+            phone:
+                nationalNumber,
 
             profile_image,
 
-            lat: lat || branch.lat,
+            lat:
+                lat || branch.lat,
 
-            lon: lon || branch.lon,
+            lon:
+                lon || branch.lon,
 
-            address: address || branch.address,
+            address:
+                address || branch.address,
 
             description:
                 description || branch.description,
@@ -664,13 +733,15 @@ exports.update_branch = async (req, res) => {
 
                 });
 
+            // delete old images
             oldImages.forEach(img => {
 
-                const filePath = path.join(
-                    __dirname,
-                    '../../',
-                    img.image
-                );
+                const filePath =
+                    path.join(
+                        __dirname,
+                        '../../',
+                        img.image
+                    );
 
                 if (fs.existsSync(filePath)) {
 
@@ -691,20 +762,23 @@ exports.update_branch = async (req, res) => {
 
             });
 
+            // remove old db records
             await BranchImage.destroy({
 
                 where: { branch_id }
 
             });
 
-            const imageData = files.map(f => ({
+            // insert new images
+            const imageData =
+                files.map(f => ({
 
-                branch_id,
+                    branch_id,
 
-                image:
-                    f.path.replace(/\\/g, '/')
+                    image:
+                        f.path.replace(/\\/g, '/')
 
-            }));
+                }));
 
             await BranchImage.bulkCreate(
                 imageData
@@ -715,7 +789,9 @@ exports.update_branch = async (req, res) => {
         return res.json({
 
             status: 1,
-            message: "Branch updated successfully"
+
+            message:
+                "Branch updated successfully"
 
         });
 
@@ -729,6 +805,7 @@ exports.update_branch = async (req, res) => {
         return res.json({
 
             status: 0,
+
             message: err.message
 
         });

@@ -7,7 +7,7 @@ const sharp = require('sharp');
 const storage = multer.diskStorage({
 
   destination: function (req, file, cb) {
-
+    console.log("FILE FIELDNAME:", req.headers['content-type'], file.fieldname);
     // ✅ dynamic base folder (set in controller)
     let baseFolder = req.uploadFolder || 'common';
 
