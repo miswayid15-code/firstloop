@@ -268,7 +268,7 @@ exports.registerStep2 = async (req, res) => {
 
             }
 
-            req.body.phone = phoneNumber;
+            req.body.phone = cleanPhone;
 
         }
 
