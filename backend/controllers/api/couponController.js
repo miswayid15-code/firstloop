@@ -208,16 +208,20 @@ exports.create_coupon = async (req, res) => {
         });
 
     }
-    catch (err) {
+catch (err) {
 
-        return res.json({
+    console.log("ERROR MESSAGE:", err.message);
+    console.log("ERROR STACK:", err.stack);
+    console.log("FULL ERROR:", err);
 
-            status: 0,
-            message: err.message
+    return res.json({
 
-        });
+        status: 0,
+        message: err.message
 
-    }
+    });
+
+}
 
 };
 exports.update_coupon = async (req, res) => {
