@@ -10,9 +10,9 @@ exports.create_coupon = async (req, res) => {
             percentage,
             min_amount,
             usage_limit,
-            start_time,
+            start_date,
             branch_ids,
-            end_time
+            end_date
         } = req.body;
 
         // ✅ Merchant ID
@@ -47,8 +47,8 @@ exports.create_coupon = async (req, res) => {
         if (
             !code ||
             !percentage ||
-            !start_time ||
-            !end_time
+            !start_date ||
+            !end_date
         ) {
 
             return res.json({
@@ -130,7 +130,7 @@ exports.create_coupon = async (req, res) => {
         }
 
         // ✅ Time Validation
-        if (start_time >= end_time) {
+        if (start_date >= end_date) {
 
             return res.json({
                 status: 0,
@@ -187,9 +187,9 @@ exports.create_coupon = async (req, res) => {
 
             usage_limit: usage_limit || 0,
 
-            start_time: start_time,
+            start_date: start_date,
 
-            end_time: end_time,
+            end_date: end_date,
 
             banner_image: banner_image,
 
@@ -231,8 +231,8 @@ exports.update_coupon = async (req, res) => {
             percentage,
             min_amount,
             usage_limit,
-            start_time,
-            end_time
+            start_date,
+            end_date
         } = req.body;
 
         // ✅ Merchant ID
@@ -268,8 +268,8 @@ exports.update_coupon = async (req, res) => {
             !coupon_id ||
             !code ||
             !percentage
-            //|| !start_time ||
-            // !end_time
+            || !start_date ||
+            !end_date
         ) {
 
             return res.json({
@@ -377,7 +377,7 @@ exports.update_coupon = async (req, res) => {
         }
 
         // ✅ Time Validation
-        if (start_time >= end_time) {
+        if (start_date >= end_date) {
 
             return res.json({
                 status: 0,
@@ -436,9 +436,9 @@ exports.update_coupon = async (req, res) => {
 
             usage_limit: usage_limit || 0,
 
-            start_time: start_time,
+            start_date: start_date,
 
-            end_time: end_time,
+            end_date: end_date,
 
             banner_image: banner_image
 
@@ -486,9 +486,9 @@ exports.fetch_coupon = async (req, res) => {
                 'percentage',
                 'min_amount',
                 'usage_limit',
-                'start_time',
+                'start_date',
                 'banner_image',
-                'end_time'
+                'end_date'
             ],
             where: {
                 del_status: 0,
@@ -508,7 +508,7 @@ exports.fetch_coupon = async (req, res) => {
                 : null;
 
             cpn.is_expired =
-                new Date() > new Date(cpn.end_time) ? 1 : 0;
+                new Date() > new Date(cpn.end_date) ? 1 : 0;
 
             return cpn;
         });
