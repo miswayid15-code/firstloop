@@ -106,8 +106,6 @@ router.delete(
 );
 
 
-// IMPORTANT:
-// KEEP PARAM ROUTE ALWAYS LAST
 router.get(
     '/branch/:id',
     auth,

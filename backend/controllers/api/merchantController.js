@@ -252,7 +252,7 @@ exports.registerStep2 = async (req, res) => {
             // phone duplicate check
             const phoneExists = await Merchant.findOne({
                 where: {
-                    phone: phoneNumber,
+                    phone: cleanPhone,
                     id: {
                         [Op.ne]: merchant.id
                     }
@@ -273,7 +273,7 @@ exports.registerStep2 = async (req, res) => {
         }
 
 
-        // email duplicate check
+        
         if (req.body.email) {
 
             const emailExists = await Merchant.findOne({
