@@ -1238,8 +1238,8 @@ exports.branch_details = async (req, res) => {
                     'percentage',
                     'min_amount',
                     'usage_limit',
-                    'start_time',
-                    'end_time'
+                    'start_date',
+                    'end_date'
                 ]
 
             });
@@ -1258,26 +1258,26 @@ exports.branch_details = async (req, res) => {
 
 
                 c.is_active =
-                    now >= c.start_time &&
-                        now <= c.end_time
+                    now >= c.start_date &&
+                        now <= c.end_date
                         ? 1
                         : 0;
 
 
-                c.start_time =
-                    c.start_time
+                c.start_date =
+                    c.start_date
                         ? moment(
-                            c.start_time,
-                            'HH:mm:ss'
-                        ).format('hh:mm A')
+                            c.start_date,
+                            'YYYY-MM-DD'
+                        ).format('DD/MM/YYYY')
                         : null;
 
-                c.end_time =
-                    c.end_time
+                c.end_date =
+                    c.end_date
                         ? moment(
-                            c.end_time,
-                            'HH:mm:ss'
-                        ).format('hh:mm A')
+                            c.end_date,
+                            'YYYY-MM-DD'
+                        ).format('DD/MM/YYYY')
                         : null;
 
                 return c;
@@ -1502,7 +1502,7 @@ exports.coupon_apply = async (req, res) => {
         // ✅ Coupon Active Check
         const is_active =
             now >= Coupon.start_date &&
-            now <= coupon.end_time;
+            now <= coupon.end_date;
 
         if (!is_active) {
 
@@ -1722,8 +1722,8 @@ exports.Coupon_list = async (req, res) => {
                             'branch_ids',
                             'code',
                             'percentage',
-                            'start_time',
-                            'end_time'
+                            'start_date',
+                            'end_date'
                         ]
                     }
 
@@ -1768,13 +1768,13 @@ exports.Coupon_list = async (req, res) => {
                                     )
                                     : null;
 
-                            data.Coupon.end_time =
-                                data.Coupon.end_time
+                            data.Coupon.end_date =
+                                data.Coupon.end_date
                                     ? moment(
-                                        data.Coupon.end_time,
-                                        'HH:mm:ss'
+                                        data.Coupon.end_date,
+                                        'YYYY-MM-DD'
                                     ).format(
-                                        'hh:mm A'
+                                        'DD/MM/YYYY'
                                     )
                                     : null;
 
