@@ -1504,8 +1504,10 @@ console.log("COUPON:", coupon);
         const is_active =
             now >= coupon.start_date &&
             now <= coupon.end_date;
-
-console.log("IS ACTIVE:", is_active);
+console.log("CURRENT TIME:", now);
+console.log("COUPON START:", coupon.start_date);
+console.log("COUPON END:", coupon.end_date);
+        console.log("IS ACTIVE:", is_active);
 
         if (!is_active) {
 
