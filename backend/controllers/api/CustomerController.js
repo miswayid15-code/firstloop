@@ -1423,7 +1423,7 @@ exports.coupon_apply = async (req, res) => {
         const customer_id =
             req.user.id;
 
-console.log("CUSTOMER ID:", customer_id);
+        console.log("CUSTOMER ID:", customer_id);
         const coupon_id =
             req.body?.coupon_id ||
             req.query?.coupon_id ||
@@ -1662,7 +1662,7 @@ exports.Coupon_list = async (req, res) => {
 
         const customer_id =
             req.user.id;
-console.log("CUSTOMER ID:", customer_id);
+        console.log("CUSTOMER ID:", customer_id);
         // ✅ Check Customer
         const customer =
             await Customer.findOne({
@@ -2487,3 +2487,251 @@ exports.fetch_appointment_details = async (req, res) => {
     }
 
 }
+
+
+exports.search = async (req, res) => {
+
+    try {
+
+        const customer_id = req.user.id;
+
+        const query =
+            req.body?.query ||
+            req.query?.query ||
+            null;
+
+        if (!query) {
+
+            return res.json({
+                status: 0,
+                message: "Search query is required"
+            });
+
+        }
+
+        // =========================
+        // MERCHANT SEARCH
+        // =========================
+
+        const merchants = await Merchant.findAll({
+
+            where: {
+                name: {
+                    [Op.iLike]: `%${query}%`
+                }
+            }, attributes: [
+                'id',
+                // 'merchant_id',
+                'bus_name',
+            ]
+
+            // include: [
+            //     {
+            //         model: Branch,
+            //         required: false
+            //     }
+            // ]
+
+        });
+
+        // =========================
+        // BRANCH SEARCH
+        // =========================
+
+        const branches = await Branch.findAll({
+
+            where: {
+                name: {
+                    [Op.iLike]: `%${query}%`
+                }
+            }, attributes: [
+                'id',
+                // 'merchant_id',
+                'name',
+            ]
+
+        });
+
+        // =========================
+        // COUPON SEARCH
+        // =========================
+
+        const coupons = await Coupon.findAll({
+
+            where: {
+
+                [Op.or]: [
+
+                    {
+                        code: {
+                            [Op.iLike]: `%${query}%`
+                        }
+                    }
+
+                ]
+
+            },
+
+            attributes: [
+                'id',
+                'branch_ids',
+                'code'
+            ]
+
+        });
+
+        // =========================
+        // FORMAT RESPONSE
+        // =========================
+
+        let results = [];
+
+        // MERCHANTS
+        merchants.forEach((item) => {
+
+            results.push({
+
+                type: "merchant",
+                // id: item.id,
+                // name: item.name,
+                data: item
+
+            });
+
+        });
+
+        // BRANCHES
+        branches.forEach((item) => {
+
+            results.push({
+
+                type: "branch",
+                // id: item.id,
+                // name: item.name,
+                data: item
+
+            });
+
+        });
+
+        // COUPONS
+        coupons.forEach((item) => {
+
+            results.push({
+
+                type: "coupon",
+                // id: item.id,
+                // name: item.title,
+                data: item
+
+            });
+
+        });
+
+        return res.json({
+
+            status: 1,
+            message: "Search results fetched successfully",
+            total: results.length,
+            data: results
+
+        });
+
+    }
+    catch (err) {
+
+        console.log("SEARCH ERROR:", err);
+
+        return res.json({
+
+            status: 0,
+            message: err.message
+
+        });
+
+    }
+
+};
+
+exports.merchants = async (req, res) => {
+
+    try {
+
+        const merchant_id =
+            req.body?.merchant_id ||
+            null;
+// console.log("MERCHANT ID:", merchant_id);
+        // ✅ Merchant ID required
+        if (!merchant_id) {
+
+            return res.json({
+                status: 0,
+                message: "Merchant ID is required"
+            });
+
+        }
+
+        const merchants = await Merchant.findAll({
+
+            where: {
+                id: merchant_id
+            },
+
+            attributes: [
+                'id',
+                'bus_name'
+            ],
+
+            include: [
+                {
+                    model: Branch,
+
+                    where: {
+                        del_status: 0,
+                        status: 1
+                    },
+
+                    required: true,
+
+                    attributes: [
+                        'id',
+                        'name'
+                    ]
+                }
+            ]
+
+        });
+
+        // ✅ No Data Check
+        if (!merchants || merchants.length === 0) {
+
+            return res.json({
+                status: 0,
+                message: "No merchants found"
+            });
+
+        }
+
+        return res.json({
+
+            status: 1,
+            message: "Merchants fetched successfully",
+            data: merchants
+
+        });
+
+    }
+    catch (err) {
+
+        console.log("MERCHANTS FETCH ERROR:", err);
+
+        return res.json({
+
+            status: 0,
+            message: err.message
+
+        });
+
+    }
+
+};

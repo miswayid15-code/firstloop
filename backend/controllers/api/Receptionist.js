@@ -7,7 +7,7 @@ exports.register = async (req, res) => {
 
     try {
 
-        const { name, email, phone, password, branch_id, } = req.body;
+        const { name, email, phone, password, branch_id,country_code } = req.body;
 
         // merchant check
         const merchant = await Merchant.findByPk(req.user.id);
@@ -21,27 +21,59 @@ exports.register = async (req, res) => {
 
         }
 
-        // phone validation
+  let nationalNumber;
+        let callingCode;
         let phoneNumber;
 
         try {
 
-            const num = parsePhoneNumber(phone);
+            // console.log("ORIGINAL PHONE:", phone);
+            // console.log("COUNTRY CODE:", country_code);
+
+            const cleanPhone =
+                phone.replace(/\s+/g, '');
+
+            // console.log("CLEAN PHONE:", cleanPhone);
+
+            const fullPhone =
+                cleanPhone.startsWith('+')
+                    ? cleanPhone
+                    : country_code + cleanPhone;
+
+            // console.log("FULL PHONE:", fullPhone);
+
+            const num =
+                parsePhoneNumber(fullPhone);
+
+            // console.log("PARSED PHONE:", num);
 
             if (!num.isValid()) {
 
+                // console.log("PHONE VALIDATION FAILED");
+
                 return res.json({
                     status: 0,
-                    message: "Invalid phone"
+                    message: "Invalid phone number"
                 });
 
             }
 
-            phoneNumber = num.number;
+            callingCode =
+                `+${num.countryCallingCode}`;
 
-        } catch (e) {
+            nationalNumber =
+                num.nationalNumber;
 
-            console.log(e);
+            phoneNumber =
+                num.number;
+
+            // console.log("CALLING CODE:", callingCode);
+            // console.log("NATIONAL NUMBER:", nationalNumber);
+            // console.log("INTERNATIONAL NUMBER:", phoneNumber);
+
+        } catch (err) {
+
+            // console.log("PHONE ERROR:", err);
 
             return res.json({
                 status: 0,
@@ -49,7 +81,6 @@ exports.register = async (req, res) => {
             });
 
         }
-
         // branch check
         const branch = await Branch.findByPk(branch_id);
 
@@ -119,6 +150,7 @@ exports.register = async (req, res) => {
             name,
             email,
             phone: phoneNumber,
+            country_code,
             password: hashedPassword,
 
             profile_image: profileImage,

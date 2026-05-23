@@ -6,9 +6,9 @@ const path = require('path');
 
 exports.register = async (req, res) => {
 
-    console.log("========== CREATE BRANCH API ==========");
-    console.log("BODY:", req.body);
-    console.log("USER:", req.user);
+    // console.log("========== CREATE BRANCH API ==========");
+    // console.log("BODY:", req.body);
+    // console.log("USER:", req.user);
 
     try {
 
@@ -27,7 +27,7 @@ exports.register = async (req, res) => {
 
         const merchant_id = req.user.id;
 
-        console.log("MERCHANT ID:", merchant_id);
+        // console.log("MERCHANT ID:", merchant_id);
 
         // ✅ Required Fields
         if (
@@ -36,7 +36,7 @@ exports.register = async (req, res) => {
             !phone
         ) {
 
-            console.log("VALIDATION FAILED: Required fields missing");
+            // console.log("VALIDATION FAILED: Required fields missing");
 
             return res.json({
                 status: 0,
@@ -45,7 +45,7 @@ exports.register = async (req, res) => {
 
         }
 
-        console.log("REQUIRED FIELD VALIDATION PASSED");
+        // console.log("REQUIRED FIELD VALIDATION PASSED");
 
         // ✅ Time Validation
         if (
@@ -54,9 +54,9 @@ exports.register = async (req, res) => {
             open_time >= close_time
         ) {
 
-            console.log("TIME VALIDATION FAILED");
-            console.log("OPEN TIME:", open_time);
-            console.log("CLOSE TIME:", close_time);
+            // console.log("TIME VALIDATION FAILED");
+            // console.log("OPEN TIME:", open_time);
+            // console.log("CLOSE TIME:", close_time);
 
             return res.json({
                 status: 0,
@@ -65,7 +65,7 @@ exports.register = async (req, res) => {
 
         }
 
-        console.log("TIME VALIDATION PASSED");
+        // console.log("TIME VALIDATION PASSED");
 
         // ✅ Phone Validation
         let nationalNumber;
@@ -74,29 +74,29 @@ exports.register = async (req, res) => {
 
         try {
 
-            console.log("ORIGINAL PHONE:", phone);
-            console.log("COUNTRY CODE:", country_code);
+            // console.log("ORIGINAL PHONE:", phone);
+            // console.log("COUNTRY CODE:", country_code);
 
             const cleanPhone =
                 phone.replace(/\s+/g, '');
 
-            console.log("CLEAN PHONE:", cleanPhone);
+            // console.log("CLEAN PHONE:", cleanPhone);
 
             const fullPhone =
                 cleanPhone.startsWith('+')
                     ? cleanPhone
                     : country_code + cleanPhone;
 
-            console.log("FULL PHONE:", fullPhone);
+            // console.log("FULL PHONE:", fullPhone);
 
             const num =
                 parsePhoneNumber(fullPhone);
 
-            console.log("PARSED PHONE:", num);
+            // console.log("PARSED PHONE:", num);
 
             if (!num.isValid()) {
 
-                console.log("PHONE VALIDATION FAILED");
+                // console.log("PHONE VALIDATION FAILED");
 
                 return res.json({
                     status: 0,
@@ -114,13 +114,13 @@ exports.register = async (req, res) => {
             phoneNumber =
                 num.number;
 
-            console.log("CALLING CODE:", callingCode);
-            console.log("NATIONAL NUMBER:", nationalNumber);
-            console.log("INTERNATIONAL NUMBER:", phoneNumber);
+            // console.log("CALLING CODE:", callingCode);
+            // console.log("NATIONAL NUMBER:", nationalNumber);
+            // console.log("INTERNATIONAL NUMBER:", phoneNumber);
 
         } catch (err) {
 
-            console.log("PHONE ERROR:", err);
+            // console.log("PHONE ERROR:", err);
 
             return res.json({
                 status: 0,
@@ -130,7 +130,7 @@ exports.register = async (req, res) => {
         }
 
         // ✅ Email Exists Check
-        console.log("CHECKING EMAIL:", email);
+        // console.log("CHECKING EMAIL:", email);
 
         const emailExists =
             await Branch.findOne({
@@ -139,11 +139,11 @@ exports.register = async (req, res) => {
 
             });
 
-        console.log("EMAIL EXISTS RESULT:", emailExists);
+        // console.log("EMAIL EXISTS RESULT:", emailExists);
 
         if (emailExists) {
 
-            console.log("EMAIL ALREADY EXISTS");
+            // console.log("EMAIL ALREADY EXISTS");
 
             return res.json({
 
@@ -155,10 +155,10 @@ exports.register = async (req, res) => {
 
         }
 
-        console.log("EMAIL VALIDATION PASSED");
+        // console.log("EMAIL VALIDATION PASSED");
 
         // ✅ Phone Exists Check
-        console.log("CHECKING PHONE EXISTS");
+        // console.log("CHECKING PHONE EXISTS");
 
         const phoneExists =
             await Branch.findOne({
@@ -173,11 +173,11 @@ exports.register = async (req, res) => {
 
             });
 
-        console.log("PHONE EXISTS RESULT:", phoneExists);
+        // console.log("PHONE EXISTS RESULT:", phoneExists);
 
         if (phoneExists) {
 
-            console.log("PHONE ALREADY EXISTS");
+            // console.log("PHONE ALREADY EXISTS");
 
             return res.json({
 
@@ -189,21 +189,21 @@ exports.register = async (req, res) => {
 
         }
 
-        console.log("PHONE VALIDATION PASSED");
+        // console.log("PHONE VALIDATION PASSED");
 
         // ✅ Merchant Check
-        console.log("CHECKING MERCHANT");
+        // console.log("CHECKING MERCHANT");
 
         const merchant =
             await Merchant.findByPk(
                 merchant_id
             );
 
-        console.log("MERCHANT RESULT:", merchant);
+        // console.log("MERCHANT RESULT:", merchant);
 
         if (!merchant) {
 
-            console.log("INVALID MERCHANT");
+            // console.log("INVALID MERCHANT");
 
             return res.json({
 
@@ -215,14 +215,14 @@ exports.register = async (req, res) => {
 
         }
 
-        console.log("MERCHANT VALIDATION PASSED");
+        // console.log("MERCHANT VALIDATION PASSED");
 
         // ✅ Files
         const files =
             req.files || [];
 
-        console.log("FILES:", files);
-        console.log("FILES COUNT:", files.length);
+        // console.log("FILES:", files);
+        // console.log("FILES COUNT:", files.length);
 
         // ✅ First image as profile image
         const profile_image =
@@ -230,10 +230,10 @@ exports.register = async (req, res) => {
                 ? files[0].path.replace(/\\/g, '/')
                 : null;
 
-        console.log("PROFILE IMAGE:", profile_image);
+        // console.log("PROFILE IMAGE:", profile_image);
 
         // ✅ Create Branch
-        console.log("CREATING BRANCH");
+        // console.log("CREATING BRANCH");
 
         const branch =
             await Branch.create({
@@ -268,12 +268,12 @@ exports.register = async (req, res) => {
 
             });
 
-        console.log("BRANCH CREATED:", branch);
+        // console.log("BRANCH CREATED:", branch);
 
         // ✅ Save Multiple Images
         if (files.length > 0) {
 
-            console.log("SAVING BRANCH IMAGES");
+             // console.log("SAVING BRANCH IMAGES");
 
             const imageData =
                 files.map(file => ({
@@ -285,22 +285,22 @@ exports.register = async (req, res) => {
 
                 }));
 
-            console.log("IMAGE DATA:", imageData);
+            // console.log("IMAGE DATA:", imageData);
 
             const imageInsert =
                 await BranchImage.bulkCreate(
                     imageData
                 );
 
-            console.log(
-                "BRANCH IMAGES INSERTED:",
-                imageInsert
-            );
+            // console.log(
+            //     "BRANCH IMAGES INSERTED:",
+            //     imageInsert
+            // );
 
         }
 
-        console.log("BRANCH CREATED SUCCESSFULLY");
-        console.log("======================================");
+        // console.log("BRANCH CREATED SUCCESSFULLY");
+        // console.log("======================================");
 
         return res.json({
 
@@ -330,7 +330,7 @@ exports.register = async (req, res) => {
             err.stack
         );
 
-        console.log("======================================");
+        // console.log("======================================");
 
         return res.json({
 

@@ -74,4 +74,14 @@ router.post(
     auth,
     controller.fetch_appointment_details 
 );
+router.post(
+   '/customer/search',
+    auth,
+    controller.search 
+);
+router.post(
+   '/customer/merchants',
+    auth,
+    controller.merchants 
+);
 module.exports = router;
