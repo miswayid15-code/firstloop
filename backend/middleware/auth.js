@@ -40,6 +40,10 @@ module.exports = (...roles) => {
                 decoded.user_type
             );
 
+            console.log(
+                "REQUIRED ROLES:",
+                roles
+            );
             // role check
             if (
 
@@ -48,7 +52,7 @@ module.exports = (...roles) => {
 
             ) {
 
-                // console.log("ROLE NOT MATCHED");
+                console.log("ROLE NOT MATCHED");
 
                 return res.json({
                     status: 0,

@@ -8,7 +8,7 @@ const auth = require('../../middleware/auth');
 router.post('/receptionist/register', (req, res, next) => {
   req.uploadFolder = 'Receptionist';
   next();
-}, auth('receptionist'),upload, controller.register);
+}, auth('merchant'),upload, controller.register);
 
 
 router.post('/receptionist/login', controller.login);
