@@ -18,7 +18,7 @@ const sendMail = async (to, subject, html) => {
 
         });
 
-        console.log("EMAIL SENT:", response);
+        // console.log("EMAIL SENT:", response);
 
         return response;
 
