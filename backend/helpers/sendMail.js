@@ -18,15 +18,11 @@ const sendMail = async (to, subject, html) => {
 
         });
 
-        // console.log("EMAIL SENT:", response);
-
-        return response;
+        console.log("EMAIL SENT:", response);
 
     } catch (err) {
 
         console.log("RESEND ERROR:", err);
-
-        return null;
 
     }
 
