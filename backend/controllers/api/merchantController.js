@@ -170,6 +170,7 @@ exports.registerStep1 = async (req, res) => {
             {
                 id: merchant.id,
                 email: merchant.email,
+                 user_type: 'merchant',
                 token_type: 'access'
             },
 
@@ -190,6 +191,7 @@ exports.registerStep1 = async (req, res) => {
             {
                 id: merchant.id,
                 email: merchant.email,
+                user_type: 'merchant',
                 token_type: 'refresh'
             },
 
