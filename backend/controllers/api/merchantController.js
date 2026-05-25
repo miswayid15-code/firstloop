@@ -538,6 +538,7 @@ exports.login = async (req, res) => {
             {
                 id: merchant.id,
                 email: merchant.email,
+                 user_type: 'merchant',
                 token_type: 'refresh'
             },
             process.env.JWT_SECRET,
@@ -554,6 +555,7 @@ exports.login = async (req, res) => {
             {
                 id: merchant.id,
                 email: merchant.email,
+                 user_type: 'merchant',
                 token_type: 'access'
             },
             process.env.JWT_SECRET,
