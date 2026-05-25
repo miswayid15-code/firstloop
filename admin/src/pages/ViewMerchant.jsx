@@ -355,7 +355,7 @@ export default function ViewMerchant() {
                                     }}
                                 >
 
-                                    {merchantData?.address}
+                                    {merchantData?.address}   
 
                                 </p>
 
