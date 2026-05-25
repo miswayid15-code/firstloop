@@ -152,7 +152,7 @@ exports.login = async (req, res) => {
 
                 id: admin.id,
                 name: admin.name,
-                
+
                 role: admin.role
 
             }
@@ -249,10 +249,10 @@ exports.refreshAccessToken = async (req, res) => {
     }
 };
 
-exports.dashboard=async(req,res)=>{
-    try{
+exports.dashboard = async (req, res) => {
+    try {
         const admin = await admins.findByPk(req.user.id);
-        if(!admin){
+        if (!admin) {
             return res.json({
                 status: 0,
                 message: "Admin not found"
@@ -262,8 +262,45 @@ exports.dashboard=async(req,res)=>{
         return res.json({
             status: 1,
             message: "Admin Dashboard"
-        }); }catch(err){
+        });
+    } catch (err) {
         return res.json({
+            status: 0,
+            message: "Error"
+        });
+    }
+};
+
+exports.merchant_list = async (req, res) => {
+    try {
+        const admin = await admins.findByPk(req.user.id);
+        if (!admin) {
+            return res.json({
+                status: 0,
+                message: "Admin not found"
+            });
+        }
+        const merchants = await merchant.findAll({
+            where:{
+                del_status: 0
+            },
+            attributes: ['id', 'name', 'email', 'phone', 'status'],
+            include: [
+                {
+                    model
+                }
+            ]
+        });
+
+        return res.json({
+            status: 1,
+            message: "Merchant List",
+            data: merchants
+        });
+
+    }
+    catch (err) {
+        res.json({
             status: 0,
             message: "Error"
         });
