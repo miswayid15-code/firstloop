@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 const { Sequelize } = require("sequelize");
 const {
     RefreshToken,
-    admins, Merchant, Branch,Receptionist
+    admins, Merchant, Branch, Receptionist, Coupon
 } = require('../../models');
 
 exports.login = async (req, res) => {
@@ -397,6 +397,15 @@ exports.fetchmerchant = async (req, res) => {
 
         const id = req.body.id;
 
+        if (!id) {
+
+            return res.json({
+                status: 0,
+                message: "Merchant id is required"
+            });
+
+        }
+
         const merchant = await Merchant.findOne({
 
             where: {
@@ -407,17 +416,29 @@ exports.fetchmerchant = async (req, res) => {
             include: [
 
                 {
+
                     model: Branch,
 
                     where: {
                         del_status: 0
                     },
+                    attributes: [
+                        'id',
+                        'name',
+                        'address',
+                        'email',
+                        'phone',
+                        'profile_image',
+
+
+                    ],
 
                     required: false,
 
                     include: [
 
                         {
+
                             model: Receptionist,
 
                             where: {
@@ -429,9 +450,7 @@ exports.fetchmerchant = async (req, res) => {
                             attributes: [
                                 'id',
                                 'name',
-                                'email',
-                                'phone',
-                                'profile_image'
+                                'profile_image',
                             ]
 
                         }
@@ -457,7 +476,6 @@ exports.fetchmerchant = async (req, res) => {
 
         const baseUrl = process.env.APP_URL;
 
-        // Merchant Images
         ['profile_image', 'brand_image', 'document'].forEach(field => {
 
             if (data[field]) {
@@ -473,16 +491,16 @@ exports.fetchmerchant = async (req, res) => {
 
         });
 
-        // Branch + Receptionist Images
         if (data.Branches && data.Branches.length > 0) {
 
-            data.Branches = data.Branches.map(branch => {
+            for (const branch of data.Branches) {
 
                 // Branch Image
                 if (branch.profile_image) {
 
                     branch.profile_image =
-                        baseUrl + '/' + branch.profile_image.replace(/\\/g, '/');
+                        baseUrl + '/' +
+                        branch.profile_image.replace(/\\/g, '/');
 
                 } else {
 
@@ -490,8 +508,9 @@ exports.fetchmerchant = async (req, res) => {
 
                 }
 
-                // Receptionists
-                if (branch.Receptionists && branch.Receptionists.length > 0) {
+                // Receptionist Images
+                if (branch.Receptionists &&
+                    branch.Receptionists.length > 0) {
 
                     branch.Receptionists =
                         branch.Receptionists.map(receptionist => {
@@ -514,15 +533,36 @@ exports.fetchmerchant = async (req, res) => {
 
                 }
 
-                return branch;
+                // Fetch Coupons manually
+                const coupons = await Coupon.findAll({
 
-            });
+                    where: {
+                        del_status: 0
+                    },
+
+                    attributes: ['id', 'branch_ids']
+
+                });
+
+                branch.coupon_count = coupons.filter(coupon => {
+
+                    return (
+                        Array.isArray(coupon.branch_ids) &&
+                        coupon.branch_ids.includes(branch.id)
+                    );
+
+                }).length;
+
+            }
 
         }
 
         return res.json({
+
             status: 1,
+            message: "Merchant fetched successfully",
             data: data
+
         });
 
     } catch (err) {
@@ -530,9 +570,11 @@ exports.fetchmerchant = async (req, res) => {
         console.log(err);
 
         return res.json({
+
             status: 0,
             message: "Error",
             error: err.message
+
         });
 
     }

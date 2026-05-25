@@ -4,7 +4,7 @@ const { parsePhoneNumber } = require('libphonenumber-js');
 const jwt = require('jsonwebtoken');
 const { Op } = require('sequelize');
 const moment = require('moment');
-
+const baseUrl = process.env.APP_URL;
 exports.register = async (req, res) => {
 
     try {
