@@ -32,7 +32,7 @@ function App() {
                 <Route path="profile" element={<Profile />} />
                 <Route path="add-merchant" element={<AddMerchant />} />
                 <Route path="edit-merchant" element={<EditMerchant />} />
-                <Route path="view-merchant" element={<ViewMerchant />} />
+                <Route path="view-merchant/:id" element={<ViewMerchant />} />
                 <Route path="branches" element={<Branches />} />
                 <Route path="receptionists" element={<Receptionists />} />
             </Route>

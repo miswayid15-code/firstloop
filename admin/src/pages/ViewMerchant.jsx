@@ -1,78 +1,123 @@
-import { useState } from 'react'
-import { NavLink } from 'react-router-dom'
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react'
 
-const branchesData = [
-    {
-        id: 1,
-        name: 'Downtown Starbucks',
-        address: '410 Broadway Ave, Downtown City',
-        status: 'active',
-        staff: 6,
-        coupons: 4
-    },
-    {
-        id: 2,
-        name: 'City Mall Store',
-        address: 'Level 2, City Galleria Shopping Mall',
-        status: 'active',
-        staff: 4,
-        coupons: 3
-    },
-    {
-        id: 3,
-        name: 'Starbucks Drive-Thru',
-        address: '82 North Highway Road, Exit 12',
-        status: 'active',
-        staff: 8,
-        coupons: 5
-    },
-    {
-        id: 4,
-        name: 'Financial District Outlet',
-        address: 'Exchange Towers Lobby, Financial Rd',
-        status: 'pending',
-        staff: 0,
-        coupons: 0
-    }
-]
+import {
+    NavLink,
+    useNavigate,
+    useParams
+} from 'react-router-dom'
+
+import API from '../api'
 
 export default function ViewMerchant() {
 
     const navigate = useNavigate()
 
+    const { id } = useParams()
+
     const [search, setSearch] = useState('')
+
+    const [merchantData, setMerchantData] = useState(null)
+
+    const [branchesData, setBranchesData] = useState([])
 
     const [editModal, setEditModal] = useState(false)
 
     const [addModal, setAddModal] = useState(false)
 
     const [selectedBranch, setSelectedBranch] = useState({
+
         branchName: '',
+
         status: '',
+
         address: '',
+
         map: '',
+
         contact: '',
+
         email: ''
+
     })
 
-    const filteredBranches = branchesData.filter((branch) =>
-        branch.name.toLowerCase().includes(search.toLowerCase()) ||
-        branch.address.toLowerCase().includes(search.toLowerCase())
-    )
+    useEffect(() => {
+
+        fetchMerchant()
+
+    }, [])
+    const fetchMerchant = async () => {
+
+        try {
+
+            const response = await API.post(
+
+                'merchant-fetch-id',
+
+                {
+                    id: id
+                }
+
+            )
+
+            // console.log(response.data)
+
+            if (response.data.status === 1) {
+
+                const merchant =
+                    response.data.data
+
+                setMerchantData(merchant)
+
+                setBranchesData(
+                    merchant.Branches || []
+                )
+
+            }
+
+        } catch (err) {
+
+            console.log(
+                "Error:",
+                err.response?.data || err.message
+            )
+
+        }
+
+    }
+
+    const filteredBranches =
+        branchesData.filter((branch) =>
+
+            branch.name
+                .toLowerCase()
+                .includes(search.toLowerCase()) ||
+
+            branch.address
+                .toLowerCase()
+                .includes(search.toLowerCase())
+
+        )
 
     const openEditModal = (branch) => {
 
         setSelectedBranch({
+
             branchName: branch.name,
+
             status: branch.status,
+
             address: branch.address,
+
             map: 'https://maps.google.com',
+
             contact: '+1 (555) 019-2831',
+
             email: 'branch@starbucks.com'
+
         })
 
         setEditModal(true)
+
     }
 
     const handleChange = (e) => {
@@ -80,10 +125,16 @@ export default function ViewMerchant() {
         const { name, value } = e.target
 
         setSelectedBranch((prev) => ({
+
             ...prev,
+
             [name]: value
+
         }))
+
     }
+
+
 
     return (
         <>
@@ -167,24 +218,181 @@ export default function ViewMerchant() {
                 <div className="merchant-profile-info">
 
                     <div className="cell-avatar merchant-avatar">
-                        S
+                        M
                     </div>
 
-                    <div className="cell-info">
+                    <div className="cell-info" style={{ width: '100%' }}>
 
-                        <div className="merchant-title-row">
+                        <div className="merchant-title-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
 
-                            <h2>Starbucks Coffee</h2>
+                            <h2>
+                                {merchantData?.name}
+                            </h2>
 
-                            <span className="badge active">
-                                Active
+                            <span
+                                className={`badge ${merchantData?.status == 1
+                                    ? 'active'
+                                    : 'pending'
+                                    }`}
+                            >
+
+                                {
+                                    merchantData?.status == 1
+                                        ? 'Active'
+                                        : 'Inactive'
+                                }
+
                             </span>
 
                         </div>
 
-                        <p className="merchant-subtext">
-                            Beverages & Cafe Franchise • partner@starbucks.com
+                        <p className="merchant-subtext" style={{ marginTop: 8, maxWidth: 540 }}>
+                            {merchantData?.bus_name} • {merchantData?.email} • {merchantData?.city}, {merchantData?.state}
                         </p>
+
+                        <div
+                            style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))',
+                                gap: '14px',
+                                marginTop: '18px'
+                            }}
+                        >
+
+                            <div>
+                                <small className="merchant-sub-label">
+                                    Business Name
+                                </small>
+
+                                <p className="merchant-subtext">
+                                    {merchantData?.bus_name}
+                                </p>
+                            </div>
+
+                            <div>
+                                <small className="merchant-sub-label">
+                                    Category
+                                </small>
+
+                                <p className="merchant-subtext">
+                                    {merchantData?.bus_cat}
+                                </p>
+                            </div>
+
+                            <div>
+                                <small className="merchant-sub-label">
+                                    Email
+                                </small>
+
+                                <p className="merchant-subtext">
+                                    {merchantData?.email}
+                                </p>
+                            </div>
+
+                            <div>
+                                <small className="merchant-sub-label">
+                                    Phone
+                                </small>
+
+                                <p className="merchant-subtext">
+                                    {merchantData?.phone}
+                                </p>
+                            </div>
+
+                            <div>
+                                <small className="merchant-sub-label">
+                                    City
+                                </small>
+
+                                <p className="merchant-subtext">
+                                    {merchantData?.city}
+                                </p>
+                            </div>
+
+                            <div>
+                                <small className="merchant-sub-label">
+                                    State
+                                </small>
+
+                                <p className="merchant-subtext">
+                                    {merchantData?.state}
+                                </p>
+                            </div>
+
+                            <div>
+                                <small className="merchant-sub-label">
+                                    Zip Code
+                                </small>
+
+                                <p className="merchant-subtext">
+                                    {merchantData?.zip_code}
+                                </p>
+                            </div>
+
+                            <div>
+                                <small className="merchant-sub-label">
+                                    Country
+                                </small>
+
+                                <p className="merchant-subtext">
+                                    {merchantData?.country}
+                                </p>
+                            </div>
+
+                            <div style={{ gridColumn: '1 / -1' }}>
+
+                                <small className="merchant-sub-label">
+                                    Address
+                                </small>
+
+                                <p
+                                    className="merchant-subtext"
+                                    style={{
+                                        whiteSpace: 'normal',
+                                        wordBreak: 'break-word',
+                                        lineHeight: '1.6',
+                                        maxWidth: '100%'
+                                    }}
+                                >
+
+                                    {merchantData?.address}
+
+                                </p>
+
+                            </div>
+
+                            <div>
+
+                                <small className="merchant-sub-label">
+                                    Document
+                                </small>
+
+                                <p>
+                                    <a
+                                        href={merchantData?.document}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="doc-link"
+                                    >
+                                        View Document
+                                    </a>
+                                </p>
+
+                            </div>
+
+                            <div>
+
+                                <small className="merchant-sub-label">
+                                    Created Date
+                                </small>
+
+                                <p className="merchant-subtext">
+                                    {merchantData?.createdAt}
+                                </p>
+
+                            </div>
+
+                        </div>
 
                     </div>
 
@@ -301,84 +509,153 @@ export default function ViewMerchant() {
 
                     <tbody>
 
-                        {filteredBranches.map((branch) => (
+                        {
 
-                            <tr key={branch.id}>
+                            filteredBranches.map((branch) => (
 
-                                <td>
-                                    <strong>{branch.name}</strong>
-                                </td>
+                                <tr key={branch.id}>
 
-                                <td>{branch.address}</td>
+                                    <td>
 
-                                <td>
+                                        <div className="table-cell-profile">
 
-                                    <span className={`badge ${branch.status}`}>
-                                        {branch.status}
-                                    </span>
+                                            <div className="cell-avatar">
 
-                                </td>
+                                                {branch.name?.charAt(0)}
 
-                                <td>
+                                            </div>
 
-                                    <button className="btn-sm-action">
+                                            <div className="cell-info">
 
-                                        <i className="fas fa-user-shield"></i>
+                                                <strong>
+                                                    {branch.name}
+                                                </strong>
 
-                                        {' '}
-                                        {branch.staff} Staff
+                                                <span className="cell-subtext">
 
-                                    </button>
+                                                    {/* {branch.address} */}
 
-                                </td>
+                                                </span>
 
-                                <td>
+                                            </div>
 
-                                    <button className="btn-sm-action-secondary">
+                                        </div>
 
-                                        <i className="fas fa-ticket-alt"></i>
+                                    </td>
 
-                                        {' '}
-                                        {branch.coupons} Coupons
+                                    <td>
 
-                                    </button>
-
-                                </td>
-
-                                <td>
-
-                                    <div
-                                        className="action-group"
-                                        style={{
-                                            justifyContent: 'flex-end'
-                                        }}
-                                    >
-
-                                        <button
-                                            className="btn-icon view"
-                                            onClick={() => navigate('/receptionists')}
+                                        <div
+                                            style={{
+                                                maxWidth: '450px',
+                                                whiteSpace: 'normal',
+                                                wordBreak: 'break-word',
+                                                lineHeight: '1.5'
+                                            }}
                                         >
-                                            <i className="fas fa-eye"></i>
-                                        </button>
 
-                                        <button
-                                            className="btn-icon edit"
-                                            onClick={() => openEditModal(branch)}
+                                            {branch.address}
+
+                                        </div>
+
+                                    </td>
+                                    <td>
+
+                                        <span
+                                            className={`badge ${branch.status == 1
+                                                ? 'active'
+                                                : 'pending'
+                                                }`}
                                         >
-                                            <i className="fas fa-edit"></i>
+
+                                            {
+                                                branch.status == 1
+                                                    ? 'Active'
+                                                    : 'Inactive'
+                                            }
+
+                                        </span>
+
+                                    </td>
+
+                                    <td>
+
+                                        <button className="btn-sm-action">
+
+                                            <i className="fas fa-user-shield"></i>
+
+                                            {' '}
+
+                                            {
+                                                branch.Receptionists?.length || 0
+                                            }
+
+                                            {' '}Staff
+
                                         </button>
 
-                                        <button className="btn-icon delete">
-                                            <i className="fas fa-trash-alt"></i>
+                                    </td>
+
+                                    <td>
+
+                                        <button className="btn-sm-action-secondary">
+
+                                            <i className="fas fa-ticket-alt"></i>
+
+                                            {' '}
+
+                                            {
+                                                branch.coupon_count || 0
+                                            }
+
+                                            {' '}Coupons
+
                                         </button>
 
-                                    </div>
+                                    </td>
 
-                                </td>
+                                    <td>
 
-                            </tr>
+                                        <div
+                                            className="action-group"
+                                            style={{
+                                                justifyContent: 'flex-end'
+                                            }}
+                                        >
 
-                        ))}
+                                            <button
+                                                className="btn-icon view"
+                                                onClick={() => navigate('/receptionists')}
+                                            >
+
+                                                <i className="fas fa-eye"></i>
+
+                                            </button>
+
+                                            <button
+                                                className="btn-icon edit"
+                                                onClick={() => openEditModal(branch)}
+                                            >
+
+                                                <i className="fas fa-edit"></i>
+
+                                            </button>
+
+                                            <button className="btn-icon delete">
+
+                                                <i className="fas fa-trash-alt"></i>
+
+                                            </button>
+
+                                        </div>
+
+                                    </td>
+
+                                </tr>
+
+                            ))
+
+                        }
 
                     </tbody>
 

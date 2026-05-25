@@ -127,4 +127,20 @@
             font-size: 0.74rem;
             color: var(--text-muted);
             letter-spacing: 0.5px;
-        }
+        }.merchant-sub-label{
+    font-size:12px;
+    font-weight:600;
+    color:#6b7280;
+    display:block;
+    margin-bottom:4px;
+}
+
+.doc-link{
+    color:var(--primary);
+    font-weight:600;
+    text-decoration:none;
+}
+
+.doc-link:hover{
+    text-decoration:underline;
+}
