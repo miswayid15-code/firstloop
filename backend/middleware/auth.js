@@ -23,7 +23,7 @@ module.exports = (...roles) => {
                 process.env.JWT_SECRET
             );
 
-            // console.log("TOKEN DATA:", decoded);
+            console.log("TOKEN DATA:", decoded);
 
             // access token check
             if (decoded.token_type !== 'access') {
@@ -35,10 +35,10 @@ module.exports = (...roles) => {
 
             }
 
-            // console.log(
-            //     "USER TYPE:",
-            //     decoded.user_type
-            // );
+            console.log(
+                "USER TYPE:",
+                decoded.user_type
+            );
 
             // role check
             if (
