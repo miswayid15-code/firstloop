@@ -75,7 +75,7 @@ exports.register = async (req, res) => {
 
         } catch (err) {
 
-            // console.log("PHONE ERROR:", err);
+            console.log("PHONE ERROR:", err);
 
             return res.json({
                 status: 0,
