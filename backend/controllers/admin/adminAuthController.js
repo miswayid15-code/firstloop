@@ -1,9 +1,9 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-
+const { Sequelize } = require("sequelize");
 const {
     RefreshToken,
-    admins
+    admins, Merchant, Branch,Receptionist
 } = require('../../models');
 
 exports.login = async (req, res) => {
@@ -272,37 +272,269 @@ exports.dashboard = async (req, res) => {
 };
 
 exports.merchant_list = async (req, res) => {
+
     try {
+
         const admin = await admins.findByPk(req.user.id);
+
         if (!admin) {
+
             return res.json({
                 status: 0,
                 message: "Admin not found"
             });
+
         }
-        const merchants = await merchant.findAll({
-            where:{
+
+        const merchants = await Merchant.findAll({
+
+            where: {
                 del_status: 0
             },
-            attributes: ['id', 'name', 'email', 'phone', 'status'],
+
+            attributes: [
+
+                'id',
+                'name',
+                'email',
+                'phone',
+                'status',
+
+                [
+                    Sequelize.fn(
+                        'TO_CHAR',
+                        Sequelize.col('Merchant.createdAt'),
+                        'DD-MM-YYYY HH12:MI AM'
+                    ),
+                    'createdAt'
+                ],
+
+                [
+                    Sequelize.fn(
+                        'COUNT',
+                        Sequelize.col('Branches.id')
+                    ),
+                    'branch_count'
+                ]
+
+            ],
+
             include: [
+
                 {
-                    model
+                    model: Branch,
+
+                    where: {
+                        del_status: 0,
+                        status: 1
+                    },
+
+                    attributes: [],
+
+                    required: false
                 }
-            ]
+
+            ],
+
+            group: [
+
+                'Merchant.id'
+
+            ],
+
+            order: [
+
+                ['id', 'DESC']
+
+            ],
+
+            subQuery: false
+
         });
 
         return res.json({
+
             status: 1,
+
             message: "Merchant List",
+
             data: merchants
+
+        });
+
+    } catch (err) {
+
+        console.log("MERCHANT LIST ERROR:", err);
+
+        return res.json({
+
+            status: 0,
+
+            message: "Error",
+
+            error: err.message
+
         });
 
     }
-    catch (err) {
-        res.json({
-            status: 0,
-            message: "Error"
+
+};
+
+exports.fetchmerchant = async (req, res) => {
+
+    try {
+
+        const admin = await admins.findByPk(req.user.id);
+
+        if (!admin) {
+
+            return res.json({
+                status: 0,
+                message: "Admin not found"
+            });
+
+        }
+
+        const id = req.body.id;
+
+        const merchant = await Merchant.findOne({
+
+            where: {
+                id: id,
+                del_status: 0
+            },
+
+            include: [
+
+                {
+                    model: Branch,
+
+                    where: {
+                        del_status: 0
+                    },
+
+                    required: false,
+
+                    include: [
+
+                        {
+                            model: Receptionist,
+
+                            where: {
+                                del_status: 0
+                            },
+
+                            required: false,
+
+                            attributes: [
+                                'id',
+                                'name',
+                                'email',
+                                'phone',
+                                'profile_image'
+                            ]
+
+                        }
+
+                    ]
+
+                }
+
+            ]
+
         });
+
+        if (!merchant) {
+
+            return res.json({
+                status: 0,
+                message: "Merchant not found"
+            });
+
+        }
+
+        const data = merchant.toJSON();
+
+        const baseUrl = process.env.APP_URL;
+
+        // Merchant Images
+        ['profile_image', 'brand_image', 'document'].forEach(field => {
+
+            if (data[field]) {
+
+                data[field] =
+                    baseUrl + '/' + data[field].replace(/\\/g, '/');
+
+            } else {
+
+                data[field] = null;
+
+            }
+
+        });
+
+        // Branch + Receptionist Images
+        if (data.Branches && data.Branches.length > 0) {
+
+            data.Branches = data.Branches.map(branch => {
+
+                // Branch Image
+                if (branch.profile_image) {
+
+                    branch.profile_image =
+                        baseUrl + '/' + branch.profile_image.replace(/\\/g, '/');
+
+                } else {
+
+                    branch.profile_image = null;
+
+                }
+
+                // Receptionists
+                if (branch.Receptionists && branch.Receptionists.length > 0) {
+
+                    branch.Receptionists =
+                        branch.Receptionists.map(receptionist => {
+
+                            if (receptionist.profile_image) {
+
+                                receptionist.profile_image =
+                                    baseUrl + '/' +
+                                    receptionist.profile_image.replace(/\\/g, '/');
+
+                            } else {
+
+                                receptionist.profile_image = null;
+
+                            }
+
+                            return receptionist;
+
+                        });
+
+                }
+
+                return branch;
+
+            });
+
+        }
+
+        return res.json({
+            status: 1,
+            data: data
+        });
+
+    } catch (err) {
+
+        console.log(err);
+
+        return res.json({
+            status: 0,
+            message: "Error",
+            error: err.message
+        });
+
     }
+
 };
