@@ -491,13 +491,7 @@ exports.forget_password = async (req, res) => {
 
         const { email } = req.body;
 
-        console.log("FORGET PASSWORD REQUEST:", {
-            email
-        });
-
         if (!email) {
-
-            console.log("EMAIL NOT PROVIDED");
 
             return res.status(400).json({
                 status: 0,
@@ -510,11 +504,7 @@ exports.forget_password = async (req, res) => {
             where: { email }
         });
 
-        console.log("CUSTOMER DETAILS:", customer);
-
         if (!customer) {
-
-            console.log("CUSTOMER NOT FOUND");
 
             return res.status(404).json({
                 status: 0,
@@ -524,7 +514,7 @@ exports.forget_password = async (req, res) => {
         }
 
         // expire old otp
-        const expiredOtp = await CustomerFp.update(
+        await CustomerFp.update(
             {
                 status: 2
             },
@@ -536,16 +526,12 @@ exports.forget_password = async (req, res) => {
             }
         );
 
-        console.log("OLD OTP EXPIRED:", expiredOtp);
-
         const otp = Math.floor(
             100000 + Math.random() * 900000
         );
 
-        console.log("GENERATED OTP:", otp);
-
         // create otp
-        const createdOtp = await CustomerFp.create({
+        await CustomerFp.create({
 
             cus_id: customer.id,
             otp: otp,
@@ -553,16 +539,12 @@ exports.forget_password = async (req, res) => {
 
         });
 
-        console.log("OTP CREATED:", createdOtp);
-
         // send mail
-        const mailResponse = await sendMail(
+        await sendMail(
             email,
             'Forget Password OTP',
             otpTemplate(otp, 'Customer')
         );
-
-        console.log("MAIL RESPONSE:", mailResponse);
 
         return res.status(200).json({
             status: 1,
@@ -571,7 +553,7 @@ exports.forget_password = async (req, res) => {
 
     } catch (err) {
 
-        console.log("FORGET PASSWORD ERROR:", err);
+        console.log("ERROR:", err);
 
         return res.status(500).json({
             status: 0,
