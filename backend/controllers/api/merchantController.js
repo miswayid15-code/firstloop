@@ -700,36 +700,43 @@ exports.branch_list = async (req, res) => {
         const merchant = await Merchant.findByPk(req.user.id);
 
         if (!merchant) {
+
             return res.json({
                 status: 0,
                 message: "Merchant not found"
             });
+
         }
 
         const branch = await Branch.findAll({
+
             where: {
                 merchant_id: merchant.id,
                 del_status: 0
             },
+
             order: [['id', 'DESC']]
+
         });
-        
-        if (branch.profile_image) {
 
-            branch.profile_image =
-                baseUrl + '/' +
-                branch.profile_image.replace(/\\/g, '/');
+        const branchData = branch.map((item) => {
 
-        } else {
+            const data = item.toJSON();
 
-            branch.profile_image = null;
+            data.profile_image = data.profile_image
+                ? baseUrl + '/' + data.profile_image.replace(/\\/g, '/')
+                : null;
 
-        }
+            return data;
+
+        });
 
         return res.json({
+
             status: 1,
             message: "Branch list fetched successfully",
-            data: branch
+            data: branchData
+
         });
 
     } catch (err) {
@@ -737,8 +744,10 @@ exports.branch_list = async (req, res) => {
         console.log("ERROR:", err);
 
         return res.json({
+
             status: 0,
             message: err.message
+
         });
 
     }
