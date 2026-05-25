@@ -1660,10 +1660,8 @@ exports.Coupon_list = async (req, res) => {
 
     try {
 
-        const customer_id =
-            req.user.id;
-        console.log("CUSTOMER ID:", customer_id);
-        // ✅ Check Customer
+        const customer_id = req.user.id;
+        // console.log("CUSTOMER ID:", customer_id);
         const customer =
             await Customer.findOne({
 
@@ -1868,11 +1866,17 @@ exports.Coupon_list = async (req, res) => {
                 )
 
             );
+        const status_count = {
+            pending: finalData.filter(item => item.status == 0).length,
+            approved: finalData.filter(item => item.status == 1).length,
+            rejected: finalData.filter(item => item.status == 2).length
+        };
 
         // ✅ Response
         return res.json({
 
             status: 1,
+            counts: status_count,
 
             message:
                 "Coupon List Fetch Successfully",
@@ -1884,19 +1888,10 @@ exports.Coupon_list = async (req, res) => {
 
     }
     catch (err) {
-
-        console.log(
-            "FETCH ERROR:",
-            err
-        );
-
+        console.log("FETCH ERROR:", err);
         return res.json({
-
             status: 0,
-
-            message:
-                err.message
-
+            message: err.message
         });
 
     }
@@ -2310,13 +2305,25 @@ exports.fetch_appointment = async (req, res) => {
             };
 
         });
+        const status_count = {
+
+            pending:
+                formattedAppointments.filter(item => item.status == 0).length,
+
+            approved:
+                formattedAppointments.filter(item => item.status == 1).length,
+
+            rejected:
+                formattedAppointments.filter(item => item.status == 2).length
+
+        };
 
         return res.json({
 
             status: 1,
 
             message: "Appointments fetched successfully",
-
+            counts: status_count,
             data: formattedAppointments
 
         });
@@ -2660,7 +2667,7 @@ exports.merchants = async (req, res) => {
         const merchant_id =
             req.body?.merchant_id ||
             null;
-// console.log("MERCHANT ID:", merchant_id);
+        // console.log("MERCHANT ID:", merchant_id);
         // ✅ Merchant ID required
         if (!merchant_id) {
 

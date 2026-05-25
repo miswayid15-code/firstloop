@@ -8,10 +8,15 @@ const auth = require('../../middleware/auth');
 router.post('/receptionist/register', (req, res, next) => {
   req.uploadFolder = 'Receptionist';
   next();
-}, auth,upload, controller.register);
+}, auth('receptionist'),upload, controller.register);
 
 
 router.post('/receptionist/login', controller.login);
-router.post('/receptionist/logout', auth, controller.logout);
-router.post('/receptionist/refreshAccessToken', auth, controller.refreshAccessToken);
+router.post('/receptionist/logout', auth('receptionist'), controller.logout);
+router.post('/receptionist/refreshAccessToken', auth('receptionist'), controller.refreshAccessToken);
+router.get(
+    '/receptionist/dashboard',
+    auth('receptionist'),
+    controller.dashboard
+);
 module.exports = router;

@@ -1,13 +1,15 @@
-const { Receptionist, RefreshToken, Branch, Merchant } = require('../../models');
+const { Receptionist, RefreshToken, Branch, Merchant, Appointment, Coupon, CouponApplied } = require('../../models');
 const bcrypt = require('bcryptjs');
 const { parsePhoneNumber } = require('libphonenumber-js');
 const jwt = require('jsonwebtoken');
+const { Op } = require('sequelize');
+const moment = require('moment');
 
 exports.register = async (req, res) => {
 
     try {
 
-        const { name, email, phone, password, branch_id,country_code } = req.body;
+        const { name, email, phone, password, branch_id, country_code } = req.body;
 
         // merchant check
         const merchant = await Merchant.findByPk(req.user.id);
@@ -21,7 +23,7 @@ exports.register = async (req, res) => {
 
         }
 
-  let nationalNumber;
+        let nationalNumber;
         let callingCode;
         let phoneNumber;
 
@@ -350,3 +352,223 @@ exports.refreshAccessToken = async (req, res) => {
     }
 };
 
+
+
+
+exports.dashboard = async (req, res) => {
+
+    try {
+
+        const receptionist = await Receptionist.findByPk(req.user.id, {
+
+            attributes: [
+                'id',
+                'name',
+                'email',
+                'phone',
+                'profile_image'
+            ],
+
+            include: [
+
+                {
+                    model: Branch,
+
+                    where: {
+                        status: 1,
+                        del_status: 0
+                    },
+
+                    required: false,
+
+                    attributes: [
+                        'id',
+                        'name',
+                        'email',
+                        'phone',
+                        'profile_image'
+                    ],
+
+                    include: [
+
+                        {
+                            model: Appointment,
+                             limit: 10,
+
+                            required: false,
+
+                            attributes: [
+                                'id',
+                                'cus_id',
+                                'br_id',
+                                'br_name',
+                                'appointment_date',
+                                'slot',
+                                'status',
+                                'cancel_by',
+                                'cancel_reason',
+                                'approved_by',
+                                'approved_by_id'
+                            ]
+                        },
+
+                        {
+                            model: Merchant,
+
+                            required: false,
+
+                            attributes: [
+                                'id',
+                                'bus_name',
+                                'name'
+                            ]
+                        }
+
+                    ]
+
+                }
+
+            ]
+
+        });
+
+        if (!receptionist) {
+
+            return res.json({
+                status: 0,
+                message: "Receptionist not found"
+            });
+
+        }
+
+        // receptionist image
+        if (receptionist.profile_image) {
+
+            receptionist.profile_image =
+                baseUrl + '/' +
+                receptionist.profile_image.replace(/\\/g, '/');
+
+        } else {
+
+            receptionist.profile_image = null;
+
+        }
+
+        // branch details
+        if (receptionist.Branch) {
+
+            const branch = receptionist.Branch;
+
+            // branch image
+            if (branch.profile_image) {
+
+                branch.profile_image =
+                    baseUrl + '/' +
+                    branch.profile_image.replace(/\\/g, '/');
+
+            } else {
+
+                branch.profile_image = null;
+
+            }
+
+            // appointment count
+            branch.dataValues.appointment_count =
+                branch.Appointments
+                    ? branch.Appointments.length
+                    : 0;
+
+            // slot format
+            if (branch.Appointments?.length > 0) {
+
+                branch.Appointments.forEach(appointment => {
+
+                    if (appointment.slot) {
+
+                        appointment.slot = moment(
+                            appointment.slot,
+                            "HH:mm"
+                        ).format("hh:mm A");
+
+                    }
+
+                });
+
+            }
+
+            // coupon count
+            const coupon_count = await Coupon.count({
+
+                where: {
+
+                    branch_ids: {
+                        [Op.contains]: [branch.id]
+                    },
+
+                    status: 1,
+                    del_status: 0
+
+                }
+
+            });
+
+            branch.dataValues.coupon_count =
+                coupon_count;
+
+            // redeemed users count
+            const redeemed_users =
+                await CouponApplied.count({
+
+                    include: [
+
+                        {
+                            model: Coupon,
+
+                            required: true,
+
+                            where: {
+
+                                branch_ids: {
+                                    [Op.contains]: [branch.id]
+                                },
+
+                                status: 1,
+                                del_status: 0
+
+                            }
+
+                        }
+
+                    ],
+
+                    where: {
+                        status: 1,
+                        del_status: 0
+                    }
+
+                });
+
+            branch.dataValues.Redeemed_Users =
+                redeemed_users;
+
+        }
+
+        return res.json({
+            status: 1,
+            message: "Receptionist Dashboard",
+            data: receptionist
+        });
+
+    } catch (err) {
+
+        console.log("DASHBOARD ERROR:", err);
+
+        return res.json({
+            status: 0,
+            message: "Error",
+            error: err.message
+        });
+
+    }
+
+};

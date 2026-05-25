@@ -74,6 +74,10 @@ module.exports = (sequelize, DataTypes) => {
         Coupon.belongsTo(models.Merchant, {
             foreignKey: 'merchant_id'
         });
+        Coupon.hasMany(models.CouponApplied, {
+        foreignKey: 'coupon_id'
+    });
+
 
     };
 

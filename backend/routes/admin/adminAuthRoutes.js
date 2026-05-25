@@ -1,7 +1,18 @@
 const express = require('express');
 const router = express.Router();
-const { adminLogin } = require('../../controllers/admin/adminAuthController');
+const upload = require('../../middleware/upload');
 
-router.post('/login', adminLogin);
+const auth = require('../../middleware/auth');
+const controller = require('../../controllers/admin/adminAuthController');
+
+router.post('/login', controller.login);
+router.post('/logout', auth('admin'), controller.logout);
+router.post('/refresh-token', controller.refreshAccessToken);
+
+
+
+
+
+
 
 module.exports = router;

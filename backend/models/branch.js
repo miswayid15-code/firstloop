@@ -61,6 +61,12 @@ module.exports = (sequelize, DataTypes) => {
         Branch.hasMany(models.MenuImage, {
             foreignKey: 'branch_id'
         });
+                Branch.hasMany(models.Appointment, {
+            foreignKey: 'br_id'
+        });
+        Branch.hasMany(models.Coupon, {
+            foreignKey: 'branch_id'
+        });
 
     };
 

@@ -17,7 +17,7 @@ router.post(
 
   upload,
 
-    auth,
+    auth('merchant'),
 
     controller.create_coupon
 );
@@ -26,8 +26,8 @@ router.post('/coupon-update',  (req, res, next) => {
     next();
   },
 
-  upload, auth,controller.update_coupon);
-router.get('/coupon-fetch', auth,controller.fetch_coupon);
-router.post('/coupon-check', auth,controller.check_coupon);
-router.post('/coupon-generate', auth,controller.generate_coupon);
+  upload, auth('merchant'),controller.update_coupon);
+router.get('/coupon-fetch', auth('merchant'),controller.fetch_coupon);
+router.post('/coupon-check', auth('merchant'),controller.check_coupon);
+router.post('/coupon-generate', auth('merchant'),controller.generate_coupon);
 module.exports = router;

@@ -526,13 +526,13 @@ exports.login = async (req, res) => {
         const { email, password } = req.body;
         const merchant = await Merchant.findOne({ where: { email } })
         if (!merchant) {
-            return res.json({ status: 0, message: "Invalid email or password" });
+            return res.json({ status: 0, message: "Invalid email " });
         }
 
 
         const match = await bcrypt.compare(password, merchant.password);
         if (!match) {
-            return res.json({ status: 0, message: "Invalid email or password" });
+            return res.json({ status: 0, message: "Invalid password" });
         }
         const refreshToken = jwt.sign(
             {
@@ -709,6 +709,18 @@ exports.branch_list = async (req, res) => {
             },
             order: [['id', 'DESC']]
         });
+        
+        if (branch.profile_image) {
+
+            branch.profile_image =
+                baseUrl + '/' +
+                branch.profile_image.replace(/\\/g, '/');
+
+        } else {
+
+            branch.profile_image = null;
+
+        }
 
         return res.json({
             status: 1,

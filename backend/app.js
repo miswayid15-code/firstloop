@@ -17,7 +17,22 @@ app.get('/backend', (req, res) => {
     res.send('Dealora API Running 🚀');
 });
 
-app.use('/admin/auth', require('./routes/admin/adminAuthRoutes'));
+app.use('/admin', require('./routes/admin/adminAuthRoutes'));
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 app.use('/api', require('./routes/api/testRoutes'));
 app.use('/api', require('./routes/api/merchantRoutes'));
 app.use('/api', require('./routes/api/branchRoutes'));

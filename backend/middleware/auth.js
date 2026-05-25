@@ -1,46 +1,79 @@
 const jwt = require('jsonwebtoken');
 
-module.exports = (req, res, next) => {
+module.exports = (...roles) => {
 
-    try {
+    return (req, res, next) => {
 
-        const token = req.headers.authorization?.split(' ')[1];
+        try {
 
-        if (!token) {
+            const token =
+                req.headers.authorization?.split(' ')[1];
+
+            if (!token) {
+
+                return res.json({
+                    status: 0,
+                    message: "No token"
+                });
+
+            }
+
+            const decoded = jwt.verify(
+                token,
+                process.env.JWT_SECRET
+            );
+
+            // console.log("TOKEN DATA:", decoded);
+
+            // access token check
+            if (decoded.token_type !== 'access') {
+
+                return res.json({
+                    status: 0,
+                    message: "Access token required"
+                });
+
+            }
+
+            // console.log(
+            //     "USER TYPE:",
+            //     decoded.user_type
+            // );
+
+            // role check
+            if (
+
+                roles.length > 0 &&
+                !roles.includes(decoded.user_type)
+
+            ) {
+
+                // console.log("ROLE NOT MATCHED");
+
+                return res.json({
+                    status: 0,
+                    message: "Unauthorized access"
+                });
+
+            }
+
+            // console.log("ROLE MATCHED");
+
+            req.user = decoded;
+
+            next();
+
+        } catch (err) {
+
+            // console.log("AUTH ERROR:", err);
 
             return res.json({
                 status: 0,
-                message: "No token"
+                message: "Invalid token"
             });
 
         }
 
-        const decoded = jwt.verify(
-            token,
-            process.env.JWT_SECRET
-        );
-
-        // only access token allowed
-        if (decoded.token_type !== 'access') {
-
-            return res.json({
-                status: 0,
-                message: "Access token required"
-            });
-
-        }
-
-        req.user = decoded;
-
-        next();
-
-    } catch (err) {
-
-        return res.json({
-            status: 0,
-            message: "Invalid token"
-        });
-
-    }
+    };
 
 };

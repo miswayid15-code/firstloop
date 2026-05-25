@@ -13,7 +13,7 @@ router.post(
 console.log("STEP 1 ROUTE HIT");
 next();
 },
-auth,
+ auth('merchant'),
 (req, res, next) => {
 console.log("STEP 2 AUTH OK");
 next();
@@ -31,7 +31,7 @@ controller.register
 // ================= UPDATE BRANCH =================
 router.post(
     '/branch/update',
-    auth,
+     auth('merchant'),
     (req, res, next) => {
         req.uploadFolder = 'branch';
         next();
@@ -44,13 +44,13 @@ router.post(
 // ================= FETCH BRANCH LIST =================
 router.get(
     '/branch/fetch-branch',
-    auth,
+     auth('merchant'),
     controller.fetch_list
 );
 
 
 // ================= APPOINTMENT LIST =================
-router.post('/branch/update-appointment',auth,(req,res,next)=>{
+router.post('/branch/update-appointment', auth('merchant'),(req,res,next)=>{
         console.log("UPDATE APPOINTMENT ROUTE HIT");
         next();
     },controller.update_appointment_status
@@ -62,7 +62,7 @@ router.post('/branch/update-appointment',auth,(req,res,next)=>{
 // ================= DELETE BRANCH =================
 router.post(
     '/branch/delete',
-    auth,
+     auth('merchant'),
     controller.delete_branch
 );
 
@@ -70,7 +70,7 @@ router.post(
 // ================= CREATE MENU IMAGE =================
 router.post(
     '/branch/create_menu_image',
-    auth,
+     auth('merchant'),
     (req, res, next) => {
         req.uploadFolder = 'branch/menu';
         next();
@@ -83,7 +83,7 @@ router.post(
 // ================= FETCH MENU IMAGES =================
 router.get(
     '/branch/fetch_menu_images/:branch_id',
-    auth,
+     auth('merchant'),
     controller.fetch_menu_images
 );
 
@@ -91,7 +91,7 @@ router.get(
 // ================= UPDATE MENU IMAGE =================
 router.post(
     '/branch/update_menu_image',
-    auth,
+     auth('merchant'),
     (req, res, next) => {
         req.uploadFolder = 'branch/menu';
         next();
@@ -104,11 +104,11 @@ router.post(
 // ================= DELETE MENU IMAGE =================
 router.delete(
     '/branch/delete_menu_image',
-    auth,
+     auth('merchant'),
     controller.delete_menu_image
 );
 
 
-router.get('/branch/details/:id', auth, controller.branch_id);
+router.get('/branch/details/:id',  auth('merchant'), controller.branch_id);
 
 module.exports = router;

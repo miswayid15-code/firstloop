@@ -9,14 +9,14 @@ router.post('/customer/register', (req, res, next) => {
   req.uploadFolder = 'customer';
   next();
 }, upload, controller.register);
-router.post('/customer/logout', auth, controller.logout);
+router.post('/customer/logout', auth('customer'), controller.logout);
 router.post('/customer/login', controller.login);
-router.post('/customer/refreshAccessToken', auth, controller.refreshAccessToken);
+router.post('/customer/refreshAccessToken', auth('customer'), controller.refreshAccessToken);
 router.post('/customer/forget-password', controller.forget_password);
 router.post('/customer/reset-password', controller.reset_ps);
 router.post(
     '/customer/update',
-    auth,
+    auth('customer'),
       (req, res, next) => {
     req.uploadFolder = 'customer';
     next();
@@ -24,7 +24,7 @@ router.post(
     upload,
     controller.update
 );
-router.get('/customer/fetch-customer-by', auth, controller.fetch_list);
+router.get('/customer/fetch-customer-by', auth('customer'), controller.fetch_list);
 router.get(
     '/customer/home',
     controller.home
@@ -32,7 +32,7 @@ router.get(
 
 router.post(
     '/customer/home',
-    auth,
+    auth('customer'),
     controller.home
 );
 router.get(
@@ -41,47 +41,47 @@ router.get(
 );
 router.post(
    '/branch-details',
-    auth,
+    auth('customer'),
     controller.branch_details
 );
 router.post(
    '/customer/coupon-apply',
-    auth,
+    auth('customer'),
     controller.coupon_apply
 );
 router.post(
    '/customer/coupon-list',
-    auth,
+    auth('customer'),
     controller.Coupon_list
 );
 router.post(
    '/customer/wishlist',
-    auth,
+    auth('customer'),
     controller.wishlist 
 );
 router.post(
    '/customer/book-appointment',
-    auth,
+    auth('customer'),
     controller.appointment 
 );
 router.get(
    '/customer/fetch-appointment',
-    auth,
+    auth('customer'),
     controller.fetch_appointment 
 );
 router.post(
    '/customer/fetch-appointment-details',
-    auth,
+    auth('customer'),
     controller.fetch_appointment_details 
 );
 router.post(
    '/customer/search',
-    auth,
+    auth('customer'),
     controller.search 
 );
 router.post(
    '/customer/merchants',
-    auth,
+    auth('customer'),
     controller.merchants 
 );
 module.exports = router;
