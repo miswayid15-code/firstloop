@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 import { Toaster, toast } from "react-hot-toast";
 
-import API from "../api.js";
+import API from '@/api.js';
 
 import logo from "../assets/img/logo.png";
 
