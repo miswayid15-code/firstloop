@@ -8,7 +8,7 @@ const sendMail = async (to, subject, html) => {
 
         const response = await resend.emails.send({
 
-            from: 'amogamart03@gmail.com',
+            from: process.env.RESEND_FROM_EMAIL,
 
             to,
 
@@ -20,9 +20,13 @@ const sendMail = async (to, subject, html) => {
 
         console.log("EMAIL SENT:", response);
 
+        return response;
+
     } catch (err) {
 
         console.log("RESEND ERROR:", err);
+
+        return null;
 
     }
 
