@@ -537,7 +537,7 @@ exports.fetchmerchant = async (req, res) => {
                 const coupons = await Coupon.findAll({
 
                     where: {
-                        del_status: 0
+                        del_status: 0 
                     },
 
                     attributes: ['id', 'branch_ids']
