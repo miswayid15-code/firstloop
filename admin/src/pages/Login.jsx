@@ -28,7 +28,7 @@ export default function Login() {
       const response = await API.post("login", {
         username,
         password,
-      });
+      });  
 
       const data = response.data;
 
