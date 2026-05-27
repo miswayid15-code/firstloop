@@ -453,13 +453,44 @@
 }
 
 .merchant-profile-stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+    gap: 24px;
+    align-items: start;
+}
+
+.merchant-profile-stats-avatar {
+    grid-column: 1 / -1;
     display: flex;
-    gap: 30px;
-    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    padding-bottom: 10px;
+}
+
+.merchant-profile-stats-avatar .merchant-avatar {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    overflow: hidden;
+}
+
+.merchant-profile-stats-avatar .merchant-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
 }
 
 .merchant-stat-item {
     text-align: center;
+    padding: 20px 18px;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 20px;
+    min-height: 110px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 12px;
 }
 
 .merchant-stat-item.border-left {

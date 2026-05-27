@@ -171,7 +171,7 @@ export default function ViewMerchant() {
                         style={{ fontSize: '0.7rem' }}
                     ></i>
 
-                    <span>Starbucks Coffee</span>
+                    <span> {merchantData?.bus_name}</span>
 
                 </div>
 
@@ -427,7 +427,20 @@ export default function ViewMerchant() {
 
                         </div>
 
-                        <div className="merchant-profile-stats">
+                        <div className="merchant-profile-stats merchant-profile-stats-grid">
+
+                            <div className="merchant-profile-stats-avatar">
+                                <div className="merchant-avatar merchant-avatar-small">
+                                    {merchantData?.profile_image ? (
+                                        <img
+                                            src={merchantData.profile_image}
+                                            alt={merchantData?.name || 'Merchant'}
+                                        />
+                                    ) : (
+                                        merchantData?.name?.charAt(0)
+                                    )}
+                                </div>
+                            </div>
 
                             <div className="merchant-stat-item">
 
@@ -441,7 +454,7 @@ export default function ViewMerchant() {
 
                             </div>
 
-                            <div className="merchant-stat-item border-left">
+                            <div className="merchant-stat-item">
 
                                 <span className="merchant-stat-val">
                                     32
@@ -453,7 +466,18 @@ export default function ViewMerchant() {
 
                             </div>
 
-                            <div className="merchant-stat-item border-left">
+                            <div className="merchant-stat-item">
+
+                                <span className="merchant-stat-val">
+                                    1k
+                                </span>
+
+                                <span className="merchant-stat-lbl">
+                                    Active Coupons
+                                </span>
+
+                            </div>
+                            <div className="merchant-stat-item">
 
                                 <span className="merchant-stat-val">
                                     12.4k
