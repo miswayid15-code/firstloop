@@ -20,6 +20,8 @@ export default function ViewMerchant() {
 
     const [branchesData, setBranchesData] = useState([])
 
+    const [loading, setLoading] = useState(true)
+
     const [editModal, setEditModal] = useState(false)
 
     const [addModal, setAddModal] = useState(false)
@@ -80,6 +82,10 @@ export default function ViewMerchant() {
                 "Error:",
                 err.response?.data || err.message
             )
+
+        } finally {
+
+            setLoading(false)
 
         }
 
@@ -214,230 +220,254 @@ export default function ViewMerchant() {
             </div>
 
             <div className="card card-glass merchant-profile-card">
-
-                <div className="merchant-profile-info">
-
-                    <div className="cell-avatar merchant-avatar">
-                        M
-                    </div>
-
-                    <div className="cell-info" style={{ width: '100%' }}>
-
-                        <div className="merchant-title-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-
-                            <h2>
-                                {merchantData?.name}
-                            </h2>
-
-                            <span
-                                className={`badge ${merchantData?.status == 1
-                                    ? 'active'
-                                    : 'pending'
-                                    }`}
-                            >
-
-                                {
-                                    merchantData?.status == 1
-                                        ? 'Active'
-                                        : 'Inactive'
-                                }
-
-                            </span>
-
+                {loading ? (
+                    <>
+                        <div className="merchant-profile-info">
+                            <div className="cell-avatar merchant-avatar skeleton-avatar" />
+                            <div className="cell-info" style={{ width: '100%' }}>
+                                <div className="merchant-title-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                                    <span className="skeleton-text" style={{ width: '220px', height: '28px', display: 'inline-block' }} />
+                                    <span className="skeleton-text" style={{ width: '90px', height: '24px', display: 'inline-block' }} />
+                                </div>
+                                <span className="skeleton-text" style={{ width: '55%', height: '16px', marginTop: 8, display: 'inline-block' }} />
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))', gap: '14px', marginTop: '18px' }}>
+                                    {Array.from({ length: 8 }).map((_, index) => (
+                                        <div key={`profile-skel-${index}`}>
+                                            <span className="skeleton-text" style={{ width: '90%', height: '16px', display: 'inline-block', marginBottom: 10 }} />
+                                            <span className="skeleton-text" style={{ width: index % 2 === 0 ? '60%' : '80%', height: '14px', display: 'inline-block' }} />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
+                        <div className="merchant-profile-stats">
+                            {Array.from({ length: 3 }).map((_, index) => (
+                                <div className={`merchant-stat-item${index > 0 ? ' border-left' : ''}`} key={`stat-skel-${index}`}>
+                                    <span className="skeleton-text" style={{ width: index === 0 ? '80px' : '60px', height: '30px', display: 'inline-block' }} />
+                                    <span className="skeleton-text" style={{ width: '120px', height: '14px', marginTop: 10, display: 'inline-block' }} />
+                                </div>
+                            ))}
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        <div className="merchant-profile-info">
 
-                        <p className="merchant-subtext" style={{ marginTop: 8, maxWidth: 540 }}>
-                            {merchantData?.bus_name} • {merchantData?.email} • {merchantData?.city}, {merchantData?.state}
-                        </p>
-
-                        <div
-                            style={{
-                                display: 'grid',
-                                gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))',
-                                gap: '14px',
-                                marginTop: '18px'
-                            }}
-                        >
-
-                            <div>
-                                <small className="merchant-sub-label">
-                                    Business Name
-                                </small>
-
-                                <p className="merchant-subtext">
-                                    {merchantData?.bus_name}
-                                </p>
+                            <div className="cell-avatar merchant-avatar">
+                                M
                             </div>
 
-                            <div>
-                                <small className="merchant-sub-label">
-                                    Category
-                                </small>
+                            <div className="cell-info" style={{ flex: 1 }}>
 
-                                <p className="merchant-subtext">
-                                    {merchantData?.bus_cat}
-                                </p>
-                            </div>
+                                <div className="merchant-title-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
 
-                            <div>
-                                <small className="merchant-sub-label">
-                                    Email
-                                </small>
+                                    <h2>
+                                        {merchantData?.name}
+                                    </h2>
 
-                                <p className="merchant-subtext">
-                                    {merchantData?.email}
-                                </p>
-                            </div>
-
-                            <div>
-                                <small className="merchant-sub-label">
-                                    Phone
-                                </small>
-
-                                <p className="merchant-subtext">
-                                    {merchantData?.phone}
-                                </p>
-                            </div>
-
-                            <div>
-                                <small className="merchant-sub-label">
-                                    City
-                                </small>
-
-                                <p className="merchant-subtext">
-                                    {merchantData?.city}
-                                </p>
-                            </div>
-
-                            <div>
-                                <small className="merchant-sub-label">
-                                    State
-                                </small>
-
-                                <p className="merchant-subtext">
-                                    {merchantData?.state}
-                                </p>
-                            </div>
-
-                            <div>
-                                <small className="merchant-sub-label">
-                                    Zip Code
-                                </small>
-
-                                <p className="merchant-subtext">
-                                    {merchantData?.zip_code}
-                                </p>
-                            </div>
-
-                            <div>
-                                <small className="merchant-sub-label">
-                                    Country
-                                </small>
-
-                                <p className="merchant-subtext">
-                                    {merchantData?.country}
-                                </p>
-                            </div>
-
-                            <div style={{ gridColumn: '1 / -1' }}>
-
-                                <small className="merchant-sub-label">
-                                    Address
-                                </small>
-
-                                <p
-                                    className="merchant-subtext"
-                                    style={{
-                                        whiteSpace: 'normal',
-                                        wordBreak: 'break-word',
-                                        lineHeight: '1.6',
-                                        maxWidth: '100%'
-                                    }}
-                                >
-
-                                    {merchantData?.address}   
-
-                                </p>
-
-                            </div>
-
-                            <div>
-
-                                <small className="merchant-sub-label">
-                                    Document
-                                </small>
-
-                                <p>
-                                    <a
-                                        href={merchantData?.document}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="doc-link"
+                                    <span
+                                        className={`badge ${merchantData?.status == 1
+                                            ? 'active'
+                                            : 'pending'
+                                            }`}
                                     >
-                                        View Document
-                                    </a>
+
+                                        {
+                                            merchantData?.status == 1
+                                                ? 'Active'
+                                                : 'Inactive'
+                                        }
+
+                                    </span>
+
+                                </div>
+
+                                <p className="merchant-subtext" style={{ marginTop: 8, maxWidth: 540 }}>
+                                    {merchantData?.bus_name} • {merchantData?.email} • {merchantData?.city}, {merchantData?.state}
                                 </p>
 
-                            </div>
+                                <div className="merchant-details-grid">
 
-                            <div>
+                                    <div>
+                                        <small className="merchant-sub-label">
+                                            Business Name
+                                        </small>
 
-                                <small className="merchant-sub-label">
-                                    Created Date
-                                </small>
+                                        <p className="merchant-subtext">
+                                            {merchantData?.bus_name}
+                                        </p>
+                                    </div>
 
-                                <p className="merchant-subtext">
-                                    {merchantData?.createdAt}
-                                </p>
+                                    <div>
+                                        <small className="merchant-sub-label">
+                                            Category
+                                        </small>
+
+                                        <p className="merchant-subtext">
+                                            {merchantData?.bus_cat}
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <small className="merchant-sub-label">
+                                            Email
+                                        </small>
+
+                                        <p className="merchant-subtext">
+                                            {merchantData?.email}
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <small className="merchant-sub-label">
+                                            Phone
+                                        </small>
+
+                                        <p className="merchant-subtext">
+                                            {merchantData?.phone}
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <small className="merchant-sub-label">
+                                            City
+                                        </small>
+
+                                        <p className="merchant-subtext">
+                                            {merchantData?.city}
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <small className="merchant-sub-label">
+                                            State
+                                        </small>
+
+                                        <p className="merchant-subtext">
+                                            {merchantData?.state}
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <small className="merchant-sub-label">
+                                            Zip Code
+                                        </small>
+
+                                        <p className="merchant-subtext">
+                                            {merchantData?.zip_code}
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <small className="merchant-sub-label">
+                                            Country
+                                        </small>
+
+                                        <p className="merchant-subtext">
+                                            {merchantData?.country}
+                                        </p>
+                                    </div>
+
+                                    <div style={{ gridColumn: '1 / -1' }}>
+
+                                        <small className="merchant-sub-label">
+                                            Address
+                                        </small>
+
+                                        <p
+                                            className="merchant-subtext"
+                                            style={{
+                                                whiteSpace: 'normal',
+                                                wordBreak: 'break-word',
+                                                lineHeight: '1.6',
+                                                maxWidth: '100%'
+                                            }}
+                                        >
+
+                                            {merchantData?.address}
+
+                                        </p>
+
+                                    </div>
+
+                                    <div>
+
+                                        <small className="merchant-sub-label">
+                                            Document
+                                        </small>
+
+                                        <p>
+                                            <a
+                                                href={merchantData?.document}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="doc-link"
+                                            >
+                                                View Document
+                                            </a>
+                                        </p>
+
+                                    </div>
+
+                                    <div>
+
+                                        <small className="merchant-sub-label">
+                                            Created Date
+                                        </small>
+
+                                        <p className="merchant-subtext">
+                                            {merchantData?.createdAt}
+                                        </p>
+
+                                    </div>
+
+                                </div>
 
                             </div>
 
                         </div>
 
-                    </div>
+                        <div className="merchant-profile-stats">
 
-                </div>
+                            <div className="merchant-stat-item">
 
-                <div className="merchant-profile-stats">
+                                <span className="merchant-stat-val val-primary">
+                                    14
+                                </span>
 
-                    <div className="merchant-stat-item">
+                                <span className="merchant-stat-lbl">
+                                    Total Branches
+                                </span>
 
-                        <span className="merchant-stat-val val-primary">
-                            14
-                        </span>
+                            </div>
 
-                        <span className="merchant-stat-lbl">
-                            Total Branches
-                        </span>
+                            <div className="merchant-stat-item border-left">
 
-                    </div>
+                                <span className="merchant-stat-val">
+                                    32
+                                </span>
 
-                    <div className="merchant-stat-item border-left">
+                                <span className="merchant-stat-lbl">
+                                    Receptionists
+                                </span>
 
-                        <span className="merchant-stat-val">
-                            32
-                        </span>
+                            </div>
 
-                        <span className="merchant-stat-lbl">
-                            Receptionists
-                        </span>
+                            <div className="merchant-stat-item border-left">
 
-                    </div>
+                                <span className="merchant-stat-val">
+                                    12.4k
+                                </span>
 
-                    <div className="merchant-stat-item border-left">
+                                <span className="merchant-stat-lbl">
+                                    Coupons Redeemed
+                                </span>
 
-                        <span className="merchant-stat-val">
-                            12.4k
-                        </span>
+                            </div>
 
-                        <span className="merchant-stat-lbl">
-                            Coupons Redeemed
-                        </span>
-
-                    </div>
-
-                </div>
-
+                        </div>
+                    </>
+                )}
             </div>
 
             <div
@@ -508,43 +538,54 @@ export default function ViewMerchant() {
                     </thead>
 
                     <tbody>
-
-                        {
-
-                            filteredBranches.map((branch) => (
-
-                                <tr key={branch.id}>
-
+                        {loading ? (
+                            Array.from({ length: 4 }).map((_, index) => (
+                                <tr className="skeleton-row" key={`branch-skel-${index}`}>
                                     <td>
-
                                         <div className="table-cell-profile">
-
-                                            <div className="cell-avatar">
-
-                                                {branch.name?.charAt(0)}
-
-                                            </div>
-
+                                            <div className="cell-avatar skeleton-avatar" />
                                             <div className="cell-info">
-
+                                                <span className="skeleton-text" style={{ width: '130px', display: 'inline-block' }} />
+                                                <span className="skeleton-text" style={{ width: '90px', marginTop: 8, display: 'inline-block' }} />
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span className="skeleton-text" style={{ width: '100%', display: 'inline-block' }} />
+                                    </td>
+                                    <td>
+                                        <span className="skeleton-text" style={{ width: '70px', display: 'inline-block' }} />
+                                    </td>
+                                    <td>
+                                        <span className="skeleton-text" style={{ width: '80px', display: 'inline-block' }} />
+                                    </td>
+                                    <td>
+                                        <span className="skeleton-text" style={{ width: '90px', display: 'inline-block' }} />
+                                    </td>
+                                    <td>
+                                        <span className="skeleton-text" style={{ width: '100px', display: 'inline-block' }} />
+                                    </td>
+                                </tr>
+                            ))
+                        ) : (
+                            filteredBranches.map((branch) => (
+                                <tr key={branch.id}>
+                                    <td>
+                                        <div className="table-cell-profile">
+                                            <div className="cell-avatar">
+                                                {branch.name?.charAt(0)}
+                                            </div>
+                                            <div className="cell-info">
                                                 <strong>
                                                     {branch.name}
                                                 </strong>
-
                                                 <span className="cell-subtext">
-
                                                     {/* {branch.address} */}
-
                                                 </span>
-
                                             </div>
-
                                         </div>
-
                                     </td>
-
                                     <td>
-
                                         <div
                                             style={{
                                                 maxWidth: '450px',
@@ -553,110 +594,70 @@ export default function ViewMerchant() {
                                                 lineHeight: '1.5'
                                             }}
                                         >
-
                                             {branch.address}
-
                                         </div>
-
                                     </td>
                                     <td>
-
                                         <span
                                             className={`badge ${branch.status == 1
                                                 ? 'active'
                                                 : 'pending'
                                                 }`}
                                         >
-
                                             {
                                                 branch.status == 1
                                                     ? 'Active'
                                                     : 'Inactive'
                                             }
-
                                         </span>
-
                                     </td>
-
                                     <td>
-
                                         <button className="btn-sm-action">
-
                                             <i className="fas fa-user-shield"></i>
-
                                             {' '}
-
                                             {
                                                 branch.Receptionists?.length || 0
                                             }
-
                                             {' '}Staff
-
                                         </button>
-
                                     </td>
-
                                     <td>
-
                                         <button className="btn-sm-action-secondary">
-
                                             <i className="fas fa-ticket-alt"></i>
-
                                             {' '}
-
                                             {
                                                 branch.coupon_count || 0
                                             }
-
                                             {' '}Coupons
-
                                         </button>
-
                                     </td>
-
                                     <td>
-
                                         <div
                                             className="action-group"
                                             style={{
                                                 justifyContent: 'flex-end'
                                             }}
                                         >
-
                                             <button
                                                 className="btn-icon view"
                                                 onClick={() => navigate('/receptionists')}
                                             >
-
                                                 <i className="fas fa-eye"></i>
-
                                             </button>
-
                                             <button
                                                 className="btn-icon edit"
                                                 onClick={() => openEditModal(branch)}
                                             >
-
                                                 <i className="fas fa-edit"></i>
-
                                             </button>
-
                                             <button className="btn-icon delete">
-
                                                 <i className="fas fa-trash-alt"></i>
-
                                             </button>
-
                                         </div>
-
                                     </td>
-
                                 </tr>
-
                             ))
-
-                        }
-
+                        )}
                     </tbody>
 
                 </table>

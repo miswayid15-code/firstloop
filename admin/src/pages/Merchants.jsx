@@ -87,11 +87,36 @@ export default function Merchants() {
 
                         {loading ? (
 
-                            <tr>
-                                <td colSpan="7" align="center">
-                                    Loading...
-                                </td>
-                            </tr>
+                            Array.from({ length: 5 }).map((_, index) => (
+                                <tr className="skeleton-row" key={`skeleton-${index}`}>
+                                    <td>
+                                        <div className="table-cell-profile">
+                                            <div className="cell-avatar skeleton-avatar" />
+                                            <div className="cell-info">
+                                                <span className="skeleton-text" style={{ width: '120px' }} />
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span className="skeleton-text" style={{ width: '140px' }} />
+                                    </td>
+                                    <td>
+                                        <span className="skeleton-text" style={{ width: '110px' }} />
+                                    </td>
+                                    <td>
+                                        <span className="skeleton-text" style={{ width: '80px' }} />
+                                    </td>
+                                    <td>
+                                        <span className="skeleton-text" style={{ width: '70px' }} />
+                                    </td>
+                                    <td>
+                                        <span className="skeleton-text" style={{ width: '100px' }} />
+                                    </td>
+                                    <td>
+                                        <span className="skeleton-text" style={{ width: '90px' }} />
+                                    </td>
+                                </tr>
+                            ))
 
                         ) : merchants.length > 0 ? (
 
@@ -139,9 +164,9 @@ export default function Merchants() {
                                         >
 
                                             <button
-    className="btn-icon view"
-    onClick={() => navigate(`/view-merchant/${row.id}`)}
->
+                                                className="btn-icon view"
+                                                onClick={() => navigate(`/view-merchant/${row.id}`)}
+                                            >
                                                 <i className="fas fa-eye" />
                                             </button>
 
