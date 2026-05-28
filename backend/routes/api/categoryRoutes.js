@@ -7,6 +7,6 @@ const auth = require('../../middleware/auth');
 
 
 
-router.post('/api/category-list', auth('customer'), controller.fetch_list);
+router.get('/category-list', controller.fetch_list);
 
 module.exports = router;

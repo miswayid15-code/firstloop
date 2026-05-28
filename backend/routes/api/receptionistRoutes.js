@@ -19,4 +19,9 @@ router.get(
     auth('receptionist'),
     controller.dashboard
 );
+router.get(
+    '/receptionist/fetch-coupon',
+    auth('receptionist'),
+    controller.fetch_coupon
+);
 module.exports = router;

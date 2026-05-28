@@ -21,6 +21,9 @@ module.exports = (sequelize, DataTypes) => {
 
     bus_name: DataTypes.STRING,
     bus_cat: DataTypes.STRING,
+
+    cat_id: DataTypes.BIGINT,
+
     gst_no: DataTypes.STRING,
 
     address: DataTypes.TEXT,
@@ -29,6 +32,9 @@ module.exports = (sequelize, DataTypes) => {
     zip_code: DataTypes.STRING,
     country_code: DataTypes.STRING,
     country: DataTypes.STRING,
+
+    lat: DataTypes.STRING,
+    lon: DataTypes.STRING,
 
     document: DataTypes.STRING,
     profile_image: DataTypes.STRING,
@@ -42,7 +48,6 @@ module.exports = (sequelize, DataTypes) => {
     timestamps: true
   });
 
-  // ✅ FIX HERE
   Merchant.associate = (models) => {
 
     Merchant.hasMany(models.RefreshToken, {
@@ -53,13 +58,17 @@ module.exports = (sequelize, DataTypes) => {
     Merchant.hasMany(models.Branch, {
       foreignKey: 'merchant_id'
     });
+
     Merchant.hasMany(models.Receptionist, {
       foreignKey: 'merchant_id'
     });
+
     Merchant.hasMany(models.Coupon, {
       foreignKey: 'merchant_id'
     });
+
   };
 
   return Merchant;
+
 };

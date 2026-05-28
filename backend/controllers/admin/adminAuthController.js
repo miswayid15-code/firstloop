@@ -167,7 +167,7 @@ exports.login = async (req, res) => {
 
             status: 0,
             message: err.message
-
+            
         });
 
     }
@@ -556,6 +556,7 @@ exports.fetchmerchant = async (req, res) => {
             }
 
         }
+        console.log(data);
 
         return res.json({
 

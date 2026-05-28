@@ -572,3 +572,111 @@ exports.dashboard = async (req, res) => {
     }
 
 };
+
+exports.fetch_coupon = async (req, res) => {
+
+    try {
+
+        const receptionist = await Receptionist.findByPk(req.user.id, {
+
+            attributes: [
+                'id'
+            ],
+
+            include: [
+                {
+                    model: Branch,
+
+                    attributes: [
+                        'id',
+                        'name'
+                    ],
+
+                    where: {
+                        status: 1,
+                        del_status: 0
+                    },
+
+                    required: false
+                }
+            ]
+        });
+
+        if (!receptionist) {
+
+            return res.json({
+                status: 0,
+                message: "Receptionist not found"
+            });
+
+        }
+
+        let coupons = [];
+
+        if (receptionist.Branch) {
+
+            const branch = receptionist.Branch;
+
+            coupons = await Coupon.findAll({
+
+                attributes: [
+                    'merchant_id',
+                    'code',
+                    'percentage',
+                    'min_amount',
+                    'usage_limit',
+                    'start_date',
+                    'banner_image',
+                    'end_date'
+                ],
+
+                where: {
+
+                    branch_ids: {
+                        [Op.contains]: [branch.id]
+                    },
+
+                    status: 1,
+                    del_status: 0
+                }
+
+            });
+
+        }
+
+        const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+
+        const data = coupons.map(item => {
+
+            const cpn = item.toJSON();
+
+            cpn.banner_image = cpn.banner_image
+                ? baseUrl + '/' + cpn.banner_image.replace(/\\/g, '/')
+                : null;
+
+            cpn.is_expired =
+                new Date() > new Date(cpn.end_date) ? 1 : 0;
+
+            return cpn;
+
+        });
+
+        return res.json({
+            status: 1,
+            message: "Receptionist Coupon",
+            data: data
+        });
+
+    } catch (err) {
+
+        console.log("ERROR:", err);
+
+        return res.json({
+            status: 0,
+            message: "Error",
+            error: err.message
+        });
+
+    }
+
+};

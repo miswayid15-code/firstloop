@@ -18,6 +18,7 @@ app.get('/backend', (req, res) => {
 });
 
 app.use('/admin', require('./routes/admin/adminAuthRoutes'));
+app.use('/admin', require('./routes/admin/merchantRoutes'));
 
 
 
