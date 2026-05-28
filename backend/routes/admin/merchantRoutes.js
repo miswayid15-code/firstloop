@@ -12,7 +12,7 @@ const auth = require('../../middleware/auth');
 router.post(
     '/merchant/register',
     auth('admin'),
-    (req, res, next) => {
+    (req, res, next) => {  
 
         req.uploadFolder = 'merchant';
 
