@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
+import { Toaster, toast } from 'react-hot-toast'
 import API from '../api.js';
 
 export default function Merchants() {
@@ -25,7 +26,7 @@ export default function Merchants() {
 
         try {
 
-            const response = await API.get('merchant-list')
+            const response = await API.get('admin/merchant-list')
 
             // console.log(response.data)
 
@@ -67,6 +68,24 @@ export default function Merchants() {
     return (
 
         <>
+            <Toaster position="top-right" reverseOrder={false} />
+
+            <div className="card" style={{ marginBottom: 18 }}>
+                <div className="flex-between" style={{ gap: 12 }}>
+                    <div>
+                        <h3 className="card-title">Merchants</h3>
+                        <p className="card-subtitle">Manage merchant accounts and view branch activity.</p>
+                    </div>
+                    <button
+                        type="button"
+                        className="btn btn-primary"
+                        onClick={() => navigate('/add-merchant')}
+                    >
+                        + Add Merchant
+                    </button>
+                </div>
+            </div>
+
             <div className="table-wrapper">
 
                 <table className="data-table">
@@ -172,7 +191,7 @@ export default function Merchants() {
 
                                             <button
                                                 className="btn-icon edit"
-                                                onClick={() => navigate('/edit-merchant')}
+                                                onClick={() => navigate(`/edit-merchant/${row.id}`)}
                                             >
                                                 <i className="fas fa-edit" />
                                             </button>

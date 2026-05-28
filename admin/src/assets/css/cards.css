@@ -518,3 +518,99 @@
     margin-top: 6px;
     display: block;
 }
+.custom-file-upload {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border: 1px solid rgba(255, 77, 128, 0.18);
+    border-radius: 999px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(255, 247, 249, 0.98));
+    color: var(--primary);
+    font-size: 0.86rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    box-shadow: 0 8px 18px rgba(233, 30, 99, 0.08);
+}
+
+.custom-file-upload i {
+    font-size: 1rem;
+}
+
+.custom-file-upload:hover {
+    background: rgba(255, 77, 128, 0.08);
+    transform: translateY(-1px);
+    box-shadow: 0 10px 20px rgba(233, 30, 99, 0.12);
+}
+
+.custom-file-upload input {
+    display: none;
+}.textarea-field {
+    min-height: 130px;
+    resize: vertical;
+    padding-top: 14px !important;
+    line-height: 1.6;
+}
+.document-upload-success {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    font-size: 0.82rem;
+    color: #16a34a;
+    font-weight: 500;
+}
+.phone-input-container {
+    width: 100%;
+}
+
+.phone-input-container .phone-input-custom {
+    width: 100%;
+    height: 48px;
+    border: 1px solid rgba(255, 77, 128, 0.18) !important;
+    border-radius: 12px !important;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 247, 249, 0.98)) !important;
+    box-shadow: inset 0 1px 2px rgba(233, 30, 99, 0.05) !important;
+    color: var(--text-primary) !important;
+    font-size: 0.92rem !important;
+    padding-left: 52px !important;
+}
+
+.phone-input-container .phone-input-custom:focus {
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 4px rgba(255, 77, 128, 0.12) !important;
+}
+
+.phone-input-container .phone-input-button {
+    border: 1px solid rgba(255, 77, 128, 0.12) !important;
+    border-radius: 12px 0 0 12px !important;
+    background: rgba(255, 247, 249, 0.92) !important;
+}
+
+.phone-input-container .phone-input-dropdown {
+    border-radius: 14px !important;
+    border: 1px solid rgba(255, 77, 128, 0.14) !important;
+    box-shadow: 0 16px 32px rgba(233, 30, 99, 0.12) !important;
+}
+
+.phone-input-container .phone-input-dropdown .search {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: #fff;
+    padding: 8px;
+    border-bottom: 1px solid rgba(255, 77, 128, 0.08);
+}
+
+.phone-input-container .phone-input-dropdown .search-box {
+    width: 100%;
+    border: 1px solid rgba(255, 77, 128, 0.18) !important;
+    border-radius: 10px !important;
+    padding: 10px 12px !important;
+    font-size: 0.88rem !important;
+}
+
+.phone-input-container .phone-input-dropdown .country-list {
+    max-height: 260px;
+}

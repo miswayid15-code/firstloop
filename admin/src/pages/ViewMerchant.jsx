@@ -53,7 +53,7 @@ export default function ViewMerchant() {
 
             const response = await API.post(
 
-                'merchant-fetch-id',
+                'admin/merchant-fetch-id',
 
                 {
                     id: id
