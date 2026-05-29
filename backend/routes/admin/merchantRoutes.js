@@ -2,8 +2,7 @@ const express = require('express');
 
 const router = express.Router();
 
-const controller =
-    require('../../controllers/admin/merchantController');
+const controller = require('../../controllers/admin/merchantController');
 
 const upload = require('../../middleware/upload');
 
@@ -24,6 +23,7 @@ router.post(
 
     controller.createOrUpdateMerchant
 );
+
 
 
 module.exports = router;
