@@ -2,7 +2,7 @@ const express = require('express');
 
 const router = express.Router();
 
-const controller = require('../../controllers/admin/merchantController');
+const controller = require('../../controllers/admin/MerchantController');
 
 const upload = require('../../middleware/upload');
 
