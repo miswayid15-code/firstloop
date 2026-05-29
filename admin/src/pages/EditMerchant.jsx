@@ -292,7 +292,7 @@ export default function EditMerchant() {
                 setTimeout(() => navigate('/merchants'), 800)
             } else {
                 toast.error(data.message || 'Merchant update failed')
-            }
+            }    
   
         } catch (error) {
             const apiMessage = error?.response?.data?.message || 'Merchant update failed'
