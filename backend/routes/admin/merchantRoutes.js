@@ -13,7 +13,7 @@ router.post(
     auth('admin'),
     (req, res, next) => {  
 
-        req.uploadFolder = 'merchant';
+        req.uploadFolder = 'merchant'; 
 
         next();
 
