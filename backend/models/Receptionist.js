@@ -16,7 +16,7 @@ module.exports = (sequelize, DataTypes) => {
         },
 
         phone: DataTypes.STRING,
-  country_code: DataTypes.STRING,
+        country_code: DataTypes.STRING,
 
         password: DataTypes.STRING,
 
@@ -32,6 +32,10 @@ module.exports = (sequelize, DataTypes) => {
         del_status: {
             type: DataTypes.INTEGER,
             defaultValue: 0
+        },
+        deleted_at: {
+            type: DataTypes.DATE,
+            allowNull: true
         }
 
     }, {

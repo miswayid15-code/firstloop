@@ -298,6 +298,7 @@ exports.merchant_list = async (req, res) => {
                 'name',
                 'email',
                 'phone',
+                'country_code',
                 'status',
 
                 [
@@ -429,6 +430,7 @@ exports.fetchmerchant = async (req, res) => {
                         'email',
                         'phone',
                         'profile_image',
+                        'country_code',
 
 
                     ],

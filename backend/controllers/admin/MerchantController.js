@@ -21,36 +21,36 @@ exports.createOrUpdateMerchant = async (req, res) => {
 
 
 
-       
-let merchant = null;
 
-const mer_id = req.body.mer_id;
+        let merchant = null;
 
-if (mer_id) {
+        const mer_id = req.body.mer_id;
 
-    merchant = await Merchant.findOne({
+        if (mer_id) {
 
-        where: {
+            merchant = await Merchant.findOne({
 
-            id: mer_id,
-            del_status: 0
+                where: {
+
+                    id: mer_id,
+                    del_status: 0
+
+                }
+
+            });
+
+            if (!merchant) {
+
+                return res.json({
+
+                    status: 0,
+                    message: "Merchant not found"
+
+                });
+
+            }
 
         }
-
-    });
-
-    if (!merchant) {
-
-        return res.json({
-
-            status: 0,
-            message: "Merchant not found"
-
-        });
-
-    }
-
-}
 
         // =========================
         // REQUEST DATA
@@ -324,4 +324,163 @@ if (mer_id) {
 
     }
 
+};
+
+exports.update_status = async (req, res) => {
+    try {
+
+        const { id, status } = req.body;
+
+        const merchant = await Merchant.findOne({
+            where: {
+                id: id,
+                del_status: 0
+            }
+        });
+
+        if (!merchant) {
+            return res.json({
+                status: 0,
+                message: "Merchant not found"
+            });
+        }
+
+        await Merchant.update(
+            {
+                status: status
+            },
+            {
+                where: {
+                    id: id
+                }
+            }
+        );
+
+        return res.json({
+            status: 1,
+            message: "Merchant status updated successfully"
+        });
+
+    } catch (err) {
+
+        console.log(err);
+
+        return res.json({
+            status: 0,
+            message: "Issue with update"
+        });
+
+    }
+};
+exports.delete_status = async (req, res) => {
+    try {
+
+        const { id } = req.body;
+
+        const merchant = await Merchant.findOne({
+            where: {
+                id: id,
+                del_status: 0
+            }
+        });
+
+        if (!merchant) {
+            return res.json({
+                status: 0,
+                message: "Merchant not found"
+            });
+        }
+
+        const deletedAt = new Date();
+
+  
+        const receptionists = await Receptionist.findAll({
+            where: {
+                merchant_id: id,
+                del_status: 0
+            },
+            attributes: ['id']
+        });
+
+        const receptionistIds = receptionists.map(item => item.id);
+
+   
+        await Merchant.update(
+            {
+                del_status: 1,
+                status: 0,
+                deleted_at: deletedAt
+            },
+            {
+                where: {
+                    id: id
+                }
+            }
+        );
+
+  
+        await Branch.update(
+            {
+                del_status: 1,
+                status: 0,
+                deleted_at: deletedAt
+            },
+            {
+                where: {
+                    merchant_id: id
+                }
+            }
+        );
+
+   
+        await Receptionist.update(
+            {
+                del_status: 1,
+                status: 0,
+                deleted_at: deletedAt
+            },
+            {
+                where: {
+                    merchant_id: id
+                }
+            }
+        );
+
+       
+        await RefreshToken.destroy({
+            where: {
+                user_id: id,
+                user_type: 'merchant'
+            }
+        });
+
+      
+        if (receptionistIds.length > 0) {
+
+            await RefreshToken.destroy({
+                where: {
+                    user_id: {
+                        [Op.in]: receptionistIds
+                    },
+                    user_type: 'receptionist'
+                }
+            });
+
+        }
+
+        return res.json({
+            status: 1,
+            message: "Merchant, Branches and Receptionists deleted successfully"
+        });
+
+    } catch (err) {
+
+        console.log(err);
+
+        return res.json({
+            status: 0,
+            message: err.message || "Issue with update"
+        });
+
+    }
 };

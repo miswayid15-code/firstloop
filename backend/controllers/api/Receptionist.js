@@ -680,3 +680,129 @@ exports.fetch_coupon = async (req, res) => {
     }
 
 };
+
+exports.fetch_appointment = async (req, res) => {
+
+    try {
+
+        const receptionist = await Receptionist.findByPk(req.user.id, {
+
+            attributes: [
+                'id',
+            ],
+
+            include: [
+
+                {
+                    model: Branch,
+
+                    where: {
+                        status: 1,
+                        del_status: 0
+                    },
+
+                    required: false,
+
+                    attributes: [
+                        'id',
+                        'name',
+
+                    ],
+
+                    include: [
+
+                        {
+                            model: Appointment,
+                             limit: 10,
+
+                            required: false,
+
+                            attributes: [
+                                'id',
+                                'cus_id',
+                                'br_id',
+                                'br_name',
+                                'appointment_date',
+                                'slot',
+                                'status',
+                                'cancel_by',
+                                'cancel_reason',
+                                'approved_by',
+                                'approved_by_id'
+                            ]
+                        },
+
+
+                    ]
+
+                }
+
+            ]
+
+        });
+
+        if (!receptionist) {
+
+            return res.json({
+                status: 0,
+                message: "Receptionist not found"
+            });
+
+        }
+
+
+
+        // branch details
+        if (receptionist.Branch) {
+
+            const branch = receptionist.Branch;
+
+            // branch image
+          
+
+            // appointment count
+            branch.dataValues.appointment_count =
+                branch.Appointments
+                    ? branch.Appointments.length
+                    : 0;
+
+            // slot format
+            if (branch.Appointments?.length > 0) {
+
+                branch.Appointments.forEach(appointment => {
+
+                    if (appointment.slot) {
+
+                        appointment.slot = moment(
+                            appointment.slot,
+                            "HH:mm"
+                        ).format("hh:mm A");
+
+                    }
+
+                });
+
+            }
+
+
+        }
+
+        return res.json({
+            status: 1,
+            message: "Receptionist Dashboard",
+            data: receptionist
+        });
+
+    } catch (err) {
+
+        console.log("DASHBOARD ERROR:", err);
+
+        return res.json({
+            status: 0,
+            message: "Error",
+            error: err.message
+        });
+
+    }
+
+};

@@ -50,8 +50,16 @@ router.get(
 
 
 // ================= APPOINTMENT LIST =================
-router.post('/branch/update-appointment', auth('merchant'),(req,res,next)=>{
-        console.log("UPDATE APPOINTMENT ROUTE HIT");
+
+
+router.get(
+    '/branch/fetch-appointment',
+     auth('receptionist'),
+    controller.appointment_list
+);
+
+router.post('/branch/update-appointment', auth('receptionist'),(req,res,next)=>{
+       
         next();
     },controller.update_appointment_status
 );

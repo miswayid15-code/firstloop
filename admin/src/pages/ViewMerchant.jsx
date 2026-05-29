@@ -5,7 +5,9 @@ import {
     useNavigate,
     useParams
 } from 'react-router-dom'
+import { toast } from 'react-hot-toast'
 
+import AppToaster from '../components/AppToaster.jsx'
 import API from '../api.js';
 
 export default function ViewMerchant() {
@@ -82,6 +84,7 @@ export default function ViewMerchant() {
                 "Error:",
                 err.response?.data || err.message
             )
+            toast.error('Failed to load merchant details')
 
         } finally {
 
@@ -144,6 +147,7 @@ export default function ViewMerchant() {
 
     return (
         <>
+            <AppToaster />
 
             <div style={{ marginBottom: 24 }}>
 

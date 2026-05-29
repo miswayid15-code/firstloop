@@ -25,5 +25,19 @@ router.post(
 );
 
 
+router.post(
+    '/merchant/status-update',
+    auth('admin'),
+
+    controller.update_status
+);
+router.post(
+    '/merchant/delete-status',
+    auth('admin'),
+
+    controller.delete_status
+);
+
+
 
 module.exports = router;

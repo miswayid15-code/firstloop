@@ -41,7 +41,12 @@ module.exports = (sequelize, DataTypes) => {
     brand_image: DataTypes.STRING,
 
     status: DataTypes.INTEGER,
-    del_status: DataTypes.INTEGER
+    del_status: DataTypes.INTEGER,
+    deleted_at: {
+      type: DataTypes.DATE,
+      allowNull: true
+    }
+
 
   }, {
     tableName: 'Merchants',

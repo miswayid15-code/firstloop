@@ -1,8 +1,9 @@
 import { useState, useMemo, useEffect } from 'react'
 import { NavLink, useNavigate, useParams } from 'react-router-dom'
 import { LoadScript } from '@react-google-maps/api'
-import { Toaster, toast } from 'react-hot-toast'
+import { toast } from 'react-hot-toast'
 
+import AppToaster from '../components/AppToaster.jsx'
 import PhoneNumberField from '../components/PhoneNumberField'
 import CorporateAddressField from '../components/CorporateAddressField'
 import API from '../api.js';
@@ -326,34 +327,7 @@ export default function EditMerchant() {
 
     return (
         <>
-            <Toaster
-                position="top-right"
-                reverseOrder={false}
-                gutter={14}
-                toastOptions={{
-                    duration: 3500,
-                    style: {
-                        background: 'rgba(255,255,255,0.88)',
-                        color: '#1f2937',
-                        borderRadius: '14px',
-                        border: '1px solid rgba(255,77,128,0.16)',
-                        boxShadow: '0 12px 30px rgba(255,77,128,0.16)',
-                        fontWeight: 600
-                    },
-                    success: {
-                        iconTheme: {
-                            primary: '#e91e63',
-                            secondary: '#fff'
-                        }
-                    },
-                    error: {
-                        iconTheme: {
-                            primary: '#ef4444',
-                            secondary: '#fff'
-                        }
-                    }
-                }}
-            />
+            <AppToaster />
 
             <LoadScript
                 googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}

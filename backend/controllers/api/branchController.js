@@ -1659,7 +1659,7 @@ exports.update_appointment_status = async (req, res) => {
         };
 
 
-        if (Number(status) === 1) {
+        if (Number(status) === 2) {
 
             updateData.approved_by =
                 'receptionist';

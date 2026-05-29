@@ -80,6 +80,22 @@
     color: var(--text-primary);
 }
 
+.merchant-name-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.merchant-new-badge {
+    background: rgba(16, 185, 129, 0.12);
+    color: #059669;
+    font-size: 0.68rem;
+    padding: 3px 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
 .cell-subtext {
     font-size: 0.75rem;
     color: var(--text-muted);
@@ -121,6 +137,88 @@
 .badge.declined {
     background-color: var(--status-danger-bg);
     color: var(--status-danger);
+}
+
+.merchant-status-cell {
+    display: flex;
+    align-items: center;
+}
+
+.merchant-status-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 116px;
+    height: 36px;
+    padding: 4px 12px 4px 5px;
+    border: 1px solid rgba(111, 111, 127, 0.12);
+    border-radius: 999px;
+    background: #ffffff;
+    cursor: pointer;
+    user-select: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.merchant-status-toggle input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.merchant-status-track {
+    position: relative;
+    width: 46px;
+    height: 26px;
+    flex: 0 0 46px;
+    border-radius: 999px;
+    background: #e5e7eb;
+    transition: background 0.2s ease;
+}
+
+.merchant-status-knob {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 4px 10px rgba(31, 41, 55, 0.18);
+    transition: transform 0.2s ease;
+}
+
+.merchant-status-label {
+    font-size: 0.76rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.merchant-status-toggle.is-active {
+    border-color: rgba(16, 185, 129, 0.22);
+    background: rgba(16, 185, 129, 0.08);
+    color: #059669;
+}
+
+.merchant-status-toggle.is-active .merchant-status-track {
+    background: linear-gradient(135deg, #10b981, #22c55e);
+}
+
+.merchant-status-toggle.is-active .merchant-status-knob {
+    transform: translateX(20px);
+}
+
+.merchant-status-toggle.is-inactive {
+    border-color: rgba(239, 68, 68, 0.18);
+    background: rgba(239, 68, 68, 0.06);
+    color: #dc2626;
+}
+
+.merchant-status-toggle.is-inactive .merchant-status-track {
+    background: #fecaca;
+}
+
+.merchant-status-toggle:hover {
+    box-shadow: 0 8px 20px rgba(31, 41, 55, 0.08);
 }
 
 /* Table Controls and Actions */

@@ -24,4 +24,9 @@ router.get(
     auth('receptionist'),
     controller.fetch_coupon
 );
+router.get(
+    '/receptionist/fetch-appointment',
+    auth('receptionist'),
+    controller.fetch_appointment
+);
 module.exports = router;

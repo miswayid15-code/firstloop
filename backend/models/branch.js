@@ -21,7 +21,7 @@ module.exports = (sequelize, DataTypes) => {
         lon: DataTypes.STRING,
 
         address: DataTypes.TEXT,
-            country_code: DataTypes.STRING,
+        country_code: DataTypes.STRING,
 
         // ✅ Added
         open_time: DataTypes.TIME,
@@ -34,7 +34,11 @@ module.exports = (sequelize, DataTypes) => {
 
         status: DataTypes.INTEGER,
 
-        del_status: DataTypes.INTEGER
+        del_status: DataTypes.INTEGER,
+        deleted_at: {
+            type: DataTypes.DATE,
+            allowNull: true
+        }
 
     }, {
 
@@ -61,13 +65,13 @@ module.exports = (sequelize, DataTypes) => {
         Branch.hasMany(models.MenuImage, {
             foreignKey: 'branch_id'
         });
-                Branch.hasMany(models.Appointment, {
+        Branch.hasMany(models.Appointment, {
             foreignKey: 'br_id'
         });
         Branch.hasMany(models.Coupon, {
             foreignKey: 'branch_ids'
         });
-               Branch.hasMany(models.Receptionist, {
+        Branch.hasMany(models.Receptionist, {
             foreignKey: 'branch_id'
         });
 
