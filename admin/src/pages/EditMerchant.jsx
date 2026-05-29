@@ -1,9 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
-import { NavLink, useNavigate ,useParams} from 'react-router-dom'
-import { addMerchant } from '../lib/store'
+import { NavLink, useNavigate, useParams } from 'react-router-dom'
 import { LoadScript } from '@react-google-maps/api'
 import { Toaster, toast } from 'react-hot-toast'
-
 
 import PhoneNumberField from '../components/PhoneNumberField'
 import CorporateAddressField from '../components/CorporateAddressField'
@@ -27,6 +25,7 @@ const initialForm = {
     businessLogo: null,
     kycDocument: null,
     ownerName: '',
+    mer_id: '',
     businessName: '',
     serviceProvided: '',
     category: '',
@@ -40,17 +39,18 @@ const initialForm = {
     state: '',
     zipcode: '',
     latitude: '',
-    longitude: '', countryCode: '',
+    longitude: '',
+    countryCode: '',
 }
 
-export default function AddMerchant() {
+export default function EditMerchant() {
     const { id } = useParams()
     const [form, setForm] = useState(initialForm)
     const [profilePreview, setProfilePreview] = useState('')
     const [logoPreview, setLogoPreview] = useState('')
     const [autocomplete, setAutocomplete] = useState(null)
     const [categories, setCategories] = useState([])
-     const [merchantData, setMerchantData] = useState(null)
+    const [loading, setLoading] = useState(true)
 
     const navigate = useNavigate()
 
@@ -191,226 +191,139 @@ export default function AddMerchant() {
         updateLocationDetails(lat, lng)
     }
 
-    const handleSubmit = async (event) => {
+    // Fetch merchant data for editing
+    const fetchMerchant = async () => {
+        try {
+            const response = await API.post('admin/merchant-fetch-id', { id: id })
 
+            if (response.data.status === 1) {
+                const merchant = response.data.data
+
+                // Pre-fill form with existing data
+                setForm({
+                    profilePhoto: null,
+                    businessLogo: null,
+                    kycDocument: null,
+                    ownerName: merchant.name || '',
+                    mer_id: merchant.id || '',
+                    businessName: merchant.bus_name || '',
+                    serviceProvided: merchant.bus_cat || '',
+                    category: merchant.cat_id?.toString() || '',
+                    email: merchant.email || '',
+                    phone: merchant.phone || '',
+                    country: merchant.country || '',
+                    password: '', // Don't pre-fill password for security
+                    taxNumber: merchant.gst_no || '',
+                    address: merchant.address || '',
+                    city: merchant.city || '',
+                    state: merchant.state || '',
+                    zipcode: merchant.zip_code || '',
+                    latitude: merchant.lat || '',
+                    longitude: merchant.lon || '',
+                    countryCode: merchant.country_code || '',
+                })
+
+                // Set image previews from existing URLs
+                if (merchant.profile_image) {
+                    setProfilePreview(merchant.profile_image)
+                }
+                if (merchant.brand_image) {
+                    setLogoPreview(merchant.brand_image)
+                }
+            }
+        } catch (err) {
+            console.log("Fetch Error:", err.response?.data || err.message)
+            toast.error('Failed to load merchant data')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleSubmit = async (event) => {
         event.preventDefault()
 
         try {
             const formData = new FormData()
 
-            formData.append(
-                'name',
-                form.ownerName
-            )
-            // console.log(formData);
+            formData.append('mer_id', id)
+            formData.append('name', form.ownerName)
+            formData.append('bus_name', form.businessName)
+            formData.append('bus_cat', form.serviceProvided)
+            formData.append('cat_id', form.category)
+            formData.append('email', form.email)
+            formData.append('phone', form.phone)
+            formData.append('country_code', form.countryCode)
+            formData.append('gst_no', form.taxNumber)
+            formData.append('address', form.address)
+            formData.append('city', form.city)
+            formData.append('state', form.state)
+            formData.append('zip_code', form.zipcode)
+            formData.append('lat', form.latitude)
+            formData.append('lon', form.longitude)
 
-            formData.append(
-                'bus_name',
-                form.businessName
-            )
-
-            formData.append(
-                'bus_cat',
-                form.serviceProvided
-            )
-
-            formData.append(
-                'cat_id',
-                form.category
-            )
-
-            formData.append(
-                'email',
-                form.email
-            )
-
-            formData.append(
-                'phone',
-                form.phone
-            )
-
-            formData.append(
-                'country_code',
-                form.countryCode
-            )
-
-            formData.append(
-                'password',
-                form.password
-            )
-
-            formData.append(
-                'gst_no',
-                form.taxNumber
-            )
-
-            formData.append(
-                'address',
-                form.address
-            )
-
-            formData.append(
-                'city',
-                form.city
-            )
-            formData.append(
-                'state',
-                form.state
-            )
-
-            formData.append(
-                'zip_code',
-                form.zipcode
-            )
-
-            formData.append(
-                'lat',
-                form.latitude
-            )
-
-            formData.append(
-                'lon',
-                form.longitude
-            )
-
-            if (form.profilePhoto) {
-
-                formData.append(
-                    'profile_image',
-                    form.profilePhoto
-                )
-
+            // Only include password if user entered a new one
+            if (form.password) {
+                formData.append('password', form.password)
             }
 
-            if (form.businessLogo) {
-
-                formData.append(
-                    'brand_image',
-                    form.businessLogo
-                )
-
+            // Only append files if new files are selected
+            if (form.profilePhoto && typeof form.profilePhoto !== 'string') {
+                formData.append('profile_image', form.profilePhoto)
             }
 
-            if (form.kycDocument) {
-
-                formData.append(
-                    'document',
-                    form.kycDocument
-                )
-
+            if (form.businessLogo && typeof form.businessLogo !== 'string') {
+                formData.append('brand_image', form.businessLogo)
             }
-            console.log('PHONE:', form.phone)
-            console.log('COUNTRY CODE:', form.countryCode)
-            const response = await API.post(
 
-                '/admin/merchant/register',
+            if (form.kycDocument && typeof form.kycDocument !== 'string') {
+                formData.append('document', form.kycDocument)
+            }
 
-                formData,
-
-                {
-                    headers: {
-                        'Content-Type':
-                            'multipart/form-data'
-                    }
+            const response = await API.post('/admin/merchant/register', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
                 }
-
-            )
+            })
 
             const data = response.data || {}
 
-            console.log('Merchant Response:', data)
-
             if (data.status === 1 || data.success === true) {
-                toast.success(data.message || 'Merchant added successfully')
+                toast.success(data.message || 'Merchant updated successfully')
                 setTimeout(() => navigate('/merchants'), 800)
             } else {
-                toast.error(data.message || 'Merchant registration failed')
+                toast.error(data.message || 'Merchant update failed')
             }
 
         } catch (error) {
-            const apiMessage = error?.response?.data?.message || 'Merchant registration failed'
-
-            console.log('Merchant Add Error:', error.response?.data || error)
+            const apiMessage = error?.response?.data?.message || 'Merchant update failed'
+            console.log('Merchant Update Error:', error.response?.data || error)
             toast.error(apiMessage)
-
         }
-
     }
 
-
     useEffect(() => {
-
         const fetchCategories = async () => {
-
             try {
-
-                const response = await API.get(
-                    'api/category-list'
-                )
-
-                setCategories(
-                    response.data.data || response.data
-                )
-
+                const response = await API.get('api/category-list')
+                setCategories(response.data.data || response.data)
             } catch (error) {
-
-                console.log(
-                    'Category Fetch Error:',
-                    error.response?.data || error
-                )
-
+                console.log('Category Fetch Error:', error.response?.data || error)
             }
-
         }
 
         fetchCategories()
+        fetchMerchant()
+    }, [id])
 
-    }, [])
-
-      const fetchMerchant = async () => {
-
-        try {
-
-            const response = await API.post(
-
-                'admin/merchant-fetch-id',
-
-                {
-                    id: id
-                }
-
-            )
-
-            // console.log(response.data)
-
-            if (response.data.status === 1) {
-
-                const merchant =
-                    response.data.data
-
-                setMerchantData(merchant)
-
-                setBranchesData(
-                    merchant.Branches || []
-                )
-                // console.log("merchant",merchant)
-
-            }
-
-        } catch (err) {
-
-            console.log(
-                "Error:",
-                err.response?.data || err.message
-            )
-
-        } finally {
-
-            setLoading(false)
-
-        }
-
+    if (loading) {
+        return (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
+                <div className="spinner"></div>
+                <p>Loading merchant data...</p>
+            </div>
+        )
     }
+
     return (
         <>
             <Toaster
@@ -472,12 +385,10 @@ export default function AddMerchant() {
                                 Merchants
                             </NavLink>
                             <i className="fas fa-chevron-right" style={{ fontSize: '0.7rem' }} />
-                            <span>Register New Merchant</span>
+                            <span>Edit Merchant</span>
                         </div>
 
                         <div className="flex-between" style={{ gap: 20, flexWrap: 'wrap' }}>
-
-
                             <button
                                 type="button"
                                 className="btn btn-secondary"
@@ -497,7 +408,7 @@ export default function AddMerchant() {
                                 <div className="upload-card-icon">
                                     {
                                         profilePreview
-                                            ? <img src={profilePreview} alt="Profile" />
+                                            ? <img src={profilePreview} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                             : <i className="fas fa-user" />
                                     }
                                 </div>
@@ -523,12 +434,12 @@ export default function AddMerchant() {
                                         <i className="fas fa-cloud-upload-alt" />
 
                                         <span>
-                                            Upload Profile Photo
+                                            {form.profilePhoto && typeof form.profilePhoto === 'object' ? form.profilePhoto.name : 'Upload New Profile Photo'}
                                         </span>
                                     </label>
 
                                     <span className="upload-note">
-                                        JPG, PNG up to 1MB
+                                        JPG, PNG up to 1MB. Leave empty to keep current image.
                                     </span>
                                 </div>
                             </article>
@@ -537,7 +448,7 @@ export default function AddMerchant() {
                                 <div className="upload-card-icon upload-card-icon--square">
                                     {
                                         logoPreview
-                                            ? <img src={logoPreview} alt="Logo" />
+                                            ? <img src={logoPreview} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                             : <i className="fas fa-store" />
                                     }
                                 </div>
@@ -563,12 +474,12 @@ export default function AddMerchant() {
                                         <i className="fas fa-cloud-upload-alt" />
 
                                         <span>
-                                            Upload Brand Logo
+                                            {form.businessLogo && typeof form.businessLogo === 'object' ? form.businessLogo.name : 'Upload New Brand Logo'}
                                         </span>
                                     </label>
 
                                     <span className="upload-note">
-                                        JPG, PNG up to 1MB
+                                        JPG, PNG up to 1MB. Leave empty to keep current image.
                                     </span>
                                 </div>
                             </article>
@@ -619,23 +530,15 @@ export default function AddMerchant() {
                                 </label>
                             </div>
 
-
-
                             <PhoneNumberField
                                 value={form.phone}
                                 countryCode={form.countryCode}
-
                                 onChange={(value, countryCode) =>
-
                                     setForm((prev) => ({
-
                                         ...prev,
-
                                         phone: value || '',
                                         countryCode: countryCode || ''
-
                                     }))
-
                                 }
                             />
 
@@ -647,11 +550,10 @@ export default function AddMerchant() {
                                     onChange={handleChange}
                                     className="form-control"
                                     placeholder=" "
-                                    required
                                 />
 
                                 <label className="form-label">
-                                    Account Password
+                                    New Password (leave blank to keep current)
                                 </label>
                             </div>
                         </div>
@@ -702,7 +604,6 @@ export default function AddMerchant() {
                             </div>
 
                             <div className="form-group-classic">
-
                                 <label className="form-label-classic">
                                     Business Category
                                 </label>
@@ -714,27 +615,39 @@ export default function AddMerchant() {
                                     className="form-select"
                                     required
                                 >
-
                                     <option value="">
                                         Select Category
                                     </option>
 
                                     {categories.map((item) => (
-
                                         <option
                                             key={item.id}
                                             value={item.id}
                                         >
                                             {item.name}
                                         </option>
-
                                     ))}
-
                                 </select>
-
                             </div>
 
-                            <article className="upload-card upload-card--documents">
+                            {/* <div className="form-group">
+                                <input
+                                    name="taxNumber"
+                                    type="text"
+                                    value={form.taxNumber}
+                                    onChange={handleChange}
+                                    className="form-control"
+                                    placeholder=" "
+                                />
+
+                                <label className="form-label">
+                                    GST / Tax Number
+                                </label>
+                            </div> */}
+                        </div>
+
+                        <div className="form-row">
+                            <article className="upload-card upload-card--documents" style={{ width: '100%' }}>
                                 <div className="upload-card-icon upload-card-icon--square">
                                     <i className="fas fa-file-alt" />
                                 </div>
@@ -760,28 +673,14 @@ export default function AddMerchant() {
                                         <i className="fas fa-cloud-upload-alt" />
 
                                         <span>
-                                            {
-                                                form.kycDocument
-                                                    ? form.kycDocument.name
-                                                    : 'Choose Document'
-                                            }
+                                            {form.kycDocument && typeof form.kycDocument === 'object'
+                                                ? form.kycDocument.name
+                                                : 'Upload New Document'}
                                         </span>
                                     </label>
 
-                                    {
-                                        form.kycDocument && (
-                                            <div className="document-upload-success">
-                                                <i className="fas fa-check-circle"></i>
-
-                                                <span>
-                                                    Document uploaded successfully
-                                                </span>
-                                            </div>
-                                        )
-                                    }
-
                                     <span className="upload-note">
-                                        PDF, JPG, PNG up to 1MB
+                                        PDF, JPG, PNG up to 1MB. Leave empty to keep current document.
                                     </span>
                                 </div>
                             </article>
@@ -836,7 +735,7 @@ export default function AddMerchant() {
                                 type="submit"
                                 className="btn btn-primary"
                             >
-                                Save & Activate
+                                Update Merchant
                             </button>
                         </div>
                     </form>
