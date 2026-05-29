@@ -293,7 +293,7 @@ export default function EditMerchant() {
             } else {
                 toast.error(data.message || 'Merchant update failed')
             }
-
+  
         } catch (error) {
             const apiMessage = error?.response?.data?.message || 'Merchant update failed'
             console.log('Merchant Update Error:', error.response?.data || error)
