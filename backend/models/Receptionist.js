@@ -42,6 +42,36 @@ module.exports = (sequelize, DataTypes) => {
         tableName: 'receptionists',
         timestamps: true
     });
+     Receptionist.prototype.toJSON = function () {
+
+        const values = Object.assign({}, this.get());
+
+        if (values.createdAt) {
+            values.createdAt = new Date(values.createdAt)
+                .toLocaleString('en-US', {
+                    month: 'long',
+                    day: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
+                });
+        }
+
+        if (values.updatedAt) {
+            values.updatedAt = new Date(values.updatedAt)
+                .toLocaleString('en-US', {
+                    month: 'long',
+                    day: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
+                });
+        }
+
+        return values;
+    };
 
     Receptionist.associate = (models) => {
 

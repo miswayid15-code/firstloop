@@ -3,7 +3,8 @@ const router = express.Router();
 
 const upload = require('../../middleware/upload');
 const controller = require('../../controllers/api/branchController');
-const auth = require('../../middleware/auth');
+const auth = require('../../middleware/auth'); 
+const checkMerchant = require('../../middleware/checkMerchant'); 
 
 
 // ================= CREATE BRANCH =================
@@ -64,7 +65,11 @@ router.post('/branch/update-appointment', auth('receptionist'),(req,res,next)=>{
     },controller.update_appointment_status
 );
 
-
+router.post(
+    '/branch/appointment-details',
+     auth('receptionist'),
+    controller.fetch_appointment_details
+);
 
 
 // ================= DELETE BRANCH =================
@@ -118,5 +123,28 @@ router.delete(
 
 
 router.get('/branch/details/:id',  auth('merchant'), controller.branch_id);
+
+// ================= merchant appointment =================
+
+router.post(
+    '/merchant/appointment-list',
+    auth('merchant'),
+    checkMerchant,
+    controller.merchant_appointment_list
+);
+router.post(
+    '/merchant/appointment-details',
+    auth('merchant'),
+    checkMerchant,
+    controller.fetch_appointment_details
+);
+
+router.post(
+    '/merchant/update-appointment',
+    auth('merchant'),
+    checkMerchant,
+    controller.update_appointment_status_by_mer
+);
+
 
 module.exports = router;

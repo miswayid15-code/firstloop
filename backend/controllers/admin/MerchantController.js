@@ -1,4 +1,4 @@
-const { Merchant, Coupon, RefreshToken, Branch, Receptionist, MerchantFp } = require('../../models');
+const { Merchant, Coupon, RefreshToken, Branch, Receptionist, MerchantFp, Category } = require('../../models');
 const bcrypt = require('bcryptjs');
 const { parsePhoneNumber } = require('libphonenumber-js');
 const jwt = require('jsonwebtoken');
@@ -372,6 +372,73 @@ exports.update_status = async (req, res) => {
 
     }
 };
+
+exports.update_category = async (req, res) => {
+    try {
+
+        const { id, cat_id } = req.body;
+
+        if (!id || !cat_id) {
+            return res.json({
+                status: 0,
+                message: "Merchant and category are required"
+            });
+        }
+
+        const merchant = await Merchant.findOne({
+            where: {
+                id: id,
+                del_status: 0
+            }
+        });
+
+        if (!merchant) {
+            return res.json({
+                status: 0,
+                message: "Merchant not found"
+            });
+        }
+
+        const category = await Category.findOne({
+            where: {
+                id: cat_id,
+                del_status: 0,
+                status: 1
+            }
+        });
+
+        if (!category) {
+            return res.json({
+                status: 0,
+                message: "Category not found"
+            });
+        }
+
+        await merchant.update({
+            cat_id: category.id,
+            bus_cat: category.name
+        });
+
+        return res.json({
+            status: 1,
+            message: "Merchant category updated successfully",
+            data: {
+                cat_id: category.id,
+                bus_cat: category.name
+            }
+        });
+
+    } catch (err) {
+
+        console.log(err);
+
+        return res.json({
+            status: 0,
+            message: err.message || "Issue with category update"
+        });
+
+    }
+};
 exports.delete_status = async (req, res) => {
     try {
 
@@ -393,7 +460,7 @@ exports.delete_status = async (req, res) => {
 
         const deletedAt = new Date();
 
-  
+
         const receptionists = await Receptionist.findAll({
             where: {
                 merchant_id: id,
@@ -404,7 +471,7 @@ exports.delete_status = async (req, res) => {
 
         const receptionistIds = receptionists.map(item => item.id);
 
-   
+
         await Merchant.update(
             {
                 del_status: 1,
@@ -418,7 +485,7 @@ exports.delete_status = async (req, res) => {
             }
         );
 
-  
+
         await Branch.update(
             {
                 del_status: 1,
@@ -432,7 +499,7 @@ exports.delete_status = async (req, res) => {
             }
         );
 
-   
+
         await Receptionist.update(
             {
                 del_status: 1,
@@ -446,7 +513,7 @@ exports.delete_status = async (req, res) => {
             }
         );
 
-       
+
         await RefreshToken.destroy({
             where: {
                 user_id: id,
@@ -454,7 +521,7 @@ exports.delete_status = async (req, res) => {
             }
         });
 
-      
+
         if (receptionistIds.length > 0) {
 
             await RefreshToken.destroy({
@@ -480,6 +547,79 @@ exports.delete_status = async (req, res) => {
         return res.json({
             status: 0,
             message: err.message || "Issue with update"
+        });
+
+    }
+};
+
+
+exports.receptionistsbyid = async (req, res) => {
+    try {
+
+        const { id } = req.body;
+
+        if (!id) {
+            return res.json({
+                status: 0,
+                message: "Receptionist id is required"
+            });
+        }
+
+        const resp = await Receptionist.findOne({
+            where: {
+                id: id,
+                del_status: 0
+            },
+            attributes: [
+                'id',
+                'name',
+                'email',
+                'country_code',
+                'phone',
+                'createdAt',
+                'profile_image',
+                'branch_id'
+            ],
+            include: [
+                {
+                    model: Branch,
+                    attributes: [
+                        'name'
+                    ],
+                    required: false
+                }
+            ]
+        });
+
+        if (!resp) {
+            return res.json({
+                status: 0,
+                message: "Receptionist not found"
+            });
+        }
+
+        const data = resp.toJSON();
+
+        data.branch_name =
+            data.Branch
+                ? data.Branch.name
+                : null;
+
+        delete data.Branch;
+
+        return res.json({
+            status: 1,
+            message: "Receptionist fetched successfully",
+            data
+        });
+
+    } catch (err) {
+
+        console.log("Error:", err);
+
+        return res.json({
+            status: 0,
+            message: err.message
         });
 
     }

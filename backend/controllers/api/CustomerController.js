@@ -177,7 +177,7 @@ exports.register = async (req, res) => {
             {
                 id: customer.id,
                 email: customer.email,
-                type: 'customer',
+               user_type: 'customer',
                 token_type: 'access'
             },
             process.env.JWT_SECRET,
@@ -194,7 +194,7 @@ exports.register = async (req, res) => {
         const refreshToken = jwt.sign(
             {
                 id: customer.id,
-                type: 'customer',
+               user_type: 'customer',
                 token_type: 'refresh'
             },
             process.env.JWT_REFRESH_SECRET,
@@ -355,7 +355,7 @@ exports.login = async (req, res) => {
         const refreshToken = jwt.sign(
             {
                 id: customer.id,
-                type: 'customer',
+               user_type: 'customer',
                 token_type: 'refresh'
             },
             process.env.JWT_SECRET,
@@ -379,7 +379,7 @@ exports.login = async (req, res) => {
             {
                 id: customer.id,
                 email: customer.email,
-                type: 'customer',
+               user_type: 'customer',
                 token_type: 'access'
             },
             process.env.JWT_SECRET,

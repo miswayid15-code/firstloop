@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { Sequelize } = require("sequelize");
+const { Op } = require('sequelize');
 const {
     RefreshToken,
     admins, Merchant, Branch, Receptionist, Coupon
@@ -308,14 +309,6 @@ exports.merchant_list = async (req, res) => {
                         'DD-MM-YYYY HH12:MI AM'
                     ),
                     'createdAt'
-                ],
-
-                [
-                    Sequelize.fn(
-                        'COUNT',
-                        Sequelize.col('Branches.id')
-                    ),
-                    'branch_count'
                 ]
 
             ],
@@ -327,19 +320,13 @@ exports.merchant_list = async (req, res) => {
 
                     where: {
                         del_status: 0,
-                        status: 1
+                        
                     },
 
-                    attributes: [],
+                    attributes: ['id'],
 
                     required: false
                 }
-
-            ],
-
-            group: [
-
-                'Merchant.id'
 
             ],
 
@@ -347,9 +334,21 @@ exports.merchant_list = async (req, res) => {
 
                 ['id', 'DESC']
 
-            ],
+            ]
 
-            subQuery: false
+        });
+
+        const data = merchants.map(item => {
+
+            const merchant = item.toJSON();
+
+            merchant.branch_count = merchant.Branches
+                ? merchant.Branches.length
+                : 0;
+
+            delete merchant.Branches;
+
+            return merchant;
 
         });
 
@@ -359,7 +358,7 @@ exports.merchant_list = async (req, res) => {
 
             message: "Merchant List",
 
-            data: merchants
+            data
 
         });
 
@@ -380,7 +379,6 @@ exports.merchant_list = async (req, res) => {
     }
 
 };
-
 exports.fetchmerchant = async (req, res) => {
 
     try {
@@ -558,13 +556,89 @@ exports.fetchmerchant = async (req, res) => {
             }
 
         }
-        console.log(data);
+        const branchIds = data.Branches
+    ? data.Branches.map(branch => branch.id)
+    : [];
 
+const totalCoupons = await Coupon.count({
+    where: {
+        del_status: 0,
+        status: 1,
+        branch_ids: {
+            [Op.overlap]: branchIds
+        }
+    }
+});
+
+const redeemedCoupons = await Coupon.count({
+    where: {
+        del_status: 0,
+        status: 2,
+        branch_ids: {
+            [Op.overlap]: branchIds
+        }
+    }
+});
+
+let total_branch = 0;
+let total_receptionists = 0;
+
+if (data.Branches && data.Branches.length > 0) {
+
+    total_branch = data.Branches.length;
+
+    data.Branches.forEach(branch => {
+
+        total_receptionists += branch.Receptionists
+            ? branch.Receptionists.length
+            : 0;
+
+    });
+
+}
+const unassignedReceptionists = await Receptionist.findAll({
+
+    where: {
+        merchant_id: id,
+        del_status: 0,
+        status: 1,
+        branch_id: null
+    },
+
+    attributes: [
+        'id',
+        'name',
+        'email',
+        'phone',
+        'profile_image'
+    ]
+
+});
+
+const formattedReceptionists = unassignedReceptionists.map(item => {
+
+    const receptionist = item.toJSON();
+
+    receptionist.profile_image = receptionist.profile_image
+        ? baseUrl + '/' + receptionist.profile_image.replace(/\\/g, '/')
+        : null;
+
+    return receptionist;
+
+});
+
+data.total_branch = total_branch;
+data.total_receptionists = total_receptionists;
+data.total_coupon_count = totalCoupons;
+data.total_redeem_coupon = redeemedCoupons;
+data.unassigned_receptionists = formattedReceptionists;
+data.unassigned_receptionist_count = formattedReceptionists.length;
         return res.json({
 
             status: 1,
             message: "Merchant fetched successfully",
-            data: data
+            data: data,
+        
 
         });
 
