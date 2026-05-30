@@ -1660,7 +1660,7 @@ exports.update_appointment_status = async (req, res) => {
         };
 
 
-        if (Number(status) === 2) {
+        if (Number(status) === 1) {
 
             updateData.approved_by =
                 'receptionist';
@@ -1671,7 +1671,7 @@ exports.update_appointment_status = async (req, res) => {
         }
 
 
-        if (Number(status) === 3) {
+        if (Number(status) === 2) {
 
             updateData.cancel_by =
                 'receptionist';
@@ -1999,7 +1999,7 @@ exports.update_appointment_status_by_mer = async (req, res) => {
         };
 
 
-        if (Number(status) === 2) {
+        if (Number(status) === 1) {
 
             updateData.approved_by =
                 'merchant';
@@ -2010,7 +2010,7 @@ exports.update_appointment_status_by_mer = async (req, res) => {
         }
 
 
-        if (Number(status) === 3) {
+        if (Number(status) === 1) {
 
             updateData.cancel_by =
                 'merchant';

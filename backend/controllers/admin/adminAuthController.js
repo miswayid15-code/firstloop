@@ -168,7 +168,7 @@ exports.login = async (req, res) => {
 
             status: 0,
             message: err.message
-            
+
         });
 
     }
@@ -320,7 +320,7 @@ exports.merchant_list = async (req, res) => {
 
                     where: {
                         del_status: 0,
-                        
+
                     },
 
                     attributes: ['id'],
@@ -491,6 +491,7 @@ exports.fetchmerchant = async (req, res) => {
 
         });
 
+
         if (data.Branches && data.Branches.length > 0) {
 
             for (const branch of data.Branches) {
@@ -537,7 +538,7 @@ exports.fetchmerchant = async (req, res) => {
                 const coupons = await Coupon.findAll({
 
                     where: {
-                        del_status: 0 
+                        del_status: 0
                     },
 
                     attributes: ['id', 'branch_ids']
@@ -557,88 +558,173 @@ exports.fetchmerchant = async (req, res) => {
 
         }
         const branchIds = data.Branches
-    ? data.Branches.map(branch => branch.id)
-    : [];
+            ? data.Branches.map(branch => branch.id)
+            : [];
 
-const totalCoupons = await Coupon.count({
-    where: {
-        del_status: 0,
-        status: 1,
-        branch_ids: {
-            [Op.overlap]: branchIds
-        }
-    }
-});
-
-const redeemedCoupons = await Coupon.count({
-    where: {
-        del_status: 0,
-        status: 2,
-        branch_ids: {
-            [Op.overlap]: branchIds
-        }
-    }
-});
-
-let total_branch = 0;
-let total_receptionists = 0;
-
-if (data.Branches && data.Branches.length > 0) {
-
-    total_branch = data.Branches.length;
-
-    data.Branches.forEach(branch => {
-
-        total_receptionists += branch.Receptionists
-            ? branch.Receptionists.length
-            : 0;
-
-    });
-
-}
-const unassignedReceptionists = await Receptionist.findAll({
+            const merchantCoupons = await Coupon.findAll({
 
     where: {
         merchant_id: id,
-        del_status: 0,
-        status: 1,
-        branch_id: null
+        del_status: 0
     },
 
-    attributes: [
-        'id',
-        'name',
-        'email',
-        'phone',
-        'profile_image'
-    ]
+    order: [['id', 'DESC']]
 
 });
 
-const formattedReceptionists = unassignedReceptionists.map(item => {
+const couponList = merchantCoupons.map(coupon => {
 
-    const receptionist = item.toJSON();
+    const item = coupon.toJSON();
 
-    receptionist.profile_image = receptionist.profile_image
-        ? baseUrl + '/' + receptionist.profile_image.replace(/\\/g, '/')
+    item.banner_image = item.banner_image
+        ? baseUrl + '/' + item.banner_image.replace(/\\/g, '/')
         : null;
 
-    return receptionist;
+    return item;
 
 });
 
-data.total_branch = total_branch;
-data.total_receptionists = total_receptionists;
-data.total_coupon_count = totalCoupons;
-data.total_redeem_coupon = redeemedCoupons;
-data.unassigned_receptionists = formattedReceptionists;
-data.unassigned_receptionist_count = formattedReceptionists.length;
+        const totalCoupons = await Coupon.count({
+            where: {
+                del_status: 0,
+                status: 1,
+                branch_ids: {
+                    [Op.overlap]: branchIds
+                }
+            }
+        });
+
+        const redeemedCoupons = await Coupon.count({
+            where: {
+                del_status: 0,
+                status: 2,
+                branch_ids: {
+                    [Op.overlap]: branchIds
+                }
+            }
+        });
+
+        let total_branch = 0;
+        let total_receptionists = 0;
+
+        const allCoupons = await Coupon.findAll({
+
+            where: {
+                del_status: 0
+            },
+
+            attributes: ['id', 'branch_ids']
+
+        });
+
+        const couponCountMap = {};
+
+        allCoupons.forEach(coupon => {
+
+            (coupon.branch_ids || []).forEach(branchId => {
+
+                couponCountMap[branchId] =
+                    (couponCountMap[branchId] || 0) + 1;
+
+            });
+
+        });
+
+        if (data.Branches && data.Branches.length > 0) {
+
+            for (const branch of data.Branches) {
+
+                // Branch Image
+                if (branch.profile_image) {
+
+                    branch.profile_image =
+                        baseUrl + '/' +
+                        branch.profile_image.replace(/\\/g, '/');
+
+                } else {
+
+                    branch.profile_image = null;
+
+                }
+
+                // Receptionist Images
+                if (
+                    branch.Receptionists &&
+                    branch.Receptionists.length > 0
+                ) {
+
+                    branch.Receptionists =
+                        branch.Receptionists.map(receptionist => {
+
+                            if (receptionist.profile_image) {
+
+                                receptionist.profile_image =
+                                    baseUrl + '/' +
+                                    receptionist.profile_image.replace(/\\/g, '/');
+
+                            } else {
+
+                                receptionist.profile_image = null;
+
+                            }
+
+                            return receptionist;
+
+                        });
+
+                }
+
+                // Coupon Count
+                branch.coupon_count =
+                    couponCountMap[branch.id] || 0;
+
+            }
+
+        }
+        const unassignedReceptionists = await Receptionist.findAll({
+
+            where: {
+                merchant_id: id,
+                del_status: 0,
+                status: 1,
+                branch_id: null
+            },
+
+            attributes: [
+                'id',
+                'name',
+                'email',
+                'phone',
+                'profile_image'
+            ]
+
+        });
+
+        const formattedReceptionists = unassignedReceptionists.map(item => {
+
+            const receptionist = item.toJSON();
+
+            receptionist.profile_image = receptionist.profile_image
+                ? baseUrl + '/' + receptionist.profile_image.replace(/\\/g, '/')
+                : null;
+
+            return receptionist;
+
+        });
+
+        data.total_branch = total_branch;
+        data.total_receptionists = total_receptionists;
+        data.total_coupon_count = totalCoupons;
+        data.total_redeem_coupon = redeemedCoupons;
+        data.unassigned_receptionists = formattedReceptionists;
+        data.unassigned_receptionist_count = formattedReceptionists.length;
+        data.coupon_list = couponList;
         return res.json({
 
             status: 1,
             message: "Merchant fetched successfully",
             data: data,
-        
+
 
         });
 

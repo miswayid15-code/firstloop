@@ -15,6 +15,7 @@ import EditMerchant from './pages/EditMerchant'
 import Branches from './pages/Branches'
 import Receptionists from './pages/Receptionists'
 import ViewMerchant from './pages/ViewMerchant'
+import ViewBranch from './pages/ViewBranch'
 
 function App() {
     return (
@@ -33,6 +34,7 @@ function App() {
                 <Route path="add-merchant" element={<AddMerchant />} />
                 <Route path="edit-merchant/:id" element={<EditMerchant />} />
                 <Route path="view-merchant/:id" element={<ViewMerchant />} />
+                <Route path="view-branch/:id" element={<ViewBranch />} />
                 <Route path="branches" element={<Branches />} />
                 <Route path="receptionists" element={<Receptionists />} />
             </Route>

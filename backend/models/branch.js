@@ -35,6 +35,8 @@ module.exports = (sequelize, DataTypes) => {
         status: DataTypes.INTEGER,
 
         del_status: DataTypes.INTEGER,
+         city: DataTypes.STRING,
+    state: DataTypes.STRING,
         deleted_at: {
             type: DataTypes.DATE,
             allowNull: true

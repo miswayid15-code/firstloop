@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { addMerchant } from '../lib/store'
-import { LoadScript } from '@react-google-maps/api'
+import { useJsApiLoader } from '@react-google-maps/api'
 import { toast } from 'react-hot-toast'
 
 import AppToaster from '../components/AppToaster.jsx'
@@ -51,6 +50,11 @@ export default function AddMerchant() {
     const [categories, setCategories] = useState([])
 
     const navigate = useNavigate()
+    const { isLoaded: isMapLoaded, loadError: mapLoadError } = useJsApiLoader({
+        id: 'dealora-google-maps',
+        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
+        libraries
+    })
 
     const center = useMemo(() => {
         return {
@@ -368,10 +372,19 @@ export default function AddMerchant() {
         <>
             <AppToaster />
 
-            <LoadScript
-                googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
-                libraries={libraries}
-            >
+            {mapLoadError && (
+                <div className="card" style={{ maxWidth: 1400, margin: '0 auto' }}>
+                    Failed to load Google Maps. Please check the Maps API key.
+                </div>
+            )}
+
+            {!mapLoadError && !isMapLoaded && (
+                <div className="card" style={{ maxWidth: 1400, margin: '0 auto' }}>
+                    Loading map...
+                </div>
+            )}
+
+            {isMapLoaded && (
                 <div
                     className="card"
                     style={{
@@ -767,7 +780,7 @@ export default function AddMerchant() {
                         </div>
                     </form>
                 </div>
-            </LoadScript>
+            )}
         </>
     )
 }

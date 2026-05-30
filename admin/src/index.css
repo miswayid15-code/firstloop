@@ -153,3 +153,56 @@ input:checked + .slider:before {
 .slider.round:before {
     border-radius: 50%;
 }
+
+/* Coupon List Section */
+.coupon-section {
+    margin-top: 24px;
+    padding: 16px;
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-medium);
+    overflow-x: auto;
+}
+
+/* Data Table Styling */
+.data-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 8px;
+    font-size: 0.94rem;
+}
+
+.data-table th {
+    background: var(--gradient-primary);
+    color: #fff;
+    font-weight: 600;
+    padding: 12px 8px;
+    text-align: left;
+    border-top-left-radius: var(--border-radius-md);
+    border-top-right-radius: var(--border-radius-md);
+}
+
+.data-table td {
+    background: rgba(255,255,255,0.9);
+    padding: 10px 8px;
+    border-radius: var(--border-radius-sm);
+}
+
+.data-table tr:hover td {
+    background: rgba(255,255,255,0.95);
+    box-shadow: var(--shadow-light);
+}
+
+/* Skeleton loading placeholder */
+.skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 37%, #f0f0f0 63%);
+    background-size: 400% 100%;
+    animation: skeleton-loading 1.4s ease infinite;
+    border-radius: var(--border-radius-sm);
+    height: 1rem;
+}
+
+@keyframes skeleton-loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}

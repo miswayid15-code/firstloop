@@ -42,7 +42,7 @@ module.exports = (sequelize, DataTypes) => {
         tableName: 'receptionists',
         timestamps: true
     });
-     Receptionist.prototype.toJSON = function () {
+    Receptionist.prototype.toJSON = function () {
 
         const values = Object.assign({}, this.get());
 

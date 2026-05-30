@@ -5,6 +5,7 @@ import AppToaster from '../components/AppToaster.jsx'
 import API from '../api.js';
 
 const NEW_MERCHANT_DAYS = 7
+const MERCHANTS_PER_PAGE = 10
 const MS_PER_DAY = 24 * 60 * 60 * 1000
 
 const parseMerchantDate = (dateValue) => {
@@ -53,11 +54,63 @@ export default function Merchants() {
 
     const [merchants, setMerchants] = useState([])
 
+    const [search, setSearch] = useState('')
+
+    const [merchantPage, setMerchantPage] = useState(1)
+
     const [loading, setLoading] = useState(true)
 
     const [showMerchantView, setShowMerchantView] = useState(false)
 
     const [selectedMerchant, setSelectedMerchant] = useState(null)
+
+    const filteredMerchants = merchants.filter((merchant) => {
+
+        const searchValue = search.toLowerCase()
+        const merchantName = merchant.name || ''
+        const merchantEmail = merchant.email || ''
+        const merchantPhone = `${merchant.country_code || ''}${merchant.phone || ''}`
+        const merchantBusinessName = merchant.bus_name || ''
+
+        return (
+            merchantName.toLowerCase().includes(searchValue) ||
+            merchantEmail.toLowerCase().includes(searchValue) ||
+            merchantPhone.toLowerCase().includes(searchValue) ||
+            merchantBusinessName.toLowerCase().includes(searchValue)
+        )
+
+    })
+
+    const totalMerchantPages = Math.max(
+        1,
+        Math.ceil(filteredMerchants.length / MERCHANTS_PER_PAGE)
+    )
+
+    const safeMerchantPage = Math.min(
+        merchantPage,
+        totalMerchantPages
+    )
+
+    const merchantPageStartIndex = (safeMerchantPage - 1) * MERCHANTS_PER_PAGE
+
+    const paginatedMerchants = filteredMerchants.slice(
+        merchantPageStartIndex,
+        merchantPageStartIndex + MERCHANTS_PER_PAGE
+    )
+
+    const merchantStartCount = filteredMerchants.length
+        ? merchantPageStartIndex + 1
+        : 0
+
+    const merchantEndCount = Math.min(
+        merchantPageStartIndex + MERCHANTS_PER_PAGE,
+        filteredMerchants.length
+    )
+
+    const merchantPageNumbers = Array.from(
+        { length: totalMerchantPages },
+        (_, index) => index + 1
+    )
 
 
     useEffect(() => {
@@ -66,13 +119,29 @@ export default function Merchants() {
 
     }, [])
 
+    useEffect(() => {
+
+        setMerchantPage(1)
+
+    }, [search])
+
+    useEffect(() => {
+
+        if (merchantPage !== safeMerchantPage) {
+
+            setMerchantPage(safeMerchantPage)
+
+        }
+
+    }, [merchantPage, safeMerchantPage])
+
     const fetchMerchants = async () => {
 
         try {
 
             const response = await API.get('admin/merchant-list')
 
-            console.log(response.data)
+            // console.log(response.data)
 
             if (response.data.status === 1) {
 
@@ -180,18 +249,50 @@ const handleDeleteAccount = async (id) => {
             <AppToaster />
 
             <div className="card" style={{ marginBottom: 18 }}>
-                <div className="flex-between" style={{ gap: 12 }}>
+                <div className="flex-between" style={{ gap: 12, flexWrap: 'wrap' }}>
                     <div>
                         <h3 className="card-title">Merchants</h3>
                         <p className="card-subtitle">Manage merchant accounts and view branch activity.</p>
                     </div>
-                    <button
-                        type="button"
-                        className="btn btn-primary"
-                        onClick={() => navigate('/add-merchant')}
+
+                    <div
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'flex-end',
+                            gap: 12,
+                            flex: 1,
+                            minWidth: 280,
+                            flexWrap: 'wrap'
+                        }}
                     >
-                        + Add Merchant
-                    </button>
+                        <div
+                            className="search-wrapper"
+                            style={{
+                                marginBottom: 0,
+                                maxWidth: 360,
+                                flex: '1 1 280px'
+                            }}
+                        >
+                            <i className="fas fa-search search-icon"></i>
+
+                            <input
+                                type="text"
+                                className="search-input"
+                                placeholder="Search merchant name, email, phone..."
+                                value={search}
+                                onChange={(event) => setSearch(event.target.value)}
+                            />
+                        </div>
+
+                        <button
+                            type="button"
+                            className="btn btn-primary"
+                            onClick={() => navigate('/add-merchant')}
+                        >
+                            + Add Merchant
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -247,9 +348,9 @@ const handleDeleteAccount = async (id) => {
                                 </tr>
                             ))
 
-                        ) : merchants.length > 0 ? (
+                        ) : paginatedMerchants.length > 0 ? (
 
-                            merchants.map((row) => (
+                            paginatedMerchants.map((row) => (
 
                                 <tr key={row.id}>
 
@@ -358,6 +459,45 @@ const handleDeleteAccount = async (id) => {
                     </tbody>
 
                 </table>
+
+                {!loading && filteredMerchants.length > MERCHANTS_PER_PAGE && (
+                    <div className="pagination-container">
+                        <span className="pagination-text">
+                            Showing {merchantStartCount}-{merchantEndCount} of {filteredMerchants.length} merchants
+                        </span>
+
+                        <div className="pagination-controls">
+                            <button
+                                type="button"
+                                className={`btn-page ${safeMerchantPage === 1 ? 'disabled' : ''}`}
+                                onClick={() => setMerchantPage((page) => Math.max(1, page - 1))}
+                                disabled={safeMerchantPage === 1}
+                            >
+                                <i className="fas fa-chevron-left"></i>
+                            </button>
+
+                            {merchantPageNumbers.map((page) => (
+                                <button
+                                    type="button"
+                                    key={page}
+                                    className={`btn-page ${page === safeMerchantPage ? 'active' : ''}`}
+                                    onClick={() => setMerchantPage(page)}
+                                >
+                                    {page}
+                                </button>
+                            ))}
+
+                            <button
+                                type="button"
+                                className={`btn-page ${safeMerchantPage === totalMerchantPages ? 'disabled' : ''}`}
+                                onClick={() => setMerchantPage((page) => Math.min(totalMerchantPages, page + 1))}
+                                disabled={safeMerchantPage === totalMerchantPages}
+                            >
+                                <i className="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                )}
 
             </div>
         </>
