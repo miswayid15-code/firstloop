@@ -45,7 +45,7 @@ export default function Customers() {
                             <th>Email</th>
                             <th>Date of Birth</th>
                             <th>Joiner Dealora Date</th>
-                            <th>Assigned Branch</th>
+                            {/* <th>Assigned Branch</th> */}
                             <th style={{ textAlign: 'right' }}>Actions</th>
                         </tr>
                     </thead>
@@ -65,7 +65,7 @@ export default function Customers() {
                                 <td>{row.email}</td>
                                 <td>{row.dob}</td>
                                 <td>{row.joined}</td>
-                                <td>{row.branch}</td>
+                                {/* <td>{row.branch}</td> */}
                                 <td>
                                     <div className="action-group" style={{ justifyContent: 'flex-end' }}>
                                         <button
