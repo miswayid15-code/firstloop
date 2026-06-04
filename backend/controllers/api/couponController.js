@@ -1,4 +1,4 @@
-const { Coupon, Merchant, Branch, CouponApplied,Customer } = require('../../models');
+const { Coupon, Merchant, Branch, CouponApplied,Customer ,CouponCat} = require('../../models');
 const { Op, where } = require('sequelize');
 const baseUrl = process.env.APP_URL;
 
@@ -8,7 +8,8 @@ exports.fetch_coupon_categories = async (req, res) => {
             where: {
                 del_status: 0
             },
-            order: [['id', 'DESC']]
+            attributes: ['id', 'name'],
+            order: [['id', 'ASC']]
         });
 
         return res.json({
@@ -37,6 +38,7 @@ exports.create_coupon = async (req, res) => {
             code,
             percentage,
             min_amount,
+            cat_id,
             usage_limit,
             start_date,
             branch_ids,
@@ -296,6 +298,7 @@ exports.update_coupon = async (req, res) => {
 
         let {
             coupon_id,
+            cat_id,
             branch_ids,
             code,
             percentage,

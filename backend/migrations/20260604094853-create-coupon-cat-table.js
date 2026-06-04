@@ -42,29 +42,29 @@ module.exports = {
 
         });
 
-        await queryInterface.bulkInsert('coupon_cat', [
-            {
-                name: 'Birthday',
-                status: 1,
-                del_status: 0,
-                created_at: new Date(),
-                updated_at: new Date()
-            },
-            {
-                name: 'Festival',
-                status: 1,
-                del_status: 0,
-                created_at: new Date(),
-                updated_at: new Date()
-            },
-            {
-                name: 'Others',
-                status: 1,
-                del_status: 0,
-                created_at: new Date(),
-                updated_at: new Date()
-            }
-        ]);
+        // await queryInterface.bulkInsert('coupon_cat', [
+        //     {
+        //         name: 'Birthday',
+        //         status: 1,
+        //         del_status: 0,
+        //         created_at: new Date(),
+        //         updated_at: new Date()
+        //     },
+        //     {
+        //         name: 'Festival',
+        //         status: 1,
+        //         del_status: 0,
+        //         created_at: new Date(),
+        //         updated_at: new Date()
+        //     },
+        //     {
+        //         name: 'Others',
+        //         status: 1,
+        //         del_status: 0,
+        //         created_at: new Date(),
+        //         updated_at: new Date()
+        //     }
+        // ]);
 
         await queryInterface.addColumn(
             'coupons',
