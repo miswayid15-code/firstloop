@@ -39,4 +39,9 @@ router.post(
     checkMerchantOrReceptionist,
     controller.claim_coupon
 );
+router.get('/redeem-customer',     auth(),
+    checkMerchantOrReceptionist,controller.redeem_customer);
+
+    router.get('/redeem-customer',     auth(),
+    checkMerchantOrReceptionist,controller.redeem_customer);
 module.exports = router;

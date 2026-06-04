@@ -5,6 +5,7 @@ const upload = require('../../middleware/upload');
 const controller = require('../../controllers/api/branchController');
 const auth = require('../../middleware/auth'); 
 const checkMerchant = require('../../middleware/checkMerchant'); 
+const checkMerchantOrReceptionist = require('../../middleware/checkMerchantOrReceptionist'); 
 
 
 // ================= CREATE BRANCH =================

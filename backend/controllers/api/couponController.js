@@ -1,6 +1,34 @@
-const { Coupon, Merchant, Branch, CouponApplied } = require('../../models');
+const { Coupon, Merchant, Branch, CouponApplied,Customer } = require('../../models');
 const { Op, where } = require('sequelize');
 const baseUrl = process.env.APP_URL;
+
+exports.fetch_coupon_categories = async (req, res) => {
+    try{
+        const categories = await CouponCat.findAll({
+            where: {
+                del_status: 0
+            },
+            order: [['id', 'DESC']]
+        });
+
+        return res.json({
+            status: 1,
+            message: "Categories fetched successfully",
+            data: categories
+        });
+
+    }
+    catch(err){
+        console.log("FETCH ERROR:", err);
+
+        return res.json({
+            status: 0,
+            message: err.message
+        });
+    }
+}
+
+
 exports.create_coupon = async (req, res) => {
 
     try {
@@ -770,7 +798,7 @@ exports.claim_coupon = async (req, res) => {
 
         }
 
-      
+
         if (userType === 'merchant') {
 
             if (couponExists.merchant_id != user.id) {
@@ -904,6 +932,179 @@ exports.claim_coupon = async (req, res) => {
 
             status: 0,
 
+            message: err.message
+
+        });
+
+    }
+
+};
+
+exports.redeem_customer = async (req, res) => {
+
+    try {
+
+        const user = req.merchant || req.receptionist;
+
+        const userType = req.merchant
+            ? 'merchant'
+            : 'receptionist';
+
+        const couponWhere = {
+            del_status: 0
+        };
+
+        if (userType === 'merchant') {
+
+            couponWhere.merchant_id = user.id;
+
+        } else if (userType === 'receptionist') {
+
+            couponWhere.merchant_id = user.merchant_id;
+
+        }
+
+        const couponApplieds = await CouponApplied.findAll({
+
+            where: {
+                status: 1,
+                del_status: 0
+            },
+
+            attributes: [
+                'id',
+                'coupon_code',
+                'percentage',
+                'cus_id',
+                'coupon_id',
+                'status',
+                'approved_by',
+                'approved_by_id',
+                'cancel_by',
+                'cancel_reason'
+            ],
+
+            include: [
+                {
+                    model: Coupon,
+                    attributes: ['branch_ids'],
+                    required: true,
+                    where: couponWhere
+                },
+                {
+                    model: Customer,
+                    attributes: ['id', 'name', 'email'],
+                    required: false
+                }
+            ],
+
+            order: [['id', 'DESC']]
+
+        });
+
+        const branchIds = [];
+
+        couponApplieds.forEach(item => {
+
+            if (
+                item.Coupon &&
+                item.Coupon.branch_ids &&
+                Array.isArray(item.Coupon.branch_ids)
+            ) {
+
+                branchIds.push(...item.Coupon.branch_ids);
+
+            }
+
+        });
+
+        const branches = await Branch.findAll({
+
+            where: {
+                id: [...new Set(branchIds)]
+            },
+
+            attributes: ['id', 'name']
+
+        });
+
+        const branchMap = {};
+
+        branches.forEach(branch => {
+
+            branchMap[branch.id] = branch.name;
+
+        });
+
+        let data = couponApplieds.map(item => {
+
+            const row = item.toJSON();
+
+            row.customer_name = row.Customer
+                ? row.Customer.name
+                : null;
+
+            row.customer_email = row.Customer
+                ? row.Customer.email
+                : null;
+
+            row.branch_name = null;
+
+            if (
+                row.Coupon &&
+                row.Coupon.branch_ids &&
+                row.Coupon.branch_ids.length > 0
+            ) {
+
+                row.branch_name =
+                    branchMap[row.Coupon.branch_ids[0]] || null;
+
+            }
+
+            delete row.Customer;
+            delete row.Coupon;
+
+            return row;
+
+        });
+
+        if (userType === 'receptionist') {
+
+            data = data.filter(item => {
+
+                const coupon = couponApplieds.find(
+                    c => c.id === item.id
+                );
+
+                const branchIds =
+                    coupon?.Coupon?.branch_ids || [];
+
+                return branchIds.includes(
+                    Number(user.branch_id)
+                );
+
+            });
+
+        }
+
+        return res.json({
+
+            status: 1,
+            message: "Redeemed customers fetched successfully",
+            data
+
+        });
+
+    } catch (err) {
+
+        console.log(
+            "REDEEM CUSTOMER ERROR:",
+            err
+        );
+
+        return res.json({
+
+            status: 0,
             message: err.message
 
         });
