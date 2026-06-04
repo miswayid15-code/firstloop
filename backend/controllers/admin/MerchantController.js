@@ -1366,6 +1366,11 @@ exports.branchUpdate = async (req, res) => {
 
         const profileFiles = files.filter((file) => file.fieldname === 'profile_image');
         const galleryFiles = files.filter((file) => file.fieldname === 'images' || file.fieldname === 'image');
+        const menuFiles = files.filter(
+    (file) =>
+        file.fieldname === 'menu_images' ||
+        file.fieldname === 'menu_image'
+);
 
         let profile_image =
             branch.profile_image;
@@ -1527,7 +1532,7 @@ exports.branchUpdate = async (req, res) => {
                                 "Delete error:",
                                 err.message
                             );
-
+update_branch
                         }
 
                     }

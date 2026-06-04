@@ -1,6 +1,6 @@
-const { Coupon, Merchant, Branch } = require('../../models');
+const { Coupon, Merchant, Branch, CouponApplied } = require('../../models');
 const { Op, where } = require('sequelize');
- const baseUrl = process.env.APP_URL;
+const baseUrl = process.env.APP_URL;
 exports.create_coupon = async (req, res) => {
 
     try {
@@ -15,10 +15,10 @@ exports.create_coupon = async (req, res) => {
             end_date
         } = req.body;
 
-       
+
         const merchant_id = req.user.id;
 
-      
+
         if (!merchant_id) {
 
             return res.json({
@@ -28,7 +28,7 @@ exports.create_coupon = async (req, res) => {
 
         }
 
-        
+
         if (typeof branch_ids === "string") {
 
             try {
@@ -43,7 +43,7 @@ exports.create_coupon = async (req, res) => {
 
         }
 
-       
+
         if (
             !code ||
             !percentage ||
@@ -58,7 +58,7 @@ exports.create_coupon = async (req, res) => {
 
         }
 
-       
+
         if (
             !branch_ids ||
             !Array.isArray(branch_ids) ||
@@ -72,7 +72,7 @@ exports.create_coupon = async (req, res) => {
 
         }
 
-      
+
         const coupon_check = await Coupon.findOne({
 
             where: {
@@ -90,7 +90,7 @@ exports.create_coupon = async (req, res) => {
 
         }
 
-    
+
         if (
             Number(percentage) < 0 ||
             Number(percentage) > 100
@@ -103,7 +103,7 @@ exports.create_coupon = async (req, res) => {
 
         }
 
-        
+
         if (
             min_amount &&
             Number(min_amount) < 0
@@ -116,7 +116,7 @@ exports.create_coupon = async (req, res) => {
 
         }
 
-   
+
         if (
             usage_limit &&
             Number(usage_limit) < 0
@@ -129,7 +129,7 @@ exports.create_coupon = async (req, res) => {
 
         }
 
-  
+
         if (start_date >= end_date) {
 
             return res.json({
@@ -139,7 +139,7 @@ exports.create_coupon = async (req, res) => {
 
         }
 
-    
+
         const valid_branches = await Branch.findAll({
 
             where: {
@@ -163,7 +163,7 @@ exports.create_coupon = async (req, res) => {
 
         }
 
-  
+
         const bannerFile = req.files.find(
             file => file.fieldname === "banner_image"
         );
@@ -172,45 +172,45 @@ exports.create_coupon = async (req, res) => {
             ? bannerFile.path.replace(/\\/g, '/')
             : null;
 
-            const formatDate = (date) => {
+        const formatDate = (date) => {
 
-    if (!date) return null;
+            if (!date) return null;
 
-    // already YYYY-MM-DD
-    if (date.includes('/')) {
+            // already YYYY-MM-DD
+            if (date.includes('/')) {
 
-        const parts = date.split('/');
+                const parts = date.split('/');
 
-        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+                return `${parts[2]}-${parts[1]}-${parts[0]}`;
 
-    }
+            }
 
-    if (date.includes('-')) {
+            if (date.includes('-')) {
 
-        const parts = date.split('-');
+                const parts = date.split('-');
 
-        // DD-MM-YYYY
-        if (parts[0].length === 2) {
+                // DD-MM-YYYY
+                if (parts[0].length === 2) {
 
-            return `${parts[2]}-${parts[1]}-${parts[0]}`;
+                    return `${parts[2]}-${parts[1]}-${parts[0]}`;
 
-        }
+                }
 
-        // already YYYY-MM-DD
-        return date;
+                // already YYYY-MM-DD
+                return date;
 
-    }
+            }
 
-    return null;
+            return null;
 
-};
+        };
 
-start_date = formatDate(start_date);
-end_date = formatDate(end_date);
+        start_date = formatDate(start_date);
+        end_date = formatDate(end_date);
 
-// console.log(start_date);
-// console.log(end_date);
-   
+        // console.log(start_date);
+        // console.log(end_date);
+
         const coupon = await Coupon.create({
 
             merchant_id: merchant_id,
@@ -246,20 +246,20 @@ end_date = formatDate(end_date);
         });
 
     }
-catch (err) {
+    catch (err) {
 
-    // console.log("ERROR MESSAGE:", err.message);
-    // console.log("ERROR STACK:", err.stack);
-    console.log("FULL ERROR:", err);
+        // console.log("ERROR MESSAGE:", err.message);
+        // console.log("ERROR STACK:", err.stack);
+        console.log("FULL ERROR:", err);
 
-    return res.json({
+        return res.json({
 
-        status: 0,
-        message: err.message
+            status: 0,
+            message: err.message
 
-    });
+        });
 
-}
+    }
 
 };
 exports.update_coupon = async (req, res) => {
@@ -277,10 +277,10 @@ exports.update_coupon = async (req, res) => {
             end_date
         } = req.body;
 
-       
+
         const merchant_id = req.user.id;
 
-      
+
         if (!merchant_id) {
 
             return res.json({
@@ -379,7 +379,7 @@ exports.update_coupon = async (req, res) => {
 
         }
 
-       
+
         if (
             Number(percentage) < 0 ||
             Number(percentage) > 100
@@ -392,7 +392,7 @@ exports.update_coupon = async (req, res) => {
 
         }
 
-        
+
         if (
             min_amount &&
             Number(min_amount) < 0
@@ -405,7 +405,7 @@ exports.update_coupon = async (req, res) => {
 
         }
 
-        
+
         if (
             usage_limit &&
             Number(usage_limit) < 0
@@ -418,7 +418,7 @@ exports.update_coupon = async (req, res) => {
 
         }
 
-   
+
         if (start_date >= end_date) {
 
             return res.json({
@@ -428,7 +428,7 @@ exports.update_coupon = async (req, res) => {
 
         }
 
-       
+
         const valid_branches = await Branch.findAll({
 
             where: {
@@ -452,7 +452,7 @@ exports.update_coupon = async (req, res) => {
 
         }
 
-        
+
         let banner_image = exist_coupon.banner_image;
 
         const bannerFile = req.files.find(
@@ -466,46 +466,46 @@ exports.update_coupon = async (req, res) => {
         }
 
 
-        
-const formatDate = (date) => {
 
-    if (!date) return null;
+        const formatDate = (date) => {
 
-   
-    if (date.includes('/')) {
+            if (!date) return null;
 
-        const parts = date.split('/');
 
-        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+            if (date.includes('/')) {
 
-    }
+                const parts = date.split('/');
 
-  
-    if (date.includes('-')) {
+                return `${parts[2]}-${parts[1]}-${parts[0]}`;
 
-        const parts = date.split('-');
+            }
 
-        // already YYYY-MM-DD
-        if (parts[0].length === 4) {
 
-            return date;
+            if (date.includes('-')) {
 
-        }
+                const parts = date.split('-');
 
-        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+                // already YYYY-MM-DD
+                if (parts[0].length === 4) {
 
-    }
+                    return date;
 
-    return null;
+                }
 
-};
+                return `${parts[2]}-${parts[1]}-${parts[0]}`;
 
-start_date = formatDate(start_date);
-end_date = formatDate(end_date);
+            }
 
-// console.log("START DATE:", start_date);
-// console.log("END DATE:", end_date);
-       
+            return null;
+
+        };
+
+        start_date = formatDate(start_date);
+        end_date = formatDate(end_date);
+
+        // console.log("START DATE:", start_date);
+        // console.log("END DATE:", end_date);
+
         await exist_coupon.update({
 
             branch_ids: branch_ids,
@@ -718,4 +718,196 @@ exports.generate_coupon = async (req, res) => {
         });
 
     }
+};
+
+exports.claim_coupon = async (req, res) => {
+
+    try {
+
+        const user = req.merchant || req.receptionist;
+
+        const userType = req.merchant
+            ? 'merchant'
+            : 'receptionist';
+
+        const {
+            coupon_id,
+            status,
+            cancel_reason
+        } = req.body;
+
+        if (
+            !coupon_id ||
+            status === undefined
+        ) {
+
+            return res.json({
+
+                status: 0,
+                message: "Coupon ID and status are required"
+
+            });
+
+        }
+
+        const couponExists = await Coupon.findOne({
+
+            where: {
+                id: coupon_id,
+                del_status: 0
+            }
+
+        });
+
+        if (!couponExists) {
+
+            return res.json({
+
+                status: 0,
+                message: "Coupon not found"
+
+            });
+
+        }
+
+      
+        if (userType === 'merchant') {
+
+            if (couponExists.merchant_id != user.id) {
+
+                return res.json({
+
+                    status: 0,
+                    message: "You are not authorized to access this coupon"
+
+                });
+
+            }
+
+        }
+
+
+        if (userType === 'receptionist') {
+
+            if (couponExists.merchant_id != user.merchant_id) {
+
+                return res.json({
+
+                    status: 0,
+                    message: "You are not authorized to access this coupon"
+
+                });
+
+            }
+
+            const branchIds = couponExists.branch_ids || [];
+
+            if (!branchIds.includes(Number(user.branch_id))) {
+
+                return res.json({
+
+                    status: 0,
+                    message: "This coupon is not assigned to your branch"
+
+                });
+
+            }
+
+        }
+
+        const coupon = await CouponApplied.findOne({
+
+            where: {
+
+                coupon_id: coupon_id
+
+            }
+
+        });
+
+        if (!coupon) {
+
+            return res.json({
+
+                status: 0,
+                message: "Coupon Applied is not found"
+
+            });
+
+        }
+
+        const updateData = {
+
+            status: status
+
+        };
+
+        if (Number(status) === 1) {
+
+            updateData.approved_by = userType;
+
+            updateData.approved_by_id = user.id;
+
+            updateData.cancel_by = null;
+
+            updateData.cancel_reason = null;
+
+        }
+
+        if (Number(status) === 2) {
+
+            updateData.cancel_by = userType;
+
+            updateData.cancel_reason = cancel_reason || null;
+
+        }
+
+        await CouponApplied.update(
+            updateData,
+            {
+                where: {
+                    coupon_id: coupon_id
+                }
+            }
+        );
+
+        const updatedCoupon = await CouponApplied.findOne({
+
+            where: {
+
+                coupon_id: coupon_id
+
+            }
+
+        });
+
+        return res.json({
+
+            status: 1,
+
+            message: "Coupon Updated successfully",
+
+            data: updatedCoupon
+
+        });
+
+    }
+
+    catch (err) {
+
+        console.log(
+            "COUPON UPDATE ERROR:",
+            err
+        );
+
+        return res.json({
+
+            status: 0,
+
+            message: err.message
+
+        });
+
+    }
+
 };

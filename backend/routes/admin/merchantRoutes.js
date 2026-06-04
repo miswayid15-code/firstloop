@@ -65,6 +65,7 @@ router.post('/branch/update',(req, res, next) => {
   req.uploadFolder = 'branch';
   next();
 }, auth('admin'),upload,checkAdmin, controller.branchUpdate);
+
 router.post('/coupon/create',(req, res, next) => {
   req.uploadFolder = 'COUPON';
   next();

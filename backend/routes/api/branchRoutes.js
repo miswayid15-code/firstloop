@@ -122,7 +122,8 @@ router.delete(
 );
 
 
-router.get('/branch/details/:id',  auth('merchant'), controller.branch_id);
+router.get('/branch/details/:id',      auth(),
+    checkMerchantOrReceptionist, controller.branch_id);
 
 // ================= merchant appointment =================
 

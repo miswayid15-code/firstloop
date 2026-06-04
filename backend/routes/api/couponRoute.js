@@ -5,7 +5,9 @@ const controller = require('../../controllers/api/couponController');
 const upload = require('../../middleware/upload');
 const auth = require('../../middleware/auth');
 
-
+const checkMerchant = require('../../middleware/checkMerchant'); 
+const checkMerchantOrReceptionist = require('../../middleware/checkMerchantOrReceptionist'); 
+const checkReceptionist = require('../../middleware/checkReceptionist'); 
 
 router.post(
     '/coupon-create',
@@ -30,4 +32,11 @@ router.post('/coupon-update',  (req, res, next) => {
 router.get('/coupon-fetch', auth('merchant'),controller.fetch_coupon);
 router.post('/coupon-check', auth('merchant'),controller.check_coupon);
 router.post('/coupon-generate', auth('merchant'),controller.generate_coupon);
+
+router.post(
+    '/coupon-claim',
+    auth(),
+    checkMerchantOrReceptionist,
+    controller.claim_coupon
+);
 module.exports = router;

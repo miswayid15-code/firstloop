@@ -170,7 +170,10 @@ export default function ViewMerchant() {
         country: '',
         zipcode: '',
         latitude: '',
-        longitude: ''
+        longitude: '',
+        description: '',
+        profile_image: null,
+        profileImagePreview: ''
     }
 
     const [addBranchForm, setAddBranchForm] = useState(initialAddBranchForm)
@@ -188,7 +191,11 @@ export default function ViewMerchant() {
 
     const [addBranchGalleryFiles, setAddBranchGalleryFiles] = useState([])
 
+    const [addBranchMenuFiles, setAddBranchMenuFiles] = useState([])
+
     const [branchGalleryImages, setBranchGalleryImages] = useState([])
+
+    const [editBranchMenuFiles, setEditBranchMenuFiles] = useState([])
 
     const [newGalleryFiles, setNewGalleryFiles] = useState([])
 
@@ -487,6 +494,8 @@ export default function ViewMerchant() {
 
         setBranchGalleryImages([])
 
+        setEditBranchMenuFiles([])
+
         setNewGalleryFiles([])
 
         try {
@@ -593,6 +602,8 @@ export default function ViewMerchant() {
         })
 
         setBranchGalleryImages([])
+
+        setEditBranchMenuFiles([])
 
         setNewGalleryFiles([])
 
@@ -716,6 +727,7 @@ export default function ViewMerchant() {
         setAddBranchForm(initialAddBranchForm)
         setAddBranchAutocomplete(null)
         setAddBranchGalleryFiles([])
+        setAddBranchMenuFiles([])
         setAddingBranch(false)
         setAddModal(true)
     }
@@ -726,6 +738,7 @@ export default function ViewMerchant() {
         setAddBranchForm(initialAddBranchForm)
         setAddBranchAutocomplete(null)
         setAddBranchGalleryFiles([])
+        setAddBranchMenuFiles([])
     }
 
     const handleAddBranchChange = (e) => {
@@ -1043,7 +1056,7 @@ export default function ViewMerchant() {
             return
         }
 
-        
+
 
         if (!addBranchForm.address.trim()) {
             toast.error('Address is required')
@@ -1070,9 +1083,18 @@ export default function ViewMerchant() {
             formData.append('zip_code', addBranchForm.zipcode)
             formData.append('latitude', addBranchForm.latitude)
             formData.append('longitude', addBranchForm.longitude)
+            formData.append('description', addBranchForm.description)
+
+            if (addBranchForm.profile_image) {
+                formData.append('profile_image', addBranchForm.profile_image)
+            }
 
             addBranchGalleryFiles.forEach((entry) => {
                 formData.append('image', entry.file)
+            })
+
+            addBranchMenuFiles.forEach((entry) => {
+                formData.append('menu_images', entry.file)
             })
 
             const response = await API.post('admin/branch/register', formData, {
@@ -1111,6 +1133,58 @@ export default function ViewMerchant() {
             profileImagePreview: URL.createObjectURL(file)
         }))
 
+    }
+
+    const handleAddBranchProfileImageChange = (e) => {
+        const file = e.target.files?.[0]
+
+        if (!file) return
+
+        setAddBranchForm((prev) => ({
+            ...prev,
+            profile_image: file,
+            profileImagePreview: URL.createObjectURL(file)
+        }))
+    }
+
+    const handleAddBranchMenuFilesAdd = (e) => {
+        const files = Array.from(e.target.files || [])
+
+        if (!files.length) return
+
+        const newEntries = files.map((file) => ({
+            id: `menu_add_${Date.now()}_${Math.random()}`,
+            file,
+            preview: URL.createObjectURL(file),
+            isNew: true
+        }))
+
+        setAddBranchMenuFiles((prev) => [...prev, ...newEntries])
+        e.target.value = ''
+    }
+
+    const removeAddBranchMenuFile = (id) => {
+        setAddBranchMenuFiles((prev) => prev.filter((f) => f.id !== id))
+    }
+
+    const handleEditBranchMenuFilesAdd = (e) => {
+        const files = Array.from(e.target.files || [])
+
+        if (!files.length) return
+
+        const newEntries = files.map((file) => ({
+            id: `menu_edit_${Date.now()}_${Math.random()}`,
+            file,
+            preview: URL.createObjectURL(file),
+            isNew: true
+        }))
+
+        setEditBranchMenuFiles((prev) => [...prev, ...newEntries])
+        e.target.value = ''
+    }
+
+    const removeEditBranchMenuFile = (id) => {
+        setEditBranchMenuFiles((prev) => prev.filter((f) => f.id !== id))
     }
 
     const handleGalleryFilesAdd = (e) => {
@@ -1221,6 +1295,10 @@ export default function ViewMerchant() {
 
             newGalleryFiles.forEach((entry) => {
                 formData.append('images', entry.file)
+            })
+
+            editBranchMenuFiles.forEach((entry) => {
+                formData.append('menu_images', entry.file)
             })
 
             const response = await API.post('admin/branch/update', formData, {
@@ -1450,11 +1528,11 @@ export default function ViewMerchant() {
 
                                 Receptionists: branch.Receptionists.map((r) =>
                                     r.id === selectedReceptionist.id
-                                        ? { 
-                                              ...r, 
-                                              name: receptionistForm.name,
-                                              profile_image: returnedProfileImage 
-                                          }
+                                        ? {
+                                            ...r,
+                                            name: receptionistForm.name,
+                                            profile_image: returnedProfileImage
+                                        }
                                         : r
                                 )
 
@@ -1481,13 +1559,13 @@ export default function ViewMerchant() {
                             unassigned_receptionists: (prevMerchant.unassigned_receptionists || []).map((r) =>
                                 r.id === selectedReceptionist.id
                                     ? {
-                                          ...r,
-                                          name: receptionistForm.name,
-                                          email: receptionistForm.email,
-                                          phone: receptionistForm.phone,
-                                          country_code: receptionistForm.country_code,
-                                          profile_image: returnedProfileImage
-                                      }
+                                        ...r,
+                                        name: receptionistForm.name,
+                                        email: receptionistForm.email,
+                                        phone: receptionistForm.phone,
+                                        country_code: receptionistForm.country_code,
+                                        profile_image: returnedProfileImage
+                                    }
                                     : r
                             )
 
@@ -2535,11 +2613,11 @@ export default function ViewMerchant() {
                                             className="btn-sm-action"
                                             onClick={() => {
 
-                                              
+
 
                                                 openAssignReceptionistModal(
                                                     branch.Receptionists?.[0]?.id
-                                                    
+
                                                 );
 
                                             }}
@@ -2796,7 +2874,7 @@ export default function ViewMerchant() {
                                                 title="Assign receptionist"
                                                 onClick={() => {
 
-                                                   
+
 
                                                     openAssignReceptionistModal(receptionist.id);
 
@@ -3828,7 +3906,52 @@ export default function ViewMerchant() {
                                     }
                                 />
 
-                               
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                                    <div
+                                        style={{
+                                            width: 80,
+                                            height: 80,
+                                            borderRadius: '50%',
+                                            border: '2px solid var(--primary)',
+                                            overflow: 'hidden',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            background: 'var(--bg-hover)',
+                                            fontSize: '2rem',
+                                            color: 'var(--primary)',
+                                            flexShrink: 0
+                                        }}
+                                    >
+                                        {addBranchForm.profileImagePreview ? (
+                                            <img
+                                                src={addBranchForm.profileImagePreview}
+                                                alt="Branch Profile"
+                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                            />
+                                        ) : (
+                                            <i className="fas fa-store" />
+                                        )}
+                                    </div>
+
+                                    <label
+                                        className="btn btn-sm-action-secondary"
+                                        style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, margin: 0, padding: '6px 14px', fontSize: '0.8rem', borderRadius: 6 }}
+                                    >
+                                        <i className="fas fa-camera" />
+                                        {addBranchForm.profile_image ? 'Change Photo' : 'Upload Profile Photo'}
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleAddBranchProfileImageChange}
+                                            hidden
+                                        />
+                                    </label>
+
+                                    <small style={{ color: 'var(--text-muted)', fontSize: '0.74rem' }}>
+                                        Upload a branch profile photo. JPG, PNG supported.
+                                    </small>
+                                </div>
 
                                 <div style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border)', paddingBottom: 6 }}>
                                     Location
@@ -3862,6 +3985,20 @@ export default function ViewMerchant() {
                                         mapContainerStyle={mapContainerStyle}
                                     />
                                 )}
+
+                                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                                    <textarea
+                                        name="description"
+                                        className="form-control"
+                                        placeholder=" "
+                                        value={addBranchForm.description}
+                                        onChange={handleAddBranchChange}
+                                        disabled={addingBranch}
+                                        rows={3}
+                                        style={{ resize: 'vertical', minHeight: 80 }}
+                                    />
+                                    <label className="form-label">Description</label>
+                                </div>
 
                                 <div style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border)', paddingBottom: 6 }}>
                                     Gallery Images
@@ -3952,6 +4089,97 @@ export default function ViewMerchant() {
 
                                 <small style={{ color: 'var(--text-muted)', fontSize: '0.74rem', marginTop: -10 }}>
                                     You can upload multiple gallery images. JPG, PNG supported.
+                                </small>
+
+                                <div style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border)', paddingBottom: 6, marginTop: 16 }}>
+                                    Menu Images
+                                </div>
+
+                                {addBranchMenuFiles.length > 0 && (
+                                    <div>
+                                        <small style={{ color: 'var(--text-muted)', fontSize: '0.78rem', display: 'block', marginBottom: 8 }}>
+                                            Menu images to upload ({addBranchMenuFiles.length})
+                                        </small>
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                                            {addBranchMenuFiles.map((entry) => (
+                                                <div
+                                                    key={entry.id}
+                                                    style={{
+                                                        position: 'relative',
+                                                        width: 80,
+                                                        height: 80,
+                                                        borderRadius: 8,
+                                                        overflow: 'hidden',
+                                                        border: '2px solid var(--primary)',
+                                                        flexShrink: 0
+                                                    }}
+                                                >
+                                                    <img
+                                                        src={entry.preview}
+                                                        alt="Menu"
+                                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeAddBranchMenuFile(entry.id)}
+                                                        disabled={addingBranch}
+                                                        style={{
+                                                            position: 'absolute',
+                                                            top: 3,
+                                                            right: 3,
+                                                            width: 20,
+                                                            height: 20,
+                                                            borderRadius: '50%',
+                                                            background: 'rgba(220,38,38,0.9)',
+                                                            border: 'none',
+                                                            color: '#fff',
+                                                            fontSize: 10,
+                                                            cursor: 'pointer',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            lineHeight: 1
+                                                        }}
+                                                    >
+                                                        <i className="fas fa-times" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <label
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 8,
+                                        padding: '10px 16px',
+                                        border: '2px dashed var(--primary)',
+                                        borderRadius: 10,
+                                        cursor: addingBranch ? 'not-allowed' : 'pointer',
+                                        color: 'var(--primary)',
+                                        fontSize: '0.85rem',
+                                        fontWeight: 600,
+                                        opacity: addingBranch ? 0.6 : 1,
+                                        transition: 'background 0.2s',
+                                        background: 'var(--bg-hover)'
+                                    }}
+                                >
+                                    <i className="fas fa-utensils" />
+                                    Add Menu Images
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        multiple
+                                        onChange={handleAddBranchMenuFilesAdd}
+                                        disabled={addingBranch}
+                                        hidden
+                                    />
+                                </label>
+
+                                <small style={{ color: 'var(--text-muted)', fontSize: '0.74rem', marginTop: -10 }}>
+                                    Upload menu images for this branch. JPG, PNG supported.
                                 </small>
                             </form>
                         </div>
@@ -4334,6 +4562,97 @@ export default function ViewMerchant() {
 
                                     <small style={{ color: 'var(--text-muted)', fontSize: '0.74rem', marginTop: -10 }}>
                                         You can upload multiple gallery images. JPG, PNG supported.
+                                    </small>
+
+                                    <div style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border)', paddingBottom: 6, marginTop: 16 }}>
+                                        Menu Images
+                                    </div>
+
+                                    {editBranchMenuFiles.length > 0 && (
+                                        <div>
+                                            <small style={{ color: 'var(--text-muted)', fontSize: '0.78rem', display: 'block', marginBottom: 8 }}>
+                                                Menu images to upload ({editBranchMenuFiles.length})
+                                            </small>
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                                                {editBranchMenuFiles.map((entry) => (
+                                                    <div
+                                                        key={entry.id}
+                                                        style={{
+                                                            position: 'relative',
+                                                            width: 80,
+                                                            height: 80,
+                                                            borderRadius: 8,
+                                                            overflow: 'hidden',
+                                                            border: '2px solid var(--primary)',
+                                                            flexShrink: 0
+                                                        }}
+                                                    >
+                                                        <img
+                                                            src={entry.preview}
+                                                            alt="Menu"
+                                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => removeEditBranchMenuFile(entry.id)}
+                                                            disabled={savingBranch}
+                                                            style={{
+                                                                position: 'absolute',
+                                                                top: 3,
+                                                                right: 3,
+                                                                width: 20,
+                                                                height: 20,
+                                                                borderRadius: '50%',
+                                                                background: 'rgba(220,38,38,0.9)',
+                                                                border: 'none',
+                                                                color: '#fff',
+                                                                fontSize: 10,
+                                                                cursor: 'pointer',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                lineHeight: 1
+                                                            }}
+                                                        >
+                                                            <i className="fas fa-times" />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <label
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 8,
+                                            padding: '10px 16px',
+                                            border: '2px dashed var(--primary)',
+                                            borderRadius: 10,
+                                            cursor: savingBranch ? 'not-allowed' : 'pointer',
+                                            color: 'var(--primary)',
+                                            fontSize: '0.85rem',
+                                            fontWeight: 600,
+                                            opacity: savingBranch ? 0.6 : 1,
+                                            transition: 'background 0.2s',
+                                            background: 'var(--bg-hover)'
+                                        }}
+                                    >
+                                        <i className="fas fa-utensils" />
+                                        Add Menu Images
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            multiple
+                                            onChange={handleEditBranchMenuFilesAdd}
+                                            disabled={savingBranch}
+                                            hidden
+                                        />
+                                    </label>
+
+                                    <small style={{ color: 'var(--text-muted)', fontSize: '0.74rem', marginTop: -10 }}>
+                                        Upload menu images for this branch. JPG, PNG supported.
                                     </small>
                                 </form>
                             )}
