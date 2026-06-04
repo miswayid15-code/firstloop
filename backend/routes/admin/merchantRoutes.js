@@ -75,6 +75,15 @@ router.post('/coupon/edit',(req, res, next) => {
   req.uploadFolder = 'COUPON';
   next();
 }, auth('admin'),upload,checkAdmin, controller.update_coupon);
-router.get('/branch/id/:id', auth('admin'),checkAdmin, controller.fetch_branch_id);
 
+router.get('/branch/id/:id', auth('admin'),checkAdmin, controller.fetch_branch_id);
+router.post('/coupon/edit',(req, res, next) => {
+  req.uploadFolder = 'COUPON';
+  next();
+}, auth('admin'),upload,checkAdmin, controller.update_coupon);
+
+router.post('/coupon/delete', auth('admin'),checkAdmin, controller.delete_coupon);
+router.post('/branch/delete', auth('admin'),checkAdmin, controller.delete_branch);
+router.post('/receptionist/delete', auth('admin'),checkAdmin, controller.delete_receptionist);
+router.post('/receptionist/list',  controller.receptionist_list);
 module.exports = router;

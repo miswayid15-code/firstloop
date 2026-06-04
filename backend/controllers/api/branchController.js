@@ -938,7 +938,8 @@ exports.branch_id = async (req, res) => {
                 'merchant_id',
                 'description',
                 'open_time',
-                'close_time'
+                'close_time',
+                'country_code'
             ]
 
         });

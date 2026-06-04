@@ -246,6 +246,8 @@ exports.create_coupon = async (req, res) => {
             merchant_id: merchant_id,
 
             branch_ids: branch_ids,
+             cat_id: cat_id,
+
 
             code: code,
 
@@ -542,6 +544,8 @@ exports.update_coupon = async (req, res) => {
             branch_ids: branch_ids,
 
             code: code,
+             cat_id: cat_id,
+
 
             percentage: percentage,
 

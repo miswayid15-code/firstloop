@@ -9,6 +9,7 @@ import { useJsApiLoader } from '@react-google-maps/api'
 import { toast } from 'react-hot-toast'
 
 import AppToaster from '../components/AppToaster.jsx'
+import ConfirmDialog from '../components/ConfirmDialog.jsx'
 import PhoneNumberField from '../components/PhoneNumberField'
 import CorporateAddressField from '../components/CorporateAddressField'
 import API from '../api.js';
@@ -128,7 +129,8 @@ export default function ViewMerchant() {
         name: '',
         email: '',
         phone: '',
-        country_code: '+91',
+        country_code: '',
+        receptionist_id: '',
         address: '',
         city: '',
         state: '',
@@ -172,6 +174,7 @@ export default function ViewMerchant() {
         latitude: '',
         longitude: '',
         description: '',
+        receptionist_id: '',
         profile_image: null,
         profileImagePreview: ''
     }
@@ -193,6 +196,9 @@ export default function ViewMerchant() {
 
     const [addBranchMenuFiles, setAddBranchMenuFiles] = useState([])
 
+    const [availableReceptionists, setAvailableReceptionists] = useState([])
+    const [loadingReceptionists, setLoadingReceptionists] = useState(false)
+
     const [branchGalleryImages, setBranchGalleryImages] = useState([])
 
     const [editBranchMenuFiles, setEditBranchMenuFiles] = useState([])
@@ -207,6 +213,7 @@ export default function ViewMerchant() {
         start_date: '',
         end_date: '',
         branch_ids: [],
+        cat_id: '',
         banner_image: null,
         bannerImagePreview: ''
     }
@@ -223,9 +230,24 @@ export default function ViewMerchant() {
 
     const [editCouponId, setEditCouponId] = useState(null)
 
+    const [deletingCouponId, setDeletingCouponId] = useState(null)
+    const [deletingBranchId, setDeletingBranchId] = useState(null)
+    const [deletingReceptionistId, setDeletingReceptionistId] = useState(null)
+
+    const [confirmDialog, setConfirmDialog] = useState({
+        open: false,
+        title: '',
+        message: '',
+        confirmText: 'Delete',
+        cancelText: 'Cancel',
+        onConfirm: null,
+        loading: false
+    })
+
     const [editCouponForm, setEditCouponForm] = useState(initialCouponForm)
 
     const [categories, setCategories] = useState([])
+    const [couponCategories, setCouponCategories] = useState([])
 
     const [isEditingCategory, setIsEditingCategory] = useState(false)
 
@@ -301,6 +323,8 @@ export default function ViewMerchant() {
 
         fetchMerchant()
         fetchCategories()
+        fetchCouponCategories()
+        fetchReceptionists()
 
     }, [id])
 
@@ -325,6 +349,42 @@ export default function ViewMerchant() {
 
         }
 
+    }
+
+    const fetchCouponCategories = async () => {
+        try {
+            const response = await API.get('api/coupon-categories')
+
+            const data = response.data || {}
+            if (isSuccessResponse(data)) {
+                setCouponCategories(data.data || [])
+            } else {
+                setCouponCategories([])
+            }
+        } catch (error) {
+            console.log(
+                'Coupon Category Fetch Error:',
+                error.response?.data || error
+            )
+            setCouponCategories([])
+        }
+    }
+
+    const fetchReceptionists = async () => {
+        setLoadingReceptionists(true)
+
+        try {
+            const response = await API.post('admin/receptionist/list', { merchant_id: id })
+            console.log('Receptionists Response:', response.data)
+            const list = Array.isArray(response.data?.data)
+                ? response.data.data
+                : []
+            setAvailableReceptionists(list)
+        } catch (error) {
+            setAvailableReceptionists([])
+        } finally {
+            setLoadingReceptionists(false)
+        }
     }
 
     const fetchMerchant = async () => {
@@ -478,6 +538,7 @@ export default function ViewMerchant() {
             email: '',
             phone: '',
             country_code: '+91',
+            receptionist_id: '',
             address: '',
             city: '',
             state: '',
@@ -526,6 +587,7 @@ export default function ViewMerchant() {
                     email: branch.email || '',
                     phone: branch.phone || '',
                     country_code: branch.country_code || '+91',
+                    receptionist_id: branch.receptionist_id || branch.Receptionists?.[0]?.id || '',
                     address: branch.address || '',
                     city: branch.city || '',
                     state: branch.state || '',
@@ -587,6 +649,7 @@ export default function ViewMerchant() {
             email: '',
             phone: '',
             country_code: '+91',
+            receptionist_id: '',
             address: '',
             city: '',
             state: '',
@@ -615,6 +678,154 @@ export default function ViewMerchant() {
 
         setEditBranchForm((prev) => ({ ...prev, [name]: value }))
 
+    }
+
+    const closeConfirmDialog = () => {
+        setConfirmDialog((prev) => ({
+            ...prev,
+            open: false,
+            loading: false,
+            onConfirm: null
+        }))
+    }
+
+    const handleConfirmDialog = async () => {
+        if (!confirmDialog?.onConfirm) {
+            closeConfirmDialog()
+            return
+        }
+
+        setConfirmDialog((prev) => ({ ...prev, loading: true }))
+
+        try {
+            await confirmDialog.onConfirm()
+        } finally {
+            closeConfirmDialog()
+        }
+    }
+
+    const showDeleteCouponDialog = (couponId) => {
+        setConfirmDialog({
+            open: true,
+            title: 'Delete Coupon',
+            message: 'Delete this coupon? This action cannot be undone.',
+            confirmText: 'Delete',
+            cancelText: 'Cancel',
+            onConfirm: () => performDeleteCoupon(couponId),
+            loading: false
+        })
+    }
+
+    const performDeleteCoupon = async (couponId) => {
+        setDeletingCouponId(couponId)
+
+        try {
+            const response = await API.post(
+                'admin/coupon/delete',
+                {
+                    coupon_id: couponId
+                }
+            );
+
+            const data = response.data || {};
+
+            if (data.status === 1) {
+                toast.success(data.message || 'Coupon deleted successfully');
+                fetchMerchant();
+            } else {
+                toast.error(data.message || 'Failed to delete coupon');
+            }
+        } catch (error) {
+            toast.error(
+                error?.response?.data?.message ||
+                'Failed to delete coupon'
+            );
+        } finally {
+            setDeletingCouponId(null)
+        }
+    }
+
+
+    const showDeleteBranchDialog = (branchId) => {
+        setConfirmDialog({
+            open: true,
+            title: 'Delete Branch',
+            message: 'Delete this branch? This action cannot be undone.',
+            confirmText: 'Delete',
+            cancelText: 'Cancel',
+            onConfirm: () => performDeleteBranch(branchId),
+            loading: false
+        })
+    }
+
+    const performDeleteBranch = async (branchId) => {
+        setDeletingBranchId(branchId)
+        try {
+            const response = await API.post(
+                'admin/branch/delete',
+                {
+                    branch_id: branchId
+                }
+            );
+            const data = response.data || {};
+            if (data.status === 1) {
+                toast.success(data.message || 'Branch deleted successfully');
+                fetchMerchant();
+            }
+            else {
+                toast.error(data.message || 'Failed to delete coupon');
+            }
+        }
+        catch (err) {
+            toast.error(
+                err?.response?.data?.message ||
+                'Failed to delete branch'
+            );
+        }
+        finally {
+            setDeletingBranchId(null)
+        }
+    }
+
+    const showDeleteReceptionistDialog = (receptionistId) => {
+        setConfirmDialog({
+            open: true,
+            title: 'Delete Receptionist',
+            message: 'Delete this receptionist? This action cannot be undone.',
+            confirmText: 'Delete',
+            cancelText: 'Cancel',
+            onConfirm: () => performDeleteReceptionist(receptionistId),
+            loading: false
+        })
+    }
+
+    const performDeleteReceptionist = async (receptionistId) => {
+        setDeletingReceptionistId(receptionistId)
+        try {
+            const response = await API.post(
+                'admin/receptionist/delete',
+                {
+                    receptionist_id: receptionistId
+                }
+            );
+            const data = response.data || {};
+            if (data.status === 1) {
+                toast.success(data.message || 'Receptionist deleted successfully');
+                fetchMerchant();
+            }
+            else {
+                toast.error(data.message || 'Failed to delete receptionist');
+            }
+        }
+        catch (err) {
+            toast.error(
+                err?.response?.data?.message ||
+                'Failed to delete receptionist'
+            );
+        }
+        finally {
+            setDeletingReceptionistId(null)
+        }
     }
 
     const geocodeAndUpdateForm = (setForm, lat, lng, placeName = '', countryName = '') => {
@@ -845,6 +1056,11 @@ export default function ViewMerchant() {
             return
         }
 
+        if (!couponForm.cat_id) {
+            toast.error('Please select a coupon category')
+            return
+        }
+
         if (!couponForm.branch_ids.length) {
             toast.error('Please select at least one branch')
             return
@@ -862,6 +1078,7 @@ export default function ViewMerchant() {
             formData.append('usage_limit', couponForm.usage_limit || '0')
             formData.append('start_date', toCouponApiDate(couponForm.start_date))
             formData.append('end_date', toCouponApiDate(couponForm.end_date))
+            formData.append('cat_id', couponForm.cat_id)
             formData.append('branch_ids', JSON.stringify(couponForm.branch_ids))
 
             if (couponForm.banner_image) {
@@ -917,6 +1134,7 @@ export default function ViewMerchant() {
             start_date: formatDateForInput(coupon.start_date),
             end_date: formatDateForInput(coupon.end_date),
             branch_ids: Array.isArray(coupon.branch_ids) ? coupon.branch_ids.map(Number) : [],
+            cat_id: coupon.cat_id?.toString() || coupon.category_id?.toString() || '',
             banner_image: null,
             bannerImagePreview: coupon.banner_image || ''
         })
@@ -994,6 +1212,11 @@ export default function ViewMerchant() {
             return
         }
 
+        if (!editCouponForm.cat_id) {
+            toast.error('Please select a coupon category')
+            return
+        }
+
         if (!editCouponForm.branch_ids.length) {
             toast.error('Please select at least one branch')
             return
@@ -1012,6 +1235,7 @@ export default function ViewMerchant() {
             formData.append('usage_limit', editCouponForm.usage_limit || '0')
             formData.append('start_date', toCouponApiDate(editCouponForm.start_date))
             formData.append('end_date', toCouponApiDate(editCouponForm.end_date))
+            formData.append('cat_id', editCouponForm.cat_id)
             formData.append('branch_ids', JSON.stringify(editCouponForm.branch_ids))
 
             if (editCouponForm.banner_image) {
@@ -1084,6 +1308,9 @@ export default function ViewMerchant() {
             formData.append('latitude', addBranchForm.latitude)
             formData.append('longitude', addBranchForm.longitude)
             formData.append('description', addBranchForm.description)
+            if (addBranchForm.receptionist_id) {
+                formData.append('receptionist_id', addBranchForm.receptionist_id)
+            }
 
             if (addBranchForm.profile_image) {
                 formData.append('profile_image', addBranchForm.profile_image)
@@ -1279,6 +1506,10 @@ export default function ViewMerchant() {
 
             if (editBranchForm.profile_image && typeof editBranchForm.profile_image !== 'string') {
                 formData.append('profile_image', editBranchForm.profile_image)
+            }
+
+            if (editBranchForm.receptionist_id) {
+                formData.append('receptionist_id', editBranchForm.receptionist_id)
             }
 
             branchGalleryImages.forEach((img) => {
@@ -1932,6 +2163,16 @@ export default function ViewMerchant() {
     return (
         <>
             <AppToaster />
+            <ConfirmDialog
+                open={confirmDialog.open}
+                title={confirmDialog.title}
+                message={confirmDialog.message}
+                confirmText={confirmDialog.confirmText}
+                cancelText={confirmDialog.cancelText}
+                loading={confirmDialog.loading}
+                onConfirm={handleConfirmDialog}
+                onClose={closeConfirmDialog}
+            />
 
             <div style={{ marginBottom: 24 }}>
 
@@ -2447,13 +2688,23 @@ export default function ViewMerchant() {
                                             </span>
                                         </td>
                                         <td>
-                                            <div className="action-group" style={{ justifyContent: 'flex-end' }}>
+                                            <div className="action-group" style={{ justifyContent: 'flex-end', gap: 8 }}>
                                                 <button
                                                     className="btn-icon edit"
                                                     title="Edit Coupon"
                                                     onClick={() => openEditCouponModal(coupon)}
+                                                    disabled={deletingCouponId === coupon.id}
                                                 >
                                                     <i className="fas fa-edit"></i>
+                                                </button>
+
+                                                <button
+                                                    className="btn-icon delete"
+                                                    title="Delete Coupon"
+                                                    onClick={() => showDeleteCouponDialog(coupon.id)}
+                                                    disabled={deletingCouponId === coupon.id}
+                                                >
+                                                    <i className="fas fa-trash-alt"></i>
                                                 </button>
                                             </div>
                                         </td>
@@ -2469,7 +2720,7 @@ export default function ViewMerchant() {
 
             <div
                 className="flex-between"
-                style={{ marginBottom: 20 }}
+                style={{ marginBottom: 20, marginTop: 28 }}
             >
 
                 <div>
@@ -2661,9 +2912,10 @@ export default function ViewMerchant() {
                                             >
                                                 <i className="fas fa-edit"></i>
                                             </button>
-                                            <button className="btn-icon delete">
+                                            <button className="btn-icon delete" onClick={() => showDeleteBranchDialog(branch.id)}>
                                                 <i className="fas fa-trash-alt"></i>
                                             </button>
+
                                         </div>
                                     </td>
                                 </tr>
@@ -2882,6 +3134,14 @@ export default function ViewMerchant() {
                                             >
                                                 <i className="fas fa-user-shield"></i>
                                                 {' '}View
+                                            </button>
+                                            <button
+                                                className="btn-icon delete"
+                                                title="Delete Receptionist"
+                                                onClick={() => showDeleteReceptionistDialog(receptionist.id)}
+                                                disabled={deletingCouponId === receptionist.id}
+                                            >
+                                                <i className="fas fa-trash-alt"></i>
                                             </button>
                                         </div>
                                     </td>
@@ -3389,6 +3649,25 @@ export default function ViewMerchant() {
                                 </div>
 
                                 <div className="form-group-classic">
+                                    <label className="form-label-classic">Coupon Category</label>
+                                    <select
+                                        name="cat_id"
+                                        className="form-select"
+                                        value={couponForm.cat_id}
+                                        onChange={handleCouponChange}
+                                        disabled={creatingCoupon}
+                                        required
+                                    >
+                                        <option value="">Select category</option>
+                                        {couponCategories.map((category) => (
+                                            <option key={category.id} value={category.id}>
+                                                {category.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="form-group-classic">
                                     <div
                                         style={{
                                             display: 'flex',
@@ -3670,6 +3949,25 @@ export default function ViewMerchant() {
                                 </div>
 
                                 <div className="form-group-classic">
+                                    <label className="form-label-classic">Coupon Category</label>
+                                    <select
+                                        name="cat_id"
+                                        className="form-select"
+                                        value={editCouponForm.cat_id}
+                                        onChange={handleEditCouponChange}
+                                        disabled={editingCoupon}
+                                        required
+                                    >
+                                        <option value="">Select category</option>
+                                        {couponCategories.map((category) => (
+                                            <option key={category.id} value={category.id}>
+                                                {category.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="form-group-classic">
                                     <div
                                         style={{
                                             display: 'flex',
@@ -3905,6 +4203,33 @@ export default function ViewMerchant() {
                                         }))
                                     }
                                 />
+
+                                <div className="form-group-classic" style={{ width: '100%' }}>
+                                    <label className="form-label-classic">Receptionist</label>
+                                    <select
+                                        name="receptionist_id"
+                                        className="form-select"
+                                        value={addBranchForm.receptionist_id}
+                                        onChange={handleAddBranchChange}
+                                        disabled={addingBranch || loadingReceptionists}
+                                    >
+                                        <option value="" disabled>
+                                            {loadingReceptionists
+                                                ? 'Loading receptionists...'
+                                                : availableReceptionists.length
+                                                    ? 'Select receptionist'
+                                                    : 'No receptionists available'}
+                                        </option>
+                                        {availableReceptionists.map((receptionist) => (
+                                            <option key={receptionist.id} value={receptionist.id}>
+                                                {receptionist.name || receptionist.email || receptionist.phone || `Receptionist ${receptionist.id}`}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <small style={{ color: 'var(--text-muted)', fontSize: '0.74rem' }}>
+                                        Assign a receptionist to this branch. Leave blank to skip.
+                                    </small>
+                                </div>
 
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, marginBottom: 4 }}>
                                     <div
@@ -4337,6 +4662,33 @@ export default function ViewMerchant() {
                                             }))
                                         }
                                     />
+
+                                    <div className="form-group-classic" style={{ width: '100%' }}>
+                                        <label className="form-label-classic">Receptionist</label>
+                                        <select
+                                            name="receptionist_id"
+                                            className="form-select"
+                                            value={editBranchForm.receptionist_id}
+                                            onChange={handleEditBranchChange}
+                                            disabled={savingBranch || loadingReceptionists}
+                                        >
+                                            <option value="" disabled>
+                                                {loadingReceptionists
+                                                    ? 'Loading receptionists...'
+                                                    : availableReceptionists.length
+                                                        ? 'Select receptionist'
+                                                        : 'No receptionists available'}
+                                            </option>
+                                            {availableReceptionists.map((receptionist) => (
+                                                <option key={receptionist.id} value={receptionist.id}>
+                                                    {receptionist.name || receptionist.email || receptionist.phone || `Receptionist ${receptionist.id}`}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <small style={{ color: 'var(--text-muted)', fontSize: '0.74rem' }}>
+                                            Assign a receptionist to this branch. Leave blank to keep current assignment.
+                                        </small>
+                                    </div>
 
                                     <div style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border)', paddingBottom: 6 }}>
                                         Location

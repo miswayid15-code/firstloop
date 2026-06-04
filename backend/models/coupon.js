@@ -13,6 +13,10 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false
         },
 
+        cat_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false
+        },
         branch_ids: {
             type: DataTypes.ARRAY(DataTypes.INTEGER),
             allowNull: true

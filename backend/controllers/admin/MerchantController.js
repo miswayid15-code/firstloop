@@ -974,7 +974,7 @@ exports.branchRegister = async (req, res) => {
             open_time,
             close_time,
             country_code,
-
+            receptionist_id,
             mer_id, city, state, country
         } = req.body;
 
@@ -1130,6 +1130,20 @@ exports.branchRegister = async (req, res) => {
             city, state, country
 
         });
+        if (receptionist_id) {
+
+            await Receptionist.update(
+                {
+                    branch_id: branch.id
+                },
+                {
+                    where: {
+                        id: receptionist_id
+                    }
+                }
+            );
+
+        }
 
         // Save gallery images
         if (galleryFiles.length > 0) {
@@ -1204,7 +1218,8 @@ exports.branchUpdate = async (req, res) => {
             description,
             open_time,
             close_time,
-            country_code, city, state, country
+            country_code, city, state, country,
+            receptionist_id
         } = req.body;
 
 
@@ -1367,10 +1382,10 @@ exports.branchUpdate = async (req, res) => {
         const profileFiles = files.filter((file) => file.fieldname === 'profile_image');
         const galleryFiles = files.filter((file) => file.fieldname === 'images' || file.fieldname === 'image');
         const menuFiles = files.filter(
-    (file) =>
-        file.fieldname === 'menu_images' ||
-        file.fieldname === 'menu_image'
-);
+            (file) =>
+                file.fieldname === 'menu_images' ||
+                file.fieldname === 'menu_image'
+        );
 
         let profile_image =
             branch.profile_image;
@@ -1451,6 +1466,21 @@ exports.branchUpdate = async (req, res) => {
             country
 
         });
+        // Update receptionist branch mapping
+        if (receptionist_id) {
+
+            await Receptionist.update(
+                {
+                    branch_id: branch_id
+                },
+                {
+                    where: {
+                        id: receptionist_id
+                    }
+                }
+            );
+
+        }
 
         // ✅ Sync gallery images — keep selected existing, remove unselected, add new uploads
         const shouldSyncGallery =
@@ -1532,7 +1562,7 @@ exports.branchUpdate = async (req, res) => {
                                 "Delete error:",
                                 err.message
                             );
-update_branch
+                            update_branch
                         }
 
                     }
@@ -1760,23 +1790,27 @@ exports.fetch_branch_id = async (req, res) => {
                         required: false
                     },
                     {
-    model: Appointment,
-    attributes: [
-        'id',
-        'cus_id',
-        'br_id',
-        'br_name',
-        'appointment_date',
-        'slot',
-        'status',
-        'cancel_by',
-        'cancel_reason',
-        'approved_by',
-        'approved_by_id'
-    ],
-    required: false
-}
-                    
+                        model: Appointment,
+                        attributes: [
+                            'id',
+                            'cus_id',
+                            'br_id',
+                            'br_name',
+                            'appointment_date',
+                            'slot',
+                            'status',
+                            'cancel_by',
+                            'cancel_reason',
+                            'approved_by',
+                            'approved_by_id'
+                        ],
+                        required: false
+                    },
+                    {
+                        model: Receptionist,
+                        attributes: ['id', 'name'],
+                    }
+
                 ]
             }),
 
@@ -1922,6 +1956,7 @@ exports.create_coupon = async (req, res) => {
 
         let {
             code,
+            cat_id,
             percentage,
             min_amount,
             usage_limit,
@@ -2118,7 +2153,7 @@ exports.create_coupon = async (req, res) => {
             branch_ids: branch_ids,
 
             code: code,
-
+            cat_id: cat_id,
             percentage: Number(percentage),
 
             min_amount: min_amount || 0,
@@ -2166,6 +2201,7 @@ exports.update_coupon = async (req, res) => {
 
         let {
             coupon_id,
+            cat_id,
             branch_ids,
             code,
             percentage,
@@ -2173,20 +2209,20 @@ exports.update_coupon = async (req, res) => {
             usage_limit,
             start_date,
             end_date,
-        mer_id
+            mer_id
         } = req.body;
 
-       
-const merchant_id = mer_id;
 
-if (!merchant_id) {
+        const merchant_id = mer_id;
 
-    return res.json({
-        status: 0,
-        message: "Merchant not found"
-    });
+        if (!merchant_id) {
 
-}
+            return res.json({
+                status: 0,
+                message: "Merchant not found"
+            });
+
+        }
 
 
         if (typeof branch_ids === "string") {
@@ -2277,7 +2313,7 @@ if (!merchant_id) {
 
         }
 
-       
+
         if (
             Number(percentage) < 0 ||
             Number(percentage) > 100
@@ -2290,7 +2326,7 @@ if (!merchant_id) {
 
         }
 
-        
+
         if (
             min_amount &&
             Number(min_amount) < 0
@@ -2303,7 +2339,7 @@ if (!merchant_id) {
 
         }
 
-        
+
         if (
             usage_limit &&
             Number(usage_limit) < 0
@@ -2316,7 +2352,7 @@ if (!merchant_id) {
 
         }
 
-   
+
         if (start_date >= end_date) {
 
             return res.json({
@@ -2326,7 +2362,7 @@ if (!merchant_id) {
 
         }
 
-       
+
         const valid_branches = await Branch.findAll({
 
             where: {
@@ -2350,7 +2386,7 @@ if (!merchant_id) {
 
         }
 
-        
+
         let banner_image = exist_coupon.banner_image;
 
         const bannerFile = req.files.find(
@@ -2364,51 +2400,52 @@ if (!merchant_id) {
         }
 
 
-        
-const formatDate = (date) => {
 
-    if (!date) return null;
+        const formatDate = (date) => {
 
-   
-    if (date.includes('/')) {
+            if (!date) return null;
 
-        const parts = date.split('/');
 
-        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+            if (date.includes('/')) {
 
-    }
+                const parts = date.split('/');
 
-  
-    if (date.includes('-')) {
+                return `${parts[2]}-${parts[1]}-${parts[0]}`;
 
-        const parts = date.split('-');
+            }
 
-        // already YYYY-MM-DD
-        if (parts[0].length === 4) {
 
-            return date;
+            if (date.includes('-')) {
 
-        }
+                const parts = date.split('-');
 
-        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+                // already YYYY-MM-DD
+                if (parts[0].length === 4) {
 
-    }
+                    return date;
 
-    return null;
+                }
 
-};
+                return `${parts[2]}-${parts[1]}-${parts[0]}`;
 
-start_date = formatDate(start_date);
-end_date = formatDate(end_date);
+            }
 
-// console.log("START DATE:", start_date);
-// console.log("END DATE:", end_date);
-       
+            return null;
+
+        };
+
+        start_date = formatDate(start_date);
+        end_date = formatDate(end_date);
+
+        // console.log("START DATE:", start_date);
+        // console.log("END DATE:", end_date);
+
         await exist_coupon.update({
 
             branch_ids: branch_ids,
 
             code: code,
+            cat_id: cat_id,
 
             percentage: percentage,
 
@@ -2440,6 +2477,375 @@ end_date = formatDate(end_date);
             status: 0,
             message: err.message
 
+        });
+
+    }
+
+};
+
+exports.delete_coupon = async (req, res) => {
+
+    try {
+
+        const { coupon_id } = req.body;
+
+        if (!coupon_id) {
+
+            return res.json({
+                status: 0,
+                message: "Coupon ID required"
+            });
+
+        }
+
+        const coupon = await Coupon.findOne({
+
+            where: {
+                id: coupon_id,
+                del_status: 0
+            }
+
+        });
+
+        if (!coupon) {
+
+            return res.json({
+                status: 0,
+                message: "Coupon not found"
+            });
+
+        }
+
+        // Delete banner image from uploads
+        if (coupon.banner_image) {
+
+            const imagePath = path.join(
+                process.cwd(),
+                coupon.banner_image
+            );
+
+            if (fs.existsSync(imagePath)) {
+
+                fs.unlinkSync(imagePath);
+
+            }
+
+        }
+
+        await coupon.update({
+
+            del_status: 1
+
+        });
+
+        return res.json({
+
+            status: 1,
+            message: "Coupon deleted successfully"
+
+        });
+
+    }
+
+    catch (err) {
+
+        console.log("DELETE ERROR:", err);
+
+        return res.json({
+
+            status: 0,
+            message: err.message
+
+        });
+
+    }
+
+};
+
+exports.delete_branch = async (req, res) => {
+
+    try {
+        const { branch_id } = req.body;
+        if (!branch_id) {
+
+            return res.json({
+                status: 0,
+                message: "Branch ID is required"
+            });
+
+        }
+
+        const branch = await Branch.findOne({
+
+            where: {
+                id: branch_id,
+                del_status: 0
+            }
+
+        });
+
+        if (!branch) {
+
+            return res.json({
+                status: 0,
+                message: "Branch not found"
+            });
+
+        }
+
+        if (branch.profile_image) {
+
+            const profilePath = path.join(__dirname, '../../', branch.profile_image);
+
+            if (fs.existsSync(profilePath)) {
+
+                try {
+
+                    fs.unlinkSync(profilePath);
+
+                } catch (err) {
+
+                    console.log("Profile delete error:", err.message);
+
+                }
+
+            }
+
+        }
+
+        const images = await BranchImage.findAll({
+            where: { branch_id }
+        });
+
+        images.forEach(img => {
+
+            if (img.image) {
+
+                const filePath = path.join(__dirname, '../../', img.image);
+
+                if (fs.existsSync(filePath)) {
+
+                    try {
+
+                        fs.unlinkSync(filePath);
+
+                    } catch (err) {
+
+                        console.log("File delete error:", err.message);
+
+                    }
+
+                }
+
+            }
+
+        });
+
+
+
+
+        // ✅ delete image records
+        await BranchImage.destroy({
+            where: { branch_id }
+        });
+
+        // ✅ get menu images
+        const menuImages = await MenuImage.findAll({
+            where: { branch_id }
+        });
+
+        // ✅ delete menu image files
+        menuImages.forEach(img => {
+
+            if (img.image) {
+
+                const filePath = path.join(
+                    __dirname,
+                    '../../',
+                    img.image
+                );
+
+                if (fs.existsSync(filePath)) {
+
+                    try {
+
+                        fs.unlinkSync(filePath);
+
+                    } catch (err) {
+
+                        console.log(
+                            "Menu file delete error:",
+                            err.message
+                        );
+
+                    }
+
+                }
+
+            }
+
+        });
+
+        // ✅ delete menu image records
+        await MenuImage.destroy({
+            where: { branch_id }
+        });
+
+        // ✅ soft delete branch
+        await branch.update({
+            del_status: 1
+        });
+
+        return res.json({
+            status: 1,
+            message: "Branch deleted successfully"
+        });
+
+    } catch (err) {
+
+        console.log("BRANCH ERROR:", err);
+
+        return res.json({
+            status: 0,
+            message: err.message
+        });
+
+    }
+
+};
+
+
+exports.delete_receptionist = async (req, res) => {
+
+    try {
+
+        const { receptionist_id } = req.body;
+
+        if (!receptionist_id) {
+
+            return res.json({
+                status: 0,
+                message: "Receptionist ID is required"
+            });
+
+        }
+
+        const receptionist = await Receptionist.findOne({
+
+            where: {
+                id: receptionist_id,
+                del_status: 0
+            }
+
+        });
+
+        if (!receptionist) {
+
+            return res.json({
+                status: 0,
+                message: "Receptionist not found"
+            });
+
+        }
+
+        // Delete profile image
+        if (receptionist.profile_image) {
+
+            const profilePath = path.join(
+                __dirname,
+                '../../',
+                receptionist.profile_image
+            );
+
+            if (fs.existsSync(profilePath)) {
+
+                try {
+
+                    fs.unlinkSync(profilePath);
+
+                } catch (err) {
+
+                    console.log(
+                        "Profile delete error:",
+                        err.message
+                    );
+
+                }
+
+            }
+
+        }
+
+        // Soft delete receptionist
+        await receptionist.update({
+
+            del_status: 1
+
+        });
+
+        return res.json({
+
+            status: 1,
+            message: "Receptionist deleted successfully"
+
+        });
+
+    }
+
+    catch (err) {
+
+        console.log(
+            "RECEPTIONIST DELETE ERROR:",
+            err
+        );
+
+        return res.json({
+
+            status: 0,
+            message: err.message
+
+        });
+
+    }
+
+};
+
+exports.receptionist_list = async (req, res) => {
+
+    try {
+        const { merchant_id } = req.body;
+
+
+
+        if (!merchant_id) {
+            return res.json({
+                status: 0,
+                message: "Merchant not found"
+            });
+        }
+
+        const receptionist = await Receptionist.findAll({
+            where: {
+                merchant_id: merchant_id,
+                del_status: 0
+            },
+            order: [['id', 'DESC']],
+            attributes: ['id', 'name', 'email', 'phone']
+        });
+
+        return res.json({
+            status: 1,
+            message: "Receptionist list fetched successfully",
+            data: receptionist
+        });
+
+    } catch (err) {
+
+        console.log("ERROR:", err);
+
+        return res.json({
+            status: 0,
+            message: err.message
         });
 
     }

@@ -12,17 +12,17 @@ const checkMerchantOrReceptionist = require('../../middleware/checkMerchantOrRec
 router.post(
 '/branch/create-branch',
 (req, res, next) => {
-console.log("STEP 1 ROUTE HIT");
+// console.log("STEP 1 ROUTE HIT");
 next();
 },
  auth('merchant'),
 (req, res, next) => {
-console.log("STEP 2 AUTH OK");
+// console.log("STEP 2 AUTH OK");
 next();
 },
 upload,
 (req, res, next) => {
-console.log("STEP 3 MULTER OK");
+// console.log("STEP 3 MULTER OK");
 next();
 },
 controller.register
