@@ -240,7 +240,7 @@ exports.registerStep1 = async (req, res) => {
 
             );
 
-            console.log("Registration mail sent");
+            // console.log("Registration mail sent");
 
         } catch (mailErr) {
 
@@ -1132,3 +1132,5 @@ exports.firebase_reg = async (req, res) => {
     }
 
 };
+
+
