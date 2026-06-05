@@ -1,9 +1,9 @@
-const { Coupon, Merchant, Branch, CouponApplied,Customer ,CouponCat} = require('../../models');
+const { Coupon, Merchant, Branch, CouponApplied, Customer, CouponCat } = require('../../models');
 const { Op, where } = require('sequelize');
 const baseUrl = process.env.APP_URL;
 
 exports.fetch_coupon_categories = async (req, res) => {
-    try{
+    try {
         const categories = await CouponCat.findAll({
             where: {
                 del_status: 0
@@ -19,7 +19,7 @@ exports.fetch_coupon_categories = async (req, res) => {
         });
 
     }
-    catch(err){
+    catch (err) {
         console.log("FETCH ERROR:", err);
 
         return res.json({
@@ -246,7 +246,7 @@ exports.create_coupon = async (req, res) => {
             merchant_id: merchant_id,
 
             branch_ids: branch_ids,
-             cat_id: cat_id,
+            cat_id: cat_id,
 
 
             code: code,
@@ -544,7 +544,7 @@ exports.update_coupon = async (req, res) => {
             branch_ids: branch_ids,
 
             code: code,
-             cat_id: cat_id,
+            cat_id: cat_id,
 
 
             percentage: percentage,
@@ -882,6 +882,7 @@ exports.claim_coupon = async (req, res) => {
             updateData.approved_by = userType;
 
             updateData.approved_by_id = user.id;
+              updateData.used_at = new Date();
 
             updateData.cancel_by = null;
 
@@ -894,6 +895,9 @@ exports.claim_coupon = async (req, res) => {
             updateData.cancel_by = userType;
 
             updateData.cancel_reason = cancel_reason || null;
+            updateData.approved_by = null;
+            updateData.approved_by_id = null;
+              updateData.used_at = null;
 
         }
 

@@ -33,10 +33,19 @@ module.exports = (sequelize, DataTypes) => {
         merchant_id: DataTypes.BIGINT,
 
         status: DataTypes.INTEGER,
+        country: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+
+        zip_code: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
 
         del_status: DataTypes.INTEGER,
-         city: DataTypes.STRING,
-    state: DataTypes.STRING,
+        city: DataTypes.STRING,
+        state: DataTypes.STRING,
         deleted_at: {
             type: DataTypes.DATE,
             allowNull: true

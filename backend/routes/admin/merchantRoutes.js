@@ -86,4 +86,8 @@ router.post('/coupon/delete', auth('admin'),checkAdmin, controller.delete_coupon
 router.post('/branch/delete', auth('admin'),checkAdmin, controller.delete_branch);
 router.post('/receptionist/delete', auth('admin'),checkAdmin, controller.delete_receptionist);
 router.post('/receptionist/list',  controller.receptionist_list);
+
+router.post('/branch/applied-coupons', auth('admin'),checkAdmin, controller.applied_coupons);
+
+
 module.exports = router;

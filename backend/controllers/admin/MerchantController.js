@@ -1,4 +1,4 @@
-const { Merchant, Coupon, RefreshToken, Branch, Receptionist, MerchantFp, Category, BranchImage, MenuImage, Appointment } = require('../../models');
+const { Merchant, Coupon, RefreshToken, Branch, Receptionist, MerchantFp, Category, BranchImage, MenuImage, Appointment,CouponApplied,Customer } = require('../../models');
 const bcrypt = require('bcryptjs');
 const { parsePhoneNumber } = require('libphonenumber-js');
 const jwt = require('jsonwebtoken');
@@ -975,7 +975,11 @@ exports.branchRegister = async (req, res) => {
             close_time,
             country_code,
             receptionist_id,
-            mer_id, city, state, country
+            mer_id,
+            city,
+            state,
+            country,
+            zip_code
         } = req.body;
 
         // console.log("BODY:", req.body);
@@ -1101,37 +1105,43 @@ exports.branchRegister = async (req, res) => {
         const branch = await Branch.create({
 
             name,
-
             email,
-
             country_code: callingCode,
-
             phone: nationalNumber,
-
             profile_image,
-
             lat,
-
             lon,
-
             address,
-
             description,
-
             open_time,
-
             close_time,
-
             merchant_id: mer_id,
-
             status: 1,
-
             del_status: 0,
-            city, state, country
+            city,
+            state,
+            country,
+            zip_code
 
         });
         if (receptionist_id) {
 
+            // Remove this receptionist from any previous branch
+            await Receptionist.update(
+                {
+                    branch_id: null
+                },
+                {
+                    where: {
+                        id: receptionist_id,
+                        branch_id: {
+                            [Op.ne]: null
+                        }
+                    }
+                }
+            );
+
+            // Assign receptionist to newly created branch
             await Receptionist.update(
                 {
                     branch_id: branch.id
@@ -1218,7 +1228,11 @@ exports.branchUpdate = async (req, res) => {
             description,
             open_time,
             close_time,
-            country_code, city, state, country,
+            country_code,
+            city,
+            state,
+            country,
+            zip_code,
             receptionist_id
         } = req.body;
 
@@ -1430,45 +1444,71 @@ exports.branchUpdate = async (req, res) => {
         // ✅ Update Branch
         await branch.update({
 
-            name:
-                name || branch.name,
+            name: name || branch.name,
 
-            email:
-                email || branch.email,
+            email: email || branch.email,
 
-            country_code:
-                callingCode,
+            country_code: callingCode,
 
-            phone:
-                nationalNumber,
+            phone: nationalNumber,
 
             profile_image,
 
-            lat:
-                lat || branch.lat,
+            lat: lat || branch.lat,
 
-            lon:
-                lon || branch.lon,
+            lon: lon || branch.lon,
 
-            address:
-                address || branch.address,
+            address: address || branch.address,
 
-            description:
-                description || branch.description,
+            description: description || branch.description,
 
-            open_time:
-                open_time || branch.open_time,
+            open_time: open_time || branch.open_time,
 
-            close_time:
-                close_time || branch.close_time,
-            city,
-            state,
-            country
+            close_time: close_time || branch.close_time,
+
+            city: city || branch.city,
+
+            state: state || branch.state,
+
+            country: country || branch.country,
+
+            zip_code: zip_code || branch.zip_code
 
         });
-        // Update receptionist branch mapping
+
         if (receptionist_id) {
 
+            // Remove current receptionist from any other branch
+            await Receptionist.update(
+                {
+                    branch_id: null
+                },
+                {
+                    where: {
+                        id: receptionist_id,
+                        branch_id: {
+                            [Op.ne]: branch_id
+                        }
+                    }
+                }
+            );
+
+            // Remove existing receptionist assigned to this branch
+            await Receptionist.update(
+                {
+                    branch_id: null
+                },
+                {
+                    where: {
+                        branch_id: branch_id,
+                        id: {
+                            [Op.ne]: receptionist_id
+                        }
+                    }
+                }
+            );
+
+            // Assign selected receptionist to current branch
             await Receptionist.update(
                 {
                     branch_id: branch_id
@@ -1770,6 +1810,8 @@ exports.fetch_branch_id = async (req, res) => {
                     'lat',
                     'lon',
                     'city',
+                    'zip_code',
+                    'country',
                     'state',
                     'address',
                     'merchant_id',
@@ -2813,30 +2855,57 @@ exports.delete_receptionist = async (req, res) => {
 exports.receptionist_list = async (req, res) => {
 
     try {
+
         const { merchant_id } = req.body;
 
-
-
         if (!merchant_id) {
+
             return res.json({
                 status: 0,
                 message: "Merchant not found"
             });
+
         }
 
+
+
         const receptionist = await Receptionist.findAll({
+
             where: {
                 merchant_id: merchant_id,
-                del_status: 0
+                del_status: 0,
+                status: 1
             },
+
             order: [['id', 'DESC']],
-            attributes: ['id', 'name', 'email', 'phone']
+
+            attributes: [
+                'id',
+                'name',
+                'email',
+                'phone',
+                'branch_id',
+                [
+                    Sequelize.literal(`
+                        CASE
+                            WHEN branch_id IS NULL THEN 0
+                            ELSE 1
+                        END
+                    `),
+                    'is_branch'
+                ]
+            ]
+
         });
 
         return res.json({
+
             status: 1,
+
             message: "Receptionist list fetched successfully",
+
             data: receptionist
+
         });
 
     } catch (err) {
@@ -2846,6 +2915,97 @@ exports.receptionist_list = async (req, res) => {
         return res.json({
             status: 0,
             message: err.message
+        });
+
+    }
+
+};
+
+
+exports.applied_coupons = async (req, res) => {
+
+    try {
+
+        const { branch_id } = req.body;
+
+        if (!branch_id) {
+
+            return res.json({
+                status: 0,
+                message: "Branch ID is required"
+            });
+
+        }
+
+        const coupons = await CouponApplied.findAll({
+
+            where: {
+                del_status: 0
+            },
+
+            attributes: [
+                'id',
+                'cus_id',
+                'coupon_id',
+                'coupon_code',
+                'percentage',
+                'used_at',
+                'approved_by',
+                'approved_by_id',
+                'cancel_by',
+                'cancel_reason',
+                'status'
+            ],
+
+            include: [
+
+                {
+                    model: Coupon,
+                    attributes: [
+                        // 'id',
+                     
+                        // 'code'
+                    ],
+                    where: Sequelize.literal(`${parseInt(branch_id)} = ANY("Coupon"."branch_ids")`),
+                    required: true
+                },
+
+                {
+                    model: Customer,
+                    attributes: [
+                        'id',
+                        'name',
+                       
+                    ],
+                    required: false
+                }
+
+            ],
+
+            order: [['id', 'DESC']]
+
+        });
+
+        return res.json({
+
+            status: 1,
+
+            message: "Applied coupons fetched successfully",
+
+            data: coupons
+
+        });
+
+    } catch (err) {
+
+        console.log("ERROR:", err);
+
+        return res.json({
+
+            status: 0,
+
+            message: err.message
+
         });
 
     }

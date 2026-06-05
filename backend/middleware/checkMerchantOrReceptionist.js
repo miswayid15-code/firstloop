@@ -20,14 +20,14 @@ module.exports = async (req, res, next) => {
 
             }
 
-            if (merchant.status == 0) {
+            // if (merchant.status == 0) {
 
-                return res.json({
-                    status: 0,
-                    message: "Merchant account is inactive"
-                });
+            //     return res.json({
+            //         status: 0,
+            //         message: "Merchant account is inactive"
+            //     });
 
-            }
+            // }
 
             req.merchant = merchant;
 
@@ -48,14 +48,14 @@ module.exports = async (req, res, next) => {
 
             }
 
-            if (receptionist.status == 0) {
+            // if (receptionist.status == 0) {
 
-                return res.json({
-                    status: 0,
-                    message: "Receptionist account is inactive"
-                });
+            //     return res.json({
+            //         status: 0,
+            //         message: "Receptionist account is inactive"
+            //     });
 
-            }
+            // }
 
             req.receptionist = receptionist;
 

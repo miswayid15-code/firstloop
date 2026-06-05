@@ -38,6 +38,16 @@ const getAppointmentStatus = (status) => {
     return statusMap[Number(status)] || { label: 'Unknown', badge: 'pending' }
 }
 
+const getCouponAppliedStatus = (status) => {
+    const statusMap = {
+        0: { label: 'Pending', badge: 'pending' },
+        1: { label: 'Approved', badge: 'active' },
+        2: { label: 'Cancelled', badge: 'pending' }
+    }
+
+    return statusMap[Number(status)] || { label: 'Unknown', badge: 'pending' }
+}
+
 const formatDate = (value) => {
     if (!value) {
         return '-'
@@ -91,8 +101,12 @@ export default function ViewBranch() {
     const [appointmentSearch, setAppointmentSearch] = useState('')
     const [appointmentStatusFilter, setAppointmentStatusFilter] = useState('all')
 
+    const [appliedCoupons, setAppliedCoupons] = useState([])
+    const [appliedCouponsLoading, setAppliedCouponsLoading] = useState(true)
+
     useEffect(() => {
         fetchBranch()
+        fetchAppliedCoupons()
     }, [id])
 
     const fetchBranch = async () => {
@@ -117,6 +131,29 @@ export default function ViewBranch() {
             console.error('Error fetching branch:', error)
         } finally {
             setLoading(false)
+        }
+    }
+
+    const fetchAppliedCoupons = async () => {
+        try {
+            setAppliedCouponsLoading(true)
+
+            const response = await API.post('admin/branch/applied-coupons', {
+                branch_id: id
+            })
+            // console.log('Applied coupons response:', response.data)
+            const data = response.data || {}
+
+            if (isSuccessResponse(data)) {
+                setAppliedCoupons(data.data || [])
+            } else {
+                setAppliedCoupons([])
+            }
+        } catch (error) {
+            setAppliedCoupons([])
+            console.error('Error fetching applied coupons:', error)
+        } finally {
+            setAppliedCouponsLoading(false)
         }
     }
 
@@ -358,6 +395,15 @@ export default function ViewBranch() {
                                         <small className="merchant-sub-label">State</small>
                                         <p className="merchant-subtext">{branchData?.state || '-'}</p>
                                     </div>
+                                    <div>
+                                        <small className="merchant-sub-label">Country</small>
+                                        <p className="merchant-subtext">{branchData?.country || '-'}</p>
+                                    </div>
+
+                                    <div>
+                                        <small className="merchant-sub-label">Zip Code / Postal Code</small>
+                                        <p className="merchant-subtext">{branchData?.zip_code || '-'}</p>
+                                    </div>
 
                                     <div>
                                         <small className="merchant-sub-label">Latitude</small>
@@ -596,7 +642,7 @@ export default function ViewBranch() {
                                 <th>Time Slot</th>
                                 <th>Status</th>
                                 <th>Approved By</th>
-                                <th>Approved By ID</th>
+                                {/* <th>Approved By ID</th> */}
                                 <th>Cancelled By</th>
                                 <th>Reason</th>
                             </tr>
@@ -630,7 +676,7 @@ export default function ViewBranch() {
                                                 </span>
                                             </td>
                                             <td>{appointment.approved_by || '-'}</td>
-                                            <td>{appointment.approved_by_id ?? '-'}</td>
+                                            {/* <td>{appointment.approved_by_id ?? '-'}</td> */}
                                             <td>{appointment.cancel_by || '-'}</td>
                                             <td>
                                                 <span
@@ -737,6 +783,120 @@ export default function ViewBranch() {
                                 <tr>
                                     <td colSpan="8" style={{ textAlign: 'center', padding: '28px 16px' }}>
                                         No coupons found for this branch.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div className="card" style={{ marginTop: 24 }}>
+                <div className="flex-between" style={{ gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
+                    {appliedCouponsLoading ? (
+                        <>
+                            <div style={{ flex: 1, minWidth: 200 }}>
+                                <SectionTitleSkeleton />
+                            </div>
+                            <span className="skeleton-text" style={{ width: 120, height: 40, borderRadius: 8, display: 'inline-block' }} />
+                        </>
+                    ) : (
+                        <div>
+                            <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.05rem', fontWeight: 600, margin: 0 }}>
+                                Applied Coupons
+                            </h3>
+                            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: 6 }}>
+                                Coupons redeemed by customers for this branch.
+                            </p>
+                        </div>
+                    )}
+                </div>
+
+                <div className="table-wrapper">
+                    <table className="data-table">
+                        <thead>
+                            <tr>
+                                <th>Coupon Code</th>
+                                <th>Customer Name</th>
+                                <th>Discount</th>
+                                <th>Status</th>
+                                <th>Used At</th>
+                                <th>Approved By</th>
+                               <th>Cancel By</th>
+                                <th>Cancel Reason</th>
+                                <th>Created At</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {appliedCouponsLoading ? (
+                                Array.from({ length: 3 }).map((_, index) => (
+                                    <tr className="skeleton-row" key={`applied-coupon-skel-${index}`}>
+                                        {Array.from({ length: 7 }).map((__, cellIndex) => (
+                                            <td key={`applied-coupon-skel-cell-${cellIndex}`}>
+                                                <span className="skeleton-text" style={{ width: '80%', display: 'inline-block' }} />
+                                            </td>
+                                        ))}
+                                    </tr>
+                                ))
+                            ) : appliedCoupons.length ? (
+                                appliedCoupons.map((item) => {
+                                    const statusInfo = getCouponAppliedStatus(item.status)
+
+                                    return (
+                                        <tr key={item.id}>
+                                            <td>
+                                                <strong>{item.coupon_code || '-'}</strong>
+                                            </td>
+                                            <td>
+                                                <div className="table-cell-profile">
+                                                    <div className="cell-avatar" style={{ width: 32, height: 32, fontSize: '0.75rem', flexShrink: 0 }}>
+                                                        {item.Customer?.name?.charAt(0)?.toUpperCase() || '?'}
+                                                    </div>
+                                                    <div className="cell-info">
+                                                        <span className="cell-name">{item.Customer?.name || '-'}</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span
+                                                    style={{
+                                                        fontWeight: 600,
+                                                        color: 'var(--primary)'
+                                                    }}
+                                                >
+                                                    {item.percentage != null ? `${item.percentage}%` : '-'}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span className={`badge ${statusInfo.badge}`}>
+                                                    {statusInfo.label}
+                                                </span>
+                                            </td>
+                                            <td>{formatDate(item.used_at)}</td>
+                                            <td>{item.approved_by || '-'}</td>
+                                            <td>{item.cancel_by || '-'}</td>
+                                            <td>
+                                                <span
+                                                    style={{
+                                                        display: 'block',
+                                                        maxWidth: 200,
+                                                        whiteSpace: 'normal',
+                                                        wordBreak: 'break-word'
+                                                    }}
+                                                >
+                                                    {item.cancel_reason || '-'}
+                                                </span>
+                                            </td>
+                                             <td>{formatDate(item.created_at)}</td>
+                                             <td></td>
+                                        </tr>
+                                    )
+                                })
+                            ) : (
+                                <tr>
+                                    <td colSpan="7" style={{ textAlign: 'center', padding: '28px 16px' }}>
+                                        No applied coupons found for this branch.
                                     </td>
                                 </tr>
                             )}

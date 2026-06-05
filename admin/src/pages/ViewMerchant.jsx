@@ -4220,9 +4220,19 @@ export default function ViewMerchant() {
                                                     ? 'Select receptionist'
                                                     : 'No receptionists available'}
                                         </option>
+
                                         {availableReceptionists.map((receptionist) => (
-                                            <option key={receptionist.id} value={receptionist.id}>
+                                            <option
+                                                key={receptionist.id}
+                                                value={receptionist.id}
+                                                style={{
+                                                    color: Number(receptionist.is_branch) === 1
+                                                        ? '#ff9800'
+                                                        : '#000'
+                                                }}
+                                            >
                                                 {receptionist.name || receptionist.email || receptionist.phone || `Receptionist ${receptionist.id}`}
+                                                {Number(receptionist.is_branch) === 1 ? ' (Assigned)' : ''}
                                             </option>
                                         ))}
                                     </select>
@@ -4679,9 +4689,19 @@ export default function ViewMerchant() {
                                                         ? 'Select receptionist'
                                                         : 'No receptionists available'}
                                             </option>
+
                                             {availableReceptionists.map((receptionist) => (
-                                                <option key={receptionist.id} value={receptionist.id}>
+                                                <option
+                                                    key={receptionist.id}
+                                                    value={receptionist.id}
+                                                    style={{
+                                                        color: Number(receptionist.is_branch) === 1
+                                                            ? '#ff9800'
+                                                            : '#000'
+                                                    }}
+                                                >
                                                     {receptionist.name || receptionist.email || receptionist.phone || `Receptionist ${receptionist.id}`}
+                                                    {Number(receptionist.is_branch) === 1 ? ' (Assigned)' : ''}
                                                 </option>
                                             ))}
                                         </select>
