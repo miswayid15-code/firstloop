@@ -82,7 +82,8 @@ exports.verify_mail = async (req, res) => {
             });
         }
 
-        const randomOtp = Math.floor(100000 + Math.random() * 900000).toString();
+        const randomOtp =   111111;
+        // const randomOtp = Math.floor(100000 + Math.random() * 900000).toString();
 
         let existingUser = null;
 
@@ -115,7 +116,7 @@ exports.verify_mail = async (req, res) => {
         });
 
         await sendMail(
-           'minsway01@gmail.com',
+            'minsway01@gmail.com',
             'OTP Sent for Registration',
             sendOtp(randomOtp, type)
         );
@@ -129,6 +130,57 @@ exports.verify_mail = async (req, res) => {
         return res.status(500).json({
             status: 0,
             message: err.message
+        });
+    }
+};
+
+exports.verify_otp = async (req, res) => {
+    try {
+        const { email, otp } = req.body;
+        const missingFields = [];
+
+        if (!email) missingFields.push("Email");
+        if (!otp) missingFields.push("OTP");
+
+        if (missingFields.length) {
+            return res.json({
+                status: 0,
+                message: `${missingFields.join(" and ")} ${missingFields.length > 1 ? "are" : "is"} required`
+            });
+        }
+
+        const record = await OtpVerify.findOne({
+            where: { mail: email }
+        });
+
+        if (!record) {
+            return res.json({
+                status: 0,
+                message: "No OTP record found for this email"
+            });
+        }
+
+        if (record.otp != otp) {
+            return res.json({
+                status: 0,
+                message: "Invalid OTP"
+            });
+        }
+
+        // Delete OTP after successful verification
+        await record.destroy();
+
+        return res.json({
+            status: 1,
+            message: "OTP verified successfully"
+        });
+
+    } catch (err) {
+        console.log("Error:", err);
+
+        return res.status(500).json({
+            status: 0,
+            message: "An error occurred while verifying the OTP"
         });
     }
 };

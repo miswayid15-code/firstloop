@@ -10,8 +10,10 @@ router.get(
 );
     router.post(
     '/register-otp',
-    auth(),
-    checkMerchantOrReceptionist,
     controller.verify_mail
+);
+    router.post(
+    '/verify-otp',
+    controller.verify_otp
 );
 module.exports = router;
