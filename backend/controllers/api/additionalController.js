@@ -82,7 +82,7 @@ exports.verify_mail = async (req, res) => {
             });
         }
 
-        const randomOtp =   111111;
+        const randomOtp = 111111;
         // const randomOtp = Math.floor(100000 + Math.random() * 900000).toString();
 
         let existingUser = null;
@@ -109,11 +109,22 @@ exports.verify_mail = async (req, res) => {
             });
         }
 
-        await OtpVerify.create({
-            mail: email,
-            otp: randomOtp,
-            status: 0
+        const existingOtp = await OtpVerify.findOne({
+            where: { mail: email }
         });
+
+        if (existingOtp) {
+            await existingOtp.update({
+                otp: randomOtp,
+                status: 0
+            });
+        } else {
+            await OtpVerify.create({
+                mail: email,
+                otp: randomOtp,
+                status: 0
+            });
+        }
 
         await sendMail(
             'minsway01@gmail.com',
