@@ -275,16 +275,18 @@
     /* Merchant Profile Card mobile styling */
     .merchant-profile-card {
         padding: 20px !important;
-        flex-direction: column !important;
-        align-items: stretch !important;
+        display: grid !important;
+        grid-template-columns: 1fr !important;
         gap: 20px !important;
     }
     
     .merchant-profile-info {
+        display: flex !important;
         flex-direction: column !important;
         text-align: center !important;
         align-items: center !important;
-        gap: 12px !important;
+        gap: 16px !important;
+        padding: 20px !important;
     }
     
     .merchant-title-row {
@@ -292,7 +294,7 @@
     }
     
     .merchant-profile-stats {
-        justify-content: space-around !important;
+        grid-template-columns: 1fr !important;
         width: 100% !important;
         gap: 16px !important;
     }
@@ -304,6 +306,10 @@
     .merchant-stat-item.border-left {
         border-left: none !important;
         padding-left: 0 !important;
+    }
+
+    .merchant-details-grid {
+        grid-template-columns: 1fr !important;
     }
     
     /* Buttons wrapper on mobile */

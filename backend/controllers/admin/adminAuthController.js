@@ -4,7 +4,7 @@ const { Sequelize } = require("sequelize");
 const { Op } = require('sequelize');
 const {
     RefreshToken,
-    admins, Merchant, Branch, Receptionist, Coupon
+    admins, Merchant, Branch, Receptionist, Coupon,CouponApplied
 } = require('../../models');
 
 exports.login = async (req, res) => {
@@ -561,28 +561,28 @@ exports.fetchmerchant = async (req, res) => {
             ? data.Branches.map(branch => branch.id)
             : [];
 
-            const merchantCoupons = await Coupon.findAll({
+        const merchantCoupons = await Coupon.findAll({
 
-    where: {
-        merchant_id: id,
-        del_status: 0
-    },
+            where: {
+                merchant_id: id,
+                del_status: 0
+            },
 
-    order: [['id', 'DESC']]
+            order: [['id', 'DESC']]
 
-});
+        });
 
-const couponList = merchantCoupons.map(coupon => {
+        const couponList = merchantCoupons.map(coupon => {
 
-    const item = coupon.toJSON();
+            const item = coupon.toJSON();
 
-    item.banner_image = item.banner_image
-        ? baseUrl + '/' + item.banner_image.replace(/\\/g, '/')
-        : null;
+            item.banner_image = item.banner_image
+                ? baseUrl + '/' + item.banner_image.replace(/\\/g, '/')
+                : null;
 
-    return item;
+            return item;
 
-});
+        });
 
         const totalCoupons = await Coupon.count({
             where: {
@@ -594,18 +594,24 @@ const couponList = merchantCoupons.map(coupon => {
             }
         });
 
-        const redeemedCoupons = await Coupon.count({
+        const couponIds = merchantCoupons.map(coupon => coupon.id);
+
+        const redeemedCoupons = await CouponApplied.count({
             where: {
                 del_status: 0,
                 status: 2,
-                branch_ids: {
-                    [Op.overlap]: branchIds
+                coupon_id: {
+                    [Op.in]: couponIds
                 }
             }
         });
+        const total_branch = data.Branches ? data.Branches.length : 0;
 
-        let total_branch = 0;
-        let total_receptionists = 0;
+        const total_receptionists = data.Branches
+            ? data.Branches.reduce((total, branch) => {
+                return total + (branch.Receptionists ? branch.Receptionists.length : 0);
+            }, 0)
+            : 0;
 
         const allCoupons = await Coupon.findAll({
 

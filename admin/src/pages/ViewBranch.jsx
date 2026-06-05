@@ -104,9 +104,16 @@ export default function ViewBranch() {
 
     const [appliedCoupons, setAppliedCoupons] = useState([])
     const [appliedCouponsLoading, setAppliedCouponsLoading] = useState(true)
+    const [appliedCouponSearch, setAppliedCouponSearch] = useState('')
+    const [appliedCouponStatusFilter, setAppliedCouponStatusFilter] = useState('all')
+    const [appliedCouponPage, setAppliedCouponPage] = useState(1)
+    const [appliedCouponPageSize] = useState(10) // fixed page size for now
     const [isOpen, setIsOpen] = useState(false)
     const [isSaving, setIsSaving] = useState(false)
+    const [isAppointmentSaving, setIsAppointmentSaving] = useState(false)
+    const [isAppointmentOpen, setIsAppointmentOpen] = useState(false)
     const [selectedCoupon, setSelectedCoupon] = useState(null)
+    const [selectedAppointment, setSelectedAppointment] = useState(null)
     const [deletingCouponId, setDeletingCouponId] = useState(null)
     const [confirmDialog, setConfirmDialog] = useState({
         open: false,
@@ -128,10 +135,47 @@ export default function ViewBranch() {
         setSelectedCoupon(null)
     }
 
+
+
+    const openAppointmentDialog = (appointment) => {
+        setSelectedAppointment(appointment)
+        setIsAppointmentOpen(true)
+    }
+
+    const closeAppointmentDialog = () => {
+        setIsAppointmentOpen(false)
+        setSelectedAppointment(null)
+    }
+
+
     useEffect(() => {
         fetchBranch()
         fetchAppliedCoupons()
     }, [id])
+
+    // Filter and paginate applied coupons
+    const filteredAppliedCoupons = useMemo(() => {
+        const lowerSearch = appliedCouponSearch.toLowerCase()
+        const filtered = appliedCoupons.filter((c) => {
+            const matchesSearch =
+                c.coupon_code?.toLowerCase().includes(lowerSearch) ||
+                c.Customer?.name?.toLowerCase().includes(lowerSearch)
+            const matchesStatus =
+                appliedCouponStatusFilter === 'all' ||
+                Number(c.status) === Number(appliedCouponStatusFilter)
+            return matchesSearch && matchesStatus
+        })
+        return filtered
+    }, [appliedCoupons, appliedCouponSearch, appliedCouponStatusFilter])
+
+    const paginatedCoupons = useMemo(() => {
+        const start = (appliedCouponPage - 1) * appliedCouponPageSize
+        return filteredAppliedCoupons.slice(start, start + appliedCouponPageSize)
+    }, [filteredAppliedCoupons, appliedCouponPage, appliedCouponPageSize])
+
+    const totalPages = Math.ceil(filteredAppliedCoupons.length / appliedCouponPageSize) || 1
+    const goToPrevPage = () => setAppliedCouponPage((p) => Math.max(p - 1, 1))
+    const goToNextPage = () => setAppliedCouponPage((p) => Math.min(p + 1, totalPages))
 
     const fetchBranch = async () => {
         try {
@@ -252,7 +296,7 @@ export default function ViewBranch() {
         try {
             setIsSaving(true);
 
-            console.log("Performing decision action:", { couponId, decision, reason });
+            // console.log("Performing decision action:", { couponId, decision, reason });
             const response = await API.post(
                 'admin/branch/claim-coupon',
                 {
@@ -280,6 +324,45 @@ export default function ViewBranch() {
             setIsSaving(false);
         }
     };
+
+
+
+    const handleappliedCouponStatusChange = async (appointmentId, decision, reason) => {
+        try {
+            setIsAppointmentSaving(true);
+            const response = await API.post(
+                'admin/branch/update-appointment',
+                {
+                    appointment_id: appointmentId,
+                    status: decision === 'accept' ? 1 : 2,
+                    reason: reason
+                }
+            );
+
+            const data = response.data || {};
+
+            if (data.status === 1) {
+                toast.success(data.message || 'Appointment updated successfully');
+                fetchBranch();
+                closeAppointmentDialog();
+            } else {
+                toast.error(data.message || 'Failed to update appointment');
+            }
+        }
+        catch (error) {
+            toast.error(
+                error?.response?.data?.message ||
+                'Failed to update appointment'
+            );
+        }
+        finally {
+            setIsAppointmentSaving(false);
+        }
+    }
+
+
+
+
     const showDeleteAppliedCouponsDialog = (couponId) => {
         setConfirmDialog({
             open: true,
@@ -329,6 +412,11 @@ export default function ViewBranch() {
         }
     };
 
+
+    //
+
+
+    //
     const closeConfirmDialog = () => {
         setConfirmDialog((prev) => ({
             ...prev,
@@ -620,6 +708,19 @@ export default function ViewBranch() {
                                 </span>
                                 <span className="merchant-stat-lbl">Expired Coupons</span>
                             </div>
+                                                      <div className="merchant-stat-item border-left">
+                                <span className="merchant-stat-val">
+                                    {statusCount?.applied_coupon || 0}
+                                </span>
+                                <span className="merchant-stat-lbl">Coupon Applied</span>
+                            </div>
+
+                            <div className="merchant-stat-item border-left">
+                                <span className="merchant-stat-val">
+                                    {statusCount?.redeemed_coupon || 0}
+                                </span>
+                                <span className="merchant-stat-lbl">Redeemed Coupons</span>
+                            </div>
                         </div>
                     </>
                 )}
@@ -775,6 +876,7 @@ export default function ViewBranch() {
                                 {/* <th>Approved By ID</th> */}
                                 <th>Cancelled By</th>
                                 <th>Reason</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -819,6 +921,25 @@ export default function ViewBranch() {
                                                 >
                                                     {appointment.cancel_reason || '-'}
                                                 </span>
+                                            </td>
+                                            <td>
+                                                <div
+                                                    className="action-group"
+                                                    style={{
+                                                        justifyContent: 'flex-end'
+                                                    }}
+                                                >
+
+                                                    <button
+                                                        className="btn-icon edit"
+                                                        onClick={() => openAppointmentDialog(appointment)}
+                                                    >
+                                                        <i className="fas fa-edit"></i>
+                                                    </button>
+
+
+
+                                                </div>
                                             </td>
                                         </tr>
                                     )
@@ -931,31 +1052,59 @@ export default function ViewBranch() {
                             <span className="skeleton-text" style={{ width: 120, height: 40, borderRadius: 8, display: 'inline-block' }} />
                         </>
                     ) : (
-                        <div>
-                            <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.05rem', fontWeight: 600, margin: 0 }}>
-                                Applied Coupons
-                            </h3>
-                            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: 6 }}>
-                                Coupons redeemed by customers for this branch.
-                            </p>
-                        </div>
-                    )}
+                        <>
+                            <div>
+                                <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.05rem', fontWeight: 600, margin: 0 }}>
+                                    Applied Coupons
+                                </h3>
+                                <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: 6 }}>
+                                    Coupons redeemed by customers for this branch.
+                                </p>
+                            </div>
+                            <div className="flex-between" style={{ gap: 12, flexWrap: 'wrap' }}>
+                                <div className="search-wrapper" style={{ marginBottom: 0, minWidth: 200 }}>
+                                    <i className="fas fa-search search-icon" />
+                                    <input
+                                        type="text"
+                                        className="search-input"
+                                        placeholder="Search coupon code or customer..."
+                                        value={appliedCouponSearch}
+                                        onChange={(e) => {
+                                            setAppliedCouponSearch(e.target.value)
+                                            setAppliedCouponPage(1)
+                                        }}
+                                    />
+                                </div>
+                                <select
+                                    className="form-select"
+                                    value={appliedCouponStatusFilter}
+                                    onChange={(e) => {
+                                        setAppliedCouponStatusFilter(e.target.value)
+                                        setAppliedCouponPage(1)
+                                    }}
+
+                                >
+                                    <option value="all">All Statuses</option>
+                                    <option value="0">Pending</option>
+                                    <option value="1">Approved</option>
+                                    <option value="2">Cancelled</option>
+                                </select>
+                            </div>
+
+                        </>)}
                 </div>
 
                 <div className="table-wrapper">
                     <table className="data-table">
                         <thead>
                             <tr>
-                                <th>Id</th>
                                 <th>Coupon Code</th>
                                 <th>Customer Name</th>
                                 <th>Discount</th>
                                 <th>Status</th>
                                 <th>Used At</th>
                                 <th>Approved By</th>
-                                <th>Cancel By</th>
                                 <th>Cancel Reason</th>
-                                <th>Created At</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -963,20 +1112,19 @@ export default function ViewBranch() {
                             {appliedCouponsLoading ? (
                                 Array.from({ length: 3 }).map((_, index) => (
                                     <tr className="skeleton-row" key={`applied-coupon-skel-${index}`}>
-                                        {Array.from({ length: 7 }).map((__, cellIndex) => (
+                                        {Array.from({ length: 8 }).map((__, cellIndex) => (
                                             <td key={`applied-coupon-skel-cell-${cellIndex}`}>
                                                 <span className="skeleton-text" style={{ width: '80%', display: 'inline-block' }} />
                                             </td>
                                         ))}
                                     </tr>
                                 ))
-                            ) : appliedCoupons.length ? (
-                                appliedCoupons.map((item) => {
+                            ) : paginatedCoupons.length ? (
+                                paginatedCoupons.map((item) => {
                                     const statusInfo = getCouponAppliedStatus(item.status)
 
                                     return (
                                         <tr key={item.id}>
-                                          
                                             <td>
                                                 <strong>{item.coupon_code || '-'}</strong>
                                             </td>
@@ -1007,7 +1155,6 @@ export default function ViewBranch() {
                                             </td>
                                             <td>{formatDate(item.used_at)}</td>
                                             <td>{item.approved_by || '-'}</td>
-                                            <td>{item.cancel_by || '-'}</td>
                                             <td>
                                                 <span
                                                     style={{
@@ -1020,7 +1167,6 @@ export default function ViewBranch() {
                                                     {item.cancel_reason || '-'}
                                                 </span>
                                             </td>
-                                            <td>{formatDate(item.created_at)}</td>
                                             <td>
                                                 <div
                                                     className="action-group"
@@ -1049,7 +1195,7 @@ export default function ViewBranch() {
                                 })
                             ) : (
                                 <tr>
-                                    <td colSpan="7" style={{ textAlign: 'center', padding: '28px 16px' }}>
+                                    <td colSpan="8" style={{ textAlign: 'center', padding: '28px 16px' }}>
                                         No applied coupons found for this branch.
                                     </td>
                                 </tr>
@@ -1057,16 +1203,51 @@ export default function ViewBranch() {
                         </tbody>
                     </table>
                 </div>
+                {/* Pagination controls */}
+                {!appliedCouponsLoading && totalPages > 1 && (
+                    <div className="flex-between" style={{ marginTop: 12, alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                            Page {appliedCouponPage} of {totalPages}
+                        </span>
+                        <div>
+                            <button
+                                className="btn-icon"
+                                disabled={appliedCouponPage === 1}
+                                onClick={goToPrevPage}
+                                style={{ marginRight: 8 }}
+                            >
+                                <i className="fas fa-chevron-left" />
+                            </button>
+                            <button
+                                className="btn-icon"
+                                disabled={appliedCouponPage === totalPages}
+                                onClick={goToNextPage}
+                            >
+                                <i className="fas fa-chevron-right" />
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             <DecisionDialog
                 open={isOpen}
                 title="Review Applied Coupon"
                 message="Confirm whether to accept or reject this coupon."
-                couponCode={selectedCoupon?.coupon_code}
+                details={selectedCoupon?.coupon_code}
                 loading={isSaving}
                 onClose={closeDialog}
                 onSubmit={({ decision, reason }) => handleDecision(selectedCoupon?.id, decision, reason)}
+            />
+
+            <DecisionDialog
+                open={isAppointmentOpen}
+                title="Review Appointment"
+                message="Accept or reject this appointment. Rejection requires a reason."
+                details={selectedAppointment ? `Appointment #${selectedAppointment.id}` : ''}
+                loading={isAppointmentSaving}
+                onClose={closeAppointmentDialog}
+                onSubmit={({ decision, reason }) => handleappliedCouponStatusChange(selectedAppointment?.id, decision, reason)}
             />
 
             <ConfirmDialog

@@ -395,20 +395,26 @@
 /* Merchant profile summary card layout styling */
 .merchant-profile-card {
     margin-bottom: 30px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 24px;
-    align-items: flex-start;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.9fr);
+    gap: 32px;
+    align-items: start;
     padding: 32px;
+    background: rgba(255, 255, 255, 0.82);
+    border-radius: 28px;
+    box-shadow: 0 22px 60px rgba(18, 25, 42, 0.12);
 }
 
 .merchant-profile-info {
     display: flex;
     align-items: flex-start;
-    gap: 20px;
+    gap: 24px;
     flex: 1 1 0;
     min-width: 0;
+    padding: 26px;
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.72);
 }
 
 .merchant-profile-info .cell-info {
@@ -417,8 +423,8 @@
 
 .merchant-details-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(240px, 1fr));
-    gap: 14px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
     margin-top: 18px;
 }
 
@@ -549,11 +555,11 @@
 }
 
 .merchant-avatar {
-    width: 64px;
-    height: 64px;
-    border-radius: 16px;
-    font-size: 1.8rem;
-    box-shadow: 0 4px 16px rgba(233, 30, 99, 0.15);
+    width: 84px;
+    height: 84px;
+    border-radius: 22px;
+    font-size: 1.9rem;
+    box-shadow: 0 18px 40px rgba(233, 30, 99, 0.18);
     background: var(--bg-hover);
     display: flex;
     align-items: center;
@@ -563,26 +569,30 @@
 .merchant-title-row {
     display: flex;
     align-items: center;
-    gap: 10px;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
 }
 
 .merchant-title-row h2 {
-    font-size: 1.4rem;
+    font-size: 1.55rem;
     font-weight: 700;
     font-family: var(--font-heading);
+    margin: 0;
 }
 
 .merchant-subtext {
-    font-size: 0.88rem;
+    font-size: 0.95rem;
     color: var(--text-secondary);
-    margin-top: 4px;
+    margin-top: 8px;
+    line-height: 1.7;
 }
 
 .merchant-profile-stats {
     display: grid;
-    grid-template-columns: repeat(2, minmax(220px, 1fr));
-    gap: 24px;
-    align-items: start;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 18px;
+    align-items: stretch;
 }
 
 .merchant-profile-stats-avatar {
@@ -594,8 +604,8 @@
 }
 
 .merchant-profile-stats-avatar .merchant-avatar {
-    width: 72px;
-    height: 72px;
+    width: 74px;
+    height: 74px;
     border-radius: 50%;
     overflow: hidden;
 }
@@ -609,19 +619,25 @@
 
 .merchant-stat-item {
     text-align: center;
-    padding: 20px 18px;
-    background: rgba(255, 255, 255, 0.7);
-    border-radius: 20px;
-    min-height: 110px;
+    padding: 22px 20px;
+    background: rgba(255, 255, 255, 0.88);
+    border-radius: 22px;
+    min-height: 120px;
     display: flex;
     flex-direction: column;
     justify-content: center;
     gap: 12px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.merchant-stat-item:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 18px 45px rgba(18, 25, 42, 0.08);
 }
 
 .merchant-stat-item.border-left {
-    border-left: 1px solid #F1ECEF;
-    padding-left: 30px;
+    border-left: none;
+    padding-left: 20px;
 }
 
 .merchant-stat-val {

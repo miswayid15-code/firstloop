@@ -1308,9 +1308,7 @@ export default function ViewMerchant() {
             formData.append('latitude', addBranchForm.latitude)
             formData.append('longitude', addBranchForm.longitude)
             formData.append('description', addBranchForm.description)
-            if (addBranchForm.receptionist_id) {
-                formData.append('receptionist_id', addBranchForm.receptionist_id)
-            }
+            formData.append('receptionist_id', addBranchForm.receptionist_id || '')
 
             if (addBranchForm.profile_image) {
                 formData.append('profile_image', addBranchForm.profile_image)
@@ -1508,9 +1506,7 @@ export default function ViewMerchant() {
                 formData.append('profile_image', editBranchForm.profile_image)
             }
 
-            if (editBranchForm.receptionist_id) {
-                formData.append('receptionist_id', editBranchForm.receptionist_id)
-            }
+            formData.append('receptionist_id', editBranchForm.receptionist_id || '')
 
             branchGalleryImages.forEach((img) => {
                 formData.append('existing_image_ids', String(img.id))
@@ -2511,7 +2507,7 @@ export default function ViewMerchant() {
                                         </small>
 
                                         <p className="merchant-subtext">
-                                            {merchantData?.createdAt}
+                                            {formatDisplayDate(merchantData?.createdAt)}
                                         </p>
 
                                     </div>
@@ -4213,31 +4209,35 @@ export default function ViewMerchant() {
                                         onChange={handleAddBranchChange}
                                         disabled={addingBranch || loadingReceptionists}
                                     >
-                                        <option value="" disabled>
+                                        <option value="">
                                             {loadingReceptionists
                                                 ? 'Loading receptionists...'
-                                                : availableReceptionists.length
-                                                    ? 'Select receptionist'
-                                                    : 'No receptionists available'}
+                                                : 'Select receptionist (None)'}
                                         </option>
 
-                                        {availableReceptionists.map((receptionist) => (
-                                            <option
-                                                key={receptionist.id}
-                                                value={receptionist.id}
-                                                style={{
-                                                    color: Number(receptionist.is_branch) === 1
-                                                        ? '#ff9800'
-                                                        : '#000'
-                                                }}
-                                            >
-                                                {receptionist.name || receptionist.email || receptionist.phone || `Receptionist ${receptionist.id}`}
-                                                {Number(receptionist.is_branch) === 1 ? ' (Assigned)' : ''}
-                                            </option>
-                                        ))}
+                                        {availableReceptionists.map((receptionist) => {
+                                            const assignedBranch = branchesData.find(branch => 
+                                                branch.Receptionists?.some(r => r.id === receptionist.id)
+                                            );
+                                            const isAssigned = !!assignedBranch;
+
+                                            return (
+                                                <option
+                                                    key={receptionist.id}
+                                                    value={receptionist.id}
+                                                    disabled={isAssigned}
+                                                    style={{
+                                                        color: isAssigned ? '#999' : '#000'
+                                                    }}
+                                                >
+                                                    {receptionist.name || 'Unnamed'} {receptionist.email ? `(${receptionist.email})` : (receptionist.phone ? `(${receptionist.phone})` : '')}
+                                                    {isAssigned ? ` (Assigned to ${assignedBranch.name})` : ''}
+                                                </option>
+                                            );
+                                        })}
                                     </select>
                                     <small style={{ color: 'var(--text-muted)', fontSize: '0.74rem' }}>
-                                        Assign a receptionist to this branch. Leave blank to skip.
+                                        Assign an available receptionist to this branch. Select "Select receptionist (None)" to leave empty.
                                     </small>
                                 </div>
 
@@ -4682,31 +4682,36 @@ export default function ViewMerchant() {
                                             onChange={handleEditBranchChange}
                                             disabled={savingBranch || loadingReceptionists}
                                         >
-                                            <option value="" disabled>
+                                            <option value="">
                                                 {loadingReceptionists
                                                     ? 'Loading receptionists...'
-                                                    : availableReceptionists.length
-                                                        ? 'Select receptionist'
-                                                        : 'No receptionists available'}
+                                                    : 'Select receptionist (None)'}
                                             </option>
 
-                                            {availableReceptionists.map((receptionist) => (
-                                                <option
-                                                    key={receptionist.id}
-                                                    value={receptionist.id}
-                                                    style={{
-                                                        color: Number(receptionist.is_branch) === 1
-                                                            ? '#ff9800'
-                                                            : '#000'
-                                                    }}
-                                                >
-                                                    {receptionist.name || receptionist.email || receptionist.phone || `Receptionist ${receptionist.id}`}
-                                                    {Number(receptionist.is_branch) === 1 ? ' (Assigned)' : ''}
-                                                </option>
-                                            ))}
+                                            {availableReceptionists.map((receptionist) => {
+                                                const assignedBranch = branchesData.find(branch => 
+                                                    branch.Receptionists?.some(r => r.id === receptionist.id)
+                                                );
+                                                const isAssigned = !!assignedBranch;
+                                                const isCurrentBranch = isAssigned && Number(assignedBranch.id) === Number(editBranchId);
+
+                                                return (
+                                                    <option
+                                                        key={receptionist.id}
+                                                        value={receptionist.id}
+                                                        disabled={isAssigned && !isCurrentBranch}
+                                                        style={{
+                                                            color: isCurrentBranch ? 'var(--primary)' : (isAssigned ? '#999' : '#000')
+                                                        }}
+                                                    >
+                                                        {receptionist.name || 'Unnamed'} {receptionist.email ? `(${receptionist.email})` : (receptionist.phone ? `(${receptionist.phone})` : '')}
+                                                        {isCurrentBranch ? ' (Current)' : (isAssigned ? ` (Assigned to ${assignedBranch.name})` : '')}
+                                                    </option>
+                                                );
+                                            })}
                                         </select>
                                         <small style={{ color: 'var(--text-muted)', fontSize: '0.74rem' }}>
-                                            Assign a receptionist to this branch. Leave blank to keep current assignment.
+                                            Assign an available receptionist to this branch. Select "Select receptionist (None)" to unassign.
                                         </small>
                                     </div>
 

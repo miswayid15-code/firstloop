@@ -1954,6 +1954,24 @@ exports.fetch_branch_id = async (req, res) => {
             return cpn;
         });
 
+        const couponIds = coupons.map(item => item.id);
+        const appliedCouponCount = await CouponApplied.count({
+            where: {
+                coupon_id: {
+                    [Op.in]: couponIds
+                }
+            }
+        });
+
+        const redeemedCouponCount = await CouponApplied.count({
+            where: {
+                coupon_id: {
+                    [Op.in]: couponIds
+                },
+                status: 1
+            }
+        });
+
         const status_count = {
 
             pending_appointment: pendingCount,
@@ -1970,7 +1988,10 @@ exports.fetch_branch_id = async (req, res) => {
 
             expired_coupon: couponData.filter(
                 item => item.is_expired === 1
-            ).length
+            ).length,
+            applied_coupon: appliedCouponCount,
+
+            redeemed_coupon: redeemedCouponCount
         };
 
         return res.json({
@@ -3114,7 +3135,7 @@ exports.claim_coupon = async (req, res) => {
             updateData,
             {
                 where: {
-                    coupon_id: coupon_id
+                    id: coupon_id
                 }
             }
         );
@@ -3123,7 +3144,7 @@ exports.claim_coupon = async (req, res) => {
 
             where: {
 
-                coupon_id: coupon_id
+                id: coupon_id
 
             }
 
@@ -3135,7 +3156,7 @@ exports.claim_coupon = async (req, res) => {
 
             message: "Coupon Updated successfully",
 
-            data: updatedCoupon
+
 
         });
 
@@ -3213,3 +3234,100 @@ exports.delete_claim_coupon = async (req, res) => {
 
     }
 };
+
+
+
+exports.update_appointment = async (req, res) => {
+
+    try {
+
+        const user = req.user;
+
+        const {
+            appointment_id,
+            status,
+            cancel_reason
+        } = req.body;
+
+        if (!appointment_id || status === undefined) {
+
+            return res.json({
+                status: 0,
+                message: "Appointment ID and status are required"
+            });
+
+        }
+
+        const appointment = await Appointment.findOne({
+            where: {
+                id: appointment_id
+            }
+        });
+
+        if (!appointment) {
+
+            return res.json({
+                status: 0,
+                message: "Appointment not found"
+            });
+
+        }
+
+        const updateData = {
+            status: Number(status)
+        };
+
+        // Approved
+        if (Number(status) === 1) {
+
+            updateData.approved_by = 'Admin';
+            updateData.approved_by_id = user.id;
+
+            updateData.cancel_by = null;
+            updateData.cancel_reason = null;
+
+        }
+
+        // Rejected / Cancelled
+        if (Number(status) === 2) {
+
+            updateData.cancel_by = 'Admin';
+            updateData.cancel_reason = cancel_reason || null;
+
+            updateData.approved_by = null;
+            updateData.approved_by_id = null;
+
+        }
+
+        await appointment.update(updateData);
+
+        const updatedAppointment = await Appointment.findOne({
+            where: {
+                id: appointment_id
+            }
+        });
+
+        return res.json({
+
+            status: 1,
+            message: "Appointment status updated successfully",
+            data: updatedAppointment
+
+        });
+
+    } catch (err) {
+
+        console.log(
+            "APPOINTMENT UPDATE ERROR:",
+            err
+        );
+
+        return res.json({
+            status: 0,
+            message: err.message
+        });
+
+    }
+
+};
+
