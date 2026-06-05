@@ -1,4 +1,4 @@
-const { Merchant, Coupon, RefreshToken, Branch, Receptionist, MerchantFp, Category, BranchImage, MenuImage, Appointment,CouponApplied,Customer } = require('../../models');
+const { Merchant, Coupon, RefreshToken, Branch, Receptionist, MerchantFp, Category, BranchImage, MenuImage, Appointment, CouponApplied, Customer } = require('../../models');
 const bcrypt = require('bcryptjs');
 const { parsePhoneNumber } = require('libphonenumber-js');
 const jwt = require('jsonwebtoken');
@@ -2963,7 +2963,7 @@ exports.applied_coupons = async (req, res) => {
                     model: Coupon,
                     attributes: [
                         // 'id',
-                     
+
                         // 'code'
                     ],
                     where: Sequelize.literal(`${parseInt(branch_id)} = ANY("Coupon"."branch_ids")`),
@@ -2975,7 +2975,7 @@ exports.applied_coupons = async (req, res) => {
                     attributes: [
                         'id',
                         'name',
-                       
+
                     ],
                     required: false
                 }
@@ -3010,4 +3010,206 @@ exports.applied_coupons = async (req, res) => {
 
     }
 
+};
+
+
+exports.claim_coupon = async (req, res) => {
+
+    try {
+
+
+        const user = req.user;
+
+        const {
+            coupon_id,
+            status,
+            cancel_reason
+        } = req.body;
+        // console.log("REQUEST BODY:", req.body);
+        if (
+            !coupon_id ||
+            status === undefined
+        ) {
+
+            return res.json({
+
+                status: 0,
+                message: "Coupon ID and status are required"
+
+            });
+
+        }
+
+        const coupon = await CouponApplied.findOne({
+
+            where: {
+
+                id: coupon_id
+
+            }
+
+        });
+
+        if (!coupon) {
+
+            return res.json({
+
+                status: 0,
+                message: "Coupon Applied is not found"
+
+            });
+
+        }
+        const couponExists = await Coupon.findOne({
+
+            where: {
+                id: coupon.coupon_id,
+                del_status: 0
+            }
+
+        });
+
+        if (!couponExists) {
+
+            return res.json({
+
+                status: 0,
+                message: "Coupon not found"
+
+            });
+
+        }
+
+        const updateData = {
+
+            status: status
+
+        };
+
+        if (Number(status) === 1) {
+
+            updateData.approved_by = "Admin";
+
+            updateData.approved_by_id = user.id;
+            updateData.used_at = new Date();
+
+            updateData.cancel_by = null;
+
+            updateData.cancel_reason = null;
+
+        }
+
+        if (Number(status) === 2) {
+
+            updateData.cancel_by = "Admin";
+
+            updateData.cancel_reason = cancel_reason || null;
+            updateData.approved_by = null;
+            updateData.approved_by_id = null;
+            updateData.used_at = null;
+
+        }
+
+        await CouponApplied.update(
+            updateData,
+            {
+                where: {
+                    coupon_id: coupon_id
+                }
+            }
+        );
+
+        const updatedCoupon = await CouponApplied.findOne({
+
+            where: {
+
+                coupon_id: coupon_id
+
+            }
+
+        });
+
+        return res.json({
+
+            status: 1,
+
+            message: "Coupon Updated successfully",
+
+            data: updatedCoupon
+
+        });
+
+    }
+
+    catch (err) {
+
+        console.log(
+            "COUPON UPDATE ERROR:",
+            err
+        );
+
+        return res.json({
+
+            status: 0,
+
+            message: err.message
+
+        });
+
+    }
+
+};
+
+exports.delete_claim_coupon = async (req, res) => {
+    try {
+
+        const { coupon_id } = req.body;
+
+        if (!coupon_id) {
+            return res.json({
+                status: 0,
+                message: "Coupon ID is required"
+            });
+        }
+
+        const coupon = await CouponApplied.findOne({
+            where: {
+                id: coupon_id,
+                del_status: 0
+            }
+        });
+
+        if (!coupon) {
+            return res.json({
+                status: 0,
+                message: "Coupon claim not found"
+            });
+        }
+
+        await CouponApplied.update(
+            {
+                del_status: 1
+            },
+            {
+                where: {
+                    id: coupon_id
+                }
+            }
+        );
+
+        return res.json({
+            status: 1,
+            message: "Coupon claim deleted successfully"
+        });
+
+    } catch (err) {
+
+        console.log("COUPON DELETE ERROR:", err);
+
+        return res.json({
+            status: 0,
+            message: err.message
+        });
+
+    }
 };

@@ -88,6 +88,7 @@ router.post('/receptionist/delete', auth('admin'),checkAdmin, controller.delete_
 router.post('/receptionist/list',  controller.receptionist_list);
 
 router.post('/branch/applied-coupons', auth('admin'),checkAdmin, controller.applied_coupons);
-
+router.post('/branch/claim-coupon', auth('admin'),checkAdmin, controller.claim_coupon);
+router.post('/branch/delete-claim-coupon', auth('admin'),checkAdmin, controller.delete_claim_coupon);
 
 module.exports = router;

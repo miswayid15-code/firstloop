@@ -1,5 +1,5 @@
 const { Coupon, Merchant, Branch, CouponApplied, Customer, CouponCat } = require('../../models');
-const { Op, where } = require('sequelize');
+const { Op,Sequelize, where } = require('sequelize');
 const baseUrl = process.env.APP_URL;
 
 exports.fetch_coupon_categories = async (req, res) => {
@@ -1116,6 +1116,96 @@ exports.redeem_customer = async (req, res) => {
         return res.json({
 
             status: 0,
+            message: err.message
+
+        });
+
+    }
+
+};
+
+exports.applied_coupons = async (req, res) => {
+
+    try {
+
+        const { branch_id } = req.body;
+
+        if (!branch_id) {
+
+            return res.json({
+                status: 0,
+                message: "Branch ID is required"
+            });
+
+        }
+
+        const coupons = await CouponApplied.findAll({
+
+            where: {
+                del_status: 0
+            },
+
+            attributes: [
+                'id',
+                'cus_id',
+                'coupon_id',
+                'coupon_code',
+                'percentage',
+                'used_at',
+                'approved_by',
+                'approved_by_id',
+                'cancel_by',
+                'cancel_reason',
+                'status'
+            ],
+
+            include: [
+
+                {
+                    model: Coupon,
+                    attributes: [
+                        // 'id',
+
+                        // 'code'
+                    ],
+                    where: Sequelize.literal(`${parseInt(branch_id)} = ANY("Coupon"."branch_ids")`),
+                    required: true
+                },
+
+                {
+                    model: Customer,
+                    attributes: [
+                        'id',
+                        'name',
+
+                    ],
+                    required: false
+                }
+
+            ],
+
+            order: [['id', 'DESC']]
+
+        });
+
+        return res.json({
+
+            status: 1,
+
+            message: "Applied coupons fetched successfully",
+
+            data: coupons
+
+        });
+
+    } catch (err) {
+
+        console.log("ERROR:", err);
+
+        return res.json({
+
+            status: 0,
+
             message: err.message
 
         });

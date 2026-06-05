@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { NavLink, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
-
+import ConfirmDialog from '../components/ConfirmDialog.jsx'
 import AppToaster from '../components/AppToaster.jsx'
+import DecisionDialog from '../components/DecisionDialog.jsx'
 import API from '../api.js'
 
 const isSuccessResponse = (data) => {
@@ -103,6 +104,29 @@ export default function ViewBranch() {
 
     const [appliedCoupons, setAppliedCoupons] = useState([])
     const [appliedCouponsLoading, setAppliedCouponsLoading] = useState(true)
+    const [isOpen, setIsOpen] = useState(false)
+    const [isSaving, setIsSaving] = useState(false)
+    const [selectedCoupon, setSelectedCoupon] = useState(null)
+    const [deletingCouponId, setDeletingCouponId] = useState(null)
+    const [confirmDialog, setConfirmDialog] = useState({
+        open: false,
+        title: '',
+        message: '',
+        confirmText: 'Delete',
+        cancelText: 'Cancel',
+        onConfirm: null,
+        loading: false
+    })
+
+    const openDecisionDialog = (coupon) => {
+        setSelectedCoupon(coupon)
+        setIsOpen(true)
+    }
+
+    const closeDialog = () => {
+        setIsOpen(false)
+        setSelectedCoupon(null)
+    }
 
     useEffect(() => {
         fetchBranch()
@@ -220,7 +244,113 @@ export default function ViewBranch() {
                     </div>
                 </div>
             </>
+
         )
+    }
+
+    const handleDecision = async (couponId, decision, reason) => {
+        try {
+            setIsSaving(true);
+
+            console.log("Performing decision action:", { couponId, decision, reason });
+            const response = await API.post(
+                'admin/branch/claim-coupon',
+                {
+                    coupon_id: couponId,
+                    status: decision === 'accept' ? 1 : 2,
+                    reason: reason
+                }
+            );
+
+            const data = response.data || {};
+
+            if (data.status === 1) {
+                toast.success(data.message || 'Coupon updated successfully');
+                fetchAppliedCoupons();
+                closeDialog();
+            } else {
+                toast.error(data.message || 'Failed to update coupon');
+            }
+        } catch (error) {
+            toast.error(
+                error?.response?.data?.message ||
+                'Failed to update coupon'
+            );
+        } finally {
+            setIsSaving(false);
+        }
+    };
+    const showDeleteAppliedCouponsDialog = (couponId) => {
+        setConfirmDialog({
+            open: true,
+            title: 'Delete Applied Coupons',
+            message: 'Delete all applied coupons for this branch? This action cannot be undone.',
+            confirmText: 'Delete',
+            cancelText: 'Cancel',
+            onConfirm: () => performDeleteAppliedCoupons(couponId),
+            loading: false
+        })
+    }
+
+    const performDeleteAppliedCoupons = async (couponId) => {
+        setDeletingCouponId(couponId);
+
+        try {
+            const response = await API.post(
+                'admin/branch/delete-claim-coupon',
+                {
+                    coupon_id: couponId
+                }
+            );
+
+            const data = response.data || {};
+
+            if (data.status === 1) {
+                toast.success(data.message || 'Coupon deleted successfully');
+
+                // Refresh applied coupons list
+                fetchAppliedCoupons();
+
+                // Close dialog
+                setConfirmDialog((prev) => ({
+                    ...prev,
+                    open: false
+                }));
+            } else {
+                toast.error(data.message || 'Failed to delete coupon');
+            }
+        } catch (error) {
+            toast.error(
+                error?.response?.data?.message ||
+                'Failed to delete coupon'
+            );
+        } finally {
+            setDeletingCouponId(null);
+        }
+    };
+
+    const closeConfirmDialog = () => {
+        setConfirmDialog((prev) => ({
+            ...prev,
+            open: false,
+            loading: false,
+            onConfirm: null
+        }))
+    }
+
+    const handleConfirmDialog = async () => {
+        if (!confirmDialog?.onConfirm) {
+            closeConfirmDialog()
+            return
+        }
+
+        setConfirmDialog((prev) => ({ ...prev, loading: true }))
+
+        try {
+            await confirmDialog.onConfirm()
+        } finally {
+            closeConfirmDialog()
+        }
     }
 
     return (
@@ -816,13 +946,14 @@ export default function ViewBranch() {
                     <table className="data-table">
                         <thead>
                             <tr>
+                                <th>Id</th>
                                 <th>Coupon Code</th>
                                 <th>Customer Name</th>
                                 <th>Discount</th>
                                 <th>Status</th>
                                 <th>Used At</th>
                                 <th>Approved By</th>
-                               <th>Cancel By</th>
+                                <th>Cancel By</th>
                                 <th>Cancel Reason</th>
                                 <th>Created At</th>
                                 <th>Actions</th>
@@ -845,6 +976,7 @@ export default function ViewBranch() {
 
                                     return (
                                         <tr key={item.id}>
+                                          
                                             <td>
                                                 <strong>{item.coupon_code || '-'}</strong>
                                             </td>
@@ -888,8 +1020,30 @@ export default function ViewBranch() {
                                                     {item.cancel_reason || '-'}
                                                 </span>
                                             </td>
-                                             <td>{formatDate(item.created_at)}</td>
-                                             <td></td>
+                                            <td>{formatDate(item.created_at)}</td>
+                                            <td>
+                                                <div
+                                                    className="action-group"
+                                                    style={{
+                                                        justifyContent: 'flex-end'
+                                                    }}
+                                                >
+
+                                                    <button
+                                                        className="btn-icon edit"
+                                                        onClick={() => openDecisionDialog(item)}
+                                                    >
+                                                        <i className="fas fa-edit"></i>
+                                                    </button>
+
+                                                    <button className="btn-icon delete"
+                                                        onClick={() => showDeleteAppliedCouponsDialog(item.id)}
+                                                    >
+                                                        <i className="fas fa-trash-alt"></i>
+                                                    </button>
+
+                                                </div>
+                                            </td>
                                         </tr>
                                     )
                                 })
@@ -904,6 +1058,27 @@ export default function ViewBranch() {
                     </table>
                 </div>
             </div>
+
+            <DecisionDialog
+                open={isOpen}
+                title="Review Applied Coupon"
+                message="Confirm whether to accept or reject this coupon."
+                couponCode={selectedCoupon?.coupon_code}
+                loading={isSaving}
+                onClose={closeDialog}
+                onSubmit={({ decision, reason }) => handleDecision(selectedCoupon?.id, decision, reason)}
+            />
+
+            <ConfirmDialog
+                open={confirmDialog.open}
+                title={confirmDialog.title}
+                message={confirmDialog.message}
+                confirmText={confirmDialog.confirmText}
+                cancelText={confirmDialog.cancelText}
+                loading={confirmDialog.loading}
+                onConfirm={handleConfirmDialog}
+                onClose={closeConfirmDialog}
+            />
         </>
     )
 }
