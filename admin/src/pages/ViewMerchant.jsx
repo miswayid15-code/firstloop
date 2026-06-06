@@ -175,6 +175,8 @@ export default function ViewMerchant() {
         longitude: '',
         description: '',
         receptionist_id: '',
+        open_time: '',
+        close_time: '',
         profile_image: null,
         profileImagePreview: ''
     }
@@ -200,6 +202,8 @@ export default function ViewMerchant() {
     const [loadingReceptionists, setLoadingReceptionists] = useState(false)
 
     const [branchGalleryImages, setBranchGalleryImages] = useState([])
+
+    const [branchMenuImages, setBranchMenuImages] = useState([])
 
     const [editBranchMenuFiles, setEditBranchMenuFiles] = useState([])
 
@@ -555,6 +559,8 @@ export default function ViewMerchant() {
 
         setBranchGalleryImages([])
 
+        setBranchMenuImages([])
+
         setEditBranchMenuFiles([])
 
         setNewGalleryFiles([])
@@ -604,6 +610,14 @@ export default function ViewMerchant() {
 
                 setBranchGalleryImages(
                     (branch.BranchImages || []).map((img) => ({
+                        id: img.id,
+                        image: img.image,
+                        imagePath: getRelativeImagePath(img.image)
+                    }))
+                )
+
+                setBranchMenuImages(
+                    (branch.MenuImages || []).map((img) => ({
                         id: img.id,
                         image: img.image,
                         imagePath: getRelativeImagePath(img.image)
@@ -665,6 +679,8 @@ export default function ViewMerchant() {
         })
 
         setBranchGalleryImages([])
+
+        setBranchMenuImages([])
 
         setEditBranchMenuFiles([])
 
@@ -1305,9 +1321,11 @@ export default function ViewMerchant() {
             formData.append('state', addBranchForm.state)
             formData.append('country', addBranchForm.country)
             formData.append('zip_code', addBranchForm.zipcode)
-            formData.append('latitude', addBranchForm.latitude)
-            formData.append('longitude', addBranchForm.longitude)
+            formData.append('lat', addBranchForm.latitude)
+            formData.append('lon', addBranchForm.longitude)
             formData.append('description', addBranchForm.description)
+            formData.append('open_time', addBranchForm.open_time)
+            formData.append('close_time', addBranchForm.close_time)
             formData.append('receptionist_id', addBranchForm.receptionist_id || '')
 
             if (addBranchForm.profile_image) {
@@ -1519,6 +1537,16 @@ export default function ViewMerchant() {
             }
 
             formData.append('gallery_sync', '1')
+
+            branchMenuImages.forEach((img) => {
+                formData.append('existing_menu_image_ids', String(img.id))
+                formData.append('old_menu_images', img.imagePath || getRelativeImagePath(img.image))
+            })
+
+            if (branchMenuImages.length === 0) {
+                formData.append('existing_menu_image_ids', '')
+                formData.append('old_menu_images', '')
+            }
 
             newGalleryFiles.forEach((entry) => {
                 formData.append('images', entry.file)
@@ -4216,7 +4244,7 @@ export default function ViewMerchant() {
                                         </option>
 
                                         {availableReceptionists.map((receptionist) => {
-                                            const assignedBranch = branchesData.find(branch => 
+                                            const assignedBranch = branchesData.find(branch =>
                                                 branch.Receptionists?.some(r => r.id === receptionist.id)
                                             );
                                             const isAssigned = !!assignedBranch;
@@ -4333,6 +4361,36 @@ export default function ViewMerchant() {
                                         style={{ resize: 'vertical', minHeight: 80 }}
                                     />
                                     <label className="form-label">Description</label>
+                                </div>
+
+                                <div style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border)', paddingBottom: 6 }}>
+                                    Operating Hours
+                                </div>
+
+                                <div className="form-row">
+                                    <div className="form-group-classic">
+                                        <label className="form-label-classic">Open Time</label>
+                                        <input
+                                            type="time"
+                                            name="open_time"
+                                            className="form-select"
+                                            value={addBranchForm.open_time}
+                                            onChange={handleAddBranchChange}
+                                            disabled={addingBranch}
+                                        />
+                                    </div>
+
+                                    <div className="form-group-classic">
+                                        <label className="form-label-classic">Close Time</label>
+                                        <input
+                                            type="time"
+                                            name="close_time"
+                                            className="form-select"
+                                            value={addBranchForm.close_time}
+                                            onChange={handleAddBranchChange}
+                                            disabled={addingBranch}
+                                        />
+                                    </div>
                                 </div>
 
                                 <div style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border)', paddingBottom: 6 }}>
@@ -4689,7 +4747,7 @@ export default function ViewMerchant() {
                                             </option>
 
                                             {availableReceptionists.map((receptionist) => {
-                                                const assignedBranch = branchesData.find(branch => 
+                                                const assignedBranch = branchesData.find(branch =>
                                                     branch.Receptionists?.some(r => r.id === receptionist.id)
                                                 );
                                                 const isAssigned = !!assignedBranch;
@@ -4944,6 +5002,36 @@ export default function ViewMerchant() {
                                     <div style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border)', paddingBottom: 6, marginTop: 16 }}>
                                         Menu Images
                                     </div>
+
+                                    {branchMenuImages.length > 0 && (
+                                        <div>
+                                            <small style={{ color: 'var(--text-muted)', fontSize: '0.78rem', display: 'block', marginBottom: 8 }}>
+                                                Existing menu images ({branchMenuImages.length})
+                                            </small>
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                                                {branchMenuImages.map((entry) => (
+                                                    <div
+                                                        key={entry.id}
+                                                        style={{
+                                                            position: 'relative',
+                                                            width: 80,
+                                                            height: 80,
+                                                            borderRadius: 8,
+                                                            overflow: 'hidden',
+                                                            border: '2px solid var(--border)',
+                                                            flexShrink: 0
+                                                        }}
+                                                    >
+                                                        <img
+                                                            src={entry.image}
+                                                            alt="Menu"
+                                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {editBranchMenuFiles.length > 0 && (
                                         <div>

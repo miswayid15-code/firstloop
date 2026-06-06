@@ -979,10 +979,10 @@ exports.branchRegister = async (req, res) => {
             city,
             state,
             country,
-            zip_code
+            zip_code,
         } = req.body;
 
-        // console.log("BODY:", req.body);
+        console.log("BODY:", req.body);
         // console.log("mer_id:", mer_id);
 
         if (
@@ -1214,7 +1214,7 @@ exports.branchRegister = async (req, res) => {
 };
 
 exports.branchUpdate = async (req, res) => {
-
+console.log("Update branch BODY:", req.body);
     try {
 
         const {

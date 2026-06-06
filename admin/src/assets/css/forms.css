@@ -391,7 +391,8 @@
     border-radius: var(--border-radius-lg);
     border: var(--border-glass);
     width: 100%;
-    max-width: 480px;
+    /* max-width: 480px; */
+    max-width: 1000px;
     max-height: 90vh;
     display: flex;
     flex-direction: column;

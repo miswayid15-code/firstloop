@@ -25,7 +25,10 @@ module.exports = (sequelize, DataTypes) => {
       lat: DataTypes.STRING,
       lon: DataTypes.STRING,
       profile_image: DataTypes.STRING,
-
+      city: DataTypes.STRING,
+      state: DataTypes.STRING,
+  country_code: DataTypes.STRING,
+    
       status: {
         type: DataTypes.INTEGER,
         defaultValue: 1,

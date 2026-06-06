@@ -429,6 +429,7 @@ exports.fetchmerchant = async (req, res) => {
                         'phone',
                         'profile_image',
                         'country_code',
+                        'status',
 
 
                     ],

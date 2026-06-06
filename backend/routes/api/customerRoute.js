@@ -4,7 +4,7 @@ const router = express.Router();
 const controller = require('../../controllers/api/CustomerController');
 const upload = require('../../middleware/upload');
 const auth = require('../../middleware/auth');
-
+const baseUrl = process.env.APP_URL;
 router.post('/customer/register', (req, res, next) => {
   req.uploadFolder = 'customer';
   next();

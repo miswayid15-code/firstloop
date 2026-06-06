@@ -101,6 +101,8 @@ export default function ViewBranch() {
     const [statusCount, setStatusCount] = useState(null)
     const [appointmentSearch, setAppointmentSearch] = useState('')
     const [appointmentStatusFilter, setAppointmentStatusFilter] = useState('all')
+    const [appointmentPage, setAppointmentPage] = useState(1)
+    const [appointmentPageSize] = useState(10)
 
     const [appliedCoupons, setAppliedCoupons] = useState([])
     const [appliedCouponsLoading, setAppliedCouponsLoading] = useState(true)
@@ -262,6 +264,15 @@ export default function ViewBranch() {
             return matchesStatus && haystack.includes(searchValue)
         })
     }, [appointments, appointmentSearch, appointmentStatusFilter])
+
+    const paginatedAppointments = useMemo(() => {
+        const start = (appointmentPage - 1) * appointmentPageSize
+        return filteredAppointments.slice(start, start + appointmentPageSize)
+    }, [filteredAppointments, appointmentPage, appointmentPageSize])
+
+    const appointmentTotalPages = Math.ceil(filteredAppointments.length / appointmentPageSize) || 1
+    const goToPrevAppointmentPage = () => setAppointmentPage((p) => Math.max(p - 1, 1))
+    const goToNextAppointmentPage = () => setAppointmentPage((p) => Math.min(p + 1, appointmentTotalPages))
 
     if (!loading && !branchData) {
         return (
@@ -708,7 +719,7 @@ export default function ViewBranch() {
                                 </span>
                                 <span className="merchant-stat-lbl">Expired Coupons</span>
                             </div>
-                                                      <div className="merchant-stat-item border-left">
+                            <div className="merchant-stat-item border-left">
                                 <span className="merchant-stat-val">
                                     {statusCount?.applied_coupon || 0}
                                 </span>
@@ -841,14 +852,20 @@ export default function ViewBranch() {
                                         className="search-input"
                                         placeholder="Search branch, date, reason..."
                                         value={appointmentSearch}
-                                        onChange={(e) => setAppointmentSearch(e.target.value)}
+                                        onChange={(e) => {
+                                            setAppointmentSearch(e.target.value)
+                                            setAppointmentPage(1)
+                                        }}
                                     />
                                 </div>
 
                                 <select
                                     className="form-select"
                                     value={appointmentStatusFilter}
-                                    onChange={(e) => setAppointmentStatusFilter(e.target.value)}
+                                    onChange={(e) => {
+                                        setAppointmentStatusFilter(e.target.value)
+                                        setAppointmentPage(1)
+                                    }}
                                     style={{ minWidth: 150 }}
                                 >
                                     <option value="all">All Status</option>
@@ -890,8 +907,8 @@ export default function ViewBranch() {
                                         ))}
                                     </tr>
                                 ))
-                            ) : filteredAppointments.length ? (
-                                filteredAppointments.map((appointment) => {
+                            ) : paginatedAppointments.length ? (
+                                paginatedAppointments.map((appointment) => {
                                     const statusInfo = getAppointmentStatus(appointment.status)
 
                                     return (
@@ -954,6 +971,31 @@ export default function ViewBranch() {
                         </tbody>
                     </table>
                 </div>
+
+                {!loading && appointmentTotalPages > 1 && (
+                    <div className="flex-between" style={{ marginTop: 12, alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                            Page {appointmentPage} of {appointmentTotalPages}
+                        </span>
+                        <div>
+                            <button
+                                className="btn-icon"
+                                disabled={appointmentPage === 1}
+                                onClick={goToPrevAppointmentPage}
+                                style={{ marginRight: 8 }}
+                            >
+                                <i className="fas fa-chevron-left" />
+                            </button>
+                            <button
+                                className="btn-icon"
+                                disabled={appointmentPage === appointmentTotalPages}
+                                onClick={goToNextAppointmentPage}
+                            >
+                                <i className="fas fa-chevron-right" />
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             <div className="card" style={{ marginTop: 24 }}>
