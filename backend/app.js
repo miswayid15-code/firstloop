@@ -34,7 +34,6 @@ app.use('/admin', require('./routes/admin/customerRoutes.js'));
 
 
 
-
 app.use('/api', require('./routes/api/testRoutes'));
 app.use('/api', require('./routes/api/merchantRoutes'));
 app.use('/api', require('./routes/api/branchRoutes'));
