@@ -43,5 +43,6 @@ app.use('/api', require('./routes/api/categoryRoutes'));
 app.use('/api', require('./routes/api/couponRoute'));
 app.use('/api', require('./routes/api/customerRoute'));
 app.use('/api', require('./routes/api/additionalRoute'));
+app.use('/api/chats', require('./routes/api/chatRoute'));
 
 module.exports = app;
