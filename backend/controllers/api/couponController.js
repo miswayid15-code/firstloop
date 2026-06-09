@@ -981,7 +981,7 @@ exports.redeem_customer = async (req, res) => {
         const couponApplieds = await CouponApplied.findAll({
 
             where: {
-                status: 1,
+                // status: 1,
                 del_status: 0
             },
 
