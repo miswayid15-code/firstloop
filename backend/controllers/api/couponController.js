@@ -1,5 +1,5 @@
 const { Coupon, Merchant, Branch, CouponApplied, Customer, CouponCat } = require('../../models');
-const { Op,Sequelize, where } = require('sequelize');
+const { Op, Sequelize, where } = require('sequelize');
 const baseUrl = process.env.APP_URL;
 
 exports.fetch_coupon_categories = async (req, res) => {
@@ -767,19 +767,20 @@ exports.claim_coupon = async (req, res) => {
 
         const {
             coupon_id,
+            coupon_applied_id,
             status,
             cancel_reason
         } = req.body;
 
         if (
             !coupon_id ||
-            status === undefined
+            status === undefined || !coupon_applied_id
         ) {
 
             return res.json({
 
                 status: 0,
-                message: "Coupon ID and status are required"
+                message: "Coupon ID/RequestId and status are required"
 
             });
 
@@ -854,8 +855,8 @@ exports.claim_coupon = async (req, res) => {
 
             where: {
 
+                id: coupon_applied_id,
                 coupon_id: coupon_id
-
             }
 
         });
@@ -882,7 +883,7 @@ exports.claim_coupon = async (req, res) => {
             updateData.approved_by = userType;
 
             updateData.approved_by_id = user.id;
-              updateData.used_at = new Date();
+            updateData.used_at = new Date();
 
             updateData.cancel_by = null;
 
@@ -897,7 +898,7 @@ exports.claim_coupon = async (req, res) => {
             updateData.cancel_reason = cancel_reason || null;
             updateData.approved_by = null;
             updateData.approved_by_id = null;
-              updateData.used_at = null;
+            updateData.used_at = null;
 
         }
 
@@ -905,7 +906,8 @@ exports.claim_coupon = async (req, res) => {
             updateData,
             {
                 where: {
-                    coupon_id: coupon_id
+                    id: coupon_applied_id,
+                     coupon_id: coupon_id
                 }
             }
         );
@@ -914,7 +916,7 @@ exports.claim_coupon = async (req, res) => {
 
             where: {
 
-                coupon_id: coupon_id
+                id: coupon_applied_id
 
             }
 
