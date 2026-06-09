@@ -598,6 +598,7 @@ exports.fetch_coupon = async (req, res) => {
 
         const coupon = await Coupon.findAll({
             attributes: [
+                'id',
                 'merchant_id',
                 'code',
                 'percentage',
