@@ -908,7 +908,7 @@ exports.claim_coupon = async (req, res) => {
             {
                 where: {
                     id: coupon_applied_id,
-                     coupon_id: coupon_id
+                    coupon_id: coupon_id
                 }
             }
         );
@@ -981,7 +981,7 @@ exports.redeem_customer = async (req, res) => {
         const couponApplieds = await CouponApplied.findAll({
 
             where: {
-                // status: 1,
+
                 del_status: 0
             },
 
@@ -1003,7 +1003,14 @@ exports.redeem_customer = async (req, res) => {
                     model: Coupon,
                     attributes: ['branch_ids'],
                     required: true,
-                    where: couponWhere
+                    where: {
+                        ...couponWhere,
+                        ...(userType === 'receptionist' && {
+                            branch_ids: {
+                                [Op.contains]: [Number(user.branch_id)]
+                            }
+                        })
+                    }
                 },
                 {
                     model: Customer,
