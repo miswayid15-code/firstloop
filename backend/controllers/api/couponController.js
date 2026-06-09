@@ -1014,7 +1014,7 @@ exports.redeem_customer = async (req, res) => {
                 },
                 {
                     model: Customer,
-                    attributes: ['id', 'name', 'email'],
+                    attributes: ['id', 'name', 'email', 'phone'],
                     required: false
                 }
             ],
