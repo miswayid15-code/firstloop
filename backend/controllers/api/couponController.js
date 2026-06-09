@@ -1069,6 +1069,10 @@ exports.redeem_customer = async (req, res) => {
                 ? row.Customer.email
                 : null;
 
+            row.customer_phone = row.Customer
+                ? row.Customer.phone
+                : null;
+
             row.branch_name = null;
 
             if (
