@@ -1510,16 +1510,8 @@ exports.coupon_apply = async (req, res) => {
             });
 
         }
-        let branchIds = [];
 
-        if (coupon.branch_ids) {
-
-            branchIds = coupon.branch_ids
-                .replace(/[{}]/g, '')
-                .split(',')
-                .map(id => parseInt(id.trim()));
-
-        }
+        const branchIds = coupon.branch_ids.map(id => parseInt(id));
 
         if (!branchIds.includes(parseInt(branch_id))) {
 
