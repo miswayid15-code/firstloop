@@ -85,7 +85,10 @@ module.exports = (sequelize, DataTypes) => {
         Branch.hasMany(models.Receptionist, {
             foreignKey: 'branch_id'
         });
-
+        Branch.hasMany(models.CouponApplied, {
+            foreignKey: 'branch_id',
+            as: 'coupon_applieds'
+        });
     };
 
     return Branch;

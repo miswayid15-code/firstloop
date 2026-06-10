@@ -92,7 +92,10 @@ module.exports = (sequelize, DataTypes) => {
         CouponApplied.belongsTo(models.Coupon, {
             foreignKey: 'coupon_id'
         });
-
+        CouponApplied.belongsTo(models.Branch, {
+            foreignKey: 'branch_id',
+          
+        });
     };
 
     return CouponApplied;

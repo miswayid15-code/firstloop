@@ -46,19 +46,22 @@ exports.register = async (req, res) => {
             lon
         } = req.body;
 
-        console.log("REQ BODY:", req.body);
-
+        // console.log("REQ BODY:", req.body);
         let phoneNumber;
+        let nationalNumber;
+        let callingCode;
 
         try {
 
-            console.log("Parsing phone:", phone);
+            const cleanPhone = phone.replace(/\s+/g, '');
 
-            const num = parsePhoneNumber(phone);
+            const fullPhone = cleanPhone.startsWith('+')
+                ? cleanPhone
+                : (country_code || '') + cleanPhone;
+
+            const num = parsePhoneNumber(fullPhone);
 
             if (!num.isValid()) {
-
-                console.log("Invalid phone");
 
                 return res.json({
                     status: 0,
@@ -67,13 +70,12 @@ exports.register = async (req, res) => {
 
             }
 
+            callingCode = `+${num.countryCallingCode}`;
+            nationalNumber = num.nationalNumber;
+
             phoneNumber = num.number;
 
-            console.log("Valid Phone:", phoneNumber);
-
         } catch (phoneErr) {
-
-            console.log("PHONE ERROR:", phoneErr);
 
             return res.json({
                 status: 0,
@@ -86,10 +88,17 @@ exports.register = async (req, res) => {
         // console.log("Checking phone exists...");
 
         const phoneExists = await Customer.findOne({
-            where: { phone: phoneNumber }
+
+            where: {
+
+                country_code: callingCode,
+                phone: nationalNumber
+
+            }
+
         });
 
-        console.log("PHONE EXISTS:", phoneExists);
+        // console.log("PHONE EXISTS:", phoneExists);
 
         if (phoneExists) {
 
@@ -155,7 +164,8 @@ exports.register = async (req, res) => {
 
             name,
             email,
-            phone: phoneNumber,
+            country_code: callingCode,
+            phone: nationalNumber,
             password: hashedPassword,
             dob,
             gender,
@@ -1633,6 +1643,7 @@ exports.coupon_apply = async (req, res) => {
 
             percentage:
                 coupon.percentage,
+            branch_id: branch_id,
 
             used_at:
                 null,
@@ -1739,6 +1750,7 @@ exports.Coupon_list = async (req, res) => {
                     'cus_id',
                     'coupon_id',
                     'coupon_code',
+                    'branch_id',
                     'percentage',
                     'used_at',
                     'status'
@@ -1756,6 +1768,17 @@ exports.Coupon_list = async (req, res) => {
                             'percentage',
                             'start_date',
                             'end_date'
+                        ]
+                    },
+                    {
+                        model: Branch,
+
+                        attributes: [
+
+                            'id',
+                            'name',
+                            'open_time',
+                            'close_time'
                         ]
                     }
 
@@ -1812,85 +1835,43 @@ exports.Coupon_list = async (req, res) => {
 
                         }
 
+                        if (data.branch) {
+
+                            data.branch.open_time = data.branch.open_time
+                                ? moment(data.branch.open_time, 'HH:mm:ss').format('hh:mm A')
+                                : null;
+
+                            data.branch.close_time = data.branch.close_time
+                                ? moment(data.branch.close_time, 'HH:mm:ss').format('hh:mm A')
+                                : null;
+                        }
                         let branch_data = [];
 
-                        // ✅ Branch Fetch
-                        if (
-                            data.Coupon &&
-                            data.Coupon.branch_ids
-                        ) {
+                        if (data.Branch) {
 
-                            let branch_ids = [];
+                            const branch = data.Branch;
 
-                            try {
+                            branch_data.push({
 
-                                branch_ids =
-                                    JSON.parse(
-                                        data.Coupon.branch_ids
-                                    );
+                                id: branch.id,
+                                name: branch.name,
 
-                            } catch (e) {
+                                open_time: branch.open_time
+                                    ? moment(branch.open_time, 'HH:mm:ss').format('hh:mm A')
+                                    : null,
 
-                                branch_ids = [];
+                                close_time: branch.close_time
+                                    ? moment(branch.close_time, 'HH:mm:ss').format('hh:mm A')
+                                    : null
 
-                            }
-
-                            branch_data =
-                                await Branch.findAll({
-
-                                    where: {
-                                        id:
-                                            branch_ids
-                                    },
-
-                                    attributes: [
-                                        'id',
-                                        'name',
-                                        'open_time',
-                                        'close_time'
-                                    ]
-
-                                });
-
-                            // ✅ Branch Time Format
-                            branch_data =
-                                branch_data.map(
-                                    branch => {
-
-                                        const b =
-                                            branch.toJSON();
-
-                                        b.open_time =
-                                            b.open_time
-                                                ? moment(
-                                                    b.open_time,
-                                                    'HH:mm:ss'
-                                                ).format(
-                                                    'hh:mm A'
-                                                )
-                                                : null;
-
-                                        b.close_time =
-                                            b.close_time
-                                                ? moment(
-                                                    b.close_time,
-                                                    'HH:mm:ss'
-                                                ).format(
-                                                    'hh:mm A'
-                                                )
-                                                : null;
-
-                                        return b;
-
-                                    }
-                                );
+                            });
 
                         }
 
-                        // ✅ Branch Data
-                        data.branches =
-                            branch_data;
+                        data.branches = branch_data;
 
+                        // remove Branch object from response
+                        delete data.Branch;
                         return data;
 
                     }

@@ -1214,7 +1214,7 @@ exports.branchRegister = async (req, res) => {
 };
 
 exports.branchUpdate = async (req, res) => {
-console.log("Update branch BODY:", req.body);
+    console.log("Update branch BODY:", req.body);
     try {
 
         const {
@@ -2968,6 +2968,7 @@ exports.applied_coupons = async (req, res) => {
                 'id',
                 'cus_id',
                 'coupon_id',
+                'branch_id',
                 'coupon_code',
                 'percentage',
                 'used_at',
@@ -2976,7 +2977,10 @@ exports.applied_coupons = async (req, res) => {
                 'cancel_by',
                 'cancel_reason',
                 'status'
-            ],
+            ]     ,  where: {
+                        branch_id: branch_id,
+                        del_status: 0
+                    },
 
             include: [
 
@@ -2987,7 +2991,7 @@ exports.applied_coupons = async (req, res) => {
 
                         // 'code'
                     ],
-                    where: Sequelize.literal(`${parseInt(branch_id)} = ANY("Coupon"."branch_ids")`),
+             
                     required: true
                 },
 
