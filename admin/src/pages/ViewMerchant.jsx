@@ -2931,6 +2931,18 @@ export default function ViewMerchant() {
                                                 <i className="fas fa-eye"></i>
                                             </button>
                                             <button
+                                                className="btn-icon"
+                                                title="Customer Chats"
+                                                onClick={() => navigate(`/branch-chat/${branch.id}`)}
+                                                style={{
+                                                    background: 'linear-gradient(135deg, rgba(233,30,140,0.12) 0%, rgba(233,30,140,0.06) 100%)',
+                                                    color: '#e91e8c',
+                                                    border: '1.5px solid rgba(233,30,140,0.22)'
+                                                }}
+                                            >
+                                                <i className="fas fa-comments"></i>
+                                            </button>
+                                            <button
                                                 className="btn-icon edit"
                                                 onClick={() => openEditBranchModal(branch.id)}
                                             >

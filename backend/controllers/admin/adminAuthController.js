@@ -178,6 +178,13 @@ exports.login = async (req, res) => {
 exports.logout = async (req, res) => {
     try {
 
+        if (!req.user || !req.user.id) {
+            return res.status(401).json({
+                status: 0,
+                message: "Unauthorized"
+            });
+        }
+
         await RefreshToken.destroy({
             where: {
                 user_id: req.user.id,
@@ -185,15 +192,20 @@ exports.logout = async (req, res) => {
             }
         });
 
-        return res.json({
+        return res.status(200).json({
             status: 1,
-            message: "Logged out from all devices"
+            message: "Logged out successfully from all devices"
         });
 
     } catch (err) {
-        return res.json({ status: 0, message: "Error" });
-    }
 
+        console.error("Logout Error:", err);
+
+        return res.status(500).json({
+            status: 0,
+            message: "Internal server error"
+        });
+    }
 };
 
 exports.refreshAccessToken = async (req, res) => {

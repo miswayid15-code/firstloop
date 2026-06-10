@@ -325,14 +325,17 @@
 }
 
 .skeleton-text {
+    display: inline-block;
     height: 14px;
     background: linear-gradient(90deg, #F3ECEF 25%, #FAF5F7 50%, #F3ECEF 75%);
     background-size: 200% 100%;
     animation: skeletonShimmer 1.5s infinite;
     border-radius: 4px;
+    vertical-align: middle;
 }
 
 .skeleton-avatar {
+    display: inline-block;
     width: 38px;
     height: 38px;
     border-radius: 50%;

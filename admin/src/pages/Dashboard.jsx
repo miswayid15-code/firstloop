@@ -1,46 +1,255 @@
+import { useEffect, useMemo, useState } from 'react'
+
+import {
+    NavLink,
+    useNavigate,
+    useParams
+} from 'react-router-dom'
+
+import { toast } from 'react-hot-toast'
+import API from '../api.js';
+
+
+
 export default function Dashboard() {
+    const [dashboard, setDashboard] = useState(null);
+
+    const FetchDashboard = async () => {
+
+        try {
+
+            const response = await API.get('/admin/dashboard');
+            setDashboard(response.data.data);
+
+        } catch (error) {
+
+            console.log(
+                'Dashboard Fetch Error:',
+                error.response?.data || error
+            );
+
+            toast.error('Failed to load dashboard');
+        }
+    };
+
+    useEffect(() => {
+        FetchDashboard();
+    }, []);
+
+    if (!dashboard) {
+        return (
+            <>
+                <div className="dashboard-stats-grid">
+                    {[
+                        {
+                            title: 'Active Merchants',
+                            icon: 'fa-store',
+                            gradient: 'bg-gradient-purple',
+                            trendLabel: 'new this week'
+                        },
+                        {
+                            title: 'Redeemed Coupons',
+                            icon: 'fa-ticket-alt',
+                            gradient: 'bg-gradient-blue',
+                            trendLabel: 'redeemed today'
+                        },
+                        {
+                            title: 'Pending Bookings',
+                            icon: 'fa-calendar-check',
+                            gradient: 'bg-gradient-orange',
+                            trendLabel: 'requires action'
+                        },
+                        {
+                            title: 'Active Customers',
+                            icon: 'fa-users',
+                            gradient: 'bg-gradient-teal',
+                            trendLabel: 'new signups'
+                        }
+                    ].map((item) => (
+                        <div key={item.title} className={`card stat-card ${item.gradient}`} style={{ pointerEvents: 'none' }}>
+                            <i className={`fas ${item.icon} stat-bg-icon`} />
+                            <div className="stat-header">
+                                <div className="flex-column">
+                                    <span className="stat-title">{item.title}</span>
+                                    <span className="skeleton-text" style={{ width: '60px', height: '32px', marginTop: '10px', display: 'inline-block' }} />
+                                </div>
+                                <div className={`stat-icon ${item.gradient.replace('bg-gradient-', '')}`}>
+                                    <i className={`fas ${item.icon}`} />
+                                </div>
+                            </div>
+                            <div className="stat-footer">
+                                <span className="stat-trend" style={{ padding: '2px 6px', display: 'inline-flex', alignItems: 'center' }}>
+                                    <span className="skeleton-text" style={{ width: '24px', height: '12px', display: 'inline-block' }} />
+                                </span>
+                                <span className="stat-desc">{item.trendLabel}</span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="dashboard-charts-grid">
+                    <div className="card" style={{ pointerEvents: 'none' }}>
+                        <div className="flex-between" style={{ marginBottom: 24 }}>
+                            <div>
+                                <h3 className="card-title">Campaign Sales Velocity</h3>
+                                <p className="card-subtitle">Performance tracking across the network</p>
+                            </div>
+                            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--primary)', background: 'var(--primary-light)', padding: '4px 10px', borderRadius: 6 }}>
+                                Live Tracker
+                            </div>
+                        </div>
+
+                        <div className="svg-chart-container" style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', height: '200px' }}>
+                            <div className="skeleton-text" style={{ width: '100%', height: '100%', borderRadius: '12px' }} />
+                        </div>
+
+                        <div className="flex-between" style={{ marginTop: 20 }}>
+                            {Array.from({ length: 6 }).map((_, i) => (
+                                <span key={i} className="skeleton-text" style={{ width: '50px', height: '12px', display: 'inline-block' }} />
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="card" style={{ pointerEvents: 'none' }}>
+                        <div className="flex-between" style={{ marginBottom: 24 }}>
+                            <div>
+                                <h3 className="card-title">Coupon Redemptions</h3>
+                                <p className="card-subtitle">Weekly activity totals</p>
+                            </div>
+                        </div>
+                        <div className="chart-container">
+                            <div className="bar-chart-mock">
+                                {[40, 75, 55, 90, 60, 85, 45].map((height, i) => (
+                                    <div key={i} className="bar-column">
+                                        <div
+                                            className="skeleton-text"
+                                            style={{
+                                                width: '100%',
+                                                height: `${height}%`,
+                                                borderRadius: '6px 6px 0 0',
+                                                display: 'block'
+                                            }}
+                                        />
+                                        <span className="skeleton-text" style={{ width: '15px', height: '12px', display: 'inline-block' }} />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="dashboard-content-grid">
+                    <div className="card" style={{ pointerEvents: 'none' }}>
+                        <div className="flex-between" style={{ marginBottom: 20 }}>
+                            <div>
+                                <h3 className="card-title">Top Performing Merchants</h3>
+                                <p className="card-subtitle">Highest redemption volume</p>
+                            </div>
+                            <button className="btn btn-secondary" style={{ fontSize: '0.78rem', padding: '6px 12px' }}>
+                                View All
+                            </button>
+                        </div>
+                        <div className="merchant-mini-list" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            {Array.from({ length: 3 }).map((_, index) => (
+                                <div key={index} className="merchant-mini-item">
+                                    <div className="merchant-mini-profile">
+                                        <div className="skeleton-avatar" style={{ width: '40px', height: '40px', borderRadius: '12px' }} />
+                                        <div>
+                                            <h4 className="merchant-mini-name" style={{ margin: 0 }}>
+                                                <span className="skeleton-text" style={{ width: '120px', height: '14px', display: 'inline-block' }} />
+                                            </h4>
+                                            <p className="merchant-mini-category" style={{ margin: '4px 0 0 0' }}>
+                                                <span className="skeleton-text" style={{ width: '80px', height: '12px', display: 'inline-block' }} />
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="merchant-mini-stats" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                                        <span className="skeleton-text" style={{ width: '30px', height: '14px', display: 'inline-block' }} />
+                                        <span className="skeleton-text" style={{ width: '50px', height: '12px', display: 'inline-block' }} />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="card" style={{ pointerEvents: 'none' }}>
+                        <div className="flex-between" style={{ marginBottom: 20 }}>
+                            <div>
+                                <h3 className="card-title">Recent Activity</h3>
+                                <p className="card-subtitle">Real-time system events</p>
+                            </div>
+                        </div>
+
+                        <div className="activity-list">
+                            {Array.from({ length: 3 }).map((_, index) => (
+                                <div key={index} className="activity-item">
+                                    <div className="skeleton-avatar" style={{ width: '40px', height: '40px' }} />
+                                    <div className="activity-details" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                        <span className="skeleton-text" style={{ width: index === 0 ? '90%' : index === 1 ? '75%' : '80%', height: '14px', display: 'inline-block' }} />
+                                        <span className="skeleton-text" style={{ width: '60px', height: '12px', display: 'inline-block' }} />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </>
+        );
+    }
+
+    const { cards, coupon_redemptions_weekly, coupon_usage_monthly, top_performing_merchants } = dashboard;
+
+    // Build bar chart data from weekly redemptions
+    const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const weeklyMap = {};
+    coupon_redemptions_weekly.forEach(({ date, count }) => {
+        const dayIndex = new Date(date).getDay();
+        weeklyMap[dayIndex] = (weeklyMap[dayIndex] || 0) + parseInt(count);
+    });
+
+    const maxWeeklyCount = Math.max(...Object.values(weeklyMap), 1);
+
+    // Build monthly chart points from coupon_usage_monthly
+    const monthlyMap = {};
+    coupon_usage_monthly.forEach(({ month, count }) => {
+        const label = new Date(month).toLocaleString('default', { month: 'short' });
+        monthlyMap[label] = parseInt(count);
+    });
+
     return (
         <>
             <div className="dashboard-stats-grid">
                 {[
                     {
-                        title: 'Platform Revenue',
-                        value: '142,850',
-                        icon: 'fa-dollar-sign',
-                        gradient: 'bg-gradient-pink',
-                        trend: '14.2%',
-                        trendLabel: 'vs last month'
-                    },
-                    {
                         title: 'Active Merchants',
-                        value: '382',
+                        value: cards.active_merchants,
                         icon: 'fa-store',
                         gradient: 'bg-gradient-purple',
-                        trend: '6.8%',
+                        trend: `+${cards.new_merchants_this_week}`,
                         trendLabel: 'new this week'
                     },
                     {
                         title: 'Redeemed Coupons',
-                        value: '24,960',
+                        value: cards.redeemed_coupons.toLocaleString(),
                         icon: 'fa-ticket-alt',
                         gradient: 'bg-gradient-blue',
-                        trend: '22.4%',
-                        trendLabel: 'redemption spike'
+                        trend: `+${cards.redeemed_today}`,
+                        trendLabel: 'redeemed today'
                     },
                     {
                         title: 'Pending Bookings',
-                        value: '46',
+                        value: cards.pending_bookings,
                         icon: 'fa-calendar-check',
                         gradient: 'bg-gradient-orange',
-                        trend: '3.2%',
+                        trend: `${cards.pending_bookings}`,
                         trendLabel: 'requires action'
                     },
                     {
                         title: 'Active Customers',
-                        value: '12,450',
+                        value: cards.active_customers.toLocaleString(),
                         icon: 'fa-users',
                         gradient: 'bg-gradient-teal',
-                        trend: '8.5%',
+                        trend: `+${cards.new_customers_this_week}`,
                         trendLabel: 'new signups'
                     }
                 ].map((item) => (
@@ -70,7 +279,7 @@ export default function Dashboard() {
                     <div className="flex-between" style={{ marginBottom: 24 }}>
                         <div>
                             <h3 className="card-title">Campaign Sales Velocity</h3>
-                            <p className="card-subtitle">Performance tracking across the Dealora network</p>
+                            <p className="card-subtitle">Performance tracking across the network</p>
                         </div>
                         <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--primary)', background: 'var(--primary-light)', padding: '4px 10px', borderRadius: 6 }}>
                             Live Tracker
@@ -104,8 +313,10 @@ export default function Dashboard() {
                     </div>
 
                     <div className="flex-between" style={{ marginTop: 16, fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-                        {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'].map((month) => (
-                            <span key={month}>{month}</span>
+                        {coupon_usage_monthly.map((item) => (
+                            <span key={item.month}>
+                                {new Date(item.month).toLocaleString('default', { month: 'short' })} ({item.count})
+                            </span>
                         ))}
                     </div>
                 </div>
@@ -119,20 +330,22 @@ export default function Dashboard() {
                     </div>
                     <div className="chart-container">
                         <div className="bar-chart-mock">
-                            {[
-                                { label: 'M', height: '40%', value: '1.2k' },
-                                { label: 'T', height: '65%', value: '2.4k' },
-                                { label: 'W', height: '85%', value: '3.2k' },
-                                { label: 'T', height: '50%', value: '1.9k' },
-                                { label: 'F', height: '70%', value: '2.8k' },
-                                { label: 'S', height: '95%', value: '4.1k' },
-                                { label: 'S', height: '30%', value: '0.9k' }
-                            ].map((bar) => (
-                                <div key={bar.label} className="bar-column">
-                                    <div className="bar-fill" style={{ height: bar.height }} data-value={bar.value}></div>
-                                    <span className="bar-label">{bar.label}</span>
-                                </div>
-                            ))}
+                            {coupon_redemptions_weekly.map((item) => {
+                                const count = parseInt(item.count);
+                                const heightPct = Math.round((count / maxWeeklyCount) * 100);
+                                const dayLabel = new Date(item.date).toLocaleString('default', { weekday: 'short' }).charAt(0);
+                                const displayDate = new Date(item.date).toLocaleDateString('default', { month: 'short', day: 'numeric' });
+                                return (
+                                    <div key={item.date} className="bar-column">
+                                        <div
+                                            className="bar-fill"
+                                            style={{ height: `${heightPct}%` }}
+                                            data-value={count}
+                                        />
+                                        <span className="bar-label" title={displayDate}>{dayLabel}</span>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                 </div>
@@ -143,30 +356,35 @@ export default function Dashboard() {
                     <div className="flex-between" style={{ marginBottom: 20 }}>
                         <div>
                             <h3 className="card-title">Top Performing Merchants</h3>
-                            <p className="card-subtitle">Highest redemption volume</p>
+                            <p className="card-subtitle">Highest redemption volume
+                                
+                            </p>
                         </div>
                         <button className="btn btn-secondary" style={{ fontSize: '0.78rem', padding: '6px 12px' }}>
                             View All
                         </button>
                     </div>
-                    {[
-                        { name: 'Starbucks Coffee', category: 'Beverages & Cafe', value: '4,960', badge: 'S' },
-                        { name: 'Zara Fashion Group', category: 'Apparel & Design', value: '3,820', badge: 'Z' }
-                    ].map((merchant) => (
-                        <div key={merchant.name} className="merchant-mini-item">
-                            <div className="merchant-mini-profile">
-                                <div className="merchant-mini-avatar">{merchant.badge}</div>
-                                <div>
-                                    <h4 className="merchant-mini-name">{merchant.name}</h4>
-                                    <p className="merchant-mini-category">{merchant.category}</p>
+                    {top_performing_merchants
+                        .filter((m) => m.Branch !== null)
+                        .map((merchant) => {
+                            const name = merchant.Branch.name;
+                            const badge = name.charAt(0).toUpperCase();
+                            return (
+                                <div key={merchant.branch_id} className="merchant-mini-item">
+                                    <div className="merchant-mini-profile">
+                                        <div className="merchant-mini-avatar">{badge}</div>
+                                        <div>
+                                            <h4 className="merchant-mini-name">{name}</h4>
+                                            <p className="merchant-mini-category">Branch ID: {merchant.branch_id}</p>
+                                        </div>
+                                    </div>
+                                    <div className="merchant-mini-stats">
+                                        <span className="merchant-mini-value">{merchant.redeemed_count}</span>
+                                        <p className="merchant-mini-label">coupons</p>
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="merchant-mini-stats">
-                                <span className="merchant-mini-value">{merchant.value}</span>
-                                <p className="merchant-mini-label">coupons</p>
-                            </div>
-                        </div>
-                    ))}
+                            );
+                        })}
                 </div>
 
                 <div className="card">

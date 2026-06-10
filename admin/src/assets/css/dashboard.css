@@ -225,3 +225,16 @@
     transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Translucent white skeletons for colorful gradient cards */
+.stat-card[class*="bg-gradient-"] .skeleton-text {
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.15) 25%, rgba(255, 255, 255, 0.35) 50%, rgba(255, 255, 255, 0.15) 75%);
+    background-size: 200% 100%;
+    animation: skeletonShimmer 1.5s infinite;
+}
+
+.stat-card[class*="bg-gradient-"] .skeleton-avatar {
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.15) 25%, rgba(255, 255, 255, 0.35) 50%, rgba(255, 255, 255, 0.15) 75%);
+    background-size: 200% 100%;
+    animation: skeletonShimmer 1.5s infinite;
+}
+

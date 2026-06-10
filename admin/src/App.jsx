@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout'
+import AppToaster from './components/AppToaster.jsx'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Merchants from './pages/Merchants'
@@ -16,12 +17,22 @@ import Branches from './pages/Branches'
 import Receptionists from './pages/Receptionists'
 import ViewMerchant from './pages/ViewMerchant'
 import ViewBranch from './pages/ViewBranch'
+import BranchChat from './pages/BranchChat'
+import ProtectedRoute from './pages/ProtectedRoute'
 
 function App() {
     return (
-        <Routes>
-            <Route path="/" element={<Login />} />
-            <Route element={<Layout />}>
+        <>
+            <AppToaster />
+            <Routes>
+                <Route path="/" element={<Login />} />
+                <Route
+                element={
+                    <ProtectedRoute>
+                        <Layout />
+                    </ProtectedRoute>
+                }
+            >
                 <Route path="dashboard" element={<Dashboard />} />
                 <Route path="merchants" element={<Merchants />} />
                 <Route path="customers" element={<Customers />} />
@@ -35,11 +46,13 @@ function App() {
                 <Route path="edit-merchant/:id" element={<EditMerchant />} />
                 <Route path="view-merchant/:id" element={<ViewMerchant />} />
                 <Route path="view-branch/:id" element={<ViewBranch />} />
+                <Route path="branch-chat/:id" element={<BranchChat />} />
                 <Route path="branches" element={<Branches />} />
                 <Route path="receptionists" element={<Receptionists />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </>
     )
 }
 

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
+import API from '../api.js'
 import Dealora from '../assets/img/Dealora.png'
 import logo from '../assets/img/logo.png'
 const navItems = [
@@ -53,6 +54,18 @@ export default function Navbar() {
 
     const notificationRef = useRef(null)
     const profileRef = useRef(null)
+    const navigate = useNavigate()
+
+    const handleLogout = async () => {
+        try {
+            await API.post('admin/logout')
+        } catch (error) {
+            console.log(error)
+        } finally {
+            localStorage.clear();
+            navigate('/', { replace: true })
+        }
+    }
 
     useEffect(() => {
         function handleClickOutside(event) {
@@ -172,9 +185,9 @@ export default function Navbar() {
                                 <i className="fas fa-bell" /> Notification
                             </NavLink>
                             <div className="profile-dropdown-divider" />
-                            <NavLink to="/" className="profile-dropdown-item logout">
+                            <button type="button" className="profile-dropdown-item logout" onClick={handleLogout}>
                                 <i className="fas fa-sign-out-alt" /> Logout
-                            </NavLink>
+                            </button>
                         </div>
                     </div>
                 </div>

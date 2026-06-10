@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { toast } from "react-hot-toast";
@@ -17,32 +17,53 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
+  useEffect(() => {
+
+    const token =
+      localStorage.getItem("access_token") ||
+      localStorage.getItem("admin_token");
+
+    if (token === "null" || token === "undefined") {
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("admin_token");
+      return;
+    }
+
+    if (token) {
+      navigate("/dashboard");
+    }
+
+  }, [navigate]);
 
   const handleSubmit = async (event) => {
 
     event.preventDefault();
 
     try {
-  
+
       setLoading(true);
 
       const response = await API.post("admin/login", {
         username,
         password,
-      });  
+      });
 
       const data = response.data;
 
       if (data.status === 1) {
 
         localStorage.setItem(
-          "admin_token",
+          "access_token",
           data.access_token
+        );
+        localStorage.setItem(
+          "refresh_token",
+          data.refresh_token
         );
 
         localStorage.setItem(
           "admin_data",
-          JSON.stringify(data.admin)
+          JSON.stringify(data.data)
         );
 
         toast.success("Login Success 🚀");

@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react'
 
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import API from '../api.js'
 
 import logo from '../assets/image/logo.png'
 import dealoraLogo from '../assets/image/Dealora.png'
@@ -10,6 +11,29 @@ import dealoraLogo from '../assets/image/Dealora.png'
 function Header() {
 
   const [mobileMenu, setMobileMenu] = useState(false)
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+
+    try {
+
+      await API.post("admin/logout");
+
+    } catch (error) {
+
+      console.log(error);
+
+    } finally {
+
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("admin_token");
+      localStorage.removeItem("refresh_token");
+      localStorage.removeItem("admin_data");
+
+      window.location.replace("/");
+    }
+
+  };
 
   return (
 
@@ -220,18 +244,18 @@ function Header() {
                 </Link>
 
                 <div className="profile-dropdown-divider"></div>
-
-                <Link
-                  to="/"
+                <button
+                  type="button"
                   className="profile-dropdown-item logout"
                   id="profile-dropdown-logout"
+                  onClick={handleLogout}
                 >
 
                   <i className="fas fa-sign-out-alt"></i>
 
                   Logout
 
-                </Link>
+                </button>
 
               </div>
 

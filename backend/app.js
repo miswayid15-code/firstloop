@@ -19,7 +19,8 @@ app.get('/backend', (req, res) => {
 
 app.use('/admin', require('./routes/admin/adminAuthRoutes'));
 app.use('/admin', require('./routes/admin/merchantRoutes'));
-app.use('/admin', require('./routes/admin/customerRoutes.js'));
+app.use('/admin', require('./routes/admin/customerRoutes'));
+app.use('/admin', require('./routes/admin/dashboardRoutes'));
 
 
 
