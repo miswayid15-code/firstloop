@@ -177,7 +177,7 @@ exports.register = async (req, res) => {
             {
                 id: customer.id,
                 email: customer.email,
-               user_type: 'customer',
+                user_type: 'customer',
                 token_type: 'access'
             },
             process.env.JWT_SECRET,
@@ -194,7 +194,7 @@ exports.register = async (req, res) => {
         const refreshToken = jwt.sign(
             {
                 id: customer.id,
-               user_type: 'customer',
+                user_type: 'customer',
                 token_type: 'refresh'
             },
             process.env.JWT_REFRESH_SECRET,
@@ -355,7 +355,7 @@ exports.login = async (req, res) => {
         const refreshToken = jwt.sign(
             {
                 id: customer.id,
-               user_type: 'customer',
+                user_type: 'customer',
                 token_type: 'refresh'
             },
             process.env.JWT_SECRET,
@@ -379,7 +379,7 @@ exports.login = async (req, res) => {
             {
                 id: customer.id,
                 email: customer.email,
-               user_type: 'customer',
+                user_type: 'customer',
                 token_type: 'access'
             },
             process.env.JWT_SECRET,
@@ -1423,10 +1423,13 @@ exports.coupon_apply = async (req, res) => {
         const customer_id =
             req.user.id;
 
-        console.log("CUSTOMER ID:", customer_id);
+        // console.log("CUSTOMER ID:", customer_id);
         const coupon_id =
             req.body?.coupon_id ||
             req.query?.coupon_id ||
+            null;
+
+        const branch_id = req.body?.branch_id ||
             null;
         // console.log("COUPON ID:", coupon_id);
 
@@ -1442,6 +1445,19 @@ exports.coupon_apply = async (req, res) => {
             });
 
         }
+        if (!branch_id) {
+
+            return res.json({
+
+                status: 0,
+
+                message:
+                    "Branch ID is required"
+
+            });
+
+        }
+
         if (customer_id) {
 
             const customer = await Customer.findOne({
@@ -1481,7 +1497,7 @@ exports.coupon_apply = async (req, res) => {
 
             });
 
-        console.log("COUPON:", coupon);
+        // console.log("COUPON:", coupon);
         if (!coupon) {
 
             return res.json({
@@ -1490,6 +1506,28 @@ exports.coupon_apply = async (req, res) => {
 
                 message:
                     "Coupon not found"
+
+            });
+
+        }
+        let branchIds = [];
+
+        if (coupon.branch_ids) {
+
+            branchIds = coupon.branch_ids
+                .replace(/[{}]/g, '')
+                .split(',')
+                .map(id => parseInt(id.trim()));
+
+        }
+
+        if (!branchIds.includes(parseInt(branch_id))) {
+
+            return res.json({
+
+                status: 0,
+
+                message: "Coupon is not applicable for this branch"
 
             });
 
@@ -1503,9 +1541,9 @@ exports.coupon_apply = async (req, res) => {
             today >= coupon.start_date &&
             today <= coupon.end_date;
         // console.log("CURRENT TIME:", now);
-        console.log("COUPON START:", coupon.start_date);
-        console.log("COUPON END:", coupon.end_date);
-        console.log("IS ACTIVE:", is_active);
+        // console.log("COUPON START:", coupon.start_date);
+        // console.log("COUPON END:", coupon.end_date);
+        // console.log("IS ACTIVE:", is_active);
 
         if (!is_active) {
 
@@ -1530,6 +1568,7 @@ exports.coupon_apply = async (req, res) => {
                         coupon.id,
                     cus_id:
                         customer_id,
+                    branch_id: branch_id,
 
                     status: 1,
 

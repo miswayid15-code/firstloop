@@ -19,6 +19,10 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.BIGINT,
                 allowNull: false
             },
+            branch_id: {
+                type: DataTypes.INTEGER,
+                allowNull: true
+            },
 
             coupon_code: {
                 type: DataTypes.STRING,
