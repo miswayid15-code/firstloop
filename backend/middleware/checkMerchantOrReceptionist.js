@@ -3,86 +3,65 @@ const { Merchant, Receptionist } = require('../models');
 module.exports = async (req, res, next) => {
 
     try {
-        console.log("TOKEN USER TYPE:", req.user.user_type);
-console.log("TOKEN ID:", req.user.id);
 
-merchant = await Merchant.findByPk(req.user.id);
-console.log("MERCHANT:", merchant);
+        if (req.user.user_type === 'merchant') {
 
-receptionist = await Receptionist.findByPk(req.user.id);
-console.log("RECEPTIONIST:", receptionist);
+            const merchant = await Merchant.findByPk(req.user.id);
 
-        let merchant = null;
-        let receptionist = null;
-
-        merchant = await Merchant.findByPk(req.user.id);
-
-        if (merchant) {
+            if (!merchant) {
+                return res.json({
+                    status: 0,
+                    message: "Merchant not found"
+                });
+            }
 
             if (merchant.del_status == 1) {
-
                 return res.json({
                     status: 0,
                     message: "Merchant account has been deleted"
                 });
-
             }
-
-            // if (merchant.status == 0) {
-
-            //     return res.json({
-            //         status: 0,
-            //         message: "Merchant account is inactive"
-            //     });
-
-            // }
 
             req.merchant = merchant;
 
             return next();
-
         }
 
-        receptionist = await Receptionist.findByPk(req.user.id);
+        if (req.user.user_type === 'receptionist') {
 
-        if (receptionist) {
+            const receptionist = await Receptionist.findByPk(req.user.id);
+
+            if (!receptionist) {
+                return res.json({
+                    status: 0,
+                    message: "Receptionist not found"
+                });
+            }
 
             if (receptionist.del_status == 1) {
-
                 return res.json({
                     status: 0,
                     message: "Receptionist account has been deleted"
                 });
-
             }
-
-            // if (receptionist.status == 0) {
-
-            //     return res.json({
-            //         status: 0,
-            //         message: "Receptionist account is inactive"
-            //     });
-
-            // }
 
             req.receptionist = receptionist;
 
             return next();
-
         }
 
         return res.json({
             status: 0,
-            message: "User not found"
+            message: "Invalid user type"
         });
 
     } catch (error) {
+
+        console.log(error);
 
         return res.json({
             status: 0,
             message: "Something went wrong"
         });
-
     }
-
 };
