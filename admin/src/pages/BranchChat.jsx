@@ -165,7 +165,7 @@ function RoleBadge({ senderType }) {
 }
 
 function ConversationItem({ conv, isActive, onClick }) {
-    const name = `Customer #${conv.customerId || ''}`
+    const name = `${conv.customerName || conv.customerId ||''}`
     return (
         <div className={`bch-conv-item${isActive ? ' active' : ''}`} onClick={onClick}>
             <div style={{ position: 'relative', flexShrink: 0 }}>
@@ -197,9 +197,9 @@ function MessageBubble({ msg }) {
             {/* Avatar — left for customer, right for staff */}
             {!isRight && (
                 <Avatar
-                    name={msg.sender_name || 'Customer'}
+                    name={msg.senderName || 'Customer'}
                     size={32}
-                    src={msg.sender_image}
+                    // src={msg.sender_image}
                     forceColor={cfg.avatarBg}
                 />
             )}
@@ -207,10 +207,21 @@ function MessageBubble({ msg }) {
             <div className="bch-bubble-wrap">
                 {/* Sender name + role badge */}
                 <div className={`bch-sender-row${isRight ? ' right' : ''}`}>
-                    <span className="bch-sender-name" style={{ color: isRight ? '#666' : '#444' }}>
-                        {msg.senderName}
-                    </span>
+
                     <RoleBadge senderType={type} />
+
+                    <span
+                        className="bch-sender-name"
+                        style={{
+                            color: isRight ? '#718096' : '#4a5568',
+                            fontWeight: 600,
+                            fontSize: '0.78rem',
+                            letterSpacing: '0.1px'
+                        }}
+                    >
+                        {msg.senderName || cfg.label}
+                    </span>
+
                 </div>
 
                 {/* Message bubble */}
@@ -246,9 +257,9 @@ function MessageBubble({ msg }) {
 
             {isRight && (
                 <Avatar
-                    name={msg.sender_name || type}
+                    name={msg.senderName || type}
                     size={32}
-                    src={msg.sender_image}
+                    // src={msg.sender_image}
                     forceColor={cfg.avatarBg}
                 />
             )}
@@ -294,35 +305,35 @@ export default function BranchChat() {
             setLoading(false);
         }
     };
-useEffect(() => {
+    useEffect(() => {
 
-    if (!id) return;
+        if (!id) return;
 
-    const q = query(
-        collection(db, "chats"),
-        where("branchId", "==", String(id)),
-        orderBy("lastMessageAt", "desc")
-    );
+        const q = query(
+            collection(db, "chats"),
+            where("branchId", "==", String(id)),
+            orderBy("lastMessageAt", "desc")
+        );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+        const unsubscribe = onSnapshot(q, (snapshot) => {
 
-        const chats = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        }));
+            const chats = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
 
-        console.log("Branch Chats:", chats);
+            console.log("Branch Chats:", chats);
 
-        setConversations(chats);
+            setConversations(chats);
 
-        if (!activeConv && chats.length > 0) {
-            setActiveConv(chats[0]);
-        }
-    });
+            if (!activeConv && chats.length > 0) {
+                setActiveConv(chats[0]);
+            }
+        });
 
-    return () => unsubscribe();
+        return () => unsubscribe();
 
-}, [id]);
+    }, [id]);
     useEffect(() => {
 
         if (!activeConv) return;

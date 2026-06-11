@@ -116,7 +116,7 @@ exports.sendMessage = async (req, res) => {
 
         const senderId = req.user.id;
 
-           const customer = await Customer.findOne({
+        const customer = await Customer.findOne({
             where: {
                 id: senderId
             }
@@ -127,36 +127,29 @@ exports.sendMessage = async (req, res) => {
             .doc(chatId)
             .collection('messages')
             .add({
-
                 senderId: String(senderId),
-                
-
                 senderRole: 'customer',
                 senderName: customer?.name || '',
-
                 type: 'text',
-
                 content,
-
                 timestamp:
                     admin.firestore.FieldValue.serverTimestamp()
-
             });
 
         await db
             .collection('chats')
             .doc(chatId)
             .update({
-
+                customerName: customer?.name || '',
                 lastMessage: content,
 
                 lastMessageAt:
                     admin.firestore.FieldValue.serverTimestamp()
 
             });
-console.log("Sender",);
+        // console.log("Sender",);
         return res.json({
-            
+
 
             status: 1,
 
@@ -286,11 +279,16 @@ exports.sendBranchMessage = async (req, res) => {
         let senderId = '';
         let senderRole = '';
         let branchId = '';
+        let senderName = '';
 
         if (userType == 'merchant') {
 
             senderId = String(req.merchant.id);
             senderRole = 'merchant';
+            senderName =
+                req.merchant.bus_name ||
+                req.merchant.name ||
+                '';
 
             branchId = String(req.body.branchId);
         } else {
@@ -303,7 +301,9 @@ exports.sendBranchMessage = async (req, res) => {
 
             senderId = String(receptionist.id);
             senderRole = 'receptionist';
-
+            senderName =
+                receptionist.name ||
+                '';
             branchId = String(receptionist.branch_id);
         }
 
@@ -331,6 +331,7 @@ exports.sendBranchMessage = async (req, res) => {
 
                 senderId,
                 senderRole,
+                senderName,
                 type: 'text',
                 content: message,
                 timestamp: new Date()
