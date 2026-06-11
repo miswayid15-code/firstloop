@@ -3,6 +3,14 @@ const { Merchant, Receptionist } = require('../models');
 module.exports = async (req, res, next) => {
 
     try {
+        console.log("TOKEN USER TYPE:", req.user.user_type);
+console.log("TOKEN ID:", req.user.id);
+
+merchant = await Merchant.findByPk(req.user.id);
+console.log("MERCHANT:", merchant);
+
+receptionist = await Receptionist.findByPk(req.user.id);
+console.log("RECEPTIONIST:", receptionist);
 
         let merchant = null;
         let receptionist = null;

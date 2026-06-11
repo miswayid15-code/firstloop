@@ -3335,3 +3335,80 @@ exports.update_appointment = async (req, res) => {
 
 };
 
+
+exports.branch_id = async (req, res) => {
+
+    try {
+
+        const branch_id = req.params.id;
+
+        if (!branch_id) {
+
+            return res.json({
+                status: 0,
+                message: "Branch ID required"
+            });
+
+        }
+
+        const branch = await Branch.findOne({
+
+            where: {
+                id: branch_id,
+                del_status: 0
+            },
+
+          
+
+            attributes: [
+                'id',
+                'name',
+                'email',
+                'phone',
+                'profile_image',
+                'lat',
+                'lon',
+                'address',
+                'merchant_id',
+             
+            ]
+
+        });
+
+        if (!branch) {
+
+            return res.json({
+                status: 0,
+                message: "Branch not found"
+            });
+
+        }
+
+        const baseUrl = process.env.APP_URL;
+
+        const data = branch.toJSON();
+
+        // ✅ profile image url
+        data.profile_image = data.profile_image
+            ? baseUrl + '/' + data.profile_image.replace(/\\/g, '/')
+            : null;
+
+    
+     
+        return res.json({
+            status: 1,
+            data
+        });
+
+    } catch (err) {
+
+        console.log("BRANCH FETCH ERROR:", err);
+
+        return res.json({
+            status: 0,
+            message: err.message
+        });
+
+    }
+
+};

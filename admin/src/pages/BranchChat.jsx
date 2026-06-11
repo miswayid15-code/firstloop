@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { NavLink, useNavigate, useParams } from 'react-router-dom'
 import AppToaster from '../components/AppToaster.jsx'
+import API from '../api.js'
 
 /* ═══════════════════════════════════════════════════════
    SENDER ROLE CONFIG  — single source of truth
@@ -451,18 +452,47 @@ export default function BranchChat() {
     const messagesEndRef = useRef(null)
     const inputRef = useRef(null)
 
-    const branchData = DUMMY_BRANCH
+    const [branchData, setBranchData] = useState(null);
     const [conversations] = useState(DUMMY_CONVERSATIONS)
     const [convSearch, setConvSearch] = useState('')
     const [activeConv, setActiveConv] = useState(DUMMY_CONVERSATIONS[0])
     const [messages, setMessages] = useState(DUMMY_MESSAGES[DUMMY_CONVERSATIONS[0].customer_id] || [])
     const [inputText, setInputText] = useState('')
     const [sending, setSending] = useState(false)
+    const [loading, setLoading] = useState(true)
+
+    const fetchBranch = async () => {
+        try {
+            setLoading(true);
+
+            const response = await API.get(`admin/branch/details/${id}`);
+            const data = response.data || {};
+
+            console.log("Data", data);
+
+            if (isSuccessResponse(data)) {
+                setBranchData(data.data); // set branch details from API
+            } else {
+                toast.error(data.message || 'Failed to load branch details');
+            }
+        } catch (error) {
+            const apiMessage =
+                error?.response?.data?.message || 'Failed to load branch details';
+
+            toast.error(apiMessage);
+            console.error('Error fetching branch:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const selectConversation = (conv) => {
         setActiveConv(conv)
         setMessages(DUMMY_MESSAGES[conv.customer_id] || [])
     }
+    useEffect(() => {
+        fetchBranch()
+    }, [id])
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -637,35 +667,41 @@ export default function BranchChat() {
 
             {/* breadcrumb + page header */}
             <div style={{ marginBottom: 20 }}>
-                <div style={{ display:'flex', alignItems:'center', gap:8,
-                    fontSize:'0.79rem', color:'var(--text-muted)', fontWeight:500, marginBottom:8 }}>
-                    <NavLink to="/merchants" style={{ color:'var(--primary)' }}>Merchants</NavLink>
-                    <i className="fas fa-chevron-right" style={{ fontSize:'0.65rem' }} />
+                <div style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    fontSize: '0.79rem', color: 'var(--text-muted)', fontWeight: 500, marginBottom: 8
+                }}>
+                    <NavLink to="/merchants" style={{ color: 'var(--primary)' }}>Merchants</NavLink>
+                    <i className="fas fa-chevron-right" style={{ fontSize: '0.65rem' }} />
                     {merchantId && <>
-                        <NavLink to={`/view-merchant/${merchantId}`} style={{ color:'var(--primary)' }}>Merchant</NavLink>
-                        <i className="fas fa-chevron-right" style={{ fontSize:'0.65rem' }} />
+                        <NavLink to={`/view-merchant/${merchantId}`} style={{ color: 'var(--primary)' }}>Merchant</NavLink>
+                        <i className="fas fa-chevron-right" style={{ fontSize: '0.65rem' }} />
                     </>}
-                    <NavLink to={`/view-branch/${id}`} style={{ color:'var(--primary)' }}>
+                    <NavLink to={`/view-branch/${id}`} style={{ color: 'var(--primary)' }}>
                         {branchData?.name || 'Branch'}
                     </NavLink>
-                    <i className="fas fa-chevron-right" style={{ fontSize:'0.65rem' }} />
+                    <i className="fas fa-chevron-right" style={{ fontSize: '0.65rem' }} />
                     <span>Customer Chats</span>
                 </div>
-                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:16, flexWrap:'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
                     <div>
-                        <h3 style={{ fontFamily:'var(--font-heading)', fontSize:'1.18rem',
-                            fontWeight:700, margin:0, display:'flex', alignItems:'center', gap:10 }}>
-                            <span style={{ width:34, height:34, borderRadius:'50%',
-                                background:'linear-gradient(135deg,#e91e8c,#c2185b)',
-                                display:'inline-flex', alignItems:'center', justifyContent:'center',
-                                color:'#fff', fontSize:'0.88rem', flexShrink:0 }}>
+                        <h3 style={{
+                            fontFamily: 'var(--font-heading)', fontSize: '1.18rem',
+                            fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 10
+                        }}>
+                            <span style={{
+                                width: 34, height: 34, borderRadius: '50%',
+                                background: 'linear-gradient(135deg,#e91e8c,#c2185b)',
+                                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                color: '#fff', fontSize: '0.88rem', flexShrink: 0
+                            }}>
                                 <i className="fas fa-comments" />
                             </span>
                             {branchData?.name} — Customer Chats
                         </h3>
                         {branchData?.address && (
-                            <p style={{ fontSize:'0.79rem', color:'var(--text-muted)', margin:'5px 0 0 44px' }}>
-                                <i className="fas fa-map-marker-alt" style={{ marginRight:5, color:'#e91e8c' }} />
+                            <p style={{ fontSize: '0.79rem', color: 'var(--text-muted)', margin: '5px 0 0 44px' }}>
+                                <i className="fas fa-map-marker-alt" style={{ marginRight: 5, color: '#e91e8c' }} />
                                 {branchData.address}
                             </p>
                         )}
@@ -684,7 +720,7 @@ export default function BranchChat() {
                     <div className="bch-sidebar">
                         <div className="bch-sidebar-hdr">
                             <p className="bch-sidebar-title">
-                                <i className="fas fa-comment-dots" style={{ color:'#e91e8c', fontSize:'0.9rem' }} />
+                                <i className="fas fa-comment-dots" style={{ color: '#e91e8c', fontSize: '0.9rem' }} />
                                 Customer Chats
                                 <span className="bch-sidebar-count">{conversations.length}</span>
                             </p>
@@ -697,8 +733,8 @@ export default function BranchChat() {
                         </div>
                         <div className="bch-conv-list">
                             {filteredConvs.length === 0 ? (
-                                <div style={{ padding:'40px 20px', textAlign:'center', color:'#ccc', fontSize:'0.82rem' }}>
-                                    <i className="fas fa-comment-slash" style={{ fontSize:'1.6rem', display:'block', marginBottom:8 }} />
+                                <div style={{ padding: '40px 20px', textAlign: 'center', color: '#ccc', fontSize: '0.82rem' }}>
+                                    <i className="fas fa-comment-slash" style={{ fontSize: '1.6rem', display: 'block', marginBottom: 8 }} />
                                     No chats found
                                 </div>
                             ) : filteredConvs.map(conv => (
@@ -735,7 +771,7 @@ export default function BranchChat() {
                                 {Object.entries(ROLE_CONFIG).map(([key, cfg]) => (
                                     <span key={key} className="bch-legend-item"
                                         style={{ background: cfg.badgeBg, color: cfg.badgeColor }}>
-                                        <i className={`fas ${cfg.icon}`} style={{ fontSize:'0.6rem' }} />
+                                        <i className={`fas ${cfg.icon}`} style={{ fontSize: '0.6rem' }} />
                                         {cfg.label}
                                     </span>
                                 ))}
@@ -781,10 +817,12 @@ export default function BranchChat() {
                         </div>
                     ) : (
                         <div className="bch-no-conv">
-                            <div style={{ width:80, height:80, borderRadius:'50%',
-                                background:'linear-gradient(135deg,rgba(233,30,140,.14),rgba(233,30,140,.06))',
-                                display:'flex', alignItems:'center', justifyContent:'center',
-                                fontSize:'2.2rem', color:'#e91e8c' }}>
+                            <div style={{
+                                width: 80, height: 80, borderRadius: '50%',
+                                background: 'linear-gradient(135deg,rgba(233,30,140,.14),rgba(233,30,140,.06))',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                fontSize: '2.2rem', color: '#e91e8c'
+                            }}>
                                 <i className="fas fa-comments" />
                             </div>
                             <h4>Select a conversation</h4>

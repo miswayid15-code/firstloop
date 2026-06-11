@@ -91,5 +91,6 @@ router.post('/branch/applied-coupons', auth('admin'),checkAdmin, controller.appl
 router.post('/branch/claim-coupon', auth('admin'),checkAdmin, controller.claim_coupon);
 router.post('/branch/delete-claim-coupon', auth('admin'),checkAdmin, controller.delete_claim_coupon);
 router.post('/branch/update-appointment', auth('admin'),checkAdmin, controller.update_appointment);
+router.get('/branch/details/:id', auth('admin'),checkAdmin, controller.branch_id);
 
 module.exports = router;
