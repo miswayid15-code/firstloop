@@ -322,7 +322,7 @@ export default function BranchChat() {
                 ...doc.data()
             }));
 
-            console.log("Branch Chats:", chats);
+            // console.log("Branch Chats:", chats);
 
             setConversations(chats);
 
@@ -339,7 +339,7 @@ export default function BranchChat() {
         if (!activeConv) return;
 
         if (typeof activeConv.id !== "string") {
-            console.log("Invalid chat id:", activeConv);
+            // console.log("Invalid chat id:", activeConv);
             return;
         }
 
@@ -354,14 +354,14 @@ export default function BranchChat() {
                 id: doc.id,
                 ...doc.data()
             }));
-            console.log("ACTIVE CHAT:", activeConv);
-            console.log(
-                "PATH:",
-                "chats",
-                activeConv?.id,
-                "messages"
-            );
-            console.log("MESSAGES:", msgs);
+            // console.log("ACTIVE CHAT:", activeConv);
+            // console.log(
+            //     "PATH:",
+            //     "chats",
+            //     activeConv?.id,
+            //     "messages"
+            // );
+            // console.log("MESSAGES:", msgs);
             setMessages(msgs);
         });
 
@@ -420,7 +420,7 @@ export default function BranchChat() {
     })()
 
     const filteredConvs = conversations.filter(c =>
-        (`Customer #${c.customerId || ''}`)
+        (`${c.customerId || ''}`)
             .toLowerCase()
             .includes(convSearch.toLowerCase())
     )
@@ -640,12 +640,12 @@ export default function BranchChat() {
                             {/* Header */}
                             <div className="bch-panel-hdr">
                                 <Avatar
-                                    name={`Customer #${activeConv.customerId || ''}`}
+                                    name={`${activeConv.customerName ||activeConv.customerId || ''}`}
                                     size={42}
                                 />
 
                                 <div className="bch-panel-name">
-                                    Customer #{activeConv.customerId || ''}
+                                    {activeConv.customerName ||activeConv.customerId || ''}
                                 </div>
                                 <div className="bch-panel-actions">
                                     <button className="bch-icon-btn" title="Call" id="bch-call-btn">
