@@ -36,7 +36,7 @@ module.exports = (...roles) => {
             }
 
             console.log(
-                "USER TYPE:",
+                "USER TYPE---:",
                 decoded.user_type
             );
 
