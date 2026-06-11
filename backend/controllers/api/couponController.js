@@ -1173,10 +1173,10 @@ exports.applied_coupons = async (req, res) => {
                 'cancel_reason',
                 'status'
             ],
-where: {
-    branch_id: branch_id,
-    del_status: 0
-},
+            where: {
+                branch_id: branch_id,
+                del_status: 0
+            },
             include: [
 
                 {

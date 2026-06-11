@@ -5,6 +5,8 @@ const controller = require('../../controllers/api/CustomerController');
 const upload = require('../../middleware/upload');
 const auth = require('../../middleware/auth');
 const baseUrl = process.env.APP_URL;
+const checkCustomer = require('../../middleware/checkCustomer'); 
+
 router.post('/customer/register', (req, res, next) => {
   req.uploadFolder = 'customer';
   next();
@@ -83,5 +85,19 @@ router.post(
    '/customer/merchants',
     auth('customer'),
     controller.merchants 
+);
+
+router.get(
+   '/fetch-wishlist',
+    auth(),
+    checkCustomer,
+    controller.fetch_wishlist 
+);
+
+router.post(
+   '/cancel-appointment',
+    auth(),
+    checkCustomer,
+    controller.cancel_appointment 
 );
 module.exports = router;

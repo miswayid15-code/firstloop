@@ -28,6 +28,7 @@ const moment = require('moment');
 const {
     getDistanceDuration
 } = require('../../helpers/distanceHelper');
+const { messaging } = require('firebase-admin');
 exports.register = async (req, res) => {
 
     // console.log("========== CUSTOMER REGISTER START ==========");
@@ -2753,4 +2754,147 @@ exports.merchants = async (req, res) => {
 
     }
 
+};
+
+exports.fetch_wishlist = async (req, res) => {
+    try {
+
+        const customer_id = req.user.id;
+
+        if (!customer_id) {
+            return res.json({
+                status: 0,
+                message: "Customer ID is required"
+            });
+        }
+
+        const wishlist = await Wishlist.findAll({
+            raw: true,
+            nest: true,
+            where: {
+                customer_id,
+                del_status: 0
+            },
+            attributes: [
+                'id',
+                'customer_id',
+                'branch_id',
+                'status'
+            ],
+            include: [
+                {
+                    model: Branch,
+                    attributes: ['id', 'name', 'merchant_id'],
+                    where: {
+                        del_status: 0,
+                        status: 1
+                    },
+                    required: true,
+                    include: [
+                        {
+                            model: Merchant,
+                            attributes: ['id', 'name'],
+                            where: {
+                                del_status: 0,
+                                status: 1
+                            },
+                            required: true
+                        }
+                    ]
+                }
+            ]
+        });
+
+        if (wishlist.length === 0) {
+            return res.json({
+                status: 0,
+                message: "No wishlist items found"
+            });
+        }
+
+        return res.json({
+            status: 1,
+            message: "Wishlist fetched successfully",
+            data: wishlist
+        });
+
+    } catch (err) {
+
+        console.log("Error:", err);
+
+        return res.json({
+            status: 0,
+            message: "Error occurred while fetching wishlist"
+        });
+    }
+};
+
+exports.cancel_appointment = async (req, res) => {
+
+    try {
+
+        const customer_id = req.user.id;
+
+        if (!customer_id) {
+            return res.json({
+                status: 0,
+                message: "Customer ID is required"
+            });
+        }
+
+        const {
+            appointment_id,
+            cancel_reason
+        } = req.body;
+
+        if (!appointment_id) {
+            return res.json({
+                status: 0,
+                message: "Appointment ID is required"
+            });
+        }
+
+        const appointment = await Appointment.findOne({
+            where: {
+                id: appointment_id,
+                cus_id: customer_id
+            }
+        });
+
+        if (!appointment) {
+            return res.json({
+                status: 0,
+                message: "Appointment not found"
+            });
+        }
+
+        if (Number(appointment.status) === 2) {
+            return res.json({
+                status: 0,
+                message: "Appointment is already cancelled"
+            });
+        }
+
+        await appointment.update({
+            status: 2,
+            cancel_by: 'customer',
+            cancel_reason: cancel_reason || null
+        });
+
+        return res.json({
+            status: 1,
+            message: "Appointment cancelled successfully",
+            // data: appointment
+        });
+
+    } catch (err) {
+
+        console.log("APPOINTMENT CANCEL ERROR:", err);
+
+        return res.json({
+            status: 0,
+            message: err.message
+        });
+
+    }
 };
