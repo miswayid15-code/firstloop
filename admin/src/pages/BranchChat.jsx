@@ -2,6 +2,14 @@ import { useEffect, useRef, useState } from 'react'
 import { NavLink, useNavigate, useParams } from 'react-router-dom'
 import AppToaster from '../components/AppToaster.jsx'
 import API from '../api.js'
+import { db } from "../firebase";
+import {
+    collection,
+    query,
+    orderBy,
+    onSnapshot, where
+} from "firebase/firestore";
+
 
 /* ═══════════════════════════════════════════════════════
    SENDER ROLE CONFIG  — single source of truth
@@ -57,205 +65,6 @@ const ROLE_CONFIG = {
     },
 }
 
-/* ═══════════════════════════════════════════════════════
-   DUMMY DATA
-═══════════════════════════════════════════════════════ */
-const DUMMY_BRANCH = {
-    id: 1,
-    name: 'Downtown Starbucks',
-    address: '410 Broadway Ave, Downtown City',
-    merchant_id: 1,
-}
-
-const DUMMY_CONVERSATIONS = [
-    {
-        id: 1, customer_id: 101, customer_name: 'Alice Cooper', profile_image: null,
-        last_message: 'Thank you so much! See you tomorrow.',
-        last_message_time: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
-        unread_count: 2, is_online: true,
-    },
-    {
-        id: 2, customer_id: 102, customer_name: 'Brian Rogers', profile_image: null,
-        last_message: 'Perfect, heading over now. Thanks!',
-        last_message_time: new Date(Date.now() - 80 * 60 * 1000).toISOString(),
-        unread_count: 0, is_online: true,
-    },
-    {
-        id: 3, customer_id: 103, customer_name: 'Charlotte Hall', profile_image: null,
-        last_message: 'Great, thanks for the quick response!',
-        last_message_time: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(),
-        unread_count: 0, is_online: false,
-    },
-    {
-        id: 4, customer_id: 104, customer_name: 'David Miller', profile_image: null,
-        last_message: 'Just checked and it works! Thank you.',
-        last_message_time: new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString(),
-        unread_count: 1, is_online: false,
-    },
-    {
-        id: 5, customer_id: 105, customer_name: 'Emma Watson', profile_image: null,
-        last_message: 'Yes please, reserve two brewed coffees.',
-        last_message_time: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-        unread_count: 0, is_online: false,
-    },
-    {
-        id: 6, customer_id: 106, customer_name: 'Frank Castle', profile_image: null,
-        last_message: 'Can I book a table for 4?',
-        last_message_time: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-        unread_count: 0, is_online: false,
-    },
-]
-
-const DUMMY_MESSAGES = {
-    /* Alice Cooper — shows all 4 roles in one thread */
-    101: [
-        {
-            id: 1, sender_type: 'customer', sender_name: 'Alice Cooper',
-            message: "Hi! I'd like to make a reservation for tomorrow morning.",
-            createdAt: new Date(Date.now() - 70 * 60 * 1000).toISOString(),
-        },
-        {
-            id: 2, sender_type: 'receptionist', sender_name: 'Sarah (Receptionist)',
-            message: "Hello Alice! Of course — how many people and what time works best for you?",
-            createdAt: new Date(Date.now() - 65 * 60 * 1000).toISOString(),
-        },
-        {
-            id: 3, sender_type: 'customer', sender_name: 'Alice Cooper',
-            message: "It's for 2 people, preferably around 10:30 AM.",
-            createdAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
-        },
-        {
-            id: 4, sender_type: 'merchant', sender_name: 'Downtown Starbucks',
-            message: "Hi Alice! Just confirming we have a cosy corner table available at 10:30 AM for two. It's all yours!",
-            createdAt: new Date(Date.now() - 40 * 60 * 1000).toISOString(),
-        },
-        {
-            id: 5, sender_type: 'admin', sender_name: 'Admin — Dealora',
-            message: "This conversation has been reviewed. Reservation confirmed and logged in the system.",
-            createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-        },
-        {
-            id: 6, sender_type: 'receptionist', sender_name: 'Sarah (Receptionist)',
-            message: "You're all set, Alice! 2 people at 10:30 AM tomorrow. See you then! ☕",
-            createdAt: new Date(Date.now() - 23 * 60 * 1000).toISOString(),
-        },
-        {
-            id: 7, sender_type: 'customer', sender_name: 'Alice Cooper',
-            message: "Thank you so much! See you tomorrow.",
-            createdAt: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
-        },
-    ],
-
-    /* Brian Rogers — receptionist + customer */
-    102: [
-        {
-            id: 10, sender_type: 'customer', sender_name: 'Brian Rogers',
-            message: "Is the branch open today? I want to grab a coffee.",
-            createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-            id: 11, sender_type: 'receptionist', sender_name: 'James (Receptionist)',
-            message: "Yes Brian, we're open until 9 PM today. Come on in!",
-            createdAt: new Date(Date.now() - 2.5 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-            id: 12, sender_type: 'merchant', sender_name: 'Downtown Starbucks',
-            message: "We're also running a 20% off promotion on all cold brews today!",
-            createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-            id: 13, sender_type: 'customer', sender_name: 'Brian Rogers',
-            message: "Perfect, heading over now. Thanks!",
-            createdAt: new Date(Date.now() - 80 * 60 * 1000).toISOString(),
-        },
-    ],
-
-    /* Charlotte Hall — customer + admin */
-    103: [
-        {
-            id: 20, sender_type: 'customer', sender_name: 'Charlotte Hall',
-            message: "Do you have any gluten-free options on your menu?",
-            createdAt: new Date(Date.now() - 27 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-            id: 21, sender_type: 'receptionist', sender_name: 'Sarah (Receptionist)',
-            message: "Hi Charlotte! Yes, we have several gluten-free pastries and all beverages are gluten-free.",
-            createdAt: new Date(Date.now() - 26.5 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-            id: 22, sender_type: 'admin', sender_name: 'Admin — Dealora',
-            message: "For your reference, the full allergen menu is available at the front counter.",
-            createdAt: new Date(Date.now() - 26.2 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-            id: 23, sender_type: 'customer', sender_name: 'Charlotte Hall',
-            message: "Great, thanks for the quick response!",
-            createdAt: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(),
-        },
-    ],
-
-    /* David Miller — receptionist + merchant */
-    104: [
-        {
-            id: 30, sender_type: 'merchant', sender_name: 'Downtown Starbucks',
-            message: "Hi David! Your exclusive coupon SAVE20 has been applied to your loyalty account.",
-            createdAt: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-            id: 31, sender_type: 'receptionist', sender_name: 'James (Receptionist)',
-            message: "The coupon gives you 20% off your next visit. Valid until Sunday!",
-            createdAt: new Date(Date.now() - 25.5 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-            id: 32, sender_type: 'customer', sender_name: 'David Miller',
-            message: "Just checked and it works! Thank you.",
-            createdAt: new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString(),
-        },
-    ],
-
-    /* Emma Watson */
-    105: [
-        {
-            id: 40, sender_type: 'customer', sender_name: 'Emma Watson',
-            message: "Hi, can I pre-order two brewed coffees for pickup at 8 AM?",
-            createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-            id: 41, sender_type: 'receptionist', sender_name: 'Sarah (Receptionist)',
-            message: "Absolutely Emma! Pre-orders are available. I'll note it — 2 brewed coffees at 8 AM.",
-            createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 5 * 60 * 1000).toISOString(),
-        },
-        {
-            id: 42, sender_type: 'customer', sender_name: 'Emma Watson',
-            message: "Yes please, reserve two brewed coffees. Thank you!",
-            createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 10 * 60 * 1000).toISOString(),
-        },
-        {
-            id: 43, sender_type: 'admin', sender_name: 'Admin — Dealora',
-            message: "Pre-order confirmed in the system. Order #PO-2847 created.",
-            createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 15 * 60 * 1000).toISOString(),
-        },
-    ],
-
-    /* Frank Castle */
-    106: [
-        {
-            id: 50, sender_type: 'customer', sender_name: 'Frank Castle',
-            message: "Can I book a table for 4 people this Saturday?",
-            createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-            id: 51, sender_type: 'receptionist', sender_name: 'James (Receptionist)',
-            message: "Hi Frank! Let me check availability for Saturday. Can you confirm the preferred time?",
-            createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 10 * 60 * 1000).toISOString(),
-        },
-        {
-            id: 52, sender_type: 'merchant', sender_name: 'Downtown Starbucks',
-            message: "We have 11 AM and 2 PM slots open on Saturday for groups of 4.",
-            createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 20 * 60 * 1000).toISOString(),
-        },
-    ],
-}
 
 /* ═══════════════════════════════════════════════════════
    HELPERS
@@ -356,7 +165,7 @@ function RoleBadge({ senderType }) {
 }
 
 function ConversationItem({ conv, isActive, onClick }) {
-    const name = conv.customer_name || 'Customer'
+    const name = `Customer #${conv.customerId || ''}`
     return (
         <div className={`bch-conv-item${isActive ? ' active' : ''}`} onClick={onClick}>
             <div style={{ position: 'relative', flexShrink: 0 }}>
@@ -369,7 +178,7 @@ function ConversationItem({ conv, isActive, onClick }) {
                     <span className="bch-conv-time">{formatChatTime(conv.last_message_time)}</span>
                 </div>
                 <div className="bch-conv-bottom">
-                    <span className="bch-conv-last">{conv.last_message || <em>No messages yet</em>}</span>
+                    <span className="bch-conv-last">{conv.lastMessage || <em>No messages yet</em>}</span>
                     {conv.unread_count > 0 && <span className="bch-unread">{conv.unread_count}</span>}
                 </div>
             </div>
@@ -378,7 +187,7 @@ function ConversationItem({ conv, isActive, onClick }) {
 }
 
 function MessageBubble({ msg }) {
-    const type = msg.sender_type || 'customer'
+    const type = msg.senderRole || 'customer'
     const cfg = getRoleConfig(type)
     // customer bubbles align left; staff bubbles (receptionist / merchant / admin) align right
     const isRight = type !== 'customer'
@@ -399,7 +208,7 @@ function MessageBubble({ msg }) {
                 {/* Sender name + role badge */}
                 <div className={`bch-sender-row${isRight ? ' right' : ''}`}>
                     <span className="bch-sender-name" style={{ color: isRight ? '#666' : '#444' }}>
-                        {msg.sender_name}
+                        {msg.senderName}
                     </span>
                     <RoleBadge senderType={type} />
                 </div>
@@ -420,7 +229,11 @@ function MessageBubble({ msg }) {
                         <span className="bch-bubble-time" style={{
                             color: isRight ? 'rgba(255,255,255,0.6)' : '#bbb',
                         }}>
-                            {formatMessageTime(msg.createdAt || msg.created_at)}
+                            {formatMessageTime(
+                                msg.timestamp?.seconds
+                                    ? msg.timestamp.seconds * 1000
+                                    : msg.timestamp
+                            )}
                         </span>
                         {isRight && (
                             <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.7)' }}>
@@ -453,10 +266,10 @@ export default function BranchChat() {
     const inputRef = useRef(null)
 
     const [branchData, setBranchData] = useState(null);
-    const [conversations] = useState(DUMMY_CONVERSATIONS)
+    const [conversations, setConversations] = useState([]);
     const [convSearch, setConvSearch] = useState('')
-    const [activeConv, setActiveConv] = useState(DUMMY_CONVERSATIONS[0])
-    const [messages, setMessages] = useState(DUMMY_MESSAGES[DUMMY_CONVERSATIONS[0].customer_id] || [])
+    const [activeConv, setActiveConv] = useState(null)
+    const [messages, setMessages] = useState([])
     const [inputText, setInputText] = useState('')
     const [sending, setSending] = useState(false)
     const [loading, setLoading] = useState(true)
@@ -465,34 +278,93 @@ export default function BranchChat() {
         try {
             setLoading(true);
 
-            const response = await API.get(`admin/branch/details/${id}`);
-            const data = response.data || {};
+            const response = await API.get(`/admin/branch/details/${id}`);
 
-            console.log("Data", data);
+            // console.log("Branch Response:", response.data);
 
-            if (isSuccessResponse(data)) {
-                setBranchData(data.data); // set branch details from API
+            if (response.data?.status === 1) {
+                setBranchData(response.data.data);
             } else {
-                toast.error(data.message || 'Failed to load branch details');
+                console.error(response.data?.message);
             }
-        } catch (error) {
-            const apiMessage =
-                error?.response?.data?.message || 'Failed to load branch details';
 
-            toast.error(apiMessage);
-            console.error('Error fetching branch:', error);
+        } catch (error) {
+            console.error("Error fetching branch:", error);
         } finally {
             setLoading(false);
         }
     };
+useEffect(() => {
 
+    if (!id) return;
+
+    const q = query(
+        collection(db, "chats"),
+        where("branchId", "==", String(id)),
+        orderBy("lastMessageAt", "desc")
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+
+        const chats = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+
+        console.log("Branch Chats:", chats);
+
+        setConversations(chats);
+
+        if (!activeConv && chats.length > 0) {
+            setActiveConv(chats[0]);
+        }
+    });
+
+    return () => unsubscribe();
+
+}, [id]);
+    useEffect(() => {
+
+        if (!activeConv) return;
+
+        if (typeof activeConv.id !== "string") {
+            console.log("Invalid chat id:", activeConv);
+            return;
+        }
+
+        const q = query(
+            collection(db, "chats", activeConv.id, "messages"),
+            orderBy("timestamp", "asc")
+        );
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+
+            const msgs = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            console.log("ACTIVE CHAT:", activeConv);
+            console.log(
+                "PATH:",
+                "chats",
+                activeConv?.id,
+                "messages"
+            );
+            console.log("MESSAGES:", msgs);
+            setMessages(msgs);
+        });
+
+        return () => unsubscribe();
+
+    }, [activeConv]);
+    useEffect(() => {
+        fetchBranch();
+    }, [id]);
     const selectConversation = (conv) => {
         setActiveConv(conv)
-        setMessages(DUMMY_MESSAGES[conv.customer_id] || [])
+
     }
-    useEffect(() => {
-        fetchBranch()
-    }, [id])
+
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -504,10 +376,11 @@ export default function BranchChat() {
         setSending(true)
         setMessages(prev => [...prev, {
             id: Date.now(),
-            sender_type: 'receptionist',
-            sender_name: 'Sarah (Receptionist)',
-            message: text,
-            createdAt: new Date().toISOString(),
+            senderRole: 'receptionist',
+            content: text,
+            timestamp: {
+                seconds: Math.floor(Date.now() / 1000)
+            }
         }])
         setInputText('')
         if (inputRef.current) inputRef.current.style.height = 'auto'
@@ -522,7 +395,9 @@ export default function BranchChat() {
         const groups = []
         let curDate = null
         messages.forEach(msg => {
-            const raw = msg.createdAt || msg.created_at || ''
+            const raw = msg.timestamp?.seconds
+                ? msg.timestamp.seconds * 1000
+                : ''
             const dateKey = raw ? new Date(raw).toDateString() : 'Unknown'
             if (dateKey !== curDate) {
                 curDate = dateKey
@@ -534,10 +409,13 @@ export default function BranchChat() {
     })()
 
     const filteredConvs = conversations.filter(c =>
-        (c.customer_name || '').toLowerCase().includes(convSearch.toLowerCase())
+        (`Customer #${c.customerId || ''}`)
+            .toLowerCase()
+            .includes(convSearch.toLowerCase())
     )
 
-    const merchantId = branchData?.merchant_id
+    const merchantId = branchData?.merchant_id;
+
 
     return (
         <>
@@ -702,7 +580,7 @@ export default function BranchChat() {
                         {branchData?.address && (
                             <p style={{ fontSize: '0.79rem', color: 'var(--text-muted)', margin: '5px 0 0 44px' }}>
                                 <i className="fas fa-map-marker-alt" style={{ marginRight: 5, color: '#e91e8c' }} />
-                                {branchData.address}
+                                {branchData?.address}
                             </p>
                         )}
                     </div>
@@ -750,10 +628,13 @@ export default function BranchChat() {
                         <div className="bch-panel">
                             {/* Header */}
                             <div className="bch-panel-hdr">
-                                <Avatar name={activeConv.customer_name} size={42} src={activeConv.profile_image} />
-                                <div>
-                                    <div className="bch-panel-name">{activeConv.customer_name || 'Customer'}</div>
-                                    {activeConv.is_online && <div className="bch-panel-status">● Online</div>}
+                                <Avatar
+                                    name={`Customer #${activeConv.customerId || ''}`}
+                                    size={42}
+                                />
+
+                                <div className="bch-panel-name">
+                                    Customer #{activeConv.customerId || ''}
                                 </div>
                                 <div className="bch-panel-actions">
                                     <button className="bch-icon-btn" title="Call" id="bch-call-btn">

@@ -116,6 +116,12 @@ exports.sendMessage = async (req, res) => {
 
         const senderId = req.user.id;
 
+           const customer = await Customer.findOne({
+            where: {
+                id: senderId
+            }
+        });
+
         await db
             .collection('chats')
             .doc(chatId)
@@ -123,8 +129,10 @@ exports.sendMessage = async (req, res) => {
             .add({
 
                 senderId: String(senderId),
+                
 
                 senderRole: 'customer',
+                senderName: customer?.name || '',
 
                 type: 'text',
 
@@ -146,8 +154,9 @@ exports.sendMessage = async (req, res) => {
                     admin.firestore.FieldValue.serverTimestamp()
 
             });
-
+console.log("Sender",);
         return res.json({
+            
 
             status: 1,
 
