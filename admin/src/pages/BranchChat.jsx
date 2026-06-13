@@ -381,22 +381,31 @@ export default function BranchChat() {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }, [messages, activeConv])
 
-    const handleSend = () => {
-        const text = inputText.trim()
-        if (!text || sending) return
-        setSending(true)
-        setMessages(prev => [...prev, {
-            id: Date.now(),
-            senderRole: 'receptionist',
-            content: text,
-            timestamp: {
-                seconds: Math.floor(Date.now() / 1000)
-            }
-        }])
-        setInputText('')
-        if (inputRef.current) inputRef.current.style.height = 'auto'
-        setTimeout(() => setSending(false), 400)
+   const handleSend = async () => {
+
+    const text = inputText.trim();
+
+    if (!text || sending || !activeConv) return;
+
+    try {
+
+        setSending(true);
+
+        const response = await API.post('/admin/chat/send', {
+            chatId: activeConv.id,
+            content: text
+        });
+
+        if (response.data.status === 1) {
+            setInputText('');
+        }
+
+    } catch (error) {
+        console.error(error);
+    } finally {
+        setSending(false);
     }
+};
 
     const handleKeyDown = (e) => {
         if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() }
@@ -688,7 +697,7 @@ export default function BranchChat() {
                             <div className="bch-input-bar">
                                 <div className="bch-input-wrap">
                                     <textarea ref={inputRef} rows={1}
-                                        placeholder="Type a response as Receptionist..."
+                                        placeholder="Send Message..."
                                         value={inputText}
                                         onChange={e => {
                                             setInputText(e.target.value)

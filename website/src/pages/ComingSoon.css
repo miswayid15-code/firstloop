@@ -52,7 +52,7 @@
 .cs-logo-ring {
   position: relative;
   width: 300px;
-  height: 120px;
+  height: 120px; 
   display: flex;
   align-items: center;
   justify-content: center;
@@ -60,7 +60,7 @@
 }
 .cs-logo { 
   width: 300px;
-  height: 80px;
+  height: 80px; 
   border-radius: 22px;
   box-shadow: var(--glow-sm), 0 4px 24px rgba(0,0,0,0.5);
   animation: float 4s ease-in-out infinite, pulse-glow 3s ease-in-out infinite;

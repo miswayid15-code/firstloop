@@ -11,7 +11,8 @@ const {
     MenuImage,
     CouponApplied,
     Wishlist,
-    Appointment
+    Appointment,
+    Category
 } = require('../../models');
 
 const bcrypt = require('bcryptjs');
@@ -1560,6 +1561,22 @@ exports.coupon_apply = async (req, res) => {
             });
 
         }
+        const existingCoupon = await CouponApplied.findOne({
+            where: {
+                coupon_id:coupon.id,
+                cus_id:customer_id,
+                branch_id: branch_id,
+                status: 0
+            }
+        });
+
+        if (existingCoupon) {
+            return res.json({
+                status: 0,
+                message: 'This coupon is already processing. Please wait for approval.'
+            });
+        }
+
 
         // ✅ Usage Limit Check
         const applied_count =
@@ -2513,8 +2530,6 @@ exports.search = async (req, res) => {
 
     try {
 
-        const customer_id = req.user.id;
-
         const query =
             req.body?.query ||
             req.query?.query ||
@@ -2530,27 +2545,57 @@ exports.search = async (req, res) => {
         }
 
         // =========================
+        // CATEGORY SEARCH
+        // =========================
+
+        const categories = await Category.findAll({
+
+            where: {
+                name: {
+                    [Op.iLike]: `%${query}%`
+                }
+            },
+
+            attributes: [
+                'id',
+                'name'
+            ]
+
+        });
+
+        const categoryIds = categories.map(item => item.id);
+
+        // =========================
         // MERCHANT SEARCH
         // =========================
 
         const merchants = await Merchant.findAll({
 
             where: {
-                name: {
-                    [Op.iLike]: `%${query}%`
-                }
-            }, attributes: [
-                'id',
-                // 'merchant_id',
-                'bus_name',
-            ]
 
-            // include: [
-            //     {
-            //         model: Branch,
-            //         required: false
-            //     }
-            // ]
+                [Op.or]: [
+
+                    {
+                        bus_name: {
+                            [Op.iLike]: `%${query}%`
+                        }
+                    },
+
+                    ...(categoryIds.length > 0 ? [{
+                        cat_id: {
+                            [Op.in]: categoryIds
+                        }
+                    }] : [])
+
+                ]
+
+            },
+
+            attributes: [
+                'id',
+                'bus_name',
+                'cat_id'
+            ]
 
         });
 
@@ -2564,10 +2609,11 @@ exports.search = async (req, res) => {
                 name: {
                     [Op.iLike]: `%${query}%`
                 }
-            }, attributes: [
+            },
+
+            attributes: [
                 'id',
-                // 'merchant_id',
-                'name',
+                'name'
             ]
 
         });
@@ -2579,17 +2625,9 @@ exports.search = async (req, res) => {
         const coupons = await Coupon.findAll({
 
             where: {
-
-                [Op.or]: [
-
-                    {
-                        code: {
-                            [Op.iLike]: `%${query}%`
-                        }
-                    }
-
-                ]
-
+                code: {
+                    [Op.iLike]: `%${query}%`
+                }
             },
 
             attributes: [
@@ -2606,44 +2644,38 @@ exports.search = async (req, res) => {
 
         let results = [];
 
-        // MERCHANTS
+        categories.forEach((item) => {
+
+            results.push({
+                type: "category",
+                data: item
+            });
+
+        });
+
         merchants.forEach((item) => {
 
             results.push({
-
                 type: "merchant",
-                // id: item.id,
-                // name: item.name,
                 data: item
-
             });
 
         });
 
-        // BRANCHES
         branches.forEach((item) => {
 
             results.push({
-
                 type: "branch",
-                // id: item.id,
-                // name: item.name,
                 data: item
-
             });
 
         });
 
-        // COUPONS
         coupons.forEach((item) => {
 
             results.push({
-
                 type: "coupon",
-                // id: item.id,
-                // name: item.title,
                 data: item
-
             });
 
         });
@@ -2657,8 +2689,7 @@ exports.search = async (req, res) => {
 
         });
 
-    }
-    catch (err) {
+    } catch (err) {
 
         console.log("SEARCH ERROR:", err);
 

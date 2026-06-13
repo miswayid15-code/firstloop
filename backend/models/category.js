@@ -32,5 +32,14 @@ module.exports = (sequelize, DataTypes) => {
         updatedAt: 'updated_at'
     });
 
+    Category.associate = (models) => {
+
+        Category.hasMany(models.Merchant, {
+            foreignKey: 'cat_id',
+            sourceKey: 'id'
+        });
+
+    };
+
     return Category;
 };
