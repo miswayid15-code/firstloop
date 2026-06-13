@@ -1339,7 +1339,7 @@ exports.fetch_coupon_by_id = async (req, res) => {
         let branches = [];
         if (coupon.branch_ids && coupon.branch_ids.length > 0) {
             branches = await Branch.findAll({
-                attributes: ['id', 'name', 'address', 'phone', 'email'],
+                attributes: ['id', 'name'],
                 where: {
                     id: { [Op.in]: coupon.branch_ids },
                     merchant_id: merchant_id,
