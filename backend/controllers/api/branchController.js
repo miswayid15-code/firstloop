@@ -2006,12 +2006,12 @@ exports.update_appointment_status_by_mer = async (req, res) => {
                 'merchant';
 
             updateData.approved_by_id =
-                receptionist_id;
+                merchant.id;
 
         }
 
 
-        if (Number(status) === 1) {
+        if (Number(status) === 2) {
 
             updateData.cancel_by =
                 'merchant';
