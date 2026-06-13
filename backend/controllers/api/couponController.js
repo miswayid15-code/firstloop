@@ -656,10 +656,7 @@ exports.fetch_coupon = async (req, res) => {
             cpn.applicable_to_all_branches = !cpn.branch_ids || cpn.branch_ids.length === 0;
             
         
-            // cpn.branch_names = [];
-            // if (cpn.branch_ids && cpn.branch_ids.length > 0) {
-            //     cpn.branch_names = cpn.branch_ids.map(bid => branchMap[bid]).filter(name => name);
-            // }
+            
             
             cpn.branches = [];
             if (cpn.branch_ids && cpn.branch_ids.length > 0) {
@@ -670,10 +667,10 @@ exports.fetch_coupon = async (req, res) => {
                         name: branchMap[bid]
                     }));
             }
-
+            delete cpn.branch_ids;
             return cpn;
         });
-
+        
         return res.json({
             status: 1,
             message: "Coupon list fetched successfully",
