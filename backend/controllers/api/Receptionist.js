@@ -1,3 +1,4 @@
+// controllers\api\Receptionist.js
 const { Receptionist, RefreshToken, Branch, Merchant, Appointment, Coupon, CouponApplied } = require('../../models');
 const bcrypt = require('bcryptjs');
 const { parsePhoneNumber } = require('libphonenumber-js');
@@ -224,6 +225,10 @@ exports.register = async (req, res) => {
 
 };
 
+
+
+
+
 exports.login = async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -352,8 +357,296 @@ exports.refreshAccessToken = async (req, res) => {
     }
 };
 
+// fetch receptionist details by ID for edit page
+exports.fetch_receptionist_by_id = async (req, res) => {
 
+    try {
 
+        const merchant_id = req.user.id;
+        const receptionist_id = req.params.id || req.query.id;
+
+        if (!merchant_id) {
+            return res.json({
+                status: 0,
+                message: "Merchant not found"
+            });
+        }
+
+        if (!receptionist_id) {
+            return res.json({
+                status: 0,
+                message: "Receptionist ID is required"
+            });
+        }
+
+        const receptionist = await Receptionist.findOne({
+            attributes: [
+                'id',
+                'name',
+                'email',
+                'phone',
+                'country_code',
+                'profile_image',
+                'branch_id',
+                'merchant_id',
+                'status',
+                'createdAt',
+                'updatedAt'
+            ],
+            where: {
+                id: receptionist_id,
+                merchant_id: merchant_id,
+                del_status: 0
+            },
+            include: [
+                {
+                    model: Branch,
+                    attributes: ['id', 'name', 'address', 'phone', 'email'],
+                    required: false
+                }
+            ]
+        });
+
+        if (!receptionist) {
+            return res.json({
+                status: 0,
+                message: "Receptionist not found"
+            });
+        }
+
+        const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+
+        const data = receptionist.toJSON();
+
+        data.profile_image = data.profile_image
+            ? baseUrl + '/' + data.profile_image.replace(/\\/g, '/')
+            : null;
+
+        delete data.password;
+
+        return res.json({
+            status: 1,
+            message: "Receptionist details fetched successfully",
+            data: data
+        });
+
+    } catch (err) {
+
+        console.log("FETCH RECEPTIONIST ERROR:", err);
+
+        return res.json({
+            status: 0,
+            message: err.message
+        });
+
+    }
+
+};
+// update receptionist
+exports.update_receptionist = async (req, res) => {
+
+    try {
+
+        const merchant_id = req.user.id;
+        const receptionist_id = req.body.id || req.params.id;
+
+        const { name, email, phone, branch_id, country_code, status, password } = req.body;
+
+        if (!merchant_id) {
+            return res.json({
+                status: 0,
+                message: "Merchant not found"
+            });
+        }
+
+        if (!receptionist_id) {
+            return res.json({
+                status: 0,
+                message: "Receptionist ID is required"
+            });
+        }
+
+        // Check if receptionist exists and belongs to this merchant
+        const receptionist = await Receptionist.findOne({
+            where: {
+                id: receptionist_id,
+                merchant_id: merchant_id,
+                del_status: 0
+            }
+        });
+
+        if (!receptionist) {
+            return res.json({
+                status: 0,
+                message: "Receptionist not found"
+            });
+        }
+
+        // Check if branch exists (if branch_id is provided)
+        if (branch_id) {
+            const branch = await Branch.findOne({
+                where: {
+                    id: branch_id,
+                    merchant_id: merchant_id,
+                    del_status: 0
+                }
+            });
+
+            if (!branch) {
+                return res.json({
+                    status: 0,
+                    message: "Branch not found"
+                });
+            }
+        }
+
+        // Check if email already exists for other receptionist
+        if (email && email !== receptionist.email) {
+            const emailExists = await Receptionist.findOne({
+                where: {
+                    email: email,
+                    id: { [Op.ne]: receptionist_id },
+                    del_status: 0
+                }
+            });
+
+            if (emailExists) {
+                return res.json({
+                    status: 0,
+                    message: "Email already exists"
+                });
+            }
+        }
+
+        // Check if phone already exists for other receptionist
+        let phoneNumber = receptionist.phone;
+        
+        if (phone && phone !== receptionist.phone) {
+            try {
+                const cleanPhone = phone.replace(/\s+/g, '');
+                const fullPhone = cleanPhone.startsWith('+')
+                    ? cleanPhone
+                    : (country_code || receptionist.country_code) + cleanPhone;
+
+                const num = parsePhoneNumber(fullPhone);
+
+                if (!num.isValid()) {
+                    return res.json({
+                        status: 0,
+                        message: "Invalid phone number"
+                    });
+                }
+
+                phoneNumber = num.number;
+
+                const phoneExists = await Receptionist.findOne({
+                    where: {
+                        phone: phoneNumber,
+                        id: { [Op.ne]: receptionist_id },
+                        del_status: 0
+                    }
+                });
+
+                if (phoneExists) {
+                    return res.json({
+                        status: 0,
+                        message: "Phone number already exists"
+                    });
+                }
+            } catch (err) {
+                console.log("PHONE ERROR:", err);
+                return res.json({
+                    status: 0,
+                    message: "Invalid phone format"
+                });
+            }
+        }
+
+        // Handle profile image upload
+        let profileImage = receptionist.profile_image;
+
+        if (req.files && req.files.length > 0) {
+            const profileFile = req.files.find(
+                file => file.fieldname === 'profile_image'
+            );
+
+            if (profileFile) {
+                profileImage = profileFile.path.replace(/\\/g, '/');
+            }
+        }
+
+        // Prepare update data
+        const updateData = {
+            name: name || receptionist.name,
+            email: email || receptionist.email,
+            phone: phoneNumber,
+            country_code: country_code || receptionist.country_code,
+            branch_id: branch_id || receptionist.branch_id,
+            profile_image: profileImage,
+            status: status !== undefined ? status : receptionist.status
+        };
+
+        // Handle password update if provided
+        if (password && password.trim() !== '') {
+            const hashedPassword = await bcrypt.hash(password, 10);
+            updateData.password = hashedPassword;
+        }
+
+        // Update receptionist
+        await receptionist.update(updateData);
+
+        // Fetch updated receptionist details
+        const updatedReceptionist = await Receptionist.findOne({
+            attributes: [
+                'id',
+                'name',
+                'email',
+                'phone',
+                'country_code',
+                'profile_image',
+                'branch_id',
+                'merchant_id',
+                'status',
+                'createdAt',
+                'updatedAt'
+            ],
+            where: {
+                id: receptionist_id
+            },
+            include: [
+                {
+                    model: Branch,
+                    attributes: ['id', 'name', 'address'],
+                    required: false
+                }
+            ]
+        });
+
+        const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+        
+        const data = updatedReceptionist.toJSON();
+        data.profile_image = data.profile_image
+            ? baseUrl + '/' + data.profile_image.replace(/\\/g, '/')
+            : null;
+
+        return res.json({
+            status: 1,
+            message: "Receptionist updated successfully",
+            data: data
+        });
+
+    } catch (err) {
+
+        console.log("UPDATE RECEPTIONIST ERROR:", err);
+
+        return res.json({
+            status: 0,
+            message: err.message
+        });
+
+    }
+
+};
 
 exports.dashboard = async (req, res) => {
 

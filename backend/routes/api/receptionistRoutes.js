@@ -1,3 +1,4 @@
+//\routes\api\receptionistRoutes.js
 const express = require('express');
 const router = express.Router();
 
@@ -10,6 +11,12 @@ router.post('/receptionist/register', (req, res, next) => {
   next();
 }, auth('merchant'),upload, controller.register);
 
+router.get('/receptionist/details/:id', auth('merchant'), controller.fetch_receptionist_by_id);
+
+router.post('/receptionist/update', (req, res, next) => {
+  req.uploadFolder = 'Receptionist';
+  next();
+}, auth('merchant'), upload, controller.update_receptionist);
 
 router.post('/receptionist/login', controller.login);
 router.post('/receptionist/logout', auth('receptionist'), controller.logout);

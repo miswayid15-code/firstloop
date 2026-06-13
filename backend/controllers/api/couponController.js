@@ -1282,7 +1282,7 @@ exports.fetch_coupon_by_id = async (req, res) => {
     try {
 
         const merchant_id = req.user.id;
-        const coupon_id = req.params.id || req.query.id; // Support both params and query
+        const coupon_id = req.params.id || req.query.id;
 
         if (!merchant_id) {
             return res.json({
@@ -1335,7 +1335,7 @@ exports.fetch_coupon_by_id = async (req, res) => {
             }
         });
 
-        // Fetch branch details if branch_ids exist
+       
         let branches = [];
         if (coupon.branch_ids && coupon.branch_ids.length > 0) {
             branches = await Branch.findAll({
@@ -1351,27 +1351,21 @@ exports.fetch_coupon_by_id = async (req, res) => {
 
         const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
 
-        // Prepare response data
         const data = coupon.toJSON();
         
-        // Format banner image URL
         data.banner_image = data.banner_image
             ? baseUrl + '/' + data.banner_image.replace(/\\/g, '/')
             : null;
         
-        // Add category info
+        
         data.category = category ? {
             id: category.id,
             name: category.name
         } : null;
         
-        // Add branches (without branch_ids in response)
         data.branches = branches;
         
-        // Add applicable_to_all_branches flag
-        data.applicable_to_all_branches = !data.branch_ids || data.branch_ids.length === 0;
-        
-        // Remove branch_ids from response to keep it clean
+       
         delete data.branch_ids;
 
         return res.json({
