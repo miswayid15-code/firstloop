@@ -589,7 +589,7 @@ exports.fetch_coupon = async (req, res) => {
     try {
 
         const merchant_id = req.user.id;
-        const branch_id = req.query.branch_id; 
+        const branch_id = req.query.branch_id;
 
         if (!merchant_id) {
             return res.json({
@@ -598,7 +598,6 @@ exports.fetch_coupon = async (req, res) => {
             });
         }
 
-      
         const whereCondition = {
             del_status: 0,
             merchant_id: merchant_id
@@ -606,7 +605,7 @@ exports.fetch_coupon = async (req, res) => {
 
         if (branch_id) {
             whereCondition.branch_ids = {
-                [Op.contains]: [parseInt(branch_id)] 
+                [Op.contains]: [parseInt(branch_id)]
             };
         }
 
@@ -615,7 +614,7 @@ exports.fetch_coupon = async (req, res) => {
                 'id',
                 'merchant_id',
                 'cat_id',
-                // 'branch_ids',
+                'branch_ids',
                 'code',
                 'percentage',
                 'min_amount',
@@ -627,6 +626,19 @@ exports.fetch_coupon = async (req, res) => {
             ],
             where: whereCondition,
             order: [['id', 'DESC']]
+        });
+
+        const branches = await Branch.findAll({
+            attributes: ['id', 'name'],
+            where: {
+                merchant_id: merchant_id,
+                del_status: 0
+            }
+        });
+
+        const branchMap = {};
+        branches.forEach(branch => {
+            branchMap[branch.id] = branch.name;
         });
 
         const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
@@ -641,7 +653,23 @@ exports.fetch_coupon = async (req, res) => {
 
             cpn.is_expired = new Date() > new Date(cpn.end_date) ? 1 : 0;
             
-            // cpn.applicable_to_all_branches = !cpn.branch_ids || cpn.branch_ids.length === 0;
+            cpn.applicable_to_all_branches = !cpn.branch_ids || cpn.branch_ids.length === 0;
+            
+        
+            cpn.branch_names = [];
+            if (cpn.branch_ids && cpn.branch_ids.length > 0) {
+                cpn.branch_names = cpn.branch_ids.map(bid => branchMap[bid]).filter(name => name);
+            }
+            
+            cpn.branches = [];
+            if (cpn.branch_ids && cpn.branch_ids.length > 0) {
+                cpn.branches = cpn.branch_ids
+                    .filter(bid => branchMap[bid])
+                    .map(bid => ({
+                        id: bid,
+                        name: branchMap[bid]
+                    }));
+            }
 
             return cpn;
         });
