@@ -615,7 +615,7 @@ exports.fetch_coupon = async (req, res) => {
                 'id',
                 'merchant_id',
                 'cat_id',
-                'branch_ids',
+                // 'branch_ids',
                 'code',
                 'percentage',
                 'min_amount',
@@ -641,7 +641,7 @@ exports.fetch_coupon = async (req, res) => {
 
             cpn.is_expired = new Date() > new Date(cpn.end_date) ? 1 : 0;
             
-            cpn.applicable_to_all_branches = !cpn.branch_ids || cpn.branch_ids.length === 0;
+            // cpn.applicable_to_all_branches = !cpn.branch_ids || cpn.branch_ids.length === 0;
 
             return cpn;
         });
