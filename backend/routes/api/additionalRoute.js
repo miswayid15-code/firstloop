@@ -16,4 +16,12 @@ router.get(
     '/verify-otp',
     controller.verify_otp
 );
+    router.post(
+    '/customer/register-otp',
+    controller.customer_verify_mail
+);
+    router.post(
+    '/customer/verify-otp',
+    controller.customer_verify_otp
+);
 module.exports = router;

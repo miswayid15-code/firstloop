@@ -1,18 +1,26 @@
 const sendOtp = (otp, type) => {
 
-    const config = type === 'merchant'
+const config =
+    type === 'merchant'
         ? {
             title: 'Merchant Email Verification',
             topBg: 'linear-gradient(135deg, #ff4f8b 0%, #ff7eb3 100%)',
             primary: '#ff4f8b',
             light: '#fff4f8'
         }
-        : {
-            title: 'Receptionist Email Verification',
-            topBg: 'linear-gradient(135deg, #ff5fa2 0%, #ff9ac2 100%)',
-            primary: '#ff5fa2',
-            light: '#fff4f8'
-        };
+        : type === 'customer'
+            ? {
+                title: 'Customer Email Verification',
+                 topBg: 'linear-gradient(135deg, #ff5fa2 0%, #ff9ac2 100%)',
+                 primary: '#ff5fa2',
+                light: '#f4f8ff'
+            }
+            : {
+                title: 'Receptionist Email Verification',
+                topBg: 'linear-gradient(135deg, #ff5fa2 0%, #ff9ac2 100%)',
+                primary: '#ff5fa2',
+                light: '#fff4f8'
+            };
 
     return `
     <!DOCTYPE html>

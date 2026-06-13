@@ -1,4 +1,4 @@
-const { Banner, Receptionist, Merchant, OtpVerify } = require('../../models');
+const { Banner, Receptionist, Merchant, OtpVerify, CustomerOtpVerify ,Customer} = require('../../models');
 const { sendOtp } = require('../../helpers/sendOtp');
 const sendMail = require('../../helpers/sendMail');
 exports.banner_list = async (req, res) => {
@@ -127,7 +127,7 @@ exports.verify_mail = async (req, res) => {
         }
 
         await sendMail(
-            'minsway01@gmail.com',
+            email,
             'OTP Sent for Registration',
             sendOtp(randomOtp, type)
         );
@@ -161,6 +161,121 @@ exports.verify_otp = async (req, res) => {
         }
 
         const record = await OtpVerify.findOne({
+            where: { mail: email }
+        });
+
+        if (!record) {
+            return res.json({
+                status: 0,
+                message: "No OTP record found for this email"
+            });
+        }
+
+        if (record.otp != otp) {
+            return res.json({
+                status: 0,
+                message: "Invalid OTP"
+            });
+        }
+
+        // Delete OTP after successful verification
+        await record.destroy();
+
+        return res.json({
+            status: 1,
+            message: "OTP verified successfully"
+        });
+
+    } catch (err) {
+        console.log("Error:", err);
+
+        return res.status(500).json({
+            status: 0,
+            message: "An error occurred while verifying the OTP"
+        });
+    }
+};
+
+
+exports.customer_verify_mail = async (req, res) => {
+    try {
+        const { email } = req.body;
+        type="customer";
+
+
+        if (!email) {
+            return res.json({
+                status: 0,
+                message: "Email is empty"
+            });
+        }
+
+        const randomOtp = 111111;
+        // const randomOtp = Math.floor(100000 + Math.random() * 900000).toString();
+
+        existingUser = await Customer.findOne({
+            where: { email }
+        });
+
+        if (existingUser) {
+            return res.json({
+                status: 0,
+                message: "Email already exists"
+            });
+        }
+
+        const existingOtp = await CustomerOtpVerify.findOne({
+            where: { mail: email }
+        });
+
+        if (existingOtp) {
+            await existingOtp.update({
+                otp: randomOtp,
+                status: 0
+            });
+        } else {
+            await CustomerOtpVerify.create({
+                mail: email,
+                otp: randomOtp,
+                status: 0
+            });
+        }
+
+        await sendMail(
+            email,
+            'OTP Sent for Registration Verification',
+            sendOtp(randomOtp, type)
+        );
+
+        return res.json({
+            status: 1,
+            message: "OTP sent to email"
+        });
+
+    } catch (err) {
+        return res.status(500).json({
+            status: 0,
+            message: err.message
+        });
+    }
+};
+
+exports.customer_verify_otp = async (req, res) => {
+    try {
+        const { email, otp } = req.body;
+        const missingFields = [];
+
+        if (!email) missingFields.push("Email");
+        if (!otp) missingFields.push("OTP");
+
+        if (missingFields.length) {
+            return res.json({
+                status: 0,
+                message: `${missingFields.join(" and ")} ${missingFields.length > 1 ? "are" : "is"} required`
+            });
+        }
+
+        const record = await CustomerOtpVerify.findOne({
             where: { mail: email }
         });
 
