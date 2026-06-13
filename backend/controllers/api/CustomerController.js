@@ -955,6 +955,15 @@ exports.home = async (req, res) => {
                 del_status: 0
             },
 
+    include: [{
+        model: Merchant,
+        required: true, // INNER JOIN
+        attributes: [],
+        where: {
+            status: 1,
+            del_status: 0
+        }
+    }],
             attributes: [
                 'id',
                 'name',
