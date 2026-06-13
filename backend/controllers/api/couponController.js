@@ -1274,3 +1274,121 @@ exports.applied_coupons = async (req, res) => {
     }
 
 };
+
+
+// fetch coupon details 
+exports.fetch_coupon_by_id = async (req, res) => {
+
+    try {
+
+        const merchant_id = req.user.id;
+        const coupon_id = req.params.id || req.query.id; // Support both params and query
+
+        if (!merchant_id) {
+            return res.json({
+                status: 0,
+                message: "Merchant not found"
+            });
+        }
+
+        if (!coupon_id) {
+            return res.json({
+                status: 0,
+                message: "Coupon ID is required"
+            });
+        }
+
+        const coupon = await Coupon.findOne({
+            attributes: [
+                'id',
+                'merchant_id',
+                'cat_id',
+                'branch_ids',
+                'code',
+                'percentage',
+                'min_amount',
+                'usage_limit',
+                'start_date',
+                'banner_image',
+                'end_date',
+                'status'
+            ],
+            where: {
+                id: coupon_id,
+                merchant_id: merchant_id,
+                del_status: 0
+            }
+        });
+
+        if (!coupon) {
+            return res.json({
+                status: 0,
+                message: "Coupon not found"
+            });
+        }
+
+        const category = await CouponCat.findOne({
+            attributes: ['id', 'name'],
+            where: {
+                id: coupon.cat_id,
+                del_status: 0
+            }
+        });
+
+        // Fetch branch details if branch_ids exist
+        let branches = [];
+        if (coupon.branch_ids && coupon.branch_ids.length > 0) {
+            branches = await Branch.findAll({
+                attributes: ['id', 'name', 'address', 'phone', 'email'],
+                where: {
+                    id: { [Op.in]: coupon.branch_ids },
+                    merchant_id: merchant_id,
+                    del_status: 0
+                },
+                order: [['name', 'ASC']]
+            });
+        }
+
+        const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+
+        // Prepare response data
+        const data = coupon.toJSON();
+        
+        // Format banner image URL
+        data.banner_image = data.banner_image
+            ? baseUrl + '/' + data.banner_image.replace(/\\/g, '/')
+            : null;
+        
+        // Add category info
+        data.category = category ? {
+            id: category.id,
+            name: category.name
+        } : null;
+        
+        // Add branches (without branch_ids in response)
+        data.branches = branches;
+        
+        // Add applicable_to_all_branches flag
+        data.applicable_to_all_branches = !data.branch_ids || data.branch_ids.length === 0;
+        
+        // Remove branch_ids from response to keep it clean
+        delete data.branch_ids;
+
+        return res.json({
+            status: 1,
+            message: "Coupon details fetched successfully",
+            data: data
+        });
+
+    } catch (err) {
+
+        console.log("FETCH COUPON BY ID ERROR:", err);
+
+        return res.json({
+            status: 0,
+            message: err.message
+        });
+
+    }
+
+};

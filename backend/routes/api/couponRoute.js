@@ -32,6 +32,7 @@ router.post('/coupon-update',  (req, res, next) => {
 router.get('/coupon-fetch', auth('merchant'),controller.fetch_coupon);
 router.post('/coupon-check', auth('merchant'),controller.check_coupon);
 router.post('/coupon-generate', auth('merchant'),controller.generate_coupon);
+router.get('/coupon-details/:id', auth('merchant'), controller.fetch_coupon_by_id);
 
 router.post(
     '/coupon-claim',
