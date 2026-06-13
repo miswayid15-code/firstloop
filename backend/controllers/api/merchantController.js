@@ -767,18 +767,57 @@ exports.receptionist_list = async (req, res) => {
             });
         }
 
-        const receptionist = await Receptionist.findAll({
+        const receptionists = await Receptionist.findAll({
+            attributes: [
+                'id',
+                'name',
+                'email',
+                'phone',
+                'country_code',
+                'profile_image',
+                'branch_id',
+                'merchant_id',
+                'status',
+                'createdAt',
+                'updatedAt'
+            ],
             where: {
                 merchant_id: merchant.id,
                 del_status: 0
             },
+            include: [
+                {
+                    model: Branch,
+                    attributes: ['id', 'name', 'address', 'phone', 'email'],
+                    required: false 
+                }
+            ],
             order: [['id', 'DESC']]
+        });
+
+        const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+
+        const data = receptionists.map(item => {
+            const receptionist = item.toJSON();
+            
+          
+            receptionist.profile_image = receptionist.profile_image
+                ? baseUrl + '/' + receptionist.profile_image.replace(/\\/g, '/')
+                : null;
+            
+           
+            delete receptionist.password;
+            
+           
+            receptionist.branch_name = receptionist.Branch ? receptionist.Branch.name : null;
+            
+            return receptionist;
         });
 
         return res.json({
             status: 1,
             message: "Receptionist list fetched successfully",
-            data: receptionist
+            data: data
         });
 
     } catch (err) {
