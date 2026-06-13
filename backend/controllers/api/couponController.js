@@ -583,11 +583,13 @@ exports.update_coupon = async (req, res) => {
 
 };
 
+// fetch coupon
 exports.fetch_coupon = async (req, res) => {
 
     try {
 
         const merchant_id = req.user.id;
+        const branch_id = req.query.branch_id; 
 
         if (!merchant_id) {
             return res.json({
@@ -596,22 +598,34 @@ exports.fetch_coupon = async (req, res) => {
             });
         }
 
+      
+        const whereCondition = {
+            del_status: 0,
+            merchant_id: merchant_id
+        };
+
+        if (branch_id) {
+            whereCondition.branch_ids = {
+                [Op.contains]: [parseInt(branch_id)] 
+            };
+        }
+
         const coupon = await Coupon.findAll({
             attributes: [
                 'id',
                 'merchant_id',
+                'cat_id',
+                'branch_ids',
                 'code',
                 'percentage',
                 'min_amount',
                 'usage_limit',
                 'start_date',
                 'banner_image',
-                'end_date'
+                'end_date',
+                'status'
             ],
-            where: {
-                del_status: 0,
-                merchant_id: merchant_id
-            },
+            where: whereCondition,
             order: [['id', 'DESC']]
         });
 
@@ -625,8 +639,9 @@ exports.fetch_coupon = async (req, res) => {
                 ? baseUrl + '/' + cpn.banner_image.replace(/\\/g, '/')
                 : null;
 
-            cpn.is_expired =
-                new Date() > new Date(cpn.end_date) ? 1 : 0;
+            cpn.is_expired = new Date() > new Date(cpn.end_date) ? 1 : 0;
+            
+            cpn.applicable_to_all_branches = !cpn.branch_ids || cpn.branch_ids.length === 0;
 
             return cpn;
         });
@@ -634,7 +649,10 @@ exports.fetch_coupon = async (req, res) => {
         return res.json({
             status: 1,
             message: "Coupon list fetched successfully",
-            data: data
+            data: data,
+            filters: {
+                branch_id: branch_id || null
+            }
         });
 
     } catch (err) {
