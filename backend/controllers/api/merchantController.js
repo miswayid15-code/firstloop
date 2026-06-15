@@ -38,7 +38,7 @@ exports.registerStep1 = async (req, res) => {
 
             const cleanPhone = phone.replace(/\s+/g, '');
 
-            
+
             const fullPhone = cleanPhone.startsWith('+')
                 ? cleanPhone
                 : country_code + cleanPhone;
@@ -57,7 +57,7 @@ exports.registerStep1 = async (req, res) => {
             callingCode = `+${num.countryCallingCode}`;
             nationalNumber = num.nationalNumber;
 
-            
+
             phoneNumber = num.number;
 
             console.log("FULL PHONE:", phoneNumber);
@@ -170,7 +170,7 @@ exports.registerStep1 = async (req, res) => {
             {
                 id: merchant.id,
                 email: merchant.email,
-                 user_type: 'merchant',
+                user_type: 'merchant',
                 token_type: 'access'
             },
 
@@ -540,7 +540,7 @@ exports.login = async (req, res) => {
             {
                 id: merchant.id,
                 email: merchant.email,
-                 user_type: 'merchant',
+                user_type: 'merchant',
                 token_type: 'refresh'
             },
             process.env.JWT_SECRET,
@@ -557,7 +557,7 @@ exports.login = async (req, res) => {
             {
                 id: merchant.id,
                 email: merchant.email,
-                 user_type: 'merchant',
+                user_type: 'merchant',
                 token_type: 'access'
             },
             process.env.JWT_SECRET,
@@ -693,6 +693,7 @@ exports.dashboard = async (req, res) => {
     }
 
 };
+
 exports.branch_list = async (req, res) => {
 
     try {
@@ -789,7 +790,7 @@ exports.receptionist_list = async (req, res) => {
                 {
                     model: Branch,
                     attributes: ['id', 'name', 'address', 'phone', 'email'],
-                    required: false 
+                    required: false
                 }
             ],
             order: [['id', 'DESC']]
@@ -799,18 +800,18 @@ exports.receptionist_list = async (req, res) => {
 
         const data = receptionists.map(item => {
             const receptionist = item.toJSON();
-            
-          
+
+
             receptionist.profile_image = receptionist.profile_image
                 ? baseUrl + '/' + receptionist.profile_image.replace(/\\/g, '/')
                 : null;
-            
-           
+
+
             delete receptionist.password;
-            
-           
+
+
             receptionist.branch_name = receptionist.Branch ? receptionist.Branch.name : null;
-            
+
             return receptionist;
         });
 
@@ -908,8 +909,6 @@ exports.forget_password = async (req, res) => {
     }
 
 };
-
-
 
 exports.reset_ps = async (req, res) => {
 
@@ -1172,4 +1171,84 @@ exports.firebase_reg = async (req, res) => {
 
 };
 
+exports.change_status_br = async (req, res) => {
+    try {
+        const { id, status } = req.body;
 
+        const branch = await Branch.findOne({
+            where: {
+                id: id,
+                del_status: 0
+            }
+        });
+
+        if (!branch) {
+            return res.status(404).json({
+                status: 0,
+                message: "Branch not found"
+            });
+        }
+
+        await Branch.update(
+            { status: status },
+            {
+                where: {
+                    id: id
+                }
+            }
+        );
+
+        return res.status(200).json({
+            status: 1,
+            message: "Branch status updated successfully"
+        });
+
+    } catch (err) {
+        console.log("err", err);
+        return res.status(500).json({
+            status: 0,
+            message: "Failed to update status"
+        });
+    }
+};
+
+exports.change_status_res = async (req, res) => {
+    try {
+        const { id, status } = req.body;
+
+        const receptionist = await Receptionist.findOne({
+            where: {
+                id: id,
+                del_status: 0
+            }
+        });
+
+        if (!receptionist) {
+            return res.status(404).json({
+                status: 0,
+                message: "Receptionist is not found"
+            });
+        }
+
+        await Receptionist.update(
+            { status: status },
+            {
+                where: {
+                    id: id
+                }
+            }
+        );
+
+        return res.status(200).json({
+            status: 1,
+            message: "Receptionist status updated successfully"
+        });
+
+    } catch (err) {
+        console.log("err", err);
+        return res.status(500).json({
+            status: 0,
+            message: "Failed to update status"
+        });
+    }
+};

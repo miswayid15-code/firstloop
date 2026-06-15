@@ -8,6 +8,7 @@ require('../../controllers/api/merchantController');
 const upload = require('../../middleware/upload');
 
 const auth = require('../../middleware/auth');
+const checkMerchant = require('../../middleware/checkMerchant');
 
 
 // register step 1
@@ -125,5 +126,18 @@ router.post(
     controller.firebase_reg
 );
 
+
+router.post(
+    '/merchant/change-status-branch',
+    auth('merchant'),
+    checkMerchant,
+    controller.change_status_br
+);
+router.post(
+    '/merchant/change-status-Receptionist',
+    auth('merchant'),
+    checkMerchant,
+    controller.change_status_res
+);
 
 module.exports = router;

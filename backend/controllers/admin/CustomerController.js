@@ -359,7 +359,6 @@ exports.register = async (req, res) => {
 };
 
 
-
 exports.update = async (req, res) => {
 
     try {
@@ -596,9 +595,6 @@ exports.update = async (req, res) => {
 
 };
 
-
-
-
 exports.fetch_list = async (req, res) => {
 
     try {
@@ -676,7 +672,6 @@ exports.fetch_list = async (req, res) => {
 
 };
 
-
 exports.update_status = async (req, res) => {
     try {
 
@@ -723,8 +718,6 @@ exports.update_status = async (req, res) => {
 
     }
 };
-
-
 exports.appointment_list = async (req, res) => {
 
     try {

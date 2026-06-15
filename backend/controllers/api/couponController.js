@@ -652,12 +652,12 @@ exports.fetch_coupon = async (req, res) => {
                 : null;
 
             cpn.is_expired = new Date() > new Date(cpn.end_date) ? 1 : 0;
-            
+
             cpn.applicable_to_all_branches = !cpn.branch_ids || cpn.branch_ids.length === 0;
-            
-        
-            
-            
+
+
+
+
             cpn.branches = [];
             if (cpn.branch_ids && cpn.branch_ids.length > 0) {
                 cpn.branches = cpn.branch_ids
@@ -670,7 +670,7 @@ exports.fetch_coupon = async (req, res) => {
             delete cpn.branch_ids;
             return cpn;
         });
-        
+
         return res.json({
             status: 1,
             message: "Coupon list fetched successfully",
@@ -1001,6 +1001,8 @@ exports.redeem_customer = async (req, res) => {
 
     try {
 
+        const { br_id } = req.body;
+
         const user = req.merchant || req.receptionist;
 
         const userType = req.merchant
@@ -1015,7 +1017,7 @@ exports.redeem_customer = async (req, res) => {
 
             couponWhere.merchant_id = user.id;
 
-        } else if (userType === 'receptionist') {
+        } else {
 
             couponWhere.merchant_id = user.merchant_id;
 
@@ -1024,7 +1026,6 @@ exports.redeem_customer = async (req, res) => {
         const couponApplieds = await CouponApplied.findAll({
 
             where: {
-
                 del_status: 0
             },
 
@@ -1037,6 +1038,7 @@ exports.redeem_customer = async (req, res) => {
                 'status',
                 'approved_by',
                 'approved_by_id',
+                'branch_id',
                 'cancel_by',
                 'cancel_reason'
             ],
@@ -1044,20 +1046,36 @@ exports.redeem_customer = async (req, res) => {
             include: [
                 {
                     model: Coupon,
-                    attributes: ['branch_ids'],
+                    attributes: ['id', 'branch_ids'],
                     required: true,
                     where: {
                         ...couponWhere,
+
+                        // Receptionist -> only own branch
                         ...(userType === 'receptionist' && {
                             branch_ids: {
                                 [Op.contains]: [Number(user.branch_id)]
                             }
-                        })
+                        }),
+
+                        // Merchant -> filter by selected branch
+                        ...(userType === 'merchant' &&
+                            br_id &&
+                            Number(br_id) > 0 && {
+                                branch_ids: {
+                                    [Op.contains]: [Number(br_id)]
+                                }
+                            })
                     }
                 },
                 {
                     model: Customer,
-                    attributes: ['id', 'name', 'email', 'phone'],
+                    attributes: [
+                        'id',
+                        'name',
+                        'email',
+                        'phone'
+                    ],
                     required: false
                 }
             ],
@@ -1066,17 +1084,14 @@ exports.redeem_customer = async (req, res) => {
 
         });
 
-        const branchIds = [];
+        // Get branch ids from CouponApplied.branch_id
+        const allBranchIds = [];
 
         couponApplieds.forEach(item => {
 
-            if (
-                item.Coupon &&
-                item.Coupon.branch_ids &&
-                Array.isArray(item.Coupon.branch_ids)
-            ) {
+            if (item.branch_id) {
 
-                branchIds.push(...item.Coupon.branch_ids);
+                allBranchIds.push(item.branch_id);
 
             }
 
@@ -1085,10 +1100,13 @@ exports.redeem_customer = async (req, res) => {
         const branches = await Branch.findAll({
 
             where: {
-                id: [...new Set(branchIds)]
+                id: [...new Set(allBranchIds)]
             },
 
-            attributes: ['id', 'name']
+            attributes: [
+                'id',
+                'name'
+            ]
 
         });
 
@@ -1100,7 +1118,7 @@ exports.redeem_customer = async (req, res) => {
 
         });
 
-        let data = couponApplieds.map(item => {
+        const data = couponApplieds.map(item => {
 
             const row = item.toJSON();
 
@@ -1116,18 +1134,8 @@ exports.redeem_customer = async (req, res) => {
                 ? row.Customer.phone
                 : null;
 
-            row.branch_name = null;
-
-            if (
-                row.Coupon &&
-                row.Coupon.branch_ids &&
-                row.Coupon.branch_ids.length > 0
-            ) {
-
-                row.branch_name =
-                    branchMap[row.Coupon.branch_ids[0]] || null;
-
-            }
+            // Branch name from CouponApplied.branch_id
+            row.branch_name = branchMap[row.branch_id] || null;
 
             delete row.Customer;
             delete row.Coupon;
@@ -1135,25 +1143,6 @@ exports.redeem_customer = async (req, res) => {
             return row;
 
         });
-
-        if (userType === 'receptionist') {
-
-            data = data.filter(item => {
-
-                const coupon = couponApplieds.find(
-                    c => c.id === item.id
-                );
-
-                const branchIds =
-                    coupon?.Coupon?.branch_ids || [];
-
-                return branchIds.includes(
-                    Number(user.branch_id)
-                );
-
-            });
-
-        }
 
         return res.json({
 
@@ -1335,7 +1324,7 @@ exports.fetch_coupon_by_id = async (req, res) => {
             }
         });
 
-       
+
         let branches = [];
         if (coupon.branch_ids && coupon.branch_ids.length > 0) {
             branches = await Branch.findAll({
@@ -1352,20 +1341,20 @@ exports.fetch_coupon_by_id = async (req, res) => {
         const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
 
         const data = coupon.toJSON();
-        
+
         data.banner_image = data.banner_image
             ? baseUrl + '/' + data.banner_image.replace(/\\/g, '/')
             : null;
-        
-        
+
+
         data.category = category ? {
             id: category.id,
             name: category.name
         } : null;
-        
+
         data.branches = branches;
-        
-       
+
+
         delete data.branch_ids;
 
         return res.json({

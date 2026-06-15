@@ -40,7 +40,7 @@ router.post(
     checkMerchantOrReceptionist,
     controller.claim_coupon
 );
-router.get('/redeem-customer',     auth(),
+router.post('/redeem-customer',     auth(),
     checkMerchantOrReceptionist,controller.redeem_customer);
 
     router.get('/coupon-categories', controller.fetch_coupon_categories);

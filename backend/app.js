@@ -21,7 +21,8 @@ app.use('/admin', require('./routes/admin/adminAuthRoutes'));
 app.use('/admin', require('./routes/admin/merchantRoutes'));
 app.use('/admin', require('./routes/admin/customerRoutes'));
 app.use('/admin', require('./routes/admin/dashboardRoutes'));
-app.use('/admin', require('./routes/admin/chatRoutes'));
+app.use('/admin', require('./routes/admin/categoryRoutes'));
+app.use('/admin', require('./routes/admin/chatRoutes'));              
 
 
 
