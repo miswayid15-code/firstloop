@@ -2572,42 +2572,6 @@ exports.search = async (req, res) => {
 
         });
 
-        const categoryIds = categories.map(item => item.id);
-
-        // =========================
-        // MERCHANT SEARCH
-        // =========================
-
-        const merchants = await Merchant.findAll({
-
-            where: {
-
-                [Op.or]: [
-
-                    {
-                        bus_name: {
-                            [Op.iLike]: `%${query}%`
-                        }
-                    },
-
-                    ...(categoryIds.length > 0 ? [{
-                        cat_id: {
-                            [Op.in]: categoryIds
-                        }
-                    }] : [])
-
-                ]
-
-            },
-
-            attributes: [
-                'id',
-                'bus_name',
-                'cat_id'
-            ]
-
-        });
-
         // =========================
         // BRANCH SEARCH
         // =========================
@@ -2648,43 +2612,109 @@ exports.search = async (req, res) => {
         });
 
         // =========================
+        // MERCHANT SEARCH
+        // =========================
+
+        const merchants = await Merchant.findAll({
+
+            where: {
+                bus_name: {
+                    [Op.iLike]: `%${query}%`
+                }
+            },
+
+            attributes: [
+                'id',
+                'bus_name',
+                'cat_id'
+            ]
+
+        });
+
+        // =========================
         // FORMAT RESPONSE
         // =========================
 
         let results = [];
 
-        categories.forEach((item) => {
+        // Categories with merchants inside
+
+        for (const category of categories) {
+
+            const categoryMerchants =
+                await Merchant.findAll({
+
+                    where: {
+                        cat_id: category.id
+                    },
+
+                    attributes: [
+                        'id',
+                        'bus_name',
+                        'cat_id'
+                    ]
+
+                });
 
             results.push({
+
                 type: "category",
-                data: item
+
+                id: category.id,
+
+                name: category.name,
+
+                merchants: categoryMerchants
+
             });
 
-        });
+        }
+
+        // Merchant search results that are not from category search
+
+        const categoryIds =
+            categories.map(item => item.id);
 
         merchants.forEach((item) => {
 
-            results.push({
-                type: "merchant",
-                data: item
-            });
+            if (!categoryIds.includes(item.cat_id)) {
+
+                results.push({
+
+                    type: "merchant",
+
+                    data: item
+
+                });
+
+            }
 
         });
+
+        // Branches
 
         branches.forEach((item) => {
 
             results.push({
+
                 type: "branch",
+
                 data: item
+
             });
 
         });
 
+        // Coupons
+
         coupons.forEach((item) => {
 
             results.push({
+
                 type: "coupon",
+
                 data: item
+
             });
 
         });
@@ -2692,19 +2722,27 @@ exports.search = async (req, res) => {
         return res.json({
 
             status: 1,
-            message: "Search results fetched successfully",
+
+            message:
+                "Search results fetched successfully",
+
             total: results.length,
+
             data: results
 
         });
 
     } catch (err) {
 
-        console.log("SEARCH ERROR:", err);
+        console.log(
+            "SEARCH ERROR:",
+            err
+        );
 
         return res.json({
 
             status: 0,
+
             message: err.message
 
         });
