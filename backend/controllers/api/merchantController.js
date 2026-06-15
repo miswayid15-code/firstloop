@@ -433,7 +433,7 @@ exports.registerStep2 = async (req, res) => {
 };
 
 exports.fetchmerchant = async (req, res) => {
-    1
+    
     try {
 
         const merchant = await Merchant.findByPk(req.user.id, {
@@ -458,6 +458,11 @@ exports.fetchmerchant = async (req, res) => {
                 data[field] = null;
             }
         });
+        const br=await Branch.findAll({
+            where:{
+                merchant_id:merchant.id
+            }
+        })
 
         return res.json({
             status: 1,
