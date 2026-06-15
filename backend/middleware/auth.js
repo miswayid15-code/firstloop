@@ -11,7 +11,7 @@ module.exports = (...roles) => {
 
             if (!token) {
 
-                return res.json({
+                return res.status(401).json({
                     status: 0,
                     message: "No token"
                 });
@@ -71,7 +71,7 @@ module.exports = (...roles) => {
 
             // console.log("AUTH ERROR:", err);
 
-            return res.json({
+            return res.status(401).json({
                 status: 0,
                 message: "Invalid token"
             });
