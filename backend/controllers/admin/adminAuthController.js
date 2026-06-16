@@ -4,7 +4,7 @@ const { Sequelize } = require("sequelize");
 const { Op } = require('sequelize');
 const {
     RefreshToken,
-    admins, Merchant, Branch, Receptionist, Coupon,CouponApplied
+    admins, Merchant, Branch, Receptionist, Coupon, CouponApplied
 } = require('../../models');
 
 exports.login = async (req, res) => {
@@ -49,6 +49,9 @@ exports.login = async (req, res) => {
             });
 
         }
+        console.log("USERNAME:", username);
+        console.log("ADMIN:", admin);
+        console.log("DB HASH:", admin?.password);
 
         // ✅ Password Check
         const match = await bcrypt.compare(
@@ -57,7 +60,7 @@ exports.login = async (req, res) => {
             admin.password
 
         );
-
+        console.log("PASSWORD MATCH:", match);
         // ✅ Invalid Password
         if (!match) {
 
@@ -69,6 +72,7 @@ exports.login = async (req, res) => {
             });
 
         }
+
 
         // ✅ Refresh Token
         const refreshToken = jwt.sign(
