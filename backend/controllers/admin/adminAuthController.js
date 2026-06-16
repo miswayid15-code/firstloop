@@ -29,6 +29,9 @@ exports.login = async (req, res) => {
         });
 
         console.log("ALL ADMINS:", allAdmins);
+        console.log("DB_HOST:", process.env.DB_HOST);
+        console.log("DB_NAME:", process.env.DB_NAME);
+        console.log("DB_USER:", process.env.DB_USER);
 
         const admin = await admins.findOne({
             where: {
