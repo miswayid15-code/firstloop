@@ -736,6 +736,7 @@ export default function ComingSoon() {
                             <a href="/about">About Us</a>
                             <a href="/privacy">Privacy Policy</a>
                             <a href="/terms">Terms &amp; Conditions</a>
+                            <a href="/delete-account">Delete Account</a>
                         </div>
                         <p>© {currentYear} First Pass. All rights reserved.</p>
                     </div>

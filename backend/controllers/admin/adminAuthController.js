@@ -24,13 +24,20 @@ exports.login = async (req, res) => {
             });
         }
 
+        const allAdmins = await admins.findAll({
+            raw: true
+        });
+
+        console.log("ALL ADMINS:", allAdmins);
+
         const admin = await admins.findOne({
             where: {
-                username: username,
-                status: 1,
-                del_status: 0
-            }
+                username: username
+            },
+            raw: true
         });
+
+        console.log("FOUND ADMIN:", admin);
 
         console.log("ADMIN RECORD:");
         console.log(admin ? admin.toJSON() : "NOT FOUND");
@@ -40,7 +47,7 @@ exports.login = async (req, res) => {
 
             return res.json({
                 status: 0,
-                message: "Invalid username or password"
+                message: "Invalid username or passwords"
             });
         }
 
@@ -58,7 +65,7 @@ exports.login = async (req, res) => {
 
             return res.json({
                 status: 0,
-                message: "Invalid username or password"
+                message: "Invalid username or passwordss"
             });
         }
 

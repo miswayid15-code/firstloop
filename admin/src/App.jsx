@@ -25,6 +25,7 @@ import ComingSoon from './frontend/ComingSoon'
 import TermsAndConditions from './frontend/TermsAndConditions'
 import PrivacyPolicy from './frontend/PrivacyPolicy'
 import About from './frontend/About'
+import DeleteAccount from './frontend/DeleteAccount'
 
 const isAdmin = window.location.pathname.startsWith('/admin');
 
@@ -39,6 +40,7 @@ function App() {
                 <Route path="/about" element={<About />} />
                 <Route path="/terms" element={<TermsAndConditions />} />
                 <Route path="/privacy" element={<PrivacyPolicy />} />
+                <Route path="/delete-account" element={<DeleteAccount />} />
 
                 {/* Admin routes */}
                 <Route
