@@ -4,134 +4,175 @@ const { Sequelize } = require("sequelize");
 const { Op } = require('sequelize');
 const {
     RefreshToken,
-    admins, Merchant, Branch, Receptionist, Coupon, CouponApplied
+    admins, Merchant, Branch, Receptionist, Coupon,CouponApplied
 } = require('../../models');
 
 exports.login = async (req, res) => {
+
     try {
+
         const { username, password } = req.body;
 
-        console.log("=================================");
-        console.log("LOGIN REQUEST");
-        console.log("Username:", username);
-        console.log("Password:", password);
-        console.log("=================================");
-
+        // ✅ Validation
         if (!username || !password) {
+
             return res.json({
+
                 status: 0,
                 message: "Username and password are required"
+
             });
+
         }
 
-        const allAdmins = await admins.findAll({
-            raw: true
-        });
-
-        console.log("ALL ADMINS:", allAdmins);
-        console.log("DB_HOST:", process.env.DB_HOST);
-        console.log("DB_NAME:", process.env.DB_NAME);
-        console.log("DB_USER:", process.env.DB_USER);
-
+        // ✅ Find Admin
         const admin = await admins.findOne({
+
             where: {
-                username: username
-            },
-            raw: true
+
+                username: username,
+                status: 1,
+                del_status: 0
+
+            }
+
         });
 
-        console.log("FOUND ADMIN:", admin);
-
-        console.log("ADMIN RECORD:");
-        console.log(admin ? admin.toJSON() : "NOT FOUND");
-
+        // ✅ Invalid Username
         if (!admin) {
-            console.log("LOGIN FAILED: USER NOT FOUND");
 
             return res.json({
+
                 status: 0,
-                message: "Invalid username or passwords"
+                message: "Invalid username or password"
+
             });
+
         }
 
-        console.log("DB HASH:", admin.password);
-
+        // ✅ Password Check
         const match = await bcrypt.compare(
+
             password,
             admin.password
+
         );
 
-        console.log("PASSWORD MATCH:", match);
-
+        // ✅ Invalid Password
         if (!match) {
-            console.log("LOGIN FAILED: PASSWORD MISMATCH");
 
             return res.json({
+
                 status: 0,
-                message: "Invalid username or passwordss"
+                message: "Invalid username or password"
+
             });
+
         }
 
+        // ✅ Refresh Token
         const refreshToken = jwt.sign(
+
             {
+
                 id: admin.id,
-                type: "admin",
-                token_type: "refresh"
+                type: 'admin',
+                token_type: 'refresh'
+
             },
+
             process.env.JWT_SECRET,
+
             {
-                expiresIn: "7d"
+
+                expiresIn: '7d'
+
             }
+
         );
 
+        // ✅ Store Refresh Token
         await RefreshToken.create({
+
             user_id: admin.id,
-            user_type: "admin",
+
+            user_type: 'admin',
+
             token: refreshToken,
+
             expires_at: new Date(
-                Date.now() + 7 * 24 * 60 * 60 * 1000
+
+                Date.now() +
+                7 * 24 * 60 * 60 * 1000
+
             )
+
         });
 
+        // ✅ Access Token
         const accessToken = jwt.sign(
+
             {
+
                 id: admin.id,
                 username: admin.username,
-                user_type: "admin",
-                token_type: "access"
+                user_type: 'admin',
+                token_type: 'access'
+
             },
+
             process.env.JWT_SECRET,
+
             {
-                expiresIn: "1d"
+
+                expiresIn: '1d'
+
             }
+
         );
 
+        // ✅ Update Last Login
         await admin.update({
+
             last_login: new Date()
+
         });
 
-        console.log("LOGIN SUCCESS");
-
+        // ✅ Response
         return res.json({
+
             status: 1,
+
             message: "Login successful",
+
             access_token: accessToken,
+
             refresh_token: refreshToken,
+
             data: {
+
                 id: admin.id,
                 name: admin.name,
+
                 role: admin.role
+
             }
+
         });
 
     } catch (err) {
+
         console.log("LOGIN ERROR:", err);
 
         return res.json({
+
             status: 0,
             message: err.message
+
         });
+
     }
+
 };
 
 exports.logout = async (req, res) => {
