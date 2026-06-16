@@ -277,7 +277,7 @@ export default function PrivacyPolicy() {
             <div className="page-wrapper">
                 <div className="content">
                     <h1 className="title">FIRST PASS PRIVACY POLICY</h1>
-                    <p className="meta">Effective Date: [Insert Date]</p>
+                    <p className="meta">Effective Date: 16/06/2026</p>
 
                     <p className="paragraph" style={{ marginBottom: '32px' }}>
                         Welcome to First Pass. We respect your privacy and are committed to protecting your personal information.
@@ -377,9 +377,9 @@ export default function PrivacyPolicy() {
                         <h2 className="section-title">9. Contact Us</h2>
                         <p className="paragraph">For privacy-related questions, contact:</p>
                         <p className="paragraph" style={{ lineHeight: '1.8' }}>
-                            <strong>Email:</strong> [Insert Email]<br />
+                            <strong>Email:</strong> info.firstpassapp.co <br />
                             <strong>Company:</strong> Byte Nova<br />
-                            <strong>Address:</strong> [Insert Address]
+                            {/* <strong>Address:</strong> [Insert Address] */}
                         </p>
                     </div>
                 </div>

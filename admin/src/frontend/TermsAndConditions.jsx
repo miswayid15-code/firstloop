@@ -327,7 +327,7 @@ export default function TermsAndConditions() {
                     {activeTab === 'customer' ? (
                         <div>
                             <h1 className="title">FIRST PASS CUSTOMER TERMS &amp; CONDITIONS</h1>
-                            <p className="meta">Effective Date: [Insert Date]</p>
+                            <p className="meta">Effective Date: 16-06-2026</p>
 
                             <p className="paragraph" style={{ marginBottom: '32px' }}>
                                 By creating an account or using First Pass, you agree to these Terms and Conditions.
@@ -427,7 +427,7 @@ export default function TermsAndConditions() {
                     ) : (
                         <div>
                             <h1 className="title">FIRST PASS MERCHANT TERMS &amp; CONDITIONS</h1>
-                            <p className="meta">Effective Date: [Insert Date]</p>
+                            <p className="meta">Effective Date: 16-06-2026</p>
 
                             <p className="paragraph" style={{ marginBottom: '32px' }}>
                                 By creating an account or using First Pass, you agree to these Terms and Conditions.
