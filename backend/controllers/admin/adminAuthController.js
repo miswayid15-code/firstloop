@@ -4,160 +4,324 @@ const { Sequelize } = require("sequelize");
 const { Op } = require('sequelize');
 const {
     RefreshToken,
-    admins, Merchant, Branch, Receptionist, Coupon,CouponApplied
+    admins, Merchant, Branch, Receptionist, Coupon, CouponApplied
 } = require('../../models');
 
-exports.login = async (req, res) => {
+// exports.login = async (req, res) => {
 
+//     try {
+
+//         const { username, password } = req.body;
+//         const [rows] = await admins.sequelize.query(
+//             "SELECT id, username FROM admins"
+//         );
+
+//         console.log("RAW SQL:", rows);
+
+//         // ✅ Validation
+//         if (!username || !password) {
+
+//             return res.json({
+
+//                 status: 0,
+//                 message: "Username and password are required"
+
+//             });
+
+//         }
+
+//         // ✅ Find Admin
+//         const admin = await admins.findOne({
+
+//             where: {
+
+//                 username: username,
+//                 status: 1,
+//                 del_status: 0
+
+//             }
+
+//         });
+
+//         // ✅ Invalid Username
+//         if (!admin) {
+
+//             return res.json({
+
+//                 status: 0,
+//                 message: "Invalid username or password"
+
+//             });
+
+//         }
+
+//         // ✅ Password Check
+//         const match = await bcrypt.compare(
+
+//             password,
+//             admin.password
+
+//         );
+
+//         // ✅ Invalid Password
+//         if (!match) {
+
+//             return res.json({
+
+//                 status: 0,
+//                 message: "Invalid username or password"
+
+//             });
+
+//         }
+
+//         // ✅ Refresh Token
+//         const refreshToken = jwt.sign(
+
+//             {
+
+//                 id: admin.id,
+//                 type: 'admin',
+//                 token_type: 'refresh'
+
+//             },
+
+//             process.env.JWT_SECRET,
+
+//             {
+
+//                 expiresIn: '7d'
+
+//             }
+
+//         );
+
+//         // ✅ Store Refresh Token
+//         await RefreshToken.create({
+
+//             user_id: admin.id,
+
+//             user_type: 'admin',
+
+//             token: refreshToken,
+
+//             expires_at: new Date(
+
+//                 Date.now() +
+//                 7 * 24 * 60 * 60 * 1000
+
+//             )
+
+//         });
+
+//         // ✅ Access Token
+//         const accessToken = jwt.sign(
+
+//             {
+
+//                 id: admin.id,
+//                 username: admin.username,
+//                 user_type: 'admin',
+//                 token_type: 'access'
+
+//             },
+
+//             process.env.JWT_SECRET,
+
+//             {
+
+//                 expiresIn: '1d'
+
+//             }
+
+//         );
+
+//         // ✅ Update Last Login
+//         await admin.update({
+
+//             last_login: new Date()
+
+//         });
+
+//         // ✅ Response
+//         return res.json({
+
+//             status: 1,
+
+//             message: "Login successful",
+
+//             access_token: accessToken,
+
+//             refresh_token: refreshToken,
+
+//             data: {
+
+//                 id: admin.id,
+//                 name: admin.name,
+
+//                 role: admin.role
+
+//             }
+
+//         });
+
+//     } catch (err) {
+
+//         console.log("LOGIN ERROR:", err);
+
+//         return res.json({
+
+//             status: 0,
+//             message: err.message
+
+//         });
+
+//     }
+
+// };
+
+
+exports.login = async (req, res) => {
     try {
 
         const { username, password } = req.body;
 
-        // ✅ Validation
+        console.log("=================================");
+        console.log("LOGIN REQUEST");
+        console.log("Username:", username);
+        console.log("Password:", password);
+        console.log("=================================");
+
+        // DATABASE DEBUG
+        console.log("TABLE NAME:", admins.getTableName());
+
+        const [dbInfo] = await admins.sequelize.query(
+            "SELECT current_database() as db"
+        );
+
+        console.log("CURRENT DATABASE:", dbInfo);
+
+        const [rows] = await admins.sequelize.query(
+            "SELECT id, username, status, del_status FROM admins"
+        );
+
+        console.log("RAW SQL ADMINS:", rows);
+
+        const count = await admins.count();
+
+        console.log("ADMIN COUNT:", count);
+
+        // VALIDATION
         if (!username || !password) {
 
             return res.json({
-
                 status: 0,
                 message: "Username and password are required"
-
             });
 
         }
 
-        // ✅ Find Admin
+        // FIND ADMIN
         const admin = await admins.findOne({
-
             where: {
-
                 username: username,
                 status: 1,
                 del_status: 0
-
             }
-
         });
 
-        // ✅ Invalid Username
+        console.log(
+            "FOUND ADMIN:",
+            admin ? admin.toJSON() : null
+        );
+
         if (!admin) {
 
-            return res.json({
+            console.log("LOGIN FAILED: USER NOT FOUND");
 
+            return res.json({
                 status: 0,
                 message: "Invalid username or password"
-
             });
 
         }
 
-        // ✅ Password Check
-        const match = await bcrypt.compare(
+        // PASSWORD CHECK
+        console.log("DB HASH:", admin.password);
 
+        const match = await bcrypt.compare(
             password,
             admin.password
-
         );
 
-        // ✅ Invalid Password
+        console.log("PASSWORD MATCH:", match);
+
         if (!match) {
 
-            return res.json({
+            console.log(
+                "LOGIN FAILED: PASSWORD MISMATCH"
+            );
 
+            return res.json({
                 status: 0,
                 message: "Invalid username or password"
-
             });
 
         }
 
-        // ✅ Refresh Token
+        // REFRESH TOKEN
         const refreshToken = jwt.sign(
-
             {
-
                 id: admin.id,
-                type: 'admin',
-                token_type: 'refresh'
-
+                type: "admin",
+                token_type: "refresh"
             },
-
             process.env.JWT_SECRET,
-
             {
-
-                expiresIn: '7d'
-
+                expiresIn: "7d"
             }
-
         );
 
-        // ✅ Store Refresh Token
         await RefreshToken.create({
-
             user_id: admin.id,
-
-            user_type: 'admin',
-
+            user_type: "admin",
             token: refreshToken,
-
             expires_at: new Date(
-
                 Date.now() +
                 7 * 24 * 60 * 60 * 1000
-
             )
-
         });
 
-        // ✅ Access Token
+        // ACCESS TOKEN
         const accessToken = jwt.sign(
-
             {
-
                 id: admin.id,
                 username: admin.username,
-                user_type: 'admin',
-                token_type: 'access'
-
+                user_type: "admin",
+                token_type: "access"
             },
-
             process.env.JWT_SECRET,
-
             {
-
-                expiresIn: '1d'
-
+                expiresIn: "1d"
             }
-
         );
 
-        // ✅ Update Last Login
         await admin.update({
-
             last_login: new Date()
-
         });
 
-        // ✅ Response
+        console.log("LOGIN SUCCESS");
+
         return res.json({
-
             status: 1,
-
             message: "Login successful",
-
             access_token: accessToken,
-
             refresh_token: refreshToken,
-
             data: {
-
                 id: admin.id,
                 name: admin.name,
-
                 role: admin.role
-
             }
-
         });
 
     } catch (err) {
@@ -165,16 +329,12 @@ exports.login = async (req, res) => {
         console.log("LOGIN ERROR:", err);
 
         return res.json({
-
             status: 0,
             message: err.message
-
         });
 
     }
-
 };
-
 exports.logout = async (req, res) => {
     try {
 
