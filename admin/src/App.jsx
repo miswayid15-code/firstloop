@@ -18,14 +18,29 @@ import Receptionists from './pages/Receptionists'
 import ViewMerchant from './pages/ViewMerchant'
 import ViewBranch from './pages/ViewBranch'
 import BranchChat from './pages/BranchChat'
+import CouponClaim from './pages/CouponClaim'
 import ProtectedRoute from './pages/ProtectedRoute'
+
+import ComingSoon from './frontend/ComingSoon'
+import TermsAndConditions from './frontend/TermsAndConditions'
+import PrivacyPolicy from './frontend/PrivacyPolicy'
+import About from './frontend/About'
+
+const isAdmin = window.location.pathname.startsWith('/admin');
 
 function App() {
     return (
         <>
             <AppToaster />
             <Routes>
-                <Route path="/" element={<Login />} />
+                {/* Public / Frontend routes */}
+                <Route path="/" element={isAdmin ? <Login /> : <ComingSoon />} />
+                <Route path="/coming-soon" element={<ComingSoon />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/terms" element={<TermsAndConditions />} />
+                <Route path="/privacy" element={<PrivacyPolicy />} />
+
+                {/* Admin routes */}
                 <Route
                 element={
                     <ProtectedRoute>
@@ -38,6 +53,7 @@ function App() {
                 <Route path="customers" element={<Customers />} />
                 <Route path="categories" element={<Categories />} />
                 <Route path="appointments" element={<Appointments />} />
+                <Route path="coupon-claim" element={<CouponClaim />} />
                 <Route path="reports" element={<Reports />} />
                 <Route path="notifications" element={<Notifications />} />
                 <Route path="notification-list" element={<NotificationList />} />

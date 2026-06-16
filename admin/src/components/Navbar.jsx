@@ -9,6 +9,7 @@ const navItems = [
     { to: '/customers', icon: 'fa-users', label: 'Customers' },
     { to: '/categories', icon: 'fa-tags', label: 'Categories' },
     { to: '/appointments', icon: 'fa-calendar-check', label: 'Appointments' },
+    { to: '/coupon-claim', icon: 'fa-ticket-alt', label: 'Coupon Claim' },
     { to: '/reports', icon: 'fa-chart-line', label: 'Reports' },
     { to: '/notifications', icon: 'fa-bell', label: 'Notifications' }
 ]

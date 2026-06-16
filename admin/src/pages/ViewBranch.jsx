@@ -313,7 +313,7 @@ export default function ViewBranch() {
                 {
                     coupon_id: couponId,
                     status: decision === 'accept' ? 1 : 2,
-                    reason: reason
+                    cancel_reason: reason
                 }
             );
 
@@ -346,7 +346,7 @@ export default function ViewBranch() {
                 {
                     appointment_id: appointmentId,
                     status: decision === 'accept' ? 1 : 2,
-                    reason: reason
+                    cancel_reason: reason
                 }
             );
 

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import API from '../api.js'
 import AppToaster from '../components/AppToaster.jsx'
@@ -70,6 +71,8 @@ export default function Appointments() {
                         cancel_reason: appointment.cancel_reason,
                         approved_by: appointment.approved_by,
                         approved_by_id: appointment.approved_by_id,
+                        customerId: appointment.cus_id,
+                        branchId: appointment.br_id,
                         raw: appointment
                     }
                 })
@@ -139,7 +142,7 @@ export default function Appointments() {
             const response = await API.post('admin/branch/update-appointment', {
                 appointment_id: selectedAppointment.id,
                 status: decision === 'accept' ? 1 : 2,
-                reason: reason
+                cancel_reason: reason
             })
 
             const data = response.data || {}
@@ -324,7 +327,7 @@ export default function Appointments() {
 
                             <th>Date & Time</th>
 
-                            <th>Service Campaign</th>
+                            {/* <th>Service Campaign</th> */}
 
                             <th>Branch Outlet</th>
 
@@ -360,9 +363,9 @@ export default function Appointments() {
                                     <td>
                                         <span className="skeleton-text" style={{ width: '80px' }} />
                                     </td>
-                                    <td>
+                                    {/* <td>
                                         <span className="skeleton-text" style={{ width: '120px' }} />
-                                    </td>
+                                    </td> */}
                                     <td>
                                         <span className="skeleton-text" style={{ width: '100px' }} />
                                     </td>
@@ -390,7 +393,13 @@ export default function Appointments() {
                                         <div className="table-cell-profile">
                                             <div className="cell-avatar">{row.initials}</div>
                                             <div className="cell-info">
-                                                <span className="cell-name">{row.customer}</span>
+                                                {row.customerId ? (
+                                                    <Link to={`/customers?id=${row.customerId}`} style={{ color: 'var(--primary)', fontWeight: 600, textDecoration: 'none' }}>
+                                                        {row.customer}
+                                                    </Link>
+                                                ) : (
+                                                    <span className="cell-name">{row.customer}</span>
+                                                )}
                                                 <span className="cell-subtext">{row.phone}</span>
                                             </div>
                                         </div>
@@ -407,8 +416,16 @@ export default function Appointments() {
                                             {row.time}
                                         </div>
                                     </td>
-                                    <td>{row.service}</td>
-                                    <td>{row.branch}</td>
+                                    {/* <td>{row.service}</td> */}
+                                    <td>
+                                        {row.branchId ? (
+                                            <Link to={`/view-branch/${row.branchId}`} style={{ color: 'var(--primary)', fontWeight: 600, textDecoration: 'none' }}>
+                                                {row.branch}
+                                            </Link>
+                                        ) : (
+                                            row.branch
+                                        )}
+                                    </td>
                                     <td>
                                         <span
                                             className={`badge ${row.status === 'Approved'

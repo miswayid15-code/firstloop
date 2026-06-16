@@ -1,7 +1,7 @@
 # Environment files
 backend/.env
 admin/.env
-website/.env
+
 
 # Node modules
 backend/node_modules/
@@ -23,9 +23,7 @@ admin/dist/
 admin/build/
 admin/.next/
 
-website/dist/
-website/build/
-website/.next/
+
 
 # Cache
 .cache/

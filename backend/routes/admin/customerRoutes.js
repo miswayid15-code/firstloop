@@ -40,4 +40,11 @@ router.post(
     checkAdmin,
     controller.appointment_list
 );
+
+router.post(
+    '/coupon-claim/list',
+    auth('admin'),
+    checkAdmin,
+    controller.coupon_claim_list
+);
 module.exports = router;

@@ -839,3 +839,68 @@ exports.appointment_list = async (req, res) => {
     }
 
 };
+
+exports.coupon_claim_list = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const offset = (page - 1) * limit;
+
+        const couponClaim = await CouponApplied.findAndCountAll({
+            attributes: [
+                'id',
+                'cus_id',
+                'coupon_id',
+                'branch_id',
+                'coupon_code',
+                'percentage',
+                'used_at',
+                'cancel_by',
+                'cancel_reason',
+                'approved_by',
+                'approved_by_id'
+            ],
+            include: [
+                {
+                    model: Customer,
+                    attributes: ['id', 'name', 'phone', 'country_code']
+                },
+                {
+                    model: Branch,
+                    attributes: ['id', 'name'],
+                    include: [
+                        {
+                            model: Merchant,
+                            attributes: ['id', 'name']
+                        }
+                    ]
+                }
+            ],
+            limit,
+            offset,
+            order: [['id', 'DESC']]
+        });
+
+        if (!couponClaim || couponClaim.length === 0) {
+            return res.json({
+                status: 0,
+                message: "No Coupon Claim found",
+                data: []
+            });
+        }
+
+        return res.json({
+            status: 1,
+            message: "Successfully fetched",
+            data: couponClaim
+        });
+
+    } catch (err) {
+        console.error("COUPON CLAIM ERROR:", err);
+
+        return res.json({
+            status: 0,
+            message: err.message
+        });
+    }
+};

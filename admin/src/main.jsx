@@ -13,10 +13,11 @@ import './assets/css/tables.css'
 import './assets/css/dashboard.css'
 import './assets/css/responsive.css'
 
+const isAdminPath = window.location.pathname.startsWith('/admin');
+
 ReactDOM.createRoot(document.getElementById('root')).render(
     <React.StrictMode>
-        <BrowserRouter >
-        {/* <BrowserRouter basename="/admin"> */}
+        <BrowserRouter basename={isAdminPath ? "/admin" : undefined}>
             <App />
         </BrowserRouter>
     </React.StrictMode>

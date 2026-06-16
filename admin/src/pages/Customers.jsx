@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 
 import { useJsApiLoader } from '@react-google-maps/api'
 import { toast } from 'react-hot-toast'
@@ -63,12 +64,16 @@ const getStatusLabel = (status) => {
 }
 
 export default function Customers() {
+    const [searchParams] = useSearchParams()
+    const customerIdParam = searchParams.get('id')
+    const searchParam = searchParams.get('search') || ''
+
     const [showCustomerView, setShowCustomerView] = useState(false)
     const [showCustomerEdit, setShowCustomerEdit] = useState(false)
     const [selectedCustomer, setSelectedCustomer] = useState(null)
 
     const [customers, setCustomers] = useState([])
-    const [search, setSearch] = useState('')
+    const [search, setSearch] = useState(searchParam)
     const [customerPage, setCustomerPage] = useState(1)
     const [loading, setLoading] = useState(true)
 
@@ -114,6 +119,22 @@ export default function Customers() {
         fetchCustomers()
 
     }, [])
+
+    useEffect(() => {
+        if (customerIdParam && customers.length > 0) {
+            const foundCustomer = customers.find(c => String(c.id) === String(customerIdParam))
+            if (foundCustomer) {
+                setSelectedCustomer(foundCustomer)
+                setShowCustomerView(true)
+            }
+        }
+    }, [customerIdParam, customers])
+
+    useEffect(() => {
+        if (searchParam) {
+            setSearch(searchParam)
+        }
+    }, [searchParam])
 
 
 
