@@ -1,0 +1,342 @@
+const { Banner, Page } = require('../../models');
+
+const { deleteFile } = require('../../helpers/fileHelper');
+
+
+exports.banner_list = async (req, res) => {
+    try {
+
+        const banners = await Banner.findAll({
+            where: {
+                del_status: 0
+            },
+            order: [['id', 'DESC']]
+        });
+
+        const baseUrl = process.env.APP_URL;
+
+        const data = banners.map(item => {
+
+            const banner = item.toJSON();
+
+            banner.image = banner.image
+                ? `${baseUrl}/uploads/Banner/${banner.image.replace(/\\/g, '/')}`
+                : null;
+
+            return banner;
+        });
+
+        return res.json({
+            status: 1,
+            message: "Banner list fetched successfully",
+            data
+        });
+
+    } catch (err) {
+
+        console.log("FETCH ERROR:", err);
+
+        return res.json({
+            status: 0,
+            message: err.message
+        });
+    }
+};
+
+exports.create_banner = async (req, res) => {
+    try {
+
+        const { title } = req.body;
+
+        if (!title) {
+            return res.status(400).json({
+                status: 0,
+                message: "Banner title is required"
+            });
+        }
+
+        const imageFile = req.files?.find(
+            file => file.fieldname === 'image'
+        );
+
+        const image = imageFile ? imageFile.filename : null;
+
+        const banner = await Banner.create({
+            title,
+            status: 1,
+            image
+        });
+
+        return res.status(201).json({
+            status: 1,
+            message: "Banner created successfully",
+            data: banner
+        });
+
+    } catch (err) {
+
+        console.log("CREATE ERROR:", err);
+
+        return res.status(500).json({
+            status: 0,
+            message: err.message
+        });
+    }
+};
+
+exports.update_banner = async (req, res) => {
+    try {
+
+        const { id, title, status } = req.body;
+
+        if (!id) {
+            return res.status(400).json({
+                status: 0,
+                message: "Banner ID is required"
+            });
+        }
+
+        const banner = await Banner.findOne({
+            where: {
+                id,
+                del_status: 0
+            }
+        });
+
+        if (!banner) {
+            return res.status(404).json({
+                status: 0,
+                message: "Banner not found"
+            });
+        }
+
+        const imageFile = req.files?.find(
+            file => file.fieldname === 'image'
+        );
+
+        // Delete old image if new image uploaded
+        if (imageFile && banner.image) {
+            deleteFile('Banner', banner.image);
+        }
+
+        await banner.update({
+            title: title ?? banner.title,
+            status: status ?? banner.status,
+            image: imageFile ? imageFile.filename : banner.image
+        });
+
+        return res.status(200).json({
+            status: 1,
+            message: "Banner updated successfully",
+            data: banner
+        });
+
+    } catch (err) {
+
+        console.log("UPDATE ERROR:", err);
+
+        return res.status(500).json({
+            status: 0,
+            message: err.message
+        });
+    }
+};
+
+exports.banner_details = async (req, res) => {
+    try {
+
+        const { id } = req.params;
+
+        const banner = await Banner.findOne({
+            where: {
+                id,
+                del_status: 0
+            }
+        });
+
+        if (!banner) {
+            return res.status(404).json({
+                status: 0,
+                message: "Banner not found"
+            });
+        }
+
+        const data = banner.toJSON();
+
+        data.image = data.image
+            ? `${process.env.APP_URL}/uploads/Banner/${data.image.replace(/\\/g, '/')}`
+            : null;
+
+        return res.status(200).json({
+            status: 1,
+            data
+        });
+
+    } catch (err) {
+
+        console.log("DETAIL ERROR:", err);
+
+        return res.status(500).json({
+            status: 0,
+            message: err.message
+        });
+    }
+};
+
+exports.delete_banner = async (req, res) => {
+    try {
+
+        const { id } = req.params;
+
+        const banner = await Banner.findByPk(id);
+
+        if (!banner) {
+            return res.status(404).json({
+                status: 0,
+                message: "Banner not found"
+            });
+        }
+
+        // Delete image physically
+        if (banner.image) {
+            deleteFile('Banner', banner.image);
+        }
+
+        // Delete record permanently
+        await banner.destroy();
+
+        return res.status(200).json({
+            status: 1,
+            message: "Banner deleted successfully"
+        });
+
+    } catch (err) {
+
+        console.log("DELETE ERROR:", err);
+
+        return res.status(500).json({
+            status: 0,
+            message: err.message
+        });
+    }
+};
+
+
+
+exports.create_page = async (req, res) => {
+    try {
+
+        const { page_type, title, content } = req.body;
+
+        if (!page_type || !title || !content) {
+            return res.status(400).json({
+                status: 0,
+                message: 'Page type, title and content are required'
+            });
+        }
+
+        const page = await Page.create({
+            page_type,
+            title,
+            content,
+            status: 1
+        });
+
+        return res.status(201).json({
+            status: 1,
+            message: 'Page created successfully',
+            data: page
+        });
+
+    } catch (error) {
+
+        return res.status(500).json({
+            status: 0,
+            message: error.message
+        });
+    }
+};
+exports.update_page = async (req, res) => {
+    try {
+
+        const { id, page_type, title, content, status } = req.body;
+
+        const page = await Page.findByPk(id);
+
+        if (!page) {
+            return res.status(404).json({
+                status: 0,
+                message: 'Page not found'
+            });
+        }
+
+        await page.update({
+            page_type: page_type ?? page.page_type,
+            title: title ?? page.title,
+            content: content ?? page.content,
+            status: status ?? page.status
+        });
+
+        return res.status(200).json({
+            status: 1,
+            message: 'Page updated successfully',
+            data: page
+        });
+
+    } catch (error) {
+
+        return res.status(500).json({
+            status: 0,
+            message: error.message
+        });
+    }
+};
+
+exports.page_list = async (req, res) => {
+    try {
+
+        const pages = await Page.findAll({
+            order: [['id', 'DESC']]
+        });
+
+        return res.status(200).json({
+            status: 1,
+            data: pages
+        });
+
+    }
+catch (error) {
+    return res.json({
+        status: 0,
+        message: "Something went wrongq"
+    });
+}
+};
+
+exports.page_details = async (req, res) => {
+    try {
+
+        const { id } = req.params;
+
+        const page = await Page.findByPk(id);
+
+        if (!page) {
+            return res.status(404).json({
+                status: 0,
+                message: 'Page not found'
+            });
+        }
+
+        return res.status(200).json({
+            status: 1,
+            data: page
+        });
+
+    } catch (error) {
+
+        return res.status(500).json({
+            status: 0,
+            message: error.message
+        });
+    }
+};

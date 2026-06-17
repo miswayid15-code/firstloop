@@ -57,6 +57,11 @@ router.post(
     controller.Coupon_list
 );
 router.post(
+   '/claim-coupon-details',
+    auth('customer'),
+    controller.claim_coupon_details
+);
+router.post(
    '/customer/wishlist',
     auth('customer'),
     controller.wishlist 

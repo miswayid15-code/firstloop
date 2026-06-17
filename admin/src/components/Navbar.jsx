@@ -9,6 +9,7 @@ const navItems = [
     { to: '/customers', icon: 'fa-users', label: 'Customers' },
     { to: '/categories', icon: 'fa-tags', label: 'Categories' },
     { to: '/appointments', icon: 'fa-calendar-check', label: 'Appointments' },
+    { to: '/settings', icon: 'fa-cog', label: 'Settings' },
     { to: '/coupon-claim', icon: 'fa-ticket-alt', label: 'Coupon Claim' },
     { to: '/reports', icon: 'fa-chart-line', label: 'Reports' },
     { to: '/notifications', icon: 'fa-bell', label: 'Notifications' }
@@ -92,7 +93,7 @@ export default function Navbar() {
                         <div className="logo-icon desktop-logo-icon">
                             <img src={logo} alt="D" style={{ width: 20, height: 20, objectFit: 'contain' }} />
                         </div>
-                        <span className="brand-name">Dealora</span>
+                        {/* <span className="brand-name">Dealora</span> */}
                         <img
                             src={Dealora}
                             alt="Dealora"

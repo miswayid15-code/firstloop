@@ -7,7 +7,32 @@
       name="description"
       content="Dealora Enterprise Coupon and Merchant Management Platform."
     />
-    <title>Dealora - Control Portal</title>
+    <title>First Pass - Control Portal</title>
+    <script>
+      (function() {
+        function updateTitle() {
+          const frontendPaths = ['/', '/coming-soon', '/about', '/terms', '/privacy', '/delete-account'];
+          const path = window.location.pathname;
+          if (path.startsWith('/admin') || !frontendPaths.includes(path)) {
+            document.title = "First Pass - Control Portal";
+          } else {
+           document.title = "First Pass | Discover Exclusive Offers & Rewards";
+          }
+        }
+        updateTitle();
+        window.addEventListener('popstate', updateTitle);
+        const originalPush = history.pushState;
+        history.pushState = function() {
+          originalPush.apply(this, arguments);
+          updateTitle();
+        };
+        const originalReplace = history.replaceState;
+        history.replaceState = function() {
+          originalReplace.apply(this, arguments);
+          updateTitle();
+        };
+      })();
+    </script>
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"

@@ -1,0 +1,65 @@
+const express = require('express');
+const router = express.Router();
+
+const controller = require('../../controllers/admin/additionalController.js');
+const upload = require('../../middleware/upload');
+const auth = require('../../middleware/auth');
+
+const checkAdmin = require('../../middleware/checkAdmin');
+
+
+router.get(
+    '/banner-list',
+    controller.banner_list
+);
+
+router.get(
+    '/banner-details/:id',
+    controller.banner_details
+);
+
+router.post(
+    '/create-banner',
+    auth('admin'),
+    (req, res, next) => {
+        req.uploadFolder = 'Banner';
+        next();
+    },
+    upload,
+    checkAdmin,
+    controller.create_banner
+);
+
+router.post(
+    '/update-banner',
+    auth('admin'),
+    (req, res, next) => {
+        req.uploadFolder = 'Banner';
+        next();
+    },
+    upload,
+    checkAdmin,
+    controller.update_banner
+);
+
+router.delete(
+    '/delete-banner/:id',
+    auth('admin'),
+    checkAdmin,
+    controller.delete_banner
+);
+
+router.post('/create-page',  auth('admin'),checkAdmin, controller.create_page);
+router.post('/update-page',  auth('admin'),checkAdmin, controller.update_page);
+router.get('/page-list',   auth('admin'),checkAdmin,controller.page_list);
+router.get('/page-details/:id',  auth('admin'), checkAdmin,controller.page_details);
+
+
+
+
+
+
+
+
+
+module.exports = router;

@@ -489,7 +489,7 @@ export default function DeleteAccount() {
                                 </div>
 
                                 <div className="form-group">
-                                    <label htmlFor="reason">Reason for leaving (Optional)</label>
+                                    <label htmlFor="reason">Reason for leaving </label>
                                     <textarea 
                                         id="reason" 
                                         className="textarea-field"

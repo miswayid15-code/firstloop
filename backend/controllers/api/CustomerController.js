@@ -955,15 +955,15 @@ exports.home = async (req, res) => {
                 del_status: 0
             },
 
-    include: [{
-        model: Merchant,
-        required: true, // INNER JOIN
-        attributes: [],
-        where: {
-            status: 1,
-            del_status: 0
-        }
-    }],
+            include: [{
+                model: Merchant,
+                required: true, // INNER JOIN
+                attributes: [],
+                where: {
+                    status: 1,
+                    del_status: 0
+                }
+            }],
             attributes: [
                 'id',
                 'name',
@@ -1572,8 +1572,8 @@ exports.coupon_apply = async (req, res) => {
         }
         const existingCoupon = await CouponApplied.findOne({
             where: {
-                coupon_id:coupon.id,
-                cus_id:customer_id,
+                coupon_id: coupon.id,
+                cus_id: customer_id,
                 branch_id: branch_id,
                 status: 0
             }
@@ -1937,6 +1937,91 @@ exports.Coupon_list = async (req, res) => {
 
 };
 
+exports.claim_coupon_details = async (req, res) => {
+    try {
+        const { coupon_claim_id } = req.body;
+
+        if (!coupon_claim_id) {
+            return res.status(400).json({
+                status: 0,
+                message: "coupon_claim_id is required"
+            });
+        }
+
+        const coupon_claim = await CouponApplied.findOne({
+            where: {
+                id: coupon_claim_id,
+                del_status: 0
+            },
+            attributes: [
+                'id',
+                'coupon_id',
+                'coupon_code',
+                'percentage',
+                'status',
+                'del_status',
+                'used_at',
+                'created_at',
+                'approved_by',
+                'approved_by_id',
+                'cancel_by',
+                'cancel_reason'
+            ],
+            include: [
+                {
+                    model: Coupon,
+                    attributes: [
+                        'id',
+                        'start_date',
+                        'end_date'
+                    ]
+                },
+                {
+                    model: Branch,
+                    attributes: [
+                        'id',
+                        'name'
+                    ]
+                }
+            ]
+        });
+
+        if (!coupon_claim) {
+            return res.status(404).json({
+                status: 0,
+                message: "No Claimed Coupon found"
+            });
+        }
+
+        const data = coupon_claim.toJSON();
+
+        data.used_at = data.used_at
+            ? moment(data.used_at).format('DD-MM-YYYY hh:mm A')
+            : null;
+        if (data.Coupon) {
+            data.Coupon.start_date = data.Coupon.start_date
+                ? moment(data.Coupon.start_date).format('DD-MM-YYYY hh:mm A')
+                : null;
+
+            data.Coupon.end_date = data.Coupon.end_date
+                ? moment(data.Coupon.end_date).format('DD-MM-YYYY hh:mm A')
+                : null;
+        }
+        return res.status(200).json({
+            status: 1,
+            message: "Successfully fetched coupon details",
+            data
+        });
+
+    } catch (err) {
+        console.error("claim_coupon_details Error:", err);
+
+        return res.status(500).json({
+            status: 0,
+            message: "Internal Server Error"
+        });
+    }
+};
 
 exports.wishlist = async (req, res) => {
 

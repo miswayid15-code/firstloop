@@ -20,6 +20,7 @@ import ViewBranch from './pages/ViewBranch'
 import BranchChat from './pages/BranchChat'
 import CouponClaim from './pages/CouponClaim'
 import ProtectedRoute from './pages/ProtectedRoute'
+import Settings from './pages/Settings'
 
 import ComingSoon from './frontend/ComingSoon'
 import TermsAndConditions from './frontend/TermsAndConditions'
@@ -67,6 +68,9 @@ function App() {
                 <Route path="branch-chat/:id" element={<BranchChat />} />
                 <Route path="branches" element={<Branches />} />
                 <Route path="receptionists" element={<Receptionists />} />
+                <Route path="Settings" element={<Settings />} />
+                <Route path="settings" element={<Settings />} />
+                <Route path="banners" element={<Settings />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

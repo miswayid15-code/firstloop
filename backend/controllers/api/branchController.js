@@ -1,4 +1,6 @@
-const { Branch, Merchant, BranchImage, MenuImage, Receptionist, Appointment, Customer } = require('../../models');
+const { Branch, Merchant, BranchImage, MenuImage, Receptionist, Appointment, Customer, Coupon, CouponApplied } = require('../../models');
+const { Op } = require('sequelize');
+const { db, admin } = require('../../config/firebase');
 const { parsePhoneNumber } = require('libphonenumber-js');
 
 const fs = require('fs');
@@ -900,79 +902,117 @@ exports.update_branch = async (req, res) => {
 };
 
 exports.branch_id = async (req, res) => {
-
     try {
-
         const branch_id = req.params.id;
 
         if (!branch_id) {
-
             return res.json({
                 status: 0,
                 message: "Branch ID required"
             });
-
         }
 
-        const branch = await Branch.findOne({
+        const [
+            branch,
+            active_coupon,
+            redeemed_coupon,
+            appointment,
+            snapshot
+        ] = await Promise.all([
+            Branch.findOne({
+                where: {
+                    id: branch_id,
+                    del_status: 0
+                },
+                include: [
+                    {
+                        model: BranchImage,
+                        attributes: ['id', 'image']
+                    },
+                    {
+                        model: Receptionist,
+                        attributes: ['id', 'name']
+                    }
+                ],
+                attributes: [
+                    'id',
+                    'name',
+                    'email',
+                    'phone',
+                    'profile_image',
+                    'lat',
+                    'lon',
+                    'address',
+                    'merchant_id',
+                    'description',
+                    'open_time',
+                    'close_time',
+                    'country_code'
+                ]
+            }),
 
-            where: {
-                id: branch_id,
-                del_status: 0
-            },
+            Coupon.count({
+                where: {
+                    status: 1,
+                    del_status: 0,
+                    branch_ids: {
+                        [Op.contains]: [Number(branch_id)]
+                    }
+                }
+            }),
 
-            include: [{
-                model: BranchImage,
-                attributes: ['id', 'image']
-            }],
+            CouponApplied.count({
+                where: {
+                    status: 1,
+                    del_status: 0,
+                    branch_id: Number(branch_id)
+                }
+            }),
 
-            attributes: [
-                'id',
-                'name',
-                'email',
-                'phone',
-                'profile_image',
-                'lat',
-                'lon',
-                'address',
-                'merchant_id',
-                'description',
-                'open_time',
-                'close_time',
-                'country_code'
-            ]
+            Appointment.count({
+                where: {
+                    status: 1,
+                    br_id: Number(branch_id)
+                }
+            }),
 
-        });
+            db.collection('chats')
+                .where('branchId', '==', String(branch_id))
+                .get()
+        ]);
 
         if (!branch) {
-
             return res.json({
                 status: 0,
                 message: "Branch not found"
             });
-
         }
 
         const baseUrl = process.env.APP_URL;
-
         const data = branch.toJSON();
 
-        // ✅ profile image url
+        // Profile image URL
         data.profile_image = data.profile_image
-            ? baseUrl + '/' + data.profile_image.replace(/\\/g, '/')
+            ? `${baseUrl}/${data.profile_image.replace(/\\/g, '/')}`
             : null;
 
-        // ✅ branch images url
+        // Branch images URL
         if (data.BranchImages) {
-
             data.BranchImages = data.BranchImages.map(img => ({
                 ...img,
                 image: img.image
-                    ? baseUrl + '/' + img.image.replace(/\\/g, '/')
+                    ? `${baseUrl}/${img.image.replace(/\\/g, '/')}`
                     : null
             }));
-
         }
+
+   
+
+        // Counts
+        data.active_coupon = active_coupon;
+        data.redeemed_coupon = redeemed_coupon;
+        data.appointment_count = appointment;
+        data.chat_count = snapshot.size;
 
         return res.json({
             status: 1,
@@ -980,18 +1020,14 @@ exports.branch_id = async (req, res) => {
         });
 
     } catch (err) {
-
         console.log("BRANCH FETCH ERROR:", err);
 
         return res.json({
             status: 0,
             message: err.message
         });
-
     }
-
 };
-
 
 // ================= REGISTER MENU IMAGE =================
 
@@ -1072,7 +1108,6 @@ exports.register_menu_image = async (req, res) => {
     }
 
 };
-
 
 // ================= FETCH MENU IMAGES =================
 
@@ -1163,7 +1198,6 @@ exports.fetch_menu_images = async (req, res) => {
     }
 
 };
-
 
 // ================= UPDATE MENU IMAGE =================
 
@@ -1715,9 +1749,6 @@ exports.update_appointment_status = async (req, res) => {
 
 };
 
-
-
-
 exports.fetch_appointment_details = async (req, res) => {
 
     try {
@@ -1946,7 +1977,7 @@ exports.update_appointment_status_by_mer = async (req, res) => {
 
     try {
 
-          const merchant = req.merchant;
+        const merchant = req.merchant;
 
         const {
             appointment_id,
