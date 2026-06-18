@@ -301,6 +301,7 @@ export default function TermsAndConditions() {
                     <ul className={`nav-links ${menuOpen ? 'open' : ''}`}>
                         <li><a href="/" onClick={() => setMenuOpen(false)}>Home</a></li>
                         <li><a href="/about" onClick={() => setMenuOpen(false)}>About</a></li>
+                        <li><a href="/contact" onClick={() => setMenuOpen(false)}>Contact</a></li>
                         <li><a href="/privacy" onClick={() => setMenuOpen(false)}>Privacy</a></li>
                         <li><a href="/terms" className="active" onClick={() => setMenuOpen(false)}>Terms</a></li>
                     </ul>
@@ -533,6 +534,7 @@ export default function TermsAndConditions() {
                         <div className="footer-inner">
                             <div className="footer-links">
                                 <a href="/about">About Us</a>
+                                <a href="/contact">Contact Us</a>
                                 <a href="/privacy">Privacy Policy</a>
                                 <a href="/terms">Terms &amp; Conditions</a>
                                 <a href="/delete-account">Delete Account</a>
