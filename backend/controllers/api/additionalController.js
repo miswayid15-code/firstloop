@@ -39,7 +39,7 @@ exports.banner_list = async (req, res) => {
             const item = banner.toJSON();
 
             item.image = item.image
-                ? baseUrl + '/uploads/Banner' + item.image.replace(/\\/g, '/')
+                ? baseUrl + '/uploads/Banner/' + item.image.replace(/\\/g, '/')
                 : null;
 
             return item;
