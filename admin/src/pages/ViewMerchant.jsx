@@ -108,6 +108,7 @@ export default function ViewMerchant() {
     const [branchPage, setBranchPage] = useState(1)
 
     const [merchantData, setMerchantData] = useState(null)
+    const [verifyingDoc, setVerifyingDoc] = useState(false)
 
     const [branchesData, setBranchesData] = useState([])
 
@@ -442,6 +443,30 @@ export default function ViewMerchant() {
 
         }
 
+    }
+
+    const handleVerifyDocument = async (verifyStatus) => {
+        try {
+            setVerifyingDoc(true)
+            const response = await API.post('admin/merchant/document-verify', {
+                id: id,
+                doc_verify: verifyStatus
+            })
+
+            if (isSuccessResponse(response.data)) {
+                toast.success(response.data.message || 'Document verification status updated successfully')
+                setMerchantData(prev => prev ? { ...prev, doc_verify: verifyStatus } : null)
+            } else {
+                toast.error(response.data.message || 'Failed to update verification status')
+            }
+        } catch (error) {
+            toast.error(
+                error?.response?.data?.message ||
+                'Failed to update verification status'
+            )
+        } finally {
+            setVerifyingDoc(false)
+        }
     }
 
     const filteredBranches =
@@ -2531,19 +2556,71 @@ export default function ViewMerchant() {
                                                         <i className="fas fa-file-alt" />
                                                     </div>
                                                     <div className="upload-card-body" style={{ padding: 0, margin: 0 }}>
-                                                        <h4 className="upload-card-title" style={{ fontSize: '0.85rem', fontWeight: '700', color: '#1f2937', marginBottom: '4px' }}>
+                                                        <h4 className="upload-card-title" style={{ fontSize: '0.85rem', fontWeight: '700', color: '#1f2937', marginBottom: '4px', display: 'flex', alignItems: 'center' }}>
                                                             KYC Document
+                                                            {merchantData?.doc_verify == 1 && (
+                                                                <i className="fas fa-check-circle" style={{ color: '#22c55e', marginLeft: '6px' }} title="Verified KYC Document" />
+                                                            )}
                                                         </h4>
-                                                        <a
-                                                            href={merchantData.document}
-                                                            target="_blank"
-                                                            rel="noreferrer"
-                                                            className="doc-link"
-                                                            style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem' }}
-                                                        >
-                                                            <span>View Document</span>
-                                                            <i className="fas fa-external-link-alt" style={{ fontSize: '0.65rem' }} />
-                                                        </a>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '6px', flexWrap: 'wrap' }}>
+                                                            <a
+                                                                href={merchantData.document}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                className="doc-link"
+                                                                style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem' }}
+                                                            >
+                                                                <span>View Document</span>
+                                                                <i className="fas fa-external-link-alt" style={{ fontSize: '0.65rem' }} />
+                                                            </a>
+
+                                                            {merchantData.doc_verify == 1 ? (
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                                    <span style={{ fontSize: '0.78rem', color: '#22c55e', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                                                        <i className="fas fa-shield-alt" /> Verified
+                                                                    </span>
+                                                                    <button
+                                                                        type="button"
+                                                                        style={{
+                                                                            display: 'inline-flex',
+                                                                            alignItems: 'center',
+                                                                            fontSize: '0.74rem',
+                                                                            background: 'none',
+                                                                            border: 'none',
+                                                                            color: 'var(--text-muted)',
+                                                                            cursor: 'pointer',
+                                                                            padding: 0,
+                                                                            textDecoration: 'underline'
+                                                                        }}
+                                                                        onClick={() => handleVerifyDocument(0)}
+                                                                        disabled={verifyingDoc}
+                                                                    >
+                                                                        Unverify
+                                                                    </button>
+                                                                </div>
+                                                            ) : (
+                                                                <button
+                                                                    type="button"
+                                                                    style={{
+                                                                        display: 'inline-flex',
+                                                                        alignItems: 'center',
+                                                                        gap: '4px',
+                                                                        fontSize: '0.78rem',
+                                                                        background: 'none',
+                                                                        border: 'none',
+                                                                        color: 'var(--primary)',
+                                                                        cursor: 'pointer',
+                                                                        padding: 0,
+                                                                        fontWeight: '600',
+                                                                        textDecoration: 'underline'
+                                                                    }}
+                                                                    onClick={() => handleVerifyDocument(1)}
+                                                                    disabled={verifyingDoc}
+                                                                >
+                                                                    {verifyingDoc ? 'Verifying...' : 'Verify Document'}
+                                                                </button>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </article>
                                             ) : (

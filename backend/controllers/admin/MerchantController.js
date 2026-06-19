@@ -377,6 +377,53 @@ exports.update_status = async (req, res) => {
     }
 };
 
+exports.doc_verify = async (req, res) => {
+    try {
+
+        const { id, doc_verify } = req.body;
+
+        const merchant = await Merchant.findOne({
+            where: {
+                id: id,
+                del_status: 0
+            }
+        });
+
+        if (!merchant) {
+            return res.json({
+                status: 0,
+                message: "Merchant not found"
+            });
+        }
+
+        await Merchant.update(
+            {
+                doc_verify: doc_verify
+            },
+            {
+                where: {
+                    id: id
+                }
+            }
+        );
+
+        return res.json({
+            status: 1,
+            message: "Merchant document verify successfully"
+        });
+
+    } catch (err) {
+
+        console.log(err);
+
+        return res.json({
+            status: 0,
+            message: "Issue with update"
+        });
+
+    }
+};
+
 exports.update_category = async (req, res) => {
     try {
 

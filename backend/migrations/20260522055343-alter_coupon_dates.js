@@ -4,29 +4,33 @@ module.exports = {
 
   async up(queryInterface, Sequelize) {
 
-    await queryInterface.changeColumn('coupons', 'start_date', {
-      type: Sequelize.TIME,
-      allowNull: true
-    });
+    await queryInterface.sequelize.query(`
+      ALTER TABLE coupons
+      ALTER COLUMN start_date TYPE TIME
+      USING start_date::TIME;
+    `);
 
-    await queryInterface.changeColumn('coupons', 'end_date', {
-      type: Sequelize.TIME,
-      allowNull: true
-    });
+    await queryInterface.sequelize.query(`
+      ALTER TABLE coupons
+      ALTER COLUMN end_date TYPE TIME
+      USING end_date::TIME;
+    `);
 
   },
 
   async down(queryInterface, Sequelize) {
 
-    await queryInterface.changeColumn('coupons', 'start_date', {
-      type: Sequelize.STRING,
-      allowNull: true
-    });
+    await queryInterface.sequelize.query(`
+      ALTER TABLE coupons
+      ALTER COLUMN start_date TYPE VARCHAR(255)
+      USING start_date::TEXT;
+    `);
 
-    await queryInterface.changeColumn('coupons', 'end_date', {
-      type: Sequelize.STRING,
-      allowNull: true
-    });
+    await queryInterface.sequelize.query(`
+      ALTER TABLE coupons
+      ALTER COLUMN end_date TYPE VARCHAR(255)
+      USING end_date::TEXT;
+    `);
 
   }
 

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import API from '../api.js'
-import Dealora from '../assets/img/Dealora.png'
+import FirstPass from '../assets/img/FirePass.png'
 import logo from '../assets/img/new_logo.png'
 const navItems = [
     { to: '/dashboard', icon: 'fa-chart-pie', label: 'Dashboard' },
@@ -97,8 +97,8 @@ export default function Navbar() {
                         </div>
                         <span className="brand-name">First Pass</span>
                         <img
-                            src={Dealora}
-                            alt="Dealora"
+                            src={FirstPass}
+                            alt="FirstPass"
                             className="mobile-logo-img"
                             style={{ display: 'none', height: 32, objectFit: 'contain' }}
                         />
@@ -161,13 +161,13 @@ export default function Navbar() {
                     <div className="nav-divider" />
 
                     <div className="nav-user-profile" id="nav-user-profile" ref={profileRef}>
-                        {/* <img src="/assets/img/Dealora.png" alt="Dealora" className="desktop-profile-logo" /> */}
+                        {/* <img src="/assets/img/FirstPass.png" alt="FirstPass" className="desktop-profile-logo" /> */}
                         {/* <div className="mobile-profile-content">
                             <div className="nav-user-avatar">
                                 <img src="/assets/img/logo.png" alt="User" style={{ width: 20, height: 20, objectFit: 'contain' }} />
                             </div>
                             <div className="nav-user-info">
-                                <span className="nav-user-name">dealora</span>
+                                <span className="nav-user-name">FirstPass</span>
                             </div>
                         </div> */}
                         <button
@@ -179,7 +179,7 @@ export default function Navbar() {
                                 setNotificationsOpen(false)
                             }}
                         >
-                            <span className="nav-user-name"> <img src={Dealora} alt="Dealora" className="desktop-profile-logo" style={{ width: 150, height: 42, objectFit: 'contain' }} /></span>
+                            <span className="nav-user-name"> <img src={FirstPass} alt="FirstPass" className="desktop-profile-logo" style={{ width: 150, height: 42, objectFit: 'contain' }} /></span>
                         </button>
                         <div className={`profile-dropdown-menu${profileOpen ? ' active' : ''}`} id="profile-dropdown-menu">
                             <div className="profile-dropdown-item" style={{ pointerEvents: 'none', color: 'var(--text-primary)', fontWeight: 600, fontSize: '0.9rem' }}>

@@ -32,6 +32,13 @@ router.post(
 
     controller.update_status
 );
+
+router.post(
+    '/merchant/document-verify',
+    auth('admin'),
+
+    controller.doc_verify
+);
 router.post(
     '/merchant/category-update',
     auth('admin'),

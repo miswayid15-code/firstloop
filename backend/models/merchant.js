@@ -41,6 +41,7 @@ module.exports = (sequelize, DataTypes) => {
     brand_image: DataTypes.STRING,
 
     status: DataTypes.INTEGER,
+    doc_verify: DataTypes.INTEGER,
     del_status: DataTypes.INTEGER,
     deleted_at: {
       type: DataTypes.DATE,
