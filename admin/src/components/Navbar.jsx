@@ -2,17 +2,19 @@ import { useEffect, useRef, useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import API from '../api.js'
 import Dealora from '../assets/img/Dealora.png'
-import logo from '../assets/img/logo.png'
+import logo from '../assets/img/new_logo.png'
 const navItems = [
     { to: '/dashboard', icon: 'fa-chart-pie', label: 'Dashboard' },
     { to: '/merchants', icon: 'fa-store', label: 'Merchants' },
     { to: '/customers', icon: 'fa-users', label: 'Customers' },
     { to: '/categories', icon: 'fa-tags', label: 'Categories' },
     { to: '/appointments', icon: 'fa-calendar-check', label: 'Appointments' },
-    { to: '/settings', icon: 'fa-cog', label: 'Settings' },
+
     { to: '/coupon-claim', icon: 'fa-ticket-alt', label: 'Coupon Claim' },
+ 
     { to: '/reports', icon: 'fa-chart-line', label: 'Reports' },
-    { to: '/notifications', icon: 'fa-bell', label: 'Notifications' }
+    { to: '/notifications', icon: 'fa-bell', label: 'Notifications' },
+       { to: '/settings', icon: 'fa-cog', label: 'Settings' },
 ]
 
 export default function Navbar() {
@@ -93,7 +95,7 @@ export default function Navbar() {
                         <div className="logo-icon desktop-logo-icon">
                             <img src={logo} alt="D" style={{ width: 20, height: 20, objectFit: 'contain' }} />
                         </div>
-                        {/* <span className="brand-name">Dealora</span> */}
+                        <span className="brand-name">First Pass</span>
                         <img
                             src={Dealora}
                             alt="Dealora"
@@ -181,7 +183,7 @@ export default function Navbar() {
                         </button>
                         <div className={`profile-dropdown-menu${profileOpen ? ' active' : ''}`} id="profile-dropdown-menu">
                             <div className="profile-dropdown-item" style={{ pointerEvents: 'none', color: 'var(--text-primary)', fontWeight: 600, fontSize: '0.9rem' }}>
-                                Welcome dealora
+                                Welcome First Pass
                             </div>
                             <NavLink to="/notifications" className="profile-dropdown-item">
                                 <i className="fas fa-bell" /> Notification

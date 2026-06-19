@@ -27,6 +27,8 @@ exports.createOrUpdateMerchant = async (req, res) => {
         const mer_id = req.body.mer_id;
 
         if (mer_id) {
+            // console.log("HI");
+            // console.log("Body",res.body);
 
             merchant = await Merchant.findOne({
 
@@ -98,9 +100,9 @@ exports.createOrUpdateMerchant = async (req, res) => {
 
                 phoneNumber = num.number;
 
-                console.log("FULL PHONE:", phoneNumber);
-                console.log("COUNTRY CODE:", callingCode);
-                console.log("PHONE:", nationalNumber);
+                // console.log("FULL PHONE:", phoneNumber);
+                // console.log("COUNTRY CODE:", callingCode);
+                // console.log("PHONE:", nationalNumber);
 
             } catch (err) {
 
@@ -240,7 +242,9 @@ exports.createOrUpdateMerchant = async (req, res) => {
 
                 ...fileData,
 
-                status: 0
+
+                status: merchant.status ?? 0
+
 
             });
 
@@ -2977,10 +2981,10 @@ exports.applied_coupons = async (req, res) => {
                 'cancel_by',
                 'cancel_reason',
                 'status'
-            ]     ,  where: {
-                        branch_id: branch_id,
-                        del_status: 0
-                    },
+            ], where: {
+                branch_id: branch_id,
+                del_status: 0
+            },
 
             include: [
 
@@ -2991,7 +2995,7 @@ exports.applied_coupons = async (req, res) => {
 
                         // 'code'
                     ],
-             
+
                     required: true
                 },
 
@@ -3358,7 +3362,7 @@ exports.branch_id = async (req, res) => {
                 del_status: 0
             },
 
-          
+
 
             attributes: [
                 'id',
@@ -3370,7 +3374,7 @@ exports.branch_id = async (req, res) => {
                 'lon',
                 'address',
                 'merchant_id',
-             
+
             ]
 
         });
@@ -3393,8 +3397,8 @@ exports.branch_id = async (req, res) => {
             ? baseUrl + '/' + data.profile_image.replace(/\\/g, '/')
             : null;
 
-    
-     
+
+
         return res.json({
             status: 1,
             data

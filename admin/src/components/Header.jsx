@@ -227,7 +227,7 @@ function Header() {
                   }}
                 >
 
-                  Welcome dealora
+                  Welcome First Pass
 
                 </div>
 

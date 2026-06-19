@@ -21,6 +21,7 @@ import BranchChat from './pages/BranchChat'
 import CouponClaim from './pages/CouponClaim'
 import ProtectedRoute from './pages/ProtectedRoute'
 import Settings from './pages/Settings'
+import NotFound from './pages/NotFound'
 
 import ComingSoon from './frontend/ComingSoon'
 import TermsAndConditions from './frontend/TermsAndConditions'
@@ -74,7 +75,7 @@ function App() {
                 <Route path="settings" element={<Settings />} />
                 <Route path="banners" element={<Settings />} />
             </Route>
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<NotFound />} />
         </Routes>
         </>
     )

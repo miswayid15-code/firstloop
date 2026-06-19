@@ -263,6 +263,7 @@ export default function EditMerchant() {
             formData.append('address', form.address)
             formData.append('city', form.city)
             formData.append('state', form.state)
+            formData.append('country', form.country)
             formData.append('zip_code', form.zipcode)
             formData.append('lat', form.latitude)
             formData.append('lon', form.longitude)

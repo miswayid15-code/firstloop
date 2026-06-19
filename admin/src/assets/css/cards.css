@@ -424,7 +424,7 @@
 .merchant-details-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 16px;
+    gap: 15px;
     margin-top: 18px;
 }
 
@@ -755,4 +755,25 @@
 
 .phone-input-container .phone-input-dropdown .country-list {
     max-height: 260px;
+}
+
+/* Merchant details display sub-label and links */
+.merchant-sub-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #4b5563;
+    display: block;   
+    margin-bottom: 4px;
+}
+
+.doc-link {
+    color: var(--primary);     
+    font-weight: 600;
+    text-decoration: none;
+}    
+
+.doc-link:hover {
+    text-decoration: underline;
 }

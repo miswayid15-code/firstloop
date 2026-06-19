@@ -259,6 +259,10 @@ export default function AddMerchant() {
                 'state',
                 form.state
             )
+            formData.append(
+                'country',
+                form.country
+            )
 
             formData.append(
                 'zip_code',

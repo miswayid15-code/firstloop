@@ -2432,8 +2432,13 @@ export default function ViewMerchant() {
                                             Email
                                         </small>
 
-                                        <p className="merchant-subtext">
+                                        <p className="merchant-subtext" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                                             {merchantData?.email}
+                                            <i 
+                                                className="fas fa-check-circle" 
+                                                style={{ color: '#22c55e', fontSize: '0.85rem' }} 
+                                                title="Verified"
+                                            />
                                         </p>
                                     </div>
 
@@ -2487,8 +2492,17 @@ export default function ViewMerchant() {
                                         </p>
                                     </div>
 
-                                    <div style={{ gridColumn: '1 / -1' }}>
+                                    <div>
+                                        <small className="merchant-sub-label">
+                                            Created Date
+                                        </small>
 
+                                        <p className="merchant-subtext">
+                                            {formatDisplayDate(merchantData?.createdAt)}
+                                        </p>
+                                    </div>
+
+                                    <div style={{ gridColumn: '1 / -1' }}>
                                         <small className="merchant-sub-label">
                                             Address
                                         </small>
@@ -2502,42 +2516,40 @@ export default function ViewMerchant() {
                                                 maxWidth: '100%'
                                             }}
                                         >
-
                                             {merchantData?.address}
-
                                         </p>
-
                                     </div>
 
-                                    <div>
-
+                                    <div style={{ gridColumn: '1 / -1' }}>
                                         <small className="merchant-sub-label">
                                             Document
                                         </small>
-
-                                        <p>
-                                            <a
-                                                href={merchantData?.document}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="doc-link"
-                                            >
-                                                View Document
-                                            </a>
-                                        </p>
-
-                                    </div>
-
-                                    <div>
-
-                                        <small className="merchant-sub-label">
-                                            Created Date
-                                        </small>
-
-                                        <p className="merchant-subtext">
-                                            {formatDisplayDate(merchantData?.createdAt)}
-                                        </p>
-
+                                        <div style={{ marginTop: '6px' }}>
+                                            {merchantData?.document ? (
+                                                <article className="upload-card upload-card--documents" style={{ maxWidth: '340px', padding: '12px', display: 'flex', alignItems: 'center', gap: '14px', borderStyle: 'dashed' }}>
+                                                    <div className="upload-card-icon upload-card-icon--square" style={{ width: '42px', height: '42px', fontSize: '1.2rem', flexShrink: 0 }}>
+                                                        <i className="fas fa-file-alt" />
+                                                    </div>
+                                                    <div className="upload-card-body" style={{ padding: 0, margin: 0 }}>
+                                                        <h4 className="upload-card-title" style={{ fontSize: '0.85rem', fontWeight: '700', color: '#1f2937', marginBottom: '4px' }}>
+                                                            KYC Document
+                                                        </h4>
+                                                        <a
+                                                            href={merchantData.document}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            className="doc-link"
+                                                            style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem' }}
+                                                        >
+                                                            <span>View Document</span>
+                                                            <i className="fas fa-external-link-alt" style={{ fontSize: '0.65rem' }} />
+                                                        </a>
+                                                    </div>
+                                                </article>
+                                            ) : (
+                                                <span className="merchant-subtext" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No Document Uploaded</span>
+                                            )}
+                                        </div>
                                     </div>
 
                                 </div>

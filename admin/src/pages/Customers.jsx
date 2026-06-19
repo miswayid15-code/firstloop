@@ -99,8 +99,31 @@ export default function Customers() {
     const [customerAutocomplete, setCustomerAutocomplete] = useState(null)
     const [editingCustomer, setEditingCustomer] = useState(false)
 
+    const [showCustomerAdd, setShowCustomerAdd] = useState(false)
+    const [addingCustomer, setAddingCustomer] = useState(false)
+    const [detailsLoading, setDetailsLoading] = useState(false)
+    const [addCustomerForm, setAddCustomerForm] = useState({
+        name: '',
+        email: '',
+        phone: '',
+        country_code: '+91',
+        gender: '',
+        dob: '',
+        address: '',
+        city: '',
+        state: '',
+        country: '',
+        zipcode: '',
+        latitude: '',
+        longitude: '',
+        profile_image: null,
+        profileImagePreview: '',
+        password: ''
+    })
+    const [addCustomerAutocomplete, setAddCustomerAutocomplete] = useState(null)
+
     const { isLoaded: isCustomerMapLoaded, loadError: customerMapLoadError } = useJsApiLoader({
-        id: 'dealora-google-maps-customers',
+        id: 'dealora-google-maps',
         googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
         libraries
     })
@@ -110,9 +133,27 @@ export default function Customers() {
         lng: Number(editCustomerForm.longitude) || defaultCenter.lng
     }), [editCustomerForm.latitude, editCustomerForm.longitude])
 
+    const addCustomerMapCenter = useMemo(() => ({
+        lat: Number(addCustomerForm.latitude) || defaultCenter.lat,
+        lng: Number(addCustomerForm.longitude) || defaultCenter.lng
+    }), [addCustomerForm.latitude, addCustomerForm.longitude])
 
-
-
+    const fetchCustomerDetails = async (customerId) => {
+        setDetailsLoading(true)
+        try {
+            const response = await API.post('admin/customer/details', { id: customerId })
+            if (response.data.status === 1 && response.data.data?.length > 0) {
+                setSelectedCustomer(response.data.data[0])
+            } else {
+                toast.error(response.data.message || 'Failed to fetch customer details')
+            }
+        } catch (error) {
+            console.error('Fetch Details Error:', error)
+            toast.error('Failed to fetch customer details')
+        } finally {
+            setDetailsLoading(false)
+        }
+    }
 
     useEffect(() => {
 
@@ -126,6 +167,7 @@ export default function Customers() {
             if (foundCustomer) {
                 setSelectedCustomer(foundCustomer)
                 setShowCustomerView(true)
+                fetchCustomerDetails(foundCustomer.id)
             }
         }
     }, [customerIdParam, customers])
@@ -205,7 +247,7 @@ export default function Customers() {
                 name: selectedCustomer.name || '',
                 email: selectedCustomer.email || '',
                 phone: selectedCustomer.phone || '',
-                country_code: selectedCustomer.country_code || '+91',
+                country_code: selectedCustomer.country_code ? String(selectedCustomer.country_code) : '+91',
                 gender: selectedCustomer.gender || '',
                 dob: selectedCustomer.dob || '',
                 address: selectedCustomer.address || selectedCustomer.location || '',
@@ -371,6 +413,214 @@ export default function Customers() {
         updateCustomerLocationDetails(latLng.lat(), latLng.lng())
     }
 
+    const openAddModal = () => {
+        setAddCustomerForm({
+            name: '',
+            email: '',
+            phone: '',
+            country_code: '+91',
+            gender: '',
+            dob: '',
+            address: '',
+            city: '',
+            state: '',
+            country: '',
+            zipcode: '',
+            latitude: '',
+            longitude: '',
+            profile_image: null,
+            profileImagePreview: '',
+            password: ''
+        })
+        setShowCustomerAdd(true)
+    }
+
+    const handleAddCustomerChange = (event) => {
+        const { name, value } = event.target
+        setAddCustomerForm(prev => ({
+            ...prev,
+            [name]: value
+        }))
+    }
+
+    const handleAddCustomerPhoneChange = (phone, countryCode) => {
+        setAddCustomerForm(prev => ({
+            ...prev,
+            phone,
+            country_code: countryCode || prev.country_code
+        }))
+    }
+
+    const handleAddCustomerProfileImageChange = (event) => {
+        const file = event.target.files?.[0]
+        if (!file) {
+            return
+        }
+
+        const reader = new FileReader()
+        reader.onload = () => {
+            setAddCustomerForm(prev => ({
+                ...prev,
+                profile_image: file,
+                profileImagePreview: reader.result || ''
+            }))
+        }
+        reader.readAsDataURL(file)
+    }
+
+    const handleAddCustomerAutocompleteLoad = (autocomplete) => {
+        setAddCustomerAutocomplete(autocomplete)
+    }
+
+    const handleAddCustomerPlaceChanged = () => {
+        if (!addCustomerAutocomplete) {
+            return
+        }
+
+        const place = addCustomerAutocomplete.getPlace()
+        if (!place || !place.geometry) {
+            return
+        }
+
+        const address = place.formatted_address || ''
+        const components = place.address_components || []
+        const city = getAddressComponent(components, 'locality') || getAddressComponent(components, 'sublocality') || getAddressComponent(components, 'administrative_area_level_2')
+        const state = getAddressComponent(components, 'administrative_area_level_1')
+        const country = getAddressComponent(components, 'country')
+        const zipcode = getAddressComponent(components, 'postal_code')
+        const latitude = place.geometry.location.lat()
+        const longitude = place.geometry.location.lng()
+
+        setAddCustomerForm(prev => ({
+            ...prev,
+            address,
+            city,
+            state,
+            country,
+            zipcode,
+            latitude: String(latitude),
+            longitude: String(longitude)
+        }))
+    }
+
+    const updateAddCustomerLocationDetails = (lat, lng, placeName = '', countryName = '') => {
+        if (!window.google?.maps?.Geocoder) {
+            setAddCustomerForm((prev) => ({
+                ...prev,
+                latitude: String(lat),
+                longitude: String(lng),
+                country: countryName || prev.country
+            }))
+            return
+        }
+
+        const geocoder = new window.google.maps.Geocoder()
+
+        geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+            if (status !== 'OK' || !results || !results[0]) {
+                setAddCustomerForm((prev) => ({
+                    ...prev,
+                    address: placeName || prev.address,
+                    country: countryName || prev.country,
+                    latitude: String(lat),
+                    longitude: String(lng)
+                }))
+                return
+            }
+
+            const place = results[0]
+            let city = ''
+            let state = ''
+            let country = ''
+            let zipcode = ''
+
+            place.address_components?.forEach((component) => {
+                const types = component.types
+
+                if (types.includes('locality')) city = component.long_name
+                if (types.includes('administrative_area_level_1')) state = component.long_name
+                if (types.includes('country')) country = component.long_name
+                if (types.includes('postal_code')) zipcode = component.long_name
+            })
+
+            setAddCustomerForm((prev) => ({
+                ...prev,
+                address: place.formatted_address || placeName || prev.address,
+                city,
+                state,
+                country,
+                zipcode,
+                latitude: String(lat),
+                longitude: String(lng)
+            }))
+        })
+    }
+
+    const handleAddCustomerMarkerDragEnd = (event) => {
+        const latLng = event?.latLng
+        if (!latLng) {
+            return
+        }
+
+        updateAddCustomerLocationDetails(latLng.lat(), latLng.lng())
+    }
+
+    const handleCreateCustomer = async () => {
+        if (!addCustomerForm.name || !addCustomerForm.email || !addCustomerForm.phone || !addCustomerForm.password) {
+            toast.error("Name, Email, Phone, and Password are required");
+            return;
+        }
+
+        setAddingCustomer(true);
+        try {
+            const formData = new FormData();
+            formData.append("name", addCustomerForm.name);
+            formData.append("email", addCustomerForm.email);
+            formData.append("phone", addCustomerForm.phone);
+            formData.append("password", addCustomerForm.password);
+            formData.append("dob", addCustomerForm.dob);
+            formData.append("gender", addCustomerForm.gender);
+            formData.append("address", addCustomerForm.address);
+            formData.append("city", addCustomerForm.city);
+            formData.append("state", addCustomerForm.state);
+            formData.append("country", addCustomerForm.country);
+            formData.append("zipcode", addCustomerForm.zipcode);
+            formData.append("lat", addCustomerForm.latitude);
+            formData.append("lon", addCustomerForm.longitude);
+            formData.append("country_code", addCustomerForm.country_code);
+
+            if (addCustomerForm.profile_image) {
+                formData.append(
+                    "profile_image",
+                    addCustomerForm.profile_image
+                );
+            }
+
+            const response = await API.post(
+                "admin/customer/create",
+                formData,
+                {
+                    headers: {
+                        "Content-Type": "multipart/form-data"
+                    }
+                }
+            );
+
+            if (response.data.status === 1) {
+                toast.success(response.data.message || "Customer Registered Successfully");
+                fetchCustomers();
+                setShowCustomerAdd(false);
+            } else {
+                toast.error(response.data.message || "Failed to register customer");
+            }
+        } catch (error) {
+            console.log(error);
+            toast.error("Failed to register customer");
+        } finally {
+            setAddingCustomer(false);
+        }
+    };
+
     const handleUpdateCustomer = async () => {
 
         try {
@@ -402,7 +652,12 @@ export default function Customers() {
 
             const response = await API.post(
                 "admin/customer/update",
-                formData
+                formData,
+                {
+                    headers: {
+                        "Content-Type": "multipart/form-data"
+                    }
+                }
             );
 
             if (response.data.status === 1) {
@@ -507,7 +762,7 @@ export default function Customers() {
                     </div>
                 </div>
                 <div>
-                    <button className="btn btn-primary">
+                    <button className="btn btn-primary" onClick={openAddModal}>
                         <i className="fas fa-plus" /> Add Customer
                     </button>
                 </div>
@@ -602,6 +857,7 @@ export default function Customers() {
                                                 onClick={() => {
                                                     setSelectedCustomer(row)
                                                     setShowCustomerView(true)
+                                                    fetchCustomerDetails(row.id)
                                                 }}
                                             >
                                                 <i className="fas fa-eye" />
@@ -612,6 +868,7 @@ export default function Customers() {
                                                 onClick={() => {
                                                     setSelectedCustomer(row)
                                                     setShowCustomerEdit(true)
+                                                    fetchCustomerDetails(row.id)
                                                 }}
                                             >
                                                 <i className="fas fa-edit" />
@@ -744,131 +1001,153 @@ export default function Customers() {
                             <div
                                 className="modal-body"
                                 style={{
-                                    padding: '24px 0'
+                                    maxHeight: '70vh',
+                                    overflowY: 'auto',
+                                    padding: '24px 20px'
                                 }}
                             >
-
-                                <div
-                                    style={{
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        alignItems: 'center',
-                                        marginBottom: 24
-                                    }}
-                                >
-
-                                    <div
-                                        style={{
-                                            width: 90,
-                                            height: 90,
-                                            borderRadius: '50%',
-                                            background: 'rgba(255,77,128,0.12)',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            fontSize: '2rem',
-                                            fontWeight: 700,
-                                            color: 'var(--primary)',
-                                            marginBottom: 14
-                                        }}
-                                    >
-                                        {selectedCustomer.name?.charAt(0)}
+                                {detailsLoading ? (
+                                    <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                                        <i className="fas fa-spinner fa-spin" style={{ fontSize: '2rem', color: 'var(--primary)', marginBottom: 12 }}></i>
+                                        <p>Loading customer details...</p>
                                     </div>
+                                ) : (
+                                    <>
+                                        <div
+                                            style={{
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'center',
+                                                marginBottom: 24
+                                            }}
+                                        >
 
-                                    <h3
-                                        style={{
-                                            marginBottom: 6,
-                                            fontSize: '1.4rem'
-                                        }}
-                                    >
-                                        {selectedCustomer.name}
-                                    </h3>
+                                            <div
+                                                style={{
+                                                    width: 90,
+                                                    height: 90,
+                                                    borderRadius: '50%',
+                                                    background: 'rgba(255,77,128,0.12)',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    fontSize: '2rem',
+                                                    fontWeight: 700,
+                                                    color: 'var(--primary)',
+                                                    marginBottom: 14
+                                                }}
+                                            >
+                                                {selectedCustomer.name?.charAt(0)}
+                                            </div>
 
-                                    <span
-                                        style={{
-                                            color: 'var(--text-muted)',
-                                            fontSize: '0.9rem'
-                                        }}
-                                    >
-                                        Premium Club Member
-                                    </span>
+                                            <h3
+                                                style={{
+                                                    marginBottom: 6,
+                                                    fontSize: '1.4rem'
+                                                }}
+                                            >
+                                                {selectedCustomer.name}
+                                            </h3>
 
-                                </div>
+                                        </div>
 
-                                <div className="details-grid">
+                                        <div className="details-grid">
 
-                                    <div className="details-item">
+                                            <div className="details-item">
 
-                                        <span className="details-label">
-                                            Mobile Number
-                                        </span>
+                                                <span className="details-label">
+                                                    Mobile Number
+                                                </span>
 
-                                        <span className="details-value">
-                                            {selectedCustomer.phone}
-                                        </span>
+                                                <span className="details-value">
+                                                    {selectedCustomer.phone}
+                                                </span>
 
-                                    </div>
+                                            </div>
 
-                                    <div className="details-item">
+                                            <div className="details-item">
 
-                                        <span className="details-label">
-                                            Email Address
-                                        </span>
+                                                <span className="details-label">
+                                                    Email Address
+                                                </span>
 
-                                        <span className="details-value">
-                                            {selectedCustomer.email}
-                                        </span>
+                                                <span className="details-value">
+                                                    {selectedCustomer.email}
+                                                </span>
 
-                                    </div>
+                                            </div>
 
-                                    <div className="details-item">
+                                            <div className="details-item">
 
-                                        <span className="details-label">
-                                            Date of Birth
-                                        </span>
+                                                <span className="details-label">
+                                                    Date of Birth
+                                                </span>
 
-                                        <span className="details-value">
-                                            {formatDate(selectedCustomer.dob)}
-                                        </span>
+                                                <span className="details-value">
+                                                    {formatDate(selectedCustomer.dob)}
+                                                </span>
 
-                                    </div>
+                                            </div>
 
-                                    <div className="details-item">
+                                            <div className="details-item">
 
-                                        <span className="details-label">
-                                            Join Date
-                                        </span>
+                                                <span className="details-label">
+                                                    Join Date
+                                                </span>
 
-                                        <span className="details-value">
-                                            {formatDate(selectedCustomer.createdAt)}
-                                        </span>
+                                                <span className="details-value">
+                                                    {formatDate(selectedCustomer.createdAt)}
+                                                </span>
 
-                                    </div>
+                                            </div>
 
-                                    <div className="details-item">
+                                            <div className="details-item">
 
-                                        <span className="details-label">
-                                            Gender
-                                        </span>
+                                                <span className="details-label">
+                                                    Gender
+                                                </span>
 
-                                        <span className="details-value">
-                                            {getGenderLabel(selectedCustomer.gender)}
-                                        </span>
+                                                <span className="details-value">
+                                                    {getGenderLabel(selectedCustomer.gender)}
+                                                </span>
 
-                                    </div>
-                                    <div className="details-item">
+                                            </div>
+                                            <div className="details-item">
 
-                                        <span className="details-label">
-                                            Status
-                                        </span>
+                                                <span className="details-label">
+                                                    Status
+                                                </span>
 
-                                        <span className="details-value">
-                                            {getStatusLabel(selectedCustomer.status)}
-                                        </span>
+                                                <span className="details-value">
+                                                    {getStatusLabel(selectedCustomer.status)}
+                                                </span>
 
-                                    </div>
+                                            </div>
 
-                                </div>
+                                            <div className="details-item" style={{ gridColumn: 'span 2' }}>
+                                                <span className="details-label">Address</span>
+                                                <span className="details-value">{selectedCustomer.address || '-'}</span>
+                                            </div>
+                                            <div className="details-item">
+                                                <span className="details-label">City</span>
+                                                <span className="details-value">{selectedCustomer.city || '-'}</span>
+                                            </div>
+                                            <div className="details-item">
+                                                <span className="details-label">State</span>
+                                                <span className="details-value">{selectedCustomer.state || '-'}</span>
+                                            </div>
+                                            <div className="details-item">
+                                                <span className="details-label">Country</span>
+                                                <span className="details-value">{selectedCustomer.country || '-'}</span>
+                                            </div>
+                                            <div className="details-item">
+                                                <span className="details-label">Zipcode</span>
+                                                <span className="details-value">{selectedCustomer.zip_code || selectedCustomer.zipcode || '-'}</span>
+                                            </div>
+
+                                        </div>
+                                    </>
+                                )}
 
                             </div>
 
@@ -930,9 +1209,14 @@ export default function Customers() {
 
                             </div>
 
-                            <div className="modal-body">
-
-                                <form>
+                            <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+                                {detailsLoading ? (
+                                    <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                                        <i className="fas fa-spinner fa-spin" style={{ fontSize: '2rem', color: 'var(--primary)', marginBottom: 12 }}></i>
+                                        <p>Loading customer details...</p>
+                                    </div>
+                                ) : (
+                                    <form>
                                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, marginBottom: 18 }}>
                                         <div
                                             style={{
@@ -1013,7 +1297,7 @@ export default function Customers() {
                                     <div className="form-row">
                                         <PhoneNumberField
                                             value={editCustomerForm.phone}
-                                            countryCode={editCustomerForm.country_code}
+                                            countryCode={editCustomerForm.country_code ? String(editCustomerForm.country_code) : ''}
                                             onChange={handleEditCustomerPhoneChange}
                                         />
 
@@ -1094,6 +1378,7 @@ export default function Customers() {
                                     )}
 
                                 </form>
+                                )}
 
                             </div>
 
@@ -1111,8 +1396,242 @@ export default function Customers() {
                                     className="btn btn-primary"
                                     type="button"
                                     onClick={handleUpdateCustomer}
+                                    disabled={detailsLoading}
                                 >
                                     Update Details
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                )
+            }
+
+            {
+                showCustomerAdd && (
+
+                    <div className="modal active">
+
+                        <div
+                            className="modal-backdrop"
+                            onClick={() => !addingCustomer && setShowCustomerAdd(false)}
+                        ></div>
+
+                        <div className="modal-content">
+
+                            <div className="modal-header">
+
+                                <h3 className="modal-title">
+                                    Create Customer Profile
+                                </h3>
+
+                                <button
+                                    className="modal-close"
+                                    type="button"
+                                    onClick={() => !addingCustomer && setShowCustomerAdd(false)}
+                                    disabled={addingCustomer}
+                                >
+                                    <i className="fas fa-times"></i>
+                                </button>
+
+                            </div>
+
+                            <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+
+                                <form>
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, marginBottom: 18 }}>
+                                        <div
+                                            style={{
+                                                width: 90,
+                                                height: 90,
+                                                borderRadius: '50%',
+                                                border: '2px solid var(--primary)',
+                                                overflow: 'hidden',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                background: 'var(--bg-hover)',
+                                                fontSize: '2rem',
+                                                color: 'var(--primary)'
+                                            }}
+                                        >
+                                            {addCustomerForm.profileImagePreview ? (
+                                                <img
+                                                    src={addCustomerForm.profileImagePreview}
+                                                    alt="Profile"
+                                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                />
+                                            ) : (
+                                                <i className="fas fa-user" />
+                                            )}
+                                        </div>
+
+                                        <label className="btn btn-sm-action-secondary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', fontSize: '0.85rem' }}>
+                                            <i className="fas fa-camera" />
+                                            {addCustomerForm.profile_image ? 'Change Photo' : 'Upload Profile Photo'}
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={handleAddCustomerProfileImageChange}
+                                                disabled={addingCustomer}
+                                                hidden
+                                            />
+                                        </label>
+
+                                        <small style={{ color: 'var(--text-muted)', fontSize: '0.74rem' }}>
+                                            Upload a profile image for the customer. JPG, PNG supported.
+                                        </small>
+                                    </div>
+
+                                    <div className="form-row">
+                                        <div className="form-group">
+                                            <input
+                                                type="text"
+                                                id="add-cust-name"
+                                                name="name"
+                                                className="form-control"
+                                                placeholder=" "
+                                                value={addCustomerForm.name}
+                                                onChange={handleAddCustomerChange}
+                                                disabled={addingCustomer}
+                                                required
+                                            />
+                                            <label htmlFor="add-cust-name" className="form-label">
+                                                Full Name
+                                            </label>
+                                        </div>
+
+                                        <div className="form-group">
+                                            <input
+                                                type="email"
+                                                id="add-cust-email"
+                                                name="email"
+                                                className="form-control"
+                                                placeholder=" "
+                                                value={addCustomerForm.email}
+                                                onChange={handleAddCustomerChange}
+                                                disabled={addingCustomer}
+                                                required
+                                            />
+                                            <label htmlFor="add-cust-email" className="form-label">
+                                                Email Address
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div className="form-row">
+                                        <PhoneNumberField
+                                            value={addCustomerForm.phone}
+                                            countryCode={addCustomerForm.country_code ? String(addCustomerForm.country_code) : ''}
+                                            onChange={handleAddCustomerPhoneChange}
+                                            disabled={addingCustomer}
+                                        />
+
+                                        <div className="form-group-classic">
+                                            <label className="form-label-classic">Gender</label>
+                                            <select
+                                                name="gender"
+                                                className="form-select"
+                                                value={addCustomerForm.gender}
+                                                onChange={handleAddCustomerChange}
+                                                disabled={addingCustomer}
+                                            >
+                                                <option value="">Select gender</option>
+                                                <option value="1">Male</option>
+                                                <option value="2">Female</option>
+                                                <option value="3">Others</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div className="form-row">
+                                        <div className="form-group">
+                                            <input
+                                                type="password"
+                                                name="password"
+                                                className="form-control"
+                                                placeholder=" "
+                                                value={addCustomerForm.password}
+                                                onChange={handleAddCustomerChange}
+                                                disabled={addingCustomer}
+                                                required
+                                            />
+                                            <label className="form-label">Password</label>
+                                        </div>
+
+                                        <div className="form-group-classic">
+                                            <label className="form-label-classic">Date of Birth</label>
+                                            <input
+                                                type="date"
+                                                name="dob"
+                                                className="form-control"
+                                                value={addCustomerForm.dob}
+                                                onChange={handleAddCustomerChange}
+                                                disabled={addingCustomer}
+                                                required
+                                                style={{ padding: '8px 12px', height: 40 }}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border)', paddingBottom: 6, marginBottom: 12 }}>
+                                        Address
+                                    </div>
+
+                                    {customerMapLoadError && (
+                                        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                                            Failed to load Google Maps. Please check the Maps API key.
+                                        </p>
+                                    )}
+
+                                    {!customerMapLoadError && !isCustomerMapLoaded && (
+                                        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                                            Loading map...
+                                        </p>
+                                    )}
+
+                                    {isCustomerMapLoaded && (
+                                        <CorporateAddressField
+                                            form={addCustomerForm}
+                                            onInputChange={handleAddCustomerChange}
+                                            onAutocompleteLoad={handleAddCustomerAutocompleteLoad}
+                                            onPlaceChanged={handleAddCustomerPlaceChanged}
+                                            onMapClick={(event) => {
+                                                if (event.latLng) {
+                                                    handleAddCustomerMarkerDragEnd(event)
+                                                }
+                                            }}
+                                            onMarkerDragEnd={handleAddCustomerMarkerDragEnd}
+                                            center={addCustomerMapCenter}
+                                            mapContainerStyle={{ width: '100%', height: '320px' }}
+                                        />
+                                    )}
+
+                                </form>
+
+                            </div>
+
+                            <div className="modal-footer">
+
+                                <button
+                                    className="btn btn-secondary"
+                                    type="button"
+                                    onClick={() => setShowCustomerAdd(false)}
+                                    disabled={addingCustomer}
+                                >
+                                    Cancel
+                                </button>
+
+                                <button
+                                    className="btn btn-primary"
+                                    type="button"
+                                    onClick={handleCreateCustomer}
+                                    disabled={addingCustomer}
+                                >
+                                    {addingCustomer ? 'Registering...' : 'Register Customer'}
                                 </button>
 
                             </div>

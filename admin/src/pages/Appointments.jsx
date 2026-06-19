@@ -42,6 +42,7 @@ export default function Appointments() {
     const [appointments, setAppointments] = useState([])
 
     const [loading, setLoading] = useState(true)
+    const [appointmentPage, setAppointmentPage] = useState(1)
 
     const fetchAppointments = async () => {
         try {
@@ -169,6 +170,51 @@ export default function Appointments() {
             setIsAppointmentSaving(false)
         }
     }
+
+    const APPOINTMENTS_PER_PAGE = 10
+
+    const totalAppointmentPages = Math.max(
+        1,
+        Math.ceil(filteredAppointments.length / APPOINTMENTS_PER_PAGE)
+    )
+
+    const safeAppointmentPage = Math.min(
+        appointmentPage,
+        totalAppointmentPages
+    )
+
+    const appointmentPageStartIndex =
+        (safeAppointmentPage - 1) * APPOINTMENTS_PER_PAGE
+
+    const paginatedAppointments =
+        filteredAppointments.slice(
+            appointmentPageStartIndex,
+            appointmentPageStartIndex + APPOINTMENTS_PER_PAGE
+        )
+
+    const appointmentStartCount = filteredAppointments.length
+        ? appointmentPageStartIndex + 1
+        : 0
+
+    const appointmentEndCount = Math.min(
+        appointmentPageStartIndex + APPOINTMENTS_PER_PAGE,
+        filteredAppointments.length
+    )
+
+    const appointmentPageNumbers = Array.from(
+        { length: totalAppointmentPages },
+        (_, index) => index + 1
+    )
+
+    useEffect(() => {
+        setAppointmentPage(1)
+    }, [search, statusFilter])
+
+    useEffect(() => {
+        if (appointmentPage > totalAppointmentPages) {
+            setAppointmentPage(totalAppointmentPages)
+        }
+    }, [appointmentPage, totalAppointmentPages])
 
     return (
         <>
@@ -386,8 +432,8 @@ export default function Appointments() {
                                     </td>
                                 </tr>
                             ))
-                        ) : filteredAppointments.length > 0 ? (
-                            filteredAppointments.map((row) => (
+                        ) : paginatedAppointments.length > 0 ? (
+                            paginatedAppointments.map((row) => (
                                 <tr key={row.id}>
                                     <td>
                                         <div className="table-cell-profile">
@@ -469,6 +515,45 @@ export default function Appointments() {
                 </table>
 
             </div>
+
+            {!loading && filteredAppointments.length > APPOINTMENTS_PER_PAGE && (
+                <div className="pagination-container">
+                    <span className="pagination-text">
+                        Showing {appointmentStartCount}-{appointmentEndCount} of {filteredAppointments.length} appointments
+                    </span>
+
+                    <div className="pagination-controls">
+                        <button
+                            type="button"
+                            className={`btn-page ${safeAppointmentPage === 1 ? 'disabled' : ''}`}
+                            onClick={() => setAppointmentPage((page) => Math.max(1, page - 1))}
+                            disabled={safeAppointmentPage === 1}
+                        >
+                            <i className="fas fa-chevron-left"></i>
+                        </button>
+
+                        {appointmentPageNumbers.map((page) => (
+                            <button
+                                type="button"
+                                key={page}
+                                className={`btn-page ${page === safeAppointmentPage ? 'active' : ''}`}
+                                onClick={() => setAppointmentPage(page)}
+                            >
+                                {page}
+                            </button>
+                        ))}
+
+                        <button
+                            type="button"
+                            className={`btn-page ${safeAppointmentPage === totalAppointmentPages ? 'disabled' : ''}`}
+                            onClick={() => setAppointmentPage((page) => Math.min(totalAppointmentPages, page + 1))}
+                            disabled={safeAppointmentPage === totalAppointmentPages}
+                        >
+                            <i className="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {
                 showAppointmentView && selectedAppointment && (

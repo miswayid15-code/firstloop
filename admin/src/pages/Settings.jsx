@@ -1031,7 +1031,7 @@ export default function Settings() {
                             ></i>
                         </div>
                         <form onSubmit={handleCreateBanner}>
-                            <div className="modal-body">
+                            <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
                                 <div className="form-group-classic">
                                     <label className="form-label-classic">Banner Title</label>
                                     <input
@@ -1117,7 +1117,7 @@ export default function Settings() {
                             </div>
                         ) : (
                             <form onSubmit={handleUpdateBanner}>
-                                <div className="modal-body">
+                                <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
                                     <div className="form-group-classic">
                                         <label className="form-label-classic">Banner Title</label>
                                         <input
@@ -1210,7 +1210,7 @@ export default function Settings() {
                                 <i className="fas fa-times"></i>
                             </button>
                         </div>
-                        <div className="modal-body">
+                        <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
                             <div style={{ textAlign: 'center', marginBottom: 20 }}>
                                 <div style={{ marginBottom: 16 }}>
                                     {selectedBanner.image ? (

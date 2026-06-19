@@ -23,6 +23,17 @@ router.post(
     controller.fetch_list
 );
 router.post(
+    '/customer/create',
+    auth('admin'),
+      (req, res, next) => {
+    req.uploadFolder = 'customer';
+    next();
+  },
+    upload,
+    checkAdmin,
+    controller.register
+);
+router.post(
     '/customer/update',
     auth('admin'),
       (req, res, next) => {

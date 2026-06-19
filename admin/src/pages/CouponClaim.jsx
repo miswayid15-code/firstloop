@@ -85,6 +85,7 @@ export default function CouponClaim() {
     const [isClaimSaving, setIsClaimSaving] = useState(false)
     const [couponClaims, setCouponClaims] = useState([])
     const [loading, setLoading] = useState(true)
+    const [claimPage, setClaimPage] = useState(1)
 
     const fetchCouponClaims = async () => {
         try {
@@ -192,6 +193,51 @@ export default function CouponClaim() {
         approved: couponClaims.filter((row) => row.statusFilter === 'approved').length,
         cancelled: couponClaims.filter((row) => row.statusFilter === 'cancelled').length
     }), [couponClaims])
+
+    const CLAIMS_PER_PAGE = 10
+
+    const totalClaimPages = Math.max(
+        1,
+        Math.ceil(filteredCouponClaims.length / CLAIMS_PER_PAGE)
+    )
+
+    const safeClaimPage = Math.min(
+        claimPage,
+        totalClaimPages
+    )
+
+    const claimPageStartIndex =
+        (safeClaimPage - 1) * CLAIMS_PER_PAGE
+
+    const paginatedClaims =
+        filteredCouponClaims.slice(
+            claimPageStartIndex,
+            claimPageStartIndex + CLAIMS_PER_PAGE
+        )
+
+    const claimStartCount = filteredCouponClaims.length
+        ? claimPageStartIndex + 1
+        : 0
+
+    const claimEndCount = Math.min(
+        claimPageStartIndex + CLAIMS_PER_PAGE,
+        filteredCouponClaims.length
+    )
+
+    const claimPageNumbers = Array.from(
+        { length: totalClaimPages },
+        (_, index) => index + 1
+    )
+
+    useEffect(() => {
+        setClaimPage(1)
+    }, [search, statusFilter])
+
+    useEffect(() => {
+        if (claimPage > totalClaimPages) {
+            setClaimPage(totalClaimPages)
+        }
+    }, [claimPage, totalClaimPages])
 
     return (
         <>
@@ -317,8 +363,8 @@ export default function CouponClaim() {
                                     ))}
                                 </tr>
                             ))
-                        ) : filteredCouponClaims.length > 0 ? (
-                            filteredCouponClaims.map((row) => (
+                        ) : paginatedClaims.length > 0 ? (
+                            paginatedClaims.map((row) => (
                                 <tr key={row.id}>
                                     <td>
                                         <div className="table-cell-profile">
@@ -403,6 +449,45 @@ export default function CouponClaim() {
                     </tbody>
                 </table>
             </div>
+
+            {!loading && filteredCouponClaims.length > CLAIMS_PER_PAGE && (
+                <div className="pagination-container">
+                    <span className="pagination-text">
+                        Showing {claimStartCount}-{claimEndCount} of {filteredCouponClaims.length} coupon claims
+                    </span>
+
+                    <div className="pagination-controls">
+                        <button
+                            type="button"
+                            className={`btn-page ${safeClaimPage === 1 ? 'disabled' : ''}`}
+                            onClick={() => setClaimPage((page) => Math.max(1, page - 1))}
+                            disabled={safeClaimPage === 1}
+                        >
+                            <i className="fas fa-chevron-left"></i>
+                        </button>
+
+                        {claimPageNumbers.map((page) => (
+                            <button
+                                type="button"
+                                key={page}
+                                className={`btn-page ${page === safeClaimPage ? 'active' : ''}`}
+                                onClick={() => setClaimPage(page)}
+                            >
+                                {page}
+                            </button>
+                        ))}
+
+                        <button
+                            type="button"
+                            className={`btn-page ${safeClaimPage === totalClaimPages ? 'disabled' : ''}`}
+                            onClick={() => setClaimPage((page) => Math.min(totalClaimPages, page + 1))}
+                            disabled={safeClaimPage === totalClaimPages}
+                        >
+                            <i className="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {showClaimView && selectedClaim && (
                 <div className="modal active">

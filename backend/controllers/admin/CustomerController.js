@@ -87,50 +87,65 @@ exports.list = async (req, res) => {
 }
 exports.register = async (req, res) => {
 
-    // console.log("========== CUSTOMER REGISTER START ==========");
-
     try {
 
         const {
             name,
             email,
             phone,
+            country_code,
             password,
             dob,
             gender,
             address,
             lat,
-            lon
+            lon,
+            city,
+            state,
+            country
         } = req.body;
 
-        console.log("REQ BODY:", req.body);
+        const zip_code = req.body.zip_code || req.body.zipcode;
 
-        let phoneNumber;
+        let nationalNumber;
+        let callingCode;
+
+        // =========================
+        // PHONE VALIDATION
+        // =========================
 
         try {
 
-            console.log("Parsing phone:", phone);
+            const cleanPhone = (phone || '').replace(/\s+/g, '');
 
-            const num = parsePhoneNumber(phone);
+            const normalizedCountryCode = country_code 
+                ? (String(country_code).startsWith('+') ? String(country_code) : `+${country_code}`)
+                : '';
 
-            if (!num.isValid()) {
+            const fullPhone = cleanPhone.startsWith('+')
+                ? cleanPhone
+                : `${normalizedCountryCode}${cleanPhone}`;
 
-                console.log("Invalid phone");
+            const num = parsePhoneNumber(fullPhone);
+
+            if (!num || !num.isValid()) {
 
                 return res.json({
                     status: 0,
-                    message: "Invalid phone"
+                    message: "Invalid phone number"
                 });
 
             }
 
-            phoneNumber = num.number;
+            callingCode = `+${num.countryCallingCode}`;
+            nationalNumber = num.nationalNumber;
 
-            console.log("Valid Phone:", phoneNumber);
+            // console.log("COUNTRY CODE:", callingCode);
+            // console.log("PHONE:", nationalNumber);
 
-        } catch (phoneErr) {
+        } catch (err) {
 
-            console.log("PHONE ERROR:", phoneErr);
+            console.log("PHONE ERROR:", err);
 
             return res.json({
                 status: 0,
@@ -139,14 +154,19 @@ exports.register = async (req, res) => {
 
         }
 
-        // check phone exists
-        // console.log("Checking phone exists...");
+        // =========================
+        // PHONE EXISTS CHECK
+        // =========================
 
         const phoneExists = await Customer.findOne({
-            where: { phone: phoneNumber }
-        });
 
-        console.log("PHONE EXISTS:", phoneExists);
+            where: {
+                country_code: callingCode,
+                phone: nationalNumber,
+                del_status: 0
+            }
+
+        });
 
         if (phoneExists) {
 
@@ -157,36 +177,43 @@ exports.register = async (req, res) => {
 
         }
 
-        // check email exists
-        // console.log("Checking email exists...");
+        // =========================
+        // EMAIL EXISTS CHECK
+        // =========================
 
-        const emailExists = await Customer.findOne({
-            where: { email }
-        });
+        if (email) {
 
-        // console.log("EMAIL EXISTS:", emailExists);
+            const emailExists = await Customer.findOne({
 
-        if (emailExists) {
+                where: {
+                    email: email.trim().toLowerCase(),
+                    del_status: 0
+                }
 
-            return res.json({
-                status: 0,
-                message: "Email already exists"
             });
+
+            if (emailExists) {
+
+                return res.json({
+                    status: 0,
+                    message: "Email already exists"
+                });
+
+            }
 
         }
 
-        // profile image upload
-        let profileImage = '';
+        // =========================
+        // PROFILE IMAGE
+        // =========================
 
-        // console.log("FILES:", req.files);
+        let profileImage = null;
 
         if (req.files && req.files.length > 0) {
 
             const profileFile = req.files.find(
                 file => file.fieldname === 'profile_image'
             );
-
-            // console.log("PROFILE FILE:", profileFile);
 
             if (profileFile) {
 
@@ -196,162 +223,94 @@ exports.register = async (req, res) => {
 
         }
 
-        // console.log("PROFILE IMAGE:", profileImage);
-
-        // password hash
-        // console.log("Hashing password...");
+        // =========================
+        // PASSWORD HASH
+        // =========================
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // console.log("PASSWORD HASHED");
-
-        // create customer
-        // console.log("Creating customer...");
+        // =========================
+        // CREATE CUSTOMER
+        // =========================
 
         const customer = await Customer.create({
 
             name,
-            email,
-            phone: phoneNumber,
+
+            email: email
+                ? email.trim().toLowerCase()
+                : null,
+
+            country_code: callingCode,
+
+            phone: nationalNumber,
+
             password: hashedPassword,
+
             dob,
+
             gender,
+
             address,
+
             lat,
+
             lon,
+
+            city,
+
+            state,
+            country,
+            zip_code,
+
             profile_image: profileImage,
+
             status: 1,
+
             del_status: 0
 
         });
 
-        // console.log("CUSTOMER CREATED:", customer.id);
+        // =========================
+        // SEND MAIL
+        // =========================
 
-        // access token
-        // console.log("Generating access token...");
-
-        const accessToken = jwt.sign(
-            {
-                id: customer.id,
-                email: customer.email,
-                user_type: 'customer',
-                token_type: 'access'
-            },
-            process.env.JWT_SECRET,
-            {
-                expiresIn: '1d'
-            }
-        );
-
-        // console.log("ACCESS TOKEN CREATED");
-
-        // refresh token
-        // console.log("Generating refresh token...");
-
-        const refreshToken = jwt.sign(
-            {
-                id: customer.id,
-                user_type: 'customer',
-                token_type: 'refresh'
-            },
-            process.env.JWT_REFRESH_SECRET,
-            {
-                expiresIn: '7d'
-            }
-        );
-
-
-        // console.log("REFRESH TOKEN CREATED");
-
-        // save refresh token
-        // console.log("Saving refresh token...");
-
-        await RefreshToken.create({
-
-            user_id: customer.id,
-            user_type: 'customer',
-            token: refreshToken,
-            expires_at: new Date(
-                Date.now() + 7 * 24 * 60 * 60 * 1000
-            )
-
-        });
-
-        // console.log("REFRESH TOKEN SAVED");
-
-        // mail env logs
-        // console.log("MAIL USER:", process.env.MAIL_USER);
-
-        // console.log(
-        //     "MAIL PASS EXISTS:",
-        //     process.env.MAIL_PASS ? "YES" : "NO"
-        // );
-
-        // console.log("========== MAIL START ==========");
-
-        // send mail
         try {
 
             await sendMail(
-                email,
+                customer.email,
                 'Customer Registration Successful',
                 RegisterTemplate('customer', customer.name)
             );
 
-            // console.log("REGISTRATION MAIL SENT");
-
         } catch (mailErr) {
 
-            // console.log("========== MAIL ERROR ==========");
-
-            // console.log("MAIL ERROR:", mailErr);
-
-            // console.log("MAIL ERROR MESSAGE:", mailErr.message);
-
-            // console.log("MAIL ERROR STACK:", mailErr.stack);
+            console.log("MAIL ERROR:", mailErr);
 
         }
 
-        // console.log("========== MAIL END ==========");
-
-        // console.log("FINAL RESPONSE:");
-
-        // console.log({
-
-        //     status: 1,
-        //     message: "Customer Registered Successfully",
-        //     user_id: customer.id,
-        //     user_type: 'customer',
-        //     access_token: accessToken,
-        //     refresh_token: refreshToken
-
-        // });
-
-        // console.log("========== CUSTOMER REGISTER SUCCESS ==========");
+        const customerData = customer.toJSON();
+        customerData.profile_image = customerData.profile_image
+            ? baseUrl + '/' + customerData.profile_image.replace(/\\/g, '/')
+            : null;
 
         return res.json({
 
             status: 1,
             message: "Customer Registered Successfully",
-            user_id: customer.id,
-            user_type: 'customer',
-            access_token: accessToken,
-            refresh_token: refreshToken
+            data: customerData
 
         });
 
     } catch (err) {
 
-        // console.log("========== CUSTOMER REGISTER ERROR ==========");
+        console.log("ERROR:", err);
 
-        // console.log("ERROR:", err);
+        return res.status(500).json({
 
-        console.log("ERROR STACK:", err.stack);
-
-        return res.json({
             status: 0,
-            message: "Error",
-            error: err.message
+            message: err.message
+
         });
 
     }
@@ -373,9 +332,20 @@ exports.update = async (req, res) => {
             gender,
             address,
             lat,
-            lon
+            lon,city,state,country
         } = req.body || {};
-        console.log("bodu", req.body)
+
+        const zip_code = req.body.zip_code || req.body.zipcode;
+        // console.log("bodu", req.body) 
+        // console.log("code",req.body.country_code)
+        // Log all uploaded files in the request
+console.log("Uploaded Files:", req.files);
+
+// Find the specific profile image file
+const profileFiless = req.files && req.files.find(file => file.fieldname === 'profile_image');
+console.log("Profile Image File Details:", profileFiless);
+
+        
 
         if (!id) {
 
@@ -388,7 +358,7 @@ exports.update = async (req, res) => {
 
         const customerId = id;
 
-        console.log("CUSTOMER ID:", customerId);
+        // console.log("CUSTOMER ID:", customerId);
 
         const customer = await Customer.findOne({
 
@@ -421,9 +391,14 @@ exports.update = async (req, res) => {
 
                 const cleanPhone = phone.replace(/\s+/g, '');
 
+                const rawCountryCode = country_code || customer.country_code || '';
+                const normalizedCountryCode = rawCountryCode
+                    ? (String(rawCountryCode).startsWith('+') ? String(rawCountryCode) : `+${rawCountryCode}`)
+                    : '';
+
                 const fullPhone = cleanPhone.startsWith('+')
                     ? cleanPhone
-                    : (country_code || customer.country_code || '') + cleanPhone;
+                    : `${normalizedCountryCode}${cleanPhone}`;
 
                 const num = parsePhoneNumber(fullPhone);
 
@@ -439,8 +414,8 @@ exports.update = async (req, res) => {
                 callingCode = `+${num.countryCallingCode}`;
                 nationalNumber = num.nationalNumber;
 
-                console.log("COUNTRY CODE:", callingCode);
-                console.log("PHONE:", nationalNumber);
+                // console.log("COUNTRY CODE:", callingCode);
+                // console.log("PHONE:", nationalNumber);
 
             } catch (err) {
 
@@ -559,6 +534,10 @@ exports.update = async (req, res) => {
             lat: lat || customer.lat,
 
             lon: lon || customer.lon,
+            city: city || customer.city,
+            state: state || customer.state,
+            country: country || customer.country,
+            zip_code: zip_code || customer.zip_code,
 
             profile_image: profileImage
 
@@ -572,11 +551,16 @@ exports.update = async (req, res) => {
 
         });
 
+        const customerData = updatedCustomer.toJSON();
+        customerData.profile_image = customerData.profile_image
+            ? baseUrl + '/' + customerData.profile_image.replace(/\\/g, '/')
+            : null;
+
         return res.json({
 
             status: 1,
             message: "Customer updated successfully",
-            data: updatedCustomer
+            data: customerData
 
         });
 
@@ -616,13 +600,21 @@ exports.fetch_list = async (req, res) => {
                 'name',
                 'email',
                 'phone',
+                'country_code',
                 'dob',
                 'gender',
                 'address',
                 'lat',
                 'lon',
                 'profile_image',
-                'status'
+                'status',
+                'city',
+                'state',
+                'address',
+                'country',
+                'zip_code',
+                'createdAt',
+               
 
             ],
 

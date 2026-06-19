@@ -120,7 +120,7 @@ export default function Login() {
             </div>
 
             <h1 className="login-title">
-              Dealora
+              First Pass
             </h1>
 
             <p className="login-subtitle">
