@@ -1385,6 +1385,9 @@ exports.branch_details = async (req, res) => {
                 distanceData.duration;
 
         }
+        console.log("customer_id", customer_id);
+console.log("branch_id", item.id);
+
 const wishlist = await Wishlist.findOne({
     where: {
         customer_id,
