@@ -693,6 +693,84 @@ exports.fetch_coupon = async (req, res) => {
 
 };
 
+
+exports.fetch_coupon_details = async (req, res) => {
+    try {
+
+        const coupon_id = req.body.coupon_id;
+
+
+        if (!coupon_id) {
+            return res.json({
+                status: 0,
+                message: "coupon_id is not empty"
+            });
+        }
+
+
+        const coupon = await Coupon.findAll({
+            attributes: [
+                'id',
+                'merchant_id',
+                'cat_id',
+                'branch_ids',
+                'code',
+                'percentage',
+                'min_amount',
+                'usage_limit',
+                'start_date',
+                'banner_image',
+                'end_date',
+                'status'
+            ],
+            where: {
+                id: coupon_id
+            },
+            order: [['id', 'DESC']]
+        });
+        if (!coupon) {
+            return res.status(401).json({
+                status: 0,
+                message: "Coupon is no found"
+            })
+        }
+        const data = coupon.map(item => {
+
+            const cpn = item.toJSON();
+
+            cpn.banner_image = cpn.banner_image
+                ? baseUrl + '/' + cpn.banner_image.replace(/\\/g, '/')
+                : null;
+
+            cpn.is_expired = new Date() > new Date(cpn.end_date) ? 1 : 0;
+
+            cpn.applicable_to_all_branches = !cpn.branch_ids || cpn.branch_ids.length === 0;
+
+
+
+
+            cpn.branches = [];
+            if (cpn.branch_ids && cpn.branch_ids.length > 0) {
+                cpn.branches = cpn.branch_ids
+                    .filter(bid => branchMap[bid])
+                    .map(bid => ({
+                        id: bid,
+                        name: branchMap[bid]
+                    }));
+            }
+            delete cpn.branch_ids;
+            return cpn;
+        });
+    }
+    catch (err) {
+        console.log("err", err);
+        return res.status(401).json({
+            status: 0,
+            message: err.message
+        })
+    }
+};
+
 exports.check_coupon = async (req, res) => {
 
     try {
@@ -1062,10 +1140,10 @@ exports.redeem_customer = async (req, res) => {
                         ...(userType === 'merchant' &&
                             br_id &&
                             Number(br_id) > 0 && {
-                                branch_ids: {
-                                    [Op.contains]: [Number(br_id)]
-                                }
-                            })
+                            branch_ids: {
+                                [Op.contains]: [Number(br_id)]
+                            }
+                        })
                     }
                 },
                 {
@@ -1356,6 +1434,96 @@ exports.fetch_coupon_by_id = async (req, res) => {
 
 
         delete data.branch_ids;
+
+        return res.json({
+            status: 1,
+            message: "Coupon details fetched successfully",
+            data: data
+        });
+
+    } catch (err) {
+
+        console.log("FETCH COUPON BY ID ERROR:", err);
+
+        return res.json({
+            status: 0,
+            message: err.message
+        });
+
+    }
+
+};
+
+exports.fetch_coupon_details_by_id = async (req, res) => {
+
+    try {
+
+      
+        const coupon_id = req.params.id || req.query.id;
+
+     
+        if (!coupon_id) {
+            return res.json({
+                status: 0,
+                message: "Coupon ID is required"
+            });
+        }
+
+        const coupon = await Coupon.findOne({
+            attributes: [
+                'id',
+                
+                'cat_id',
+                'branch_ids',
+                'code',
+                'percentage',
+                'min_amount',
+                'usage_limit',
+                'start_date',
+                'banner_image',
+                'end_date',
+                'status'
+            ],
+            where: {
+                id: coupon_id,
+               
+                del_status: 0
+            }
+        });
+
+        if (!coupon) {
+            return res.json({
+                status: 0,
+                message: "Coupon not found"
+            });
+        }
+
+        const category = await CouponCat.findOne({
+            attributes: ['id', 'name'],
+            where: {
+                id: coupon.cat_id,
+                del_status: 0
+            }
+        });
+
+
+       
+
+        const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+
+        const data = coupon.toJSON();
+
+        data.banner_image = data.banner_image
+            ? baseUrl + '/' + data.banner_image.replace(/\\/g, '/')
+            : null;
+
+
+        data.category = category ? {
+            id: category.id,
+            name: category.name
+        } : null;
+
+
 
         return res.json({
             status: 1,

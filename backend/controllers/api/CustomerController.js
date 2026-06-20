@@ -1385,8 +1385,8 @@ exports.branch_details = async (req, res) => {
                 distanceData.duration;
 
         }
-        console.log("customer_id", customer_id);
-console.log("branch_id", item.id);
+//         console.log("customer_id", customer_id);
+// console.log("branch_id", item.id);
 
 const wishlist = await Wishlist.findOne({
     where: {
@@ -1398,7 +1398,7 @@ const wishlist = await Wishlist.findOne({
 
 item.is_wishlist = wishlist !== null ? 1 : 0;
 
-console.log("wishlist", wishlist ?? "No wishlist found");
+// console.log("wishlist", wishlist ?? "No wishlist found");
 
         // ✅ Final Response
         return res.json({
