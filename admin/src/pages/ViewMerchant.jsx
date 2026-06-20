@@ -2297,7 +2297,22 @@ export default function ViewMerchant() {
 
             </div>
 
-            <div className="card card-glass merchant-profile-card">
+            <div className="card card-glass merchant-profile-card" style={{ position: 'relative' }}>
+                {!loading && (
+                    <NavLink
+                        to={`/edit-merchant/${id}`}
+                        className="merchant-inline-edit-btn"
+                        title="Edit Merchant"
+                        style={{
+                            position: 'absolute',
+                            top: '24px',
+                            right: '24px',
+                            zIndex: 10
+                        }}
+                    >
+                        <i className="fas fa-edit" />
+                    </NavLink>
+                )}
                 {loading ? (
                     <>
                         <div className="merchant-profile-info">
@@ -2343,20 +2358,20 @@ export default function ViewMerchant() {
                                         {merchantData?.name}
                                     </h2>
 
-                                    <span
+                                     <span
                                         className={`badge ${merchantData?.status == 1
                                             ? 'active'
                                             : 'pending'
                                             }`}
-                                    >
+                                     >
 
-                                        {
-                                            merchantData?.status == 1
-                                                ? 'Active'
-                                                : 'Inactive'
-                                        }
+                                         {
+                                             merchantData?.status == 1
+                                                 ? 'Active'
+                                                 : 'Inactive'
+                                         }
 
-                                    </span>
+                                     </span>
 
                                 </div>
 

@@ -310,3 +310,79 @@ exports.customer_verify_otp = async (req, res) => {
         });
     }
 };
+
+
+exports.checkVersion = async (req, res) => {
+    const platform = req.body.platform || req.query.platform;
+    const version = parseInt(req.body.cur_version || req.query.cur_version || 0);
+
+    if (!["ios", "android"].includes(platform)) {
+        return res.json({
+            status: 0,
+            result: "fail",
+            text: "Invalid platform"
+        });
+    }
+
+    return res.json(
+        version >= 1
+            ? {
+                  status: 1,
+                  result: "success",
+                  text: "Request successfully completed!"
+              }
+            : {
+                  status: 0,
+                  result: "fail",
+                  text: "Site under construction"
+              }
+    );
+};
+
+exports.check_MerchantVersion = async (req, res) => {
+    try {
+        const mv = req.body.cur_version || req.query.cur_version;
+        const platform = (req.body.platform || req.query.platform || "unknown").toLowerCase();
+
+        const minVersions = {
+            ios: 0,
+            android: 14,
+            unknown: 10,
+        };
+
+        const minRequired = minVersions[platform] ?? minVersions.unknown;
+        const isValid = !isNaN(mv) && Number(mv) >= minRequired;
+
+        if (isValid) {
+            return res.json({
+                status: 1,
+                result: "Success",
+                text: "Request Successfully Completed!",
+                current_version: Number(mv),
+                min_required_version: minRequired,
+                update_required: false,
+            });
+        }
+
+        return res.json({
+            status: 0,
+            result: "fail",
+            text: `Update Required - Version ${mv} is outdated. Minimum required: ${minRequired}`,
+            current_version: Number(mv) || 0,
+            min_required_version: minRequired,
+            update_required: true,
+            store_url:
+                platform === "ios"
+                    ? "https://apps.apple.com/your-app"
+                    : "https://play.google.com/store/apps/details?id=your.package",
+        });
+    } catch (error) {
+        console.error("Version Check Error:", error);
+
+        return res.status(500).json({
+            status: 0,
+            result: "fail",
+            text: "Internal Server Error",
+        });
+    }
+};
