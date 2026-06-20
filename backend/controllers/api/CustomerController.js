@@ -1404,6 +1404,8 @@ exports.branch_details = async (req, res) => {
         item.is_wishlist =
             wishlist ? 1 : 0;
 
+            console.log("wishlist",wishlist);
+
         // ✅ Final Response
         return res.json({
 
