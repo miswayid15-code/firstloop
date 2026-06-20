@@ -1385,26 +1385,17 @@ exports.branch_details = async (req, res) => {
                 distanceData.duration;
 
         }
-        const wishlist =
-            await Wishlist.findOne({
+const wishlist = await Wishlist.findOne({
+    where: {
+        customer_id,
+        branch_id: item.id,
+        del_status: 0
+    }
+});
 
-                where: {
+item.is_wishlist = wishlist !== null ? 1 : 0;
 
-                    customer_id,
-
-                    branch_id:
-                        item.id,
-
-                    del_status: 0
-
-                }
-
-            });
-
-        item.is_wishlist =
-            wishlist ? 1 : 0;
-
-            console.log("wishlist",wishlist);
+console.log("wishlist", wishlist ?? "No wishlist found");
 
         // ✅ Final Response
         return res.json({
