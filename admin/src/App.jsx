@@ -7,7 +7,9 @@ import Merchants from './pages/Merchants'
 import Customers from './pages/Customers'
 import Categories from './pages/Categories'
 import Appointments from './pages/Appointments'
-import Reports from './pages/Reports'
+import MerchantReports from './pages/MerchantReports'
+import CustomerReports from './pages/CustomerReports'
+import ViewMerchReport from './pages/ViewMerchReport'
 import Notifications from './pages/Notifications'
 import NotificationList from './pages/NotificationList'
 import Profile from './pages/Profile'
@@ -60,7 +62,10 @@ function App() {
                 <Route path="categories" element={<Categories />} />
                 <Route path="appointments" element={<Appointments />} />
                 <Route path="coupon-claim" element={<CouponClaim />} />
-                <Route path="reports" element={<Reports />} />
+                <Route path="reports" element={<Navigate to="/merchant-reports" replace />} />
+                <Route path="merchant-reports" element={<MerchantReports />} />
+                <Route path="merchant-report/:id" element={<ViewMerchReport />} />
+                <Route path="customer-reports" element={<CustomerReports />} />
                 <Route path="notifications" element={<Notifications />} />
                 <Route path="notification-list" element={<NotificationList />} />
                 <Route path="profile" element={<Profile />} />

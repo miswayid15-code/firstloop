@@ -592,7 +592,7 @@ export default function ViewMerchant() {
 
         try {
 
-            const response = await API.get(`admin/branch/id/${branchId}`)
+            const response = await API.get(`admin/branch/id/${encodeURIComponent(branchId)}`)
 
             const data = response.data
 

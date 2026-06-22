@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
+import { FaUserCircle } from "react-icons/fa";
 import API from '../api.js'
 import FirstPass from '../assets/img/FirePass.png'
 import logo from '../assets/img/new_logo.png'
@@ -12,9 +13,10 @@ const navItems = [
 
     { to: '/coupon-claim', icon: 'fa-ticket-alt', label: 'Coupon Claim' },
  
-    { to: '/reports', icon: 'fa-chart-line', label: 'Reports' },
+    { to: '/merchant-reports', icon: 'fa-store', label: 'Reports' },
+   
     { to: '/notifications', icon: 'fa-bell', label: 'Notifications' },
-       { to: '/settings', icon: 'fa-cog', label: 'Settings' },
+    { to: '/settings', icon: 'fa-cog', label: 'Settings' },
 ]
 
 export default function Navbar() {
@@ -92,16 +94,26 @@ export default function Navbar() {
             <div className="navbar-top">
                 <div className="navbar-left">
                     <NavLink to="/dashboard" className="brand-logo-area">
-                        <div className="logo-icon desktop-logo-icon">
-                            <img src={logo} alt="D" style={{ width: 20, height: 20, objectFit: 'contain' }} />
-                        </div>
-                        <span className="brand-name">First Pass</span>
-                        <img
-                            src={FirstPass}
-                            alt="FirstPass"
-                            className="mobile-logo-img"
-                            style={{ display: 'none', height: 32, objectFit: 'contain' }}
-                        />
+                                           <div className="nav-user-profile" id="nav-user-profile" ref={profileRef}>
+                        {/* <img src="/assets/img/FirstPass.png" alt="FirstPass" className="desktop-profile-logo" /> */}
+                        {/* <div className="mobile-profile-content">
+                            <div className="nav-user-avatar">
+                                <img src="/assets/img/logo.png" alt="User" style={{ width: 20, height: 20, objectFit: 'contain' }} />
+                            </div>
+                            <div className="nav-user-info">
+                                <span className="nav-user-name">FirstPass</span>
+                            </div>
+                        </div> */}
+                        <button
+                            type="button"
+                            className="nav-user-trigger"
+                            aria-expanded={profileOpen}
+                           
+                        >
+                            <span className="nav-user-name"> <img src={FirstPass} alt="FirstPass" className="desktop-profile-logo" style={{ width: 150, height: 42, objectFit: 'contain' }} /></span>
+                        </button>
+                       
+                    </div>
                     </NavLink>
                 </div>
 
@@ -179,7 +191,9 @@ export default function Navbar() {
                                 setNotificationsOpen(false)
                             }}
                         >
-                            <span className="nav-user-name"> <img src={FirstPass} alt="FirstPass" className="desktop-profile-logo" style={{ width: 150, height: 42, objectFit: 'contain' }} /></span>
+                            <div className="nav-user-avatar">
+                                <i className="fas fa-user" />
+                            </div>
                         </button>
                         <div className={`profile-dropdown-menu${profileOpen ? ' active' : ''}`} id="profile-dropdown-menu">
                             <div className="profile-dropdown-item" style={{ pointerEvents: 'none', color: 'var(--text-primary)', fontWeight: 600, fontSize: '0.9rem' }}>

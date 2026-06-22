@@ -183,7 +183,7 @@ export default function ViewBranch() {
         try {
             setLoading(true)
 
-            const response = await API.get(`admin/branch/id/${id}`)
+            const response = await API.get(`admin/branch/id/${encodeURIComponent(id)}`)
             const data = response.data || {}
 
             if (isSuccessResponse(data)) {

@@ -42,6 +42,7 @@ const initialForm = {
     latitude: '',
     longitude: '',
     countryCode: '',
+    status: '1',
 }
 
 export default function EditMerchant() {
@@ -227,6 +228,7 @@ export default function EditMerchant() {
                     latitude: merchant.lat || '',
                     longitude: merchant.lon || '',
                     countryCode: merchant.country_code || '',
+                    status: merchant.status?.toString() ?? '1',
                 })
 
                 // Set image previews from existing URLs
@@ -267,6 +269,7 @@ export default function EditMerchant() {
             formData.append('zip_code', form.zipcode)
             formData.append('lat', form.latitude)
             formData.append('lon', form.longitude)
+            formData.append('status', form.status)
 
             // Only include password if user entered a new one
             if (form.password) {
@@ -616,6 +619,28 @@ export default function EditMerchant() {
                                             {item.name}
                                         </option>
                                     ))}
+                                </select>
+                            </div>
+
+                            <div className="form-group-classic">
+                                <label className="form-label-classic">
+                                    Status
+                                </label>
+
+                                <select
+                                    name="status"
+                                    value={form.status}
+                                    onChange={handleChange}
+                                    className="form-select"
+                                    required
+                                >
+                                    <option value="1">
+                                        Active
+                                    </option>
+
+                                    <option value="0">
+                                        Inactive
+                                    </option>
                                 </select>
                             </div>
 

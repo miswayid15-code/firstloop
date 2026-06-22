@@ -13,7 +13,7 @@ router.post('/customer/register', (req, res, next) => {
 }, upload, controller.register);
 router.post('/customer/logout', auth('customer'), controller.logout);
 router.post('/customer/login', controller.login);
-router.post('/customer/refreshAccessToken', auth('customer'), controller.refreshAccessToken);
+router.post('/customer/refreshAccessToken', controller.refreshAccessToken);
 router.post('/customer/forget-password', controller.forget_password);
 router.post('/customer/reset-password', controller.reset_ps);
 router.post(

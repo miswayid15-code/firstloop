@@ -6,7 +6,8 @@ const sidebarItems = [
     { to: '/customers', icon: 'fa-users', label: 'Customers' },
     { to: '/categories', icon: 'fa-tags', label: 'Categories' },
     { to: '/appointments', icon: 'fa-calendar-check', label: 'Appointments' },
-    { to: '/reports', icon: 'fa-chart-line', label: 'Reports' },
+    { to: '/merchant-reports', icon: 'fa-store', label: 'Merchant Reports' },
+    { to: '/customer-reports', icon: 'fa-users', label: 'Customer Reports' },
     { to: '/notifications', icon: 'fa-bell', label: 'Notifications' }
 ]
 

@@ -201,7 +201,7 @@ export default function Settings() {
         setDetailLoading(true)
 
         try {
-            const response = await API.get(`admin/banner-details/${banner.id}`)
+            const response = await API.get(`admin/banner-details/${encodeURIComponent(banner.id)}`)
             if (isSuccessResponse(response.data)) {
                 const data = response.data.data || response.data
                 setEditBanner({
@@ -341,7 +341,7 @@ export default function Settings() {
     const performDeleteBanner = async (id) => {
         setConfirmDialog(prev => ({ ...prev, loading: true }))
         try {
-            const response = await API.delete(`admin/delete-banner/${id}`)
+            const response = await API.delete(`admin/delete-banner/${encodeURIComponent(id)}`)
             if (isSuccessResponse(response.data)) {
                 toast.success(response.data.message || "Banner deleted successfully")
                 await fetchBanners()
@@ -366,7 +366,7 @@ export default function Settings() {
         setDetailLoading(true)
 
         try {
-            const response = await API.get(`admin/page-details/${page.id}`)
+            const response = await API.get(`admin/page-details/${encodeURIComponent(page.id)}`)
             if (isSuccessResponse(response.data)) {
                 const data = response.data.data || response.data
                 setSelectedPage(data)
@@ -415,7 +415,7 @@ export default function Settings() {
         setDetailLoading(true)
 
         try {
-            const response = await API.get(`admin/page-details/${page.id}`)
+            const response = await API.get(`admin/page-details/${encodeURIComponent(page.id)}`)
             if (isSuccessResponse(response.data)) {
                 const data = response.data.data || response.data
                 setPageForm({
@@ -526,7 +526,7 @@ export default function Settings() {
     const performDeletePage = async (id) => {
         setConfirmDialog(prev => ({ ...prev, loading: true }))
         try {
-            const response = await API.delete(`admin/delete-page/${id}`)
+            const response = await API.delete(`admin/delete-page/${encodeURIComponent(id)}`)
             if (isSuccessResponse(response.data)) {
                 toast.success(response.data.message || "Page deleted successfully")
                 await fetchPages()

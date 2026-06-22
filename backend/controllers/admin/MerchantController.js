@@ -15,6 +15,14 @@ const { Op, Sequelize } = require('sequelize');
 const fs = require('fs');
 const path = require('path');
 
+const normalizeMerchantStatus = (status, fallback = 1) => {
+    if (status === undefined || status === null || status === '') {
+        return fallback;
+    }
+
+    return Number(status) === 0 ? 0 : 1;
+};
+
 exports.createOrUpdateMerchant = async (req, res) => {
 
     try {
@@ -214,6 +222,11 @@ exports.createOrUpdateMerchant = async (req, res) => {
 
         }
 
+        const merchantStatus = normalizeMerchantStatus(
+            req.body.status,
+            merchant?.status ?? 1
+        );
+
         // =========================
         // CREATE NEW MERCHANT
         // =========================
@@ -242,9 +255,7 @@ exports.createOrUpdateMerchant = async (req, res) => {
 
                 ...fileData,
 
-
-                status: merchant.status ?? 0
-
+                status: merchantStatus
 
             });
 
@@ -302,7 +313,7 @@ exports.createOrUpdateMerchant = async (req, res) => {
 
             ...fileData,
 
-            status: 0
+            status: merchantStatus
 
         });
 

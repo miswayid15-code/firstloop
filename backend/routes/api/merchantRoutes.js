@@ -77,7 +77,6 @@ router.get(
 // refresh token
 router.post(
     '/merchant/refreshAccessToken',
-    auth('merchant'),
     controller.refreshAccessToken
 );
 

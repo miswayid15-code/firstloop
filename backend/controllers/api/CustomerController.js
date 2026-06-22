@@ -198,10 +198,7 @@ exports.register = async (req, res) => {
             }
         );
 
-        // console.log("ACCESS TOKEN CREATED");
 
-        // refresh token
-        // console.log("Generating refresh token...");
 
         const refreshToken = jwt.sign(
             {
@@ -216,10 +213,7 @@ exports.register = async (req, res) => {
         );
 
 
-        // console.log("REFRESH TOKEN CREATED");
 
-        // save refresh token
-        // console.log("Saving refresh token...");
 
         await RefreshToken.create({
 
@@ -370,7 +364,7 @@ exports.login = async (req, res) => {
                 user_type: 'customer',
                 token_type: 'refresh'
             },
-            process.env.JWT_SECRET,
+            process.env.JWT_REFRESH_SECRET,
             {
                 expiresIn: '7d'
             }
@@ -449,19 +443,24 @@ exports.refreshAccessToken = async (req, res) => {
 
         const authHeader = req.headers.authorization;
 
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        if (!authHeader || !authHeader.startsWith("Bearer ")) {
             return res.json({
                 status: 0,
                 message: "Refresh token required"
             });
         }
 
-        const refresh_token = authHeader.split(' ')[1];
+
+        const refresh_token = authHeader.split(" ")[1];
+
 
         const stored = await RefreshToken.findOne({
-            where: { token: refresh_token }
+            where: {
+                token: refresh_token
+            }
         });
 
+        // console.log("stored", stored)
         if (!stored) {
             return res.json({
                 status: 0,
@@ -471,30 +470,65 @@ exports.refreshAccessToken = async (req, res) => {
 
         const decoded = jwt.verify(
             refresh_token,
-            process.env.JWT_SECRET
+            process.env.JWT_REFRESH_SECRET
         );
+
+
+
+        const customer = await Customer.findOne({
+            where: {
+                id: decoded.id,
+                del_status: 0
+            }
+        });
+
+        if (!customer) {
+            return res.status(401).json({
+                status: 0,
+                message: "Customer is not available"
+            });
+        }
 
         const newAccessToken = jwt.sign(
             {
-                id: decoded.id,
-                user_type: stored.user_type
+                id: customer.id,
+                email: customer.email,
+                user_type: stored.user_type,
+                token_type: "access"
             },
             process.env.JWT_SECRET,
-            { expiresIn: '1d' }
+            {
+                expiresIn: "1d"
+            }
         );
 
         return res.json({
             status: 1,
+            message: "Access token refreshed successfully",
             access_token: newAccessToken
         });
 
     } catch (err) {
+        console.log(err);
+
+        if (err.name === "TokenExpiredError") {
+            return res.json({
+                status: 0,
+                message: "Refresh token expired"
+            });
+        }
+
+        if (err.name === "JsonWebTokenError") {
+            return res.json({
+                status: 0,
+                message: "Invalid refresh token"
+            });
+        }
 
         return res.json({
             status: 0,
-            message: "Token expired"
+            message: "Something went wrong"
         });
-
     }
 };
 exports.forget_password = async (req, res) => {
@@ -1385,20 +1419,20 @@ exports.branch_details = async (req, res) => {
                 distanceData.duration;
 
         }
-//         console.log("customer_id", customer_id);
-// console.log("branch_id", item.id);
+        //         console.log("customer_id", customer_id);
+        // console.log("branch_id", item.id);
 
-const wishlist = await Wishlist.findOne({
-    where: {
-        customer_id,
-        branch_id: item.id,
-        del_status: 0
-    }
-});
+        const wishlist = await Wishlist.findOne({
+            where: {
+                customer_id,
+                branch_id: item.id,
+                del_status: 0
+            }
+        });
 
-item.is_wishlist = wishlist !== null ? 1 : 0;
+        item.is_wishlist = wishlist !== null ? 1 : 0;
 
-// console.log("wishlist", wishlist ?? "No wishlist found");
+        // console.log("wishlist", wishlist ?? "No wishlist found");
 
         // ✅ Final Response
         return res.json({
@@ -2247,7 +2281,22 @@ exports.appointment = async (req, res) => {
             });
 
         }
+        const formattedDate = moment(
+    appointment_date,
+    "DD-MM-YYYY",
+    true   // strict mode
+);
 
+if (!formattedDate.isValid()) {
+    return res.json({
+        status: 0,
+        message: "Invalid appointment date format. Use DD-MM-YYYY"
+    });
+}
+
+const dbDate = formattedDate.format("YYYY-MM-DD");
+console.log("appointment_date:", appointment_date);
+console.log("new Date:", new Date(appointment_date));
 
         const customer = await Customer.findOne({
 
@@ -2303,7 +2352,7 @@ exports.appointment = async (req, res) => {
 
                 cus_id: customer_id,
                 br_id: branch_id,
-                appointment_date: appointment_date,
+                appointment_date: dbDate,
                 slot: slot
 
             }
@@ -2330,7 +2379,7 @@ exports.appointment = async (req, res) => {
 
             br_name: branch.branch_name || branch.name,
 
-            appointment_date: appointment_date,
+            appointment_date: dbDate,
 
             slot: slot,
 

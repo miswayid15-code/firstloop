@@ -289,7 +289,7 @@ export default function BranchChat() {
         try {
             setLoading(true);
 
-            const response = await API.get(`/admin/branch/details/${id}`);
+            const response = await API.get(`/admin/branch/details/${encodeURIComponent(id)}`);
 
             // console.log("Branch Response:", response.data);
 

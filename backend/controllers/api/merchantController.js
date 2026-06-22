@@ -60,9 +60,7 @@ exports.registerStep1 = async (req, res) => {
 
             phoneNumber = num.number;
 
-            console.log("FULL PHONE:", phoneNumber);
-            console.log("COUNTRY CODE:", callingCode);
-            console.log("PHONE:", nationalNumber);
+
 
         } catch (err) {
 
@@ -166,20 +164,16 @@ exports.registerStep1 = async (req, res) => {
         // =========================
 
         const accessToken = jwt.sign(
-
             {
                 id: merchant.id,
                 email: merchant.email,
                 user_type: 'merchant',
                 token_type: 'access'
             },
-
             process.env.JWT_SECRET,
-
             {
                 expiresIn: '1d'
             }
-
         );
 
         // =========================
@@ -187,20 +181,15 @@ exports.registerStep1 = async (req, res) => {
         // =========================
 
         const refreshToken = jwt.sign(
-
             {
                 id: merchant.id,
-                email: merchant.email,
                 user_type: 'merchant',
                 token_type: 'refresh'
             },
-
-            process.env.JWT_SECRET,
-
+            process.env.JWT_REFRESH_SECRET,
             {
                 expiresIn: '7d'
             }
-
         );
 
         // =========================
@@ -433,7 +422,7 @@ exports.registerStep2 = async (req, res) => {
 };
 
 exports.fetchmerchant = async (req, res) => {
-    
+
     try {
 
         const merchant = await Merchant.findByPk(req.user.id, {
@@ -458,9 +447,9 @@ exports.fetchmerchant = async (req, res) => {
                 data[field] = null;
             }
         });
-        const br=await Branch.findAll({
-            where:{
-                merchant_id:merchant.id
+        const br = await Branch.findAll({
+            where: {
+                merchant_id: merchant.id
             }
         })
 
@@ -477,20 +466,37 @@ exports.fetchmerchant = async (req, res) => {
 exports.refreshAccessToken = async (req, res) => {
     try {
 
+        let refresh_token = null;
+
         const authHeader = req.headers.authorization;
 
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        // =========================
+        // CHECK HEADER
+        // =========================
+        if (authHeader && authHeader.startsWith("Bearer ")) {
+            refresh_token = authHeader.split(" ")[1];
+        }
+        // =========================
+        // CHECK BODY
+        // =========================
+        else if (req.body.refresh_token) {
+            refresh_token = req.body.refresh_token;
+        }
+
+        if (!refresh_token) {
             return res.json({
                 status: 0,
                 message: "Refresh token required"
             });
         }
 
-        const refresh_token = authHeader.split(' ')[1];
+        console.log("refresh token:", refresh_token);
 
         const stored = await RefreshToken.findOne({
             where: { token: refresh_token }
         });
+
+        console.log("stored:", stored);
 
         if (!stored) {
             return res.json({
@@ -501,16 +507,34 @@ exports.refreshAccessToken = async (req, res) => {
 
         const decoded = jwt.verify(
             refresh_token,
-            process.env.JWT_SECRET
+            process.env.JWT_REFRESH_SECRET
         );
+
+        const merchant = await Merchant.findOne({
+            where: {
+                id: decoded.id,
+                del_status: 0
+            }
+        });
+
+        if (!merchant) {
+            return res.status(401).json({
+                status: 0,
+                message: "Merchant is not available"
+            });
+        }
 
         const newAccessToken = jwt.sign(
             {
-                id: decoded.id,
-                user_type: stored.user_type
+                id: merchant.id,
+                email: merchant.email,
+                user_type: "merchant",
+                token_type: "access"
             },
             process.env.JWT_SECRET,
-            { expiresIn: '1d' }
+            {
+                expiresIn: "1d"
+            }
         );
 
         return res.json({
@@ -519,12 +543,12 @@ exports.refreshAccessToken = async (req, res) => {
         });
 
     } catch (err) {
+        console.log("err:", err);
 
         return res.json({
             status: 0,
-            message: "Token expired"
+            message: "Token expired or invalid"
         });
-
     }
 };
 exports.login = async (req, res) => {
@@ -541,23 +565,35 @@ exports.login = async (req, res) => {
         if (!match) {
             return res.json({ status: 0, message: "Invalid password" });
         }
+        // =========================
+        // REFRESH TOKEN
+        // =========================
+
         const refreshToken = jwt.sign(
             {
                 id: merchant.id,
-                email: merchant.email,
                 user_type: 'merchant',
                 token_type: 'refresh'
             },
-            process.env.JWT_SECRET,
-            { expiresIn: '7d' }
+            process.env.JWT_REFRESH_SECRET,
+            {
+                expiresIn: '7d'
+            }
         );
+
         await RefreshToken.create({
             user_id: merchant.id,
             user_type: 'merchant',
-
             token: refreshToken,
-            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+            expires_at: new Date(
+                Date.now() + 7 * 24 * 60 * 60 * 1000
+            )
         });
+
+        // =========================
+        // ACCESS TOKEN
+        // =========================
+
         const accessToken = jwt.sign(
             {
                 id: merchant.id,
@@ -566,7 +602,9 @@ exports.login = async (req, res) => {
                 token_type: 'access'
             },
             process.env.JWT_SECRET,
-            { expiresIn: '1d' }
+            {
+                expiresIn: '1d'
+            }
         );
         return res.json({
             status: 1,
