@@ -25,6 +25,7 @@ app.use('/admin', require('./routes/admin/categoryRoutes'));
 app.use('/admin', require('./routes/admin/chatRoutes'));              
 app.use('/admin', require('./routes/admin/additionalRoute'));              
 app.use('/admin', require('./routes/admin/reportRoutes'));              
+        
 
 
 
@@ -38,7 +39,7 @@ app.use('/admin', require('./routes/admin/reportRoutes'));
 
 
 
-
+app.use('/api', require('./routes/api/notificationRoutes'));      
 app.use('/api', require('./routes/api/testRoutes'));
 app.use('/api', require('./routes/api/merchantRoutes'));
 app.use('/api', require('./routes/api/branchRoutes'));
