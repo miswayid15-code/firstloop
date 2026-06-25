@@ -7,5 +7,9 @@ router.post(
     "/register-notification-token",
     controller.registerNotificationToken
 );
+router.post(
+    "/send-notification",
+    controller.sendTestNotification
+);
 
 module.exports = router;

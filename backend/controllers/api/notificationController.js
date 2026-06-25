@@ -1,6 +1,6 @@
 
 const { UserNotificationToken } = require('../../models');
-
+const axios = require('axios');
 const registerNotificationToken = async (req, res) => {
     try {
         const {
@@ -54,7 +54,7 @@ const registerNotificationToken = async (req, res) => {
             return res.json({
                 success: 1,
                 message: "Token registered",
-               
+
             });
         }
 
@@ -69,6 +69,66 @@ const registerNotificationToken = async (req, res) => {
     }
 };
 
+
+
+const sendTestNotification = async (req, res) => {
+    try {
+        const token = req.body.token;
+        if (!token) {
+            return res.status(400).json({
+                success: 0,
+                message: "Notification token is Missing"
+            });
+        }
+        const message = {
+            to: token,
+            title: "🎉 Test from Node.js!",
+            body: "If you receive this, your setup is complete!",
+            sound: "default",
+            badge: 1,
+            data: {
+                test: true,
+                timestamp: new Date().toISOString(),
+            },
+        };
+
+        const response = await axios.post(
+            "https://exp.host/--/api/v2/push/send",
+            [message],
+            {
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json",
+                },
+            }
+        );
+
+        console.log("Notification sent:", response.data);
+
+        return res.status(200).json({
+            success: 1,
+            message: "Notification sent successfully",
+            data: response.data,
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Notification error:",
+            error.response?.data || error.message
+        );
+
+        return res.status(500).json({
+            success: 0,
+            message: "Failed to send notification",
+            error: error.response?.data || error.message,
+        });
+
+    }
+};
+
+
 module.exports = {
-    registerNotificationToken
+    registerNotificationToken,
+    sendTestNotification,
 };

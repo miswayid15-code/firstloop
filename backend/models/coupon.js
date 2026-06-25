@@ -27,10 +27,32 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false,
             unique: true
         },
+        description: {
+            type: DataTypes.TEXT,
+            allowNull: true
+        },
+
+        // 1 = Discount (%)
+        // 2 = Fixed Amount
+        // 3 = Buy X Get Y
+        type: {
+            type: DataTypes.SMALLINT,
+            allowNull: false,
+            defaultValue: 1
+        },
 
         percentage: {
             type: DataTypes.FLOAT,
             defaultValue: 0
+        },
+        buy_item: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+
+        get_item: {
+            type: DataTypes.STRING,
+            allowNull: true
         },
 
         min_amount: {
@@ -79,11 +101,11 @@ module.exports = (sequelize, DataTypes) => {
             foreignKey: 'merchant_id'
         });
         Coupon.hasMany(models.CouponApplied, {
-        foreignKey: 'coupon_id'
-    });
-    Coupon.belongsTo(models.CouponCat, {
-    foreignKey: 'cat_id'
-});
+            foreignKey: 'coupon_id'
+        });
+        Coupon.belongsTo(models.CouponCat, {
+            foreignKey: 'cat_id'
+        });
 
 
     };
