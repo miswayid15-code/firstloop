@@ -1295,7 +1295,9 @@ exports.branch_details = async (req, res) => {
                     'min_amount',
                     'usage_limit',
                     'start_date',
-                    'end_date'
+                    'end_date',
+                    'type',
+                    'buy_item', 'get_item'
                 ]
 
             });
@@ -1824,7 +1826,10 @@ exports.Coupon_list = async (req, res) => {
                             'code',
                             'percentage',
                             'start_date',
-                            'end_date'
+                            'end_date',
+                            'type',
+                        'buy_item' ,
+                        'get_item',
                         ]
                     },
                     {

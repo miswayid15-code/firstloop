@@ -275,7 +275,7 @@ exports.registerStep1 = async (req, res) => {
 
 exports.registerStep2 = async (req, res) => {
     try {
-
+// console.log("Body",req.body)
         const merchant = await Merchant.findByPk(req.user.id);
 
         if (!merchant) {
@@ -340,8 +340,8 @@ exports.registerStep2 = async (req, res) => {
                 req.body.country_code = `+${num.countryCallingCode}`;
                 req.body.phone = num.nationalNumber;
 
-                console.log("COUNTRY CODE:", req.body.country_code);
-                console.log("PHONE:", req.body.phone);
+                // console.log("COUNTRY CODE:", req.body.country_code);
+                // console.log("PHONE:", req.body.phone);
 
             } catch (err) {
 
@@ -407,7 +407,7 @@ exports.registerStep2 = async (req, res) => {
         await merchant.update({
             ...req.body,
             ...fileData,
-            status: 0
+
         });
 
         return res.json({

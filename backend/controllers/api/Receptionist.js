@@ -70,9 +70,9 @@ exports.register = async (req, res) => {
             phoneNumber =
                 num.number;
 
-            // console.log("CALLING CODE:", callingCode);
-            // console.log("NATIONAL NUMBER:", nationalNumber);
-            // console.log("INTERNATIONAL NUMBER:", phoneNumber);
+            console.log("CALLING CODE:", callingCode);
+            console.log("NATIONAL NUMBER:", nationalNumber);
+            console.log("INTERNATIONAL NUMBER:", phoneNumber);
 
         } catch (err) {
 
@@ -98,7 +98,7 @@ exports.register = async (req, res) => {
 
         // phone exists
         const phexists = await Receptionist.findOne({
-            where: { phone: phoneNumber }
+            where: { phone: nationalNumber  }
         });
 
         if (phexists) {
@@ -152,7 +152,7 @@ exports.register = async (req, res) => {
 
             name,
             email,
-            phone: phoneNumber,
+           phone: nationalNumber,
             country_code,
             password: hashedPassword,
 
@@ -446,6 +446,7 @@ exports.fetch_receptionist_by_id = async (req, res) => {
 exports.update_receptionist = async (req, res) => {
 
     try {
+        console.log("Body",req.body)
 
         const merchant_id = req.user.id;
         const receptionist_id = req.body.id || req.params.id;

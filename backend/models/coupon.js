@@ -66,7 +66,8 @@ module.exports = (sequelize, DataTypes) => {
         },
         banner_image: {
             type: DataTypes.STRING,
-            allowNull: true
+            allowNull: true,
+            defaultValue: null
         },
 
         start_date: {

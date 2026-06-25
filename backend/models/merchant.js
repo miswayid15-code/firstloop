@@ -39,7 +39,11 @@ module.exports = (sequelize, DataTypes) => {
     document: DataTypes.STRING,
     profile_image: DataTypes.STRING,
     brand_image: DataTypes.STRING,
-
+    
+    description: {
+      type: DataTypes.TEXT,
+      allowNull: true
+    },
     status: DataTypes.INTEGER,
     doc_verify: DataTypes.INTEGER,
     del_status: DataTypes.INTEGER,
