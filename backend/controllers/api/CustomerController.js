@@ -3,6 +3,7 @@ const {
     Coupon,
     RefreshToken,
     Branch,
+    BranchTiming,
     Receptionist,
     CustomerFp,
     Customer,
@@ -989,12 +990,12 @@ exports.home = async (req, res) => {
             where: {
                 status: 1,
                 del_status: 0,
-                country_code:choose_country
+                country_code: choose_country
             },
 
             include: [{
                 model: Merchant,
-                required: true, 
+                required: true,
                 attributes: [],
                 where: {
                     status: 1,
@@ -1223,6 +1224,17 @@ exports.branch_details = async (req, res) => {
                         'branch_id',
                         'image'
                     ]
+                },
+                {
+                    model: BranchTiming,
+                    attributes: [
+                        'id',
+                        'day',
+                        'branch_id',
+                        'open_time',
+                        'close_time',
+                        'is_closed'
+                    ]
                 }
 
             ]
@@ -1250,30 +1262,37 @@ exports.branch_details = async (req, res) => {
 
 
 
-        const current_time =
-            moment().format('HH:mm:ss');
+        const current_time = moment().format('HH:mm:ss');
 
-        item.is_open =
-            current_time >= item.open_time &&
-                current_time <= item.close_time
-                ? 1
-                : 0;
+        // Get today's day (1 = Monday ... 7 = Sunday)
+        const today = moment().isoWeekday();
 
+        const todayTiming = item.BranchTimings.find(
+            timing => timing.day === today
+        );
 
-        item.open_time = item.open_time
-            ? moment(
-                item.open_time,
-                'HH:mm:ss'
-            ).format('hh:mm A')
-            : null;
+        if (!todayTiming || todayTiming.is_closed) {
 
-        item.close_time = item.close_time
-            ? moment(
-                item.close_time,
-                'HH:mm:ss'
-            ).format('hh:mm A')
-            : null;
+            item.is_open = 0;
+            item.open_time = null;
+            item.close_time = null;
 
+        } else {
+
+            item.open_time = todayTiming.open_time
+                ? moment(todayTiming.open_time, 'HH:mm:ss').format('hh:mm A')
+                : null;
+
+            item.close_time = todayTiming.close_time
+                ? moment(todayTiming.close_time, 'HH:mm:ss').format('hh:mm A')
+                : null;
+
+            item.is_open =
+                current_time >= todayTiming.open_time &&
+                    current_time <= todayTiming.close_time
+                    ? 1
+                    : 0;
+        }
 
         const coupons =
             await Coupon.findAll({
@@ -1286,7 +1305,16 @@ exports.branch_details = async (req, res) => {
 
                     branch_ids: {
                         [Op.contains]: [parseInt(branch_id)]
+                    },
+                    start_date: {
+                        [Op.lte]: today
+                    },
+
+                    end_date: {
+                        [Op.gte]: today
                     }
+
+
 
                 },
 
@@ -1831,8 +1859,8 @@ exports.Coupon_list = async (req, res) => {
                             'start_date',
                             'end_date',
                             'type',
-                        'buy_item' ,
-                        'get_item',
+                            'buy_item',
+                            'get_item',
                         ]
                     },
                     {
@@ -2290,21 +2318,21 @@ exports.appointment = async (req, res) => {
 
         }
         const formattedDate = moment(
-    appointment_date,
-    "DD-MM-YYYY",
-    true   // strict mode
-);
+            appointment_date,
+            "DD-MM-YYYY",
+            true   // strict mode
+        );
 
-if (!formattedDate.isValid()) {
-    return res.json({
-        status: 0,
-        message: "Invalid appointment date format. Use DD-MM-YYYY"
-    });
-}
+        if (!formattedDate.isValid()) {
+            return res.json({
+                status: 0,
+                message: "Invalid appointment date format. Use DD-MM-YYYY"
+            });
+        }
 
-const dbDate = formattedDate.format("YYYY-MM-DD");
-console.log("appointment_date:", appointment_date);
-console.log("new Date:", new Date(appointment_date));
+        const dbDate = formattedDate.format("YYYY-MM-DD");
+        console.log("appointment_date:", appointment_date);
+        console.log("new Date:", new Date(appointment_date));
 
         const customer = await Customer.findOne({
 
@@ -3114,3 +3142,15 @@ exports.cancel_appointment = async (req, res) => {
 
     }
 };
+exports.send_test = async (req, res) => {
+    try {
+        await sendMail(
+            'minsway01@gmail.com',
+            'Customer Registration Successful',
+            RegisterTemplate('merchant', 'rahulraj')
+        );
+    }
+    catch (err) {
+        console.log(err)
+    }
+}

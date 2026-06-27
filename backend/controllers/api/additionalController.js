@@ -7,18 +7,28 @@ exports.banner_list = async (req, res) => {
 
         const baseUrl = process.env.APP_URL;
 
+        const { country_code } = req.body;
+        console.log("country_code",country_code)
+
+        const whereClause = {
+            status: 1,
+            del_status: 0
+        };
+
+        if (country_code) {
+            whereClause.country_code = country_code;
+        }
+
         const banners = await Banner.findAll({
 
-            where: {
-                status: 1,
-                del_status: 0
-            },
+            where: whereClause,
 
 
             attributes: [
                 'id',
                 'title',
-                'image'
+                'image',
+                'country_code'
             ],
 
             order: [['id', 'DESC']]

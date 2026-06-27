@@ -3,43 +3,43 @@
 const { Model } = require('sequelize');
 
 module.exports = (sequelize, DataTypes) => {
-
   class Banner extends Model {
-
-    static associate(models) {
-
-    }
-
+    static associate(models) {}
   }
 
-  Banner.init({
+  Banner.init(
+    {
+      title: {
+        type: DataTypes.STRING,
+      },
 
-    title: DataTypes.STRING,
+      image: {
+        type: DataTypes.STRING,
+      },
 
-    image: DataTypes.STRING,
-    country_code: DataTypes.STRING,
+      country_code: {
+        type: DataTypes.STRING,
+      },
 
-    status: {
-      type: DataTypes.INTEGER,
-      defaultValue: 1
+      status: {
+        type: DataTypes.INTEGER,
+        defaultValue: 1,
+      },
+
+      del_status: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
+      },
     },
-
-    del_status: {
-      type: DataTypes.INTEGER,
-      defaultValue: 0
+    {
+      sequelize,
+      modelName: 'Banner',
+      tableName: 'banners',
+      freezeTableName: true,
+      createdAt: 'created_at',
+      updatedAt: 'updated_at',
     }
-
-  }, {
-
-    sequelize,
-    modelName: 'Banner',
-    tableName: 'banners',
-    freezeTableName: true,
-    createdAt: 'created_at',
-    updatedAt: 'updated_at'
-
-  });
+  );
 
   return Banner;
-
 };

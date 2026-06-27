@@ -1,6 +1,7 @@
 const { Banner, Page } = require('../../models');
 
 const { deleteFile } = require('../../helpers/fileHelper');
+const { bool } = require('sharp');
 
 
 exports.banner_list = async (req, res) => {
@@ -45,13 +46,20 @@ exports.banner_list = async (req, res) => {
 
 exports.create_banner = async (req, res) => {
     try {
-
-        const { title } = req.body;
+console.log("Body",req.body)
+        const { title, country_code } = req.body;
 
         if (!title) {
             return res.status(400).json({
                 status: 0,
                 message: "Banner title is required"
+            });
+        }
+
+        if (!country_code) {
+            return res.status(400).json({
+                status: 0,
+                message: "Country code is required"
             });
         }
 
@@ -88,12 +96,19 @@ exports.create_banner = async (req, res) => {
 exports.update_banner = async (req, res) => {
     try {
 
-        const { id, title, status } = req.body;
+        const { id, title, status, country_code } = req.body;
 
         if (!id) {
             return res.status(400).json({
                 status: 0,
                 message: "Banner ID is required"
+            });
+        }
+
+        if (!country_code) {
+            return res.status(400).json({
+                status: 0,
+                message: "Country code is required"
             });
         }
 

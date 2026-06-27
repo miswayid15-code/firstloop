@@ -4,7 +4,7 @@ const router = express.Router();
 const checkMerchantOrReceptionist = require('../../middleware/checkMerchantOrReceptionist'); 
 const controller = require('../../controllers/api/additionalController');
 const auth = require('../../middleware/auth');
-router.get(
+router.post(
     '/banner-list',
     controller.banner_list
 );

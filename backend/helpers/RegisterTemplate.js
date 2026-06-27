@@ -4,12 +4,19 @@ const RegisterTemplate = (type = 'merchant', name = 'User') => {
 
     const currentYear = new Date().getFullYear();
 
+    // APP_URL should be like: https://api.firstpassapp.co
+    const appUrl = (process.env.APP_URL || '').replace(/\/$/, '');
+    const logoUrl = `${appUrl}/uploads/public/firstpass.png`;
+
+    console.log("APP_URL:", appUrl);
+    console.log("Logo URL:", logoUrl);
+
     const config = type === 'merchant'
         ? {
             title: 'Merchant Registration Successful',
             subtitle: 'Welcome to the Merchant Portal',
-            topBg: 'linear-gradient(135deg,#ff4f8b 0%,#ff7eb3 100%)',
-            primary: '#ff4f8b',
+            topBg: 'linear-gradient(135deg,#8f090e 0%,#ff7eb3 100%)',
+            primary: '#8f090e',
             light: '#fff4f8',
             button: 'Merchant Dashboard'
         }
@@ -47,6 +54,21 @@ const RegisterTemplate = (type = 'merchant', name = 'User') => {
                 text-align:center;
             ">
 
+                <!-- LOGO -->
+                <div style="margin-bottom:25px;">
+                    <img
+                        src="${logoUrl}"
+                        alt="FirstPass Logo"
+                        style="
+                            max-width:180px;
+                            height:auto;
+                            display:block;
+                            margin:0 auto;
+                        "
+                    />
+                </div>
+
+                <!-- SUCCESS ICON -->
                 <div style="
                     width:85px;
                     height:85px;
@@ -57,7 +79,6 @@ const RegisterTemplate = (type = 'merchant', name = 'User') => {
                     font-size:42px;
                     line-height:85px;
                     font-weight:bold;
-                    backdrop-filter:blur(10px);
                 ">
                     ✓
                 </div>
@@ -134,8 +155,6 @@ const RegisterTemplate = (type = 'merchant', name = 'User') => {
 
                 </div>
 
-
-
             </div>
 
             <!-- FOOTER -->
@@ -159,7 +178,7 @@ const RegisterTemplate = (type = 'merchant', name = 'User') => {
                     color:#a0aec0;
                     font-size:13px;
                 ">
-                    © ${currentYear} Dealora All Rights Reserved
+                    © ${currentYear} FirstPass All Rights Reserved
                 </p>
 
             </div>

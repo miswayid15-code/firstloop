@@ -5,6 +5,8 @@ import API from '../api.js'
 import ConfirmDialog from '../components/ConfirmDialog.jsx'
 import ReactQuill from 'react-quill-new'
 import 'react-quill-new/dist/quill.snow.css'
+import { CountrySelect, GetCountries } from 'react-country-state-city'
+import 'react-country-state-city/dist/react-country-state-city.css'
 
 const BANNERS_PER_PAGE = 5
 const PAGES_PER_PAGE = 5
@@ -41,12 +43,14 @@ export default function Settings() {
     const [showEditModal, setShowEditModal] = useState(false)
     const [showViewModal, setShowViewModal] = useState(false)
     const [selectedBanner, setSelectedBanner] = useState(null)
+    const [countriesList, setCountriesList] = useState([])
 
     const [newBanner, setNewBanner] = useState({
         title: '',
         status: 1,
         image: null,
-        imagePreview: ''
+        imagePreview: '',
+        country_code: ''
     })
 
     const [editBanner, setEditBanner] = useState({
@@ -54,7 +58,8 @@ export default function Settings() {
         title: '',
         status: 1,
         image: null,
-        imagePreview: ''
+        imagePreview: '',
+        country_code: ''
     })
 
     // ==========================================
@@ -142,9 +147,30 @@ export default function Settings() {
         }
     }
 
+    const getCountryName = (countryCode) => {
+        if (!countryCode) return 'N/A'
+        const cleanCode = String(countryCode).replace('+', '')
+        const matches = countriesList.filter(c => String(c.phone_code) === cleanCode)
+        if (matches.length === 0) return countryCode
+        
+        if (cleanCode === '1') {
+            const us = matches.find(c => c.name.toLowerCase().includes('united states'))
+            if (us) return us.name
+        }
+        if (cleanCode === '44') {
+            const uk = matches.find(c => c.name.toLowerCase().includes('united kingdom'))
+            if (uk) return uk.name
+        }
+        
+        return matches[0].name
+    }
+
     useEffect(() => {
         fetchBanners()
         fetchPages()
+        GetCountries().then((data) => {
+            setCountriesList(data || [])
+        })
     }, [])
 
     useEffect(() => {
@@ -195,7 +221,8 @@ export default function Settings() {
             title: '',
             status: 1,
             image: null,
-            imagePreview: ''
+            imagePreview: '',
+            country_code: ''
         })
         setShowEditModal(true)
         setDetailLoading(true)
@@ -209,7 +236,8 @@ export default function Settings() {
                     title: data.title || '',
                     status: data.status !== undefined ? parseInt(data.status) : 1,
                     image: null,
-                    imagePreview: getImageUrl(data.image) || ''
+                    imagePreview: getImageUrl(data.image) || '',
+                    country_code: data.country_code || ''
                 })
             } else {
                 toast.error(response.data.message || "Failed to fetch banner details")
@@ -231,6 +259,10 @@ export default function Settings() {
             toast.error("Title is required")
             return
         }
+        if (!newBanner.country_code) {
+            toast.error("Country is required")
+            return
+        }
         if (!newBanner.image) {
             toast.error("Banner image is required")
             return
@@ -241,6 +273,7 @@ export default function Settings() {
         formData.append('title', newBanner.title.trim())
         formData.append('status', newBanner.status)
         formData.append('image', newBanner.image)
+        formData.append('country_code', newBanner.country_code)
 
         try {
             const response = await API.post('admin/create-banner', formData, {
@@ -249,7 +282,7 @@ export default function Settings() {
             if (isSuccessResponse(response.data)) {
                 toast.success(response.data.message || "Banner created successfully")
                 setShowAddModal(false)
-                setNewBanner({ title: '', status: 1, image: null, imagePreview: '' })
+                setNewBanner({ title: '', status: 1, image: null, imagePreview: '', country_code: '' })
                 await fetchBanners()
             } else {
                 toast.error(response.data.message || "Failed to create banner")
@@ -269,12 +302,17 @@ export default function Settings() {
             toast.error("Title is required")
             return
         }
+        if (!editBanner.country_code) {
+            toast.error("Country is required")
+            return
+        }
 
         setSubmitting(true)
         const formData = new FormData()
         formData.append('id', editBanner.id)
         formData.append('title', editBanner.title.trim())
         formData.append('status', editBanner.status)
+        formData.append('country_code', editBanner.country_code)
         if (editBanner.image) {
             formData.append('image', editBanner.image)
         }
@@ -307,6 +345,7 @@ export default function Settings() {
         formData.append('id', banner.id)
         formData.append('title', banner.title)
         formData.append('status', newStatus)
+        formData.append('country_code', banner.country_code || '')
 
         try {
             const response = await API.post('admin/update-banner', formData, {
@@ -547,9 +586,12 @@ export default function Settings() {
     // ==========================================
 
     // Banner calculations
-    const filteredBanners = banners.filter(banner =>
-        banner.title?.toLowerCase().includes(searchTerm.toLowerCase())
-    )
+    const filteredBanners = banners.filter(banner => {
+        const titleMatch = banner.title?.toLowerCase().includes(searchTerm.toLowerCase())
+        const countryName = getCountryName(banner.country_code)
+        const countryMatch = countryName.toLowerCase().includes(searchTerm.toLowerCase())
+        return titleMatch || countryMatch
+    })
     const bannerTotalPages = Math.max(1, Math.ceil(filteredBanners.length / BANNERS_PER_PAGE))
     const bannerSafePage = Math.min(currentPage, bannerTotalPages)
     const bannerStartIndex = (bannerSafePage - 1) * BANNERS_PER_PAGE
@@ -642,7 +684,7 @@ export default function Settings() {
                                     <input
                                         type="text"
                                         className="search-input"
-                                        placeholder="Search banners..."
+                                        placeholder="Search by title or country..."
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
                                     />
@@ -665,6 +707,7 @@ export default function Settings() {
                                 <tr>
                                     <th>Banner Image</th>
                                     <th>Title</th>
+                                    <th>Country</th>
                                     <th>Status</th>
                                     <th>Created At</th>
                                     <th style={{ textAlign: 'right' }}>Actions</th>
@@ -680,6 +723,9 @@ export default function Settings() {
                                             </td>
                                             <td>
                                                 <span className="skeleton-text" style={{ width: '150px' }} />
+                                            </td>
+                                            <td>
+                                                <span className="skeleton-text" style={{ width: '100px' }} />
                                             </td>
                                             <td>
                                                 <span className="skeleton-text" style={{ width: '70px' }} />
@@ -717,6 +763,11 @@ export default function Settings() {
                                             </td>
                                             <td>
                                                 <strong>{banner.title}</strong>
+                                            </td>
+                                            <td>
+                                                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                                                    {getCountryName(banner.country_code)}
+                                                </span>
                                             </td>
                                             <td>
                                                 <div className="merchant-status-cell">
@@ -771,7 +822,7 @@ export default function Settings() {
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan="5" align="center" style={{ padding: '40px' }}>
+                                        <td colSpan="6" align="center" style={{ padding: '40px' }}>
                                             No Banners Found
                                         </td>
                                     </tr>
@@ -1046,6 +1097,19 @@ export default function Settings() {
                                 </div>
 
                                 <div className="form-group-classic">
+                                    <label className="form-label-classic">
+                                        Country <span style={{ color: '#ef4444' }}>*</span>
+                                    </label>
+                                    <CountrySelect
+                                        onChange={(country) => {
+                                            setNewBanner({ ...newBanner, country_code: country ? `+${country.phone_code}` : '' })
+                                        }}
+                                        placeHolder="Select Country"
+                                        inputClassName="form-control"
+                                    />
+                                </div>
+
+                                <div className="form-group-classic">
                                     <label className="form-label-classic">Status</label>
                                     <select
                                         className="form-select"
@@ -1128,6 +1192,23 @@ export default function Settings() {
                                             disabled={submitting}
                                             required
                                         />
+                                    </div>
+
+                                    <div className="form-group-classic">
+                                        <label className="form-label-classic">
+                                            Country <span style={{ color: '#ef4444' }}>*</span>
+                                        </label>
+                                        {countriesList.length > 0 && (
+                                            <CountrySelect
+                                                key={editBanner.id}
+                                                defaultValue={countriesList.find(c => String(c.phone_code) === String(editBanner.country_code).replace('+', ''))}
+                                                onChange={(country) => {
+                                                    setEditBanner({ ...editBanner, country_code: country ? `+${country.phone_code}` : '' })
+                                                }}
+                                                placeHolder="Select Country"
+                                                inputClassName="form-control"
+                                            />
+                                        )}
                                     </div>
 
                                     <div className="form-group-classic">
@@ -1241,6 +1322,12 @@ export default function Settings() {
                             </div>
 
                             <div className="details-grid">
+                                <div className="details-item">
+                                    <span className="details-label">Country</span>
+                                    <span className="details-value">
+                                        {getCountryName(selectedBanner.country_code)}
+                                    </span>
+                                </div>
                                 <div className="details-item">
                                     <span className="details-label">Status</span>
                                     <span className="details-value">

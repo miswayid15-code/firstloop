@@ -105,4 +105,8 @@ router.post(
     checkCustomer,
     controller.cancel_appointment 
 );
+router.post(
+   '/send-test-mail',
+    controller.send_test 
+);
 module.exports = router;
