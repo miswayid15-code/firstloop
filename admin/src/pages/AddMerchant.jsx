@@ -39,7 +39,9 @@ const initialForm = {
     state: '',
     zipcode: '',
     latitude: '',
-    longitude: '', countryCode: '',
+    longitude: '', 
+    countryCode: '',
+    description: '',
 }
 
 export default function AddMerchant() {
@@ -197,6 +199,11 @@ export default function AddMerchant() {
 
         event.preventDefault()
 
+        if (!form.kycDocument) {
+            toast.error('Supporting Document is required')
+            return
+        }
+
         try {
             const formData = new FormData()
 
@@ -298,13 +305,16 @@ export default function AddMerchant() {
             }
 
             if (form.kycDocument) {
-
                 formData.append(
                     'document',
                     form.kycDocument
                 )
-
             }
+
+            formData.append(
+                'description',
+                form.description || ''
+            )
             console.log('PHONE:', form.phone)
             console.log('COUNTRY CODE:', form.countryCode)
             const response = await API.post(
@@ -542,7 +552,7 @@ export default function AddMerchant() {
                                 />
 
                                 <label className="form-label">
-                                    Business Owner Name
+                                    Business Owner Name <span style={{ color: '#ef4444' }}>*</span>
                                 </label>
                             </div>
 
@@ -558,7 +568,7 @@ export default function AddMerchant() {
                                 />
 
                                 <label className="form-label">
-                                    Email Address
+                                    Email Address <span style={{ color: '#ef4444' }}>*</span>
                                 </label>
                             </div>
 
@@ -567,7 +577,7 @@ export default function AddMerchant() {
                             <PhoneNumberField
                                 value={form.phone}
                                 countryCode={form.countryCode}
-
+                                required={true}
                                 onChange={(value, countryCode) =>
 
                                     setForm((prev) => ({
@@ -594,7 +604,7 @@ export default function AddMerchant() {
                                 />
 
                                 <label className="form-label">
-                                    Account Password
+                                    Account Password <span style={{ color: '#ef4444' }}>*</span>
                                 </label>
                             </div>
                         </div>
@@ -624,7 +634,7 @@ export default function AddMerchant() {
                                 />
 
                                 <label className="form-label">
-                                    Business Name
+                                    Business Name <span style={{ color: '#ef4444' }}>*</span>
                                 </label>
                             </div>
 
@@ -636,7 +646,6 @@ export default function AddMerchant() {
                                     onChange={handleChange}
                                     className="form-control"
                                     placeholder=" "
-                                    required
                                 />
 
                                 <label className="form-label">
@@ -647,7 +656,7 @@ export default function AddMerchant() {
                             <div className="form-group-classic">
 
                                 <label className="form-label-classic">
-                                    Business Category
+                                    Business Category <span style={{ color: '#ef4444' }}>*</span>
                                 </label>
 
                                 <select
@@ -684,7 +693,7 @@ export default function AddMerchant() {
 
                                 <div className="upload-card-body">
                                     <h4 className="upload-card-title">
-                                        Upload Supporting Documents
+                                        Upload Supporting Documents <span style={{ color: '#ef4444' }}>*</span>
                                     </h4>
 
                                     <p className="upload-card-text">
@@ -729,7 +738,22 @@ export default function AddMerchant() {
                                 </div>
                             </article>
                         </div>
-
+                     
+                        <div style={{ marginTop: 18, width: '100%' }}>
+                            <div className="form-group-classic">
+                                <label className="form-label-classic">
+                                    Merchant Description
+                                </label>
+                                <textarea
+                                    name="description"
+                                    className="form-control textarea-field"
+                                    value={form.description || ''}
+                                    onChange={handleChange}
+                                    placeholder="Type description here"
+                                    rows={3}
+                                />
+                            </div>
+                        </div>
                         <div
                             style={{
                                 fontWeight: 700,
@@ -755,7 +779,10 @@ export default function AddMerchant() {
                             onMarkerDragEnd={handleMarkerDragEnd}
                             center={center}
                             mapContainerStyle={mapContainerStyle}
+                            isMerchant={true}
                         />
+
+                     
 
                         <div
                             style={{

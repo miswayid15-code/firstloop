@@ -8,13 +8,17 @@ export default function CorporateAddressField({
     onMapClick,
     onMarkerDragEnd,
     center,
-    mapContainerStyle
+    mapContainerStyle,
+    isBranch = false,
+    isMerchant = false
 }) {
+    const showRequired = isBranch || isMerchant;
+
     return (
         <>
             <div className="form-group" style={{ marginBottom: 14 }}>
                 <label className="form-label-classic" htmlFor="address">
-                    Business Address
+                    Business Address {showRequired && <span style={{ color: '#ef4444' }}>*</span>}
                 </label>
 
                 <Autocomplete
@@ -63,7 +67,7 @@ export default function CorporateAddressField({
                         onChange={onInputChange}
                         className="form-control"
                         placeholder=" "
-                        required
+                        required={!showRequired}
                     />
 
                     <label className="form-label">City</label>
@@ -77,7 +81,7 @@ export default function CorporateAddressField({
                         onChange={onInputChange}
                         className="form-control"
                         placeholder=" "
-                        required
+                        required={!showRequired}
                     />
 
                     <label className="form-label">State</label>
@@ -94,7 +98,7 @@ export default function CorporateAddressField({
                         required
                     />
 
-                    <label className="form-label">Country</label>
+                    <label className="form-label">Country {showRequired && <span style={{ color: '#ef4444' }}>*</span>}</label>
                 </div>
 
                 <div className="form-group">
@@ -105,7 +109,7 @@ export default function CorporateAddressField({
                         onChange={onInputChange}
                         className="form-control"
                         placeholder=" "
-                        required
+                        required={!showRequired}
                     />
 
                     <label className="form-label">Zipcode / PO Box Code</label>

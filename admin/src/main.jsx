@@ -15,6 +15,16 @@ import './assets/css/responsive.css'
 
 const isAdminPath = window.location.pathname.startsWith('/admin');
 
+// Global backdrop click interception:
+// Prevents all modals in the application from closing when clicking outside on their backdrop overlay.
+document.addEventListener('click', (e) => {
+    if (e.target && e.target.classList && e.target.classList.contains('modal-backdrop')) {
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+    }
+}, true); // Use capture phase to intercept before React synthetic event handlers fire
+
+
 ReactDOM.createRoot(document.getElementById('root')).render(
     <React.StrictMode>
         <BrowserRouter basename={isAdminPath ? "/admin" : undefined}>

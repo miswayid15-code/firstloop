@@ -49,6 +49,24 @@ const getCouponAppliedStatus = (status) => {
     return statusMap[Number(status)] || { label: 'Unknown', badge: 'pending' }
 }
 
+const dayNamesMap = {
+    1: { full: 'Monday', short: 'Mon' },
+    2: { full: 'Tuesday', short: 'Tue' },
+    3: { full: 'Wednesday', short: 'Wed' },
+    4: { full: 'Thursday', short: 'Thu' },
+    5: { full: 'Friday', short: 'Fri' },
+    6: { full: 'Saturday', short: 'Sat' },
+    7: { full: 'Sunday', short: 'Sun' }
+}
+
+const visibilityLabels = {
+    0: 'All',
+    1: 'Male',
+    2: 'Female',
+    3: 'Children'
+}
+
+
 const formatDate = (value) => {
     if (!value) {
         return '-'
@@ -605,15 +623,37 @@ export default function ViewBranch() {
                                         <p className="merchant-subtext">{branchData?.phone || '-'}</p>
                                     </div>
 
-                                    <div>
-                                        <small className="merchant-sub-label">Open Time</small>
-                                        <p className="merchant-subtext">{formatTime(branchData?.open_time)}</p>
-                                    </div>
-
-                                    <div>
-                                        <small className="merchant-sub-label">Close Time</small>
-                                        <p className="merchant-subtext">{formatTime(branchData?.close_time)}</p>
-                                    </div>
+                                    <div style={{ gridColumn: '1 / -1', marginTop: 12 }}>
+                                         <small className="merchant-sub-label">Operating Hours</small>
+                                         <div className="branch-timings-view-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12, marginTop: 8 }}>
+                                             {Array.from({ length: 7 }, (_, i) => {
+                                                 const dayNum = i + 1;
+                                                 const timing = (branchData?.BranchTimings || []).find(t => Number(t.day) === dayNum);
+                                                 const dayName = dayNamesMap[dayNum]?.full || '';
+                                                 
+                                                 return (
+                                                     <div key={dayNum} className="timing-day-card" style={{
+                                                         border: '1px solid #e2e8f0',
+                                                         borderRadius: 8,
+                                                         padding: '10px 12px',
+                                                         backgroundColor: timing?.is_closed ? '#f8fafc' : '#ffffff',
+                                                         boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                                                     }}>
+                                                         <div style={{ fontWeight: 600, fontSize: '0.85rem', color: '#475569' }}>{dayName}</div>
+                                                         <div style={{ fontSize: '0.8rem', marginTop: 4 }}>
+                                                             {timing?.is_closed ? (
+                                                                 <span style={{ color: '#ef4444', fontWeight: 500 }}>Closed</span>
+                                                             ) : (
+                                                                 <span style={{ color: '#10b981', fontWeight: 500 }}>
+                                                                     {formatTime(timing?.open_time)} - {formatTime(timing?.close_time)}
+                                                                 </span>
+                                                             )}
+                                                         </div>
+                                                     </div>
+                                                 );
+                                             })}
+                                         </div>
+                                     </div>
 
                                     <div>
                                         <small className="merchant-sub-label">City</small>
@@ -632,6 +672,20 @@ export default function ViewBranch() {
                                     <div>
                                         <small className="merchant-sub-label">Zip Code / Postal Code</small>
                                         <p className="merchant-subtext">{branchData?.zip_code || '-'}</p>
+                                    </div>
+
+                                    <div>
+                                        <small className="merchant-sub-label">Visibility</small>
+                                        <p className="merchant-subtext">
+                                            {branchData?.visibility !== undefined && branchData?.visibility !== null
+                                                ? (visibilityLabels[Number(branchData.visibility)] || 'All')
+                                                : 'All'}
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <small className="merchant-sub-label">Target Age Group</small>
+                                        <p className="merchant-subtext">{branchData?.age_group || 'All Age'}</p>
                                     </div>
 
                                     <div>
@@ -1019,20 +1073,19 @@ export default function ViewBranch() {
                         <thead>
                             <tr>
                                 <th>Code</th>
-                                <th>Discount</th>
+                                <th>Type / Deal</th>
                                 <th>Min Amount</th>
                                 <th>Usage Limit</th>
                                 <th>Start Date</th>
                                 <th>End Date</th>
                                 <th>Status</th>
-                                <th>Banner</th>
                             </tr>
                         </thead>
                         <tbody>
                             {loading ? (
                                 Array.from({ length: 3 }).map((_, index) => (
                                     <tr className="skeleton-row" key={`coupon-skel-${index}`}>
-                                        {Array.from({ length: 8 }).map((__, cellIndex) => (
+                                        {Array.from({ length: 7 }).map((__, cellIndex) => (
                                             <td key={`coupon-skel-cell-${cellIndex}`}>
                                                 <span className="skeleton-text" style={{ width: '80%', display: 'inline-block' }} />
                                             </td>
@@ -1043,7 +1096,14 @@ export default function ViewBranch() {
                                 coupons.map((coupon) => (
                                     <tr key={coupon.id}>
                                         <td><strong>{coupon.code}</strong></td>
-                                        <td>{coupon.percentage}%</td>
+                                        <td>
+                                            {Number(coupon.type) === 3
+                                                ? `Buy ${coupon.buy_item || '-'} Get ${coupon.get_item || '-'}`
+                                                : Number(coupon.type) === 2
+                                                    ? `${coupon.percentage} (Fixed)`
+                                                    : `${coupon.percentage}%`
+                                            }
+                                        </td>
                                         <td>{coupon.min_amount}</td>
                                         <td>{coupon.usage_limit}</td>
                                         <td>{formatDate(coupon.start_date)}</td>
@@ -1053,28 +1113,11 @@ export default function ViewBranch() {
                                                 {coupon.is_expired == 1 ? 'Expired' : 'Active'}
                                             </span>
                                         </td>
-                                        <td>
-                                            {coupon.banner_image ? (
-                                                <img
-                                                    src={coupon.banner_image}
-                                                    alt={coupon.code}
-                                                    style={{
-                                                        width: 56,
-                                                        height: 36,
-                                                        objectFit: 'cover',
-                                                        borderRadius: 6,
-                                                        border: '1px solid var(--border)'
-                                                    }}
-                                                />
-                                            ) : (
-                                                '-'
-                                            )}
-                                        </td>
                                     </tr>
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan="8" style={{ textAlign: 'center', padding: '28px 16px' }}>
+                                    <td colSpan="7" style={{ textAlign: 'center', padding: '28px 16px' }}>
                                         No coupons found for this branch.
                                     </td>
                                 </tr>

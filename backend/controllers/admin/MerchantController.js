@@ -1,4 +1,4 @@
-const { Merchant, Coupon, RefreshToken, Branch, Receptionist, MerchantFp, Category, BranchImage, MenuImage, Appointment, CouponApplied, Customer } = require('../../models');
+const { Merchant, Coupon, RefreshToken, Branch, BranchTiming, Receptionist, MerchantFp, Category, BranchImage, MenuImage, Appointment, CouponApplied, Customer } = require('../../models');
 const bcrypt = require('bcryptjs');
 const { parsePhoneNumber } = require('libphonenumber-js');
 const jwt = require('jsonwebtoken');
@@ -1033,8 +1033,7 @@ exports.branchRegister = async (req, res) => {
             lon,
             address,
             description,
-            open_time,
-            close_time,
+
             country_code,
             receptionist_id,
             mer_id,
@@ -1042,6 +1041,9 @@ exports.branchRegister = async (req, res) => {
             state,
             country,
             zip_code,
+            timings,
+            visibility,
+            age_group
         } = req.body;
 
         console.log("BODY:", req.body);
@@ -1061,18 +1063,7 @@ exports.branchRegister = async (req, res) => {
 
         }
 
-        if (
-            open_time &&
-            close_time &&
-            open_time >= close_time
-        ) {
 
-            return res.json({
-                status: 0,
-                message: "Close time must be greater than open time"
-            });
-
-        }
 
         let nationalNumber;
         let callingCode;
@@ -1151,6 +1142,42 @@ exports.branchRegister = async (req, res) => {
 
         }
 
+        let timingData = [];
+
+        if (timings) {
+
+            timingData = typeof timings === "string"
+                ? JSON.parse(timings)
+                : timings;
+
+            for (const item of timingData) {
+
+                if (!item.is_closed) {
+
+                    if (
+                        !item.open_time ||
+                        !item.close_time
+                    ) {
+
+                        return res.json({
+                            status: 0,
+                            message: `Opening and closing time are required for day ${item.day}`
+                        });
+
+                    }
+
+                    // if (item.open_time >= item.close_time) {
+
+                    //     return res.json({
+                    //         status: 0,
+                    //         message: `Closing time must be greater than opening time for day ${item.day}`
+                    //     });
+
+                    // }
+                }
+            }
+        }
+
         // Files
         const files = req.files || [];
 
@@ -1175,17 +1202,30 @@ exports.branchRegister = async (req, res) => {
             lon,
             address,
             description,
-            open_time,
-            close_time,
+
             merchant_id: mer_id,
             status: 1,
             del_status: 0,
             city,
             state,
             country,
-            zip_code
+            zip_code,
+            visibility: visibility !== undefined ? visibility : 0,
+            age_group: age_group || 'All Age'
 
         });
+
+        if (timingData.length > 0) {
+            const branchTimings = timingData.map(item => ({
+                branch_id: branch.id,
+                day: item.day,
+                open_time: item.is_closed ? null : item.open_time,
+                close_time: item.is_closed ? null : item.close_time,
+                is_closed: item.is_closed || false
+            }));
+
+            await BranchTiming.bulkCreate(branchTimings);
+        }
         if (receptionist_id) {
 
             // Remove this receptionist from any previous branch
@@ -1288,14 +1328,15 @@ exports.branchUpdate = async (req, res) => {
             lon,
             address,
             description,
-            open_time,
-            close_time,
             country_code,
             city,
             state,
             country,
             zip_code,
-            receptionist_id
+            receptionist_id,
+            timings,
+            visibility,
+            age_group
         } = req.body;
 
 
@@ -1309,6 +1350,7 @@ exports.branchUpdate = async (req, res) => {
             });
 
         }
+
 
         const branch = await Branch.findOne({
 
@@ -1437,20 +1479,42 @@ exports.branchUpdate = async (req, res) => {
 
         }
 
-        // ✅ Time Validation
-        if (
-            open_time &&
-            close_time &&
-            open_time >= close_time
-        ) {
+        let timingData = [];
 
-            return res.json({
-                status: 0,
-                message:
-                    "Close time must be greater than open time"
-            });
+        if (timings) {
 
+            timingData = typeof timings === "string"
+                ? JSON.parse(timings)
+                : timings;
+
+            for (const item of timingData) {
+
+                if (!item.is_closed) {
+
+                    if (
+                        !item.open_time ||
+                        !item.close_time
+                    ) {
+
+                        return res.json({
+                            status: 0,
+                            message: `Opening and closing time are required for day ${item.day}`
+                        });
+
+                    }
+
+                    // if (item.open_time >= item.close_time) {
+
+                    //     return res.json({
+                    //         status: 0,
+                    //         message: `Closing time must be greater than opening time for day ${item.day}`
+                    //     });
+
+                    // }
+                }
+            }
         }
+
 
         // ✅ Files
         const files = req.files || [];
@@ -1523,21 +1587,49 @@ exports.branchUpdate = async (req, res) => {
             address: address || branch.address,
 
             description: description || branch.description,
-
-            open_time: open_time || branch.open_time,
-
-            close_time: close_time || branch.close_time,
-
             city: city || branch.city,
 
             state: state || branch.state,
 
             country: country || branch.country,
 
-            zip_code: zip_code || branch.zip_code
-
+            zip_code: zip_code || branch.zip_code,
+            visibility: visibility !== undefined ? visibility : branch.visibility,
+            age_group: age_group || branch.age_group
         });
 
+        // ✅ Replace Branch Timings
+        if (timingData.length > 0) {
+
+            // Delete old timings
+            await BranchTiming.destroy({
+                where: {
+                    branch_id
+                }
+            });
+
+            // Insert new timings
+            const branchTimings = timingData.map(item => ({
+
+                branch_id,
+
+                day: item.day,
+
+                open_time: item.is_closed
+                    ? null
+                    : item.open_time,
+
+                close_time: item.is_closed
+                    ? null
+                    : item.close_time,
+
+                is_closed: item.is_closed || false
+
+            }));
+
+            await BranchTiming.bulkCreate(branchTimings);
+
+        }
         if (receptionist_id) {
 
             // Remove current receptionist from any other branch
@@ -1868,6 +1960,7 @@ exports.fetch_branch_id = async (req, res) => {
                     'name',
                     'email',
                     'phone',
+                    'country_code',
                     'profile_image',
                     'lat',
                     'lon',
@@ -1878,8 +1971,8 @@ exports.fetch_branch_id = async (req, res) => {
                     'address',
                     'merchant_id',
                     'description',
-                    'open_time',
-                    'close_time'
+                    'visibility',
+                    'age_group'
                 ],
 
                 include: [
@@ -1913,6 +2006,11 @@ exports.fetch_branch_id = async (req, res) => {
                     {
                         model: Receptionist,
                         attributes: ['id', 'name'],
+                    },
+                    {
+                        model: BranchTiming,
+                        attributes: ['id', 'day', 'open_time', 'close_time', 'is_closed'],
+
                     }
 
                 ]
@@ -2003,9 +2101,7 @@ exports.fetch_branch_id = async (req, res) => {
 
             const cpn = item.toJSON();
 
-            cpn.banner_image = cpn.banner_image
-                ? `${baseUrl}/${cpn.banner_image.replace(/\\/g, '/')}`
-                : null;
+
 
             cpn.is_expired =
                 cpn.end_date &&
@@ -2081,6 +2177,8 @@ exports.create_coupon = async (req, res) => {
 
         let {
             code,
+            description,
+
             cat_id,
             percentage,
             min_amount,
@@ -2088,8 +2186,13 @@ exports.create_coupon = async (req, res) => {
             start_date,
             branch_ids,
             end_date,
-            mer_id
+            mer_id,
+            type,
+            buy_item,
+            get_item
         } = req.body;
+        type = Number(type ?? 1);
+
 
         if (typeof branch_ids === "string") {
 
@@ -2107,7 +2210,6 @@ exports.create_coupon = async (req, res) => {
 
         if (
             !code ||
-            percentage === undefined ||
             !start_date ||
             !end_date ||
             !mer_id
@@ -2132,35 +2234,65 @@ exports.create_coupon = async (req, res) => {
             });
 
         }
+        if (![1, 2, 3].includes(Number(type))) {
+            return res.json({
+                status: 0,
+                message: "Invalid coupon type"
+            });
+        }
+        if (Number(type) !== 3) {
 
-        const coupon_check = await Coupon.findOne({
-
-            where: {
-                code: code
+            if (!percentage) {
+                return res.json({
+                    status: 0,
+                    message: "Discount value is required"
+                });
             }
 
-        });
+        }
+        if (Number(type) === 3) {
 
-        if (coupon_check) {
-
-            return res.json({
-                status: 0,
-                message: "Coupon already exists"
-            });
+            if (!buy_item || !get_item) {
+                return res.json({
+                    status: 0,
+                    message: "Buy and Get fields are required"
+                });
+            }
 
         }
 
-        if (
-            Number(percentage) < 0 ||
-            Number(percentage) > 100
-        ) {
 
-            return res.json({
-                status: 0,
-                message: "Percentage must be between 0 and 100"
-            });
+        // const coupon_check = await Coupon.findOne({
 
+        //     where: {
+        //         code: code
+        //     }
+
+        // });
+
+        // if (coupon_check) {
+
+        //     return res.json({
+        //         status: 0,
+        //         message: "Coupon already exists"
+        //     });
+
+        // }
+
+        if (type == 1) {
+            if (
+                Number(percentage) <= 0 ||
+                Number(percentage) > 100
+            ) {
+
+                return res.json({
+                    status: 0,
+                    message: "Percentage must be between 0 and 100"
+                });
+
+            }
         }
+
 
         if (
             min_amount &&
@@ -2278,8 +2410,13 @@ exports.create_coupon = async (req, res) => {
             branch_ids: branch_ids,
 
             code: code,
+            description,
             cat_id: cat_id,
-            percentage: Number(percentage),
+            percentage: Number(type) === 3 ? 0 : percentage,
+
+            buy_item: Number(type) === 3 ? buy_item : null,
+
+            get_item: Number(type) === 3 ? get_item : null,
 
             min_amount: min_amount || 0,
 
@@ -2326,6 +2463,7 @@ exports.update_coupon = async (req, res) => {
 
         let {
             coupon_id,
+            description,
             cat_id,
             branch_ids,
             code,
@@ -2334,11 +2472,16 @@ exports.update_coupon = async (req, res) => {
             usage_limit,
             start_date,
             end_date,
-            mer_id
+            mer_id,
+            type,
+            buy_item,
+            get_item
         } = req.body;
 
 
         const merchant_id = mer_id;
+        type = Number(type || 1);
+
 
         if (!merchant_id) {
 
@@ -2367,8 +2510,7 @@ exports.update_coupon = async (req, res) => {
 
         if (
             !coupon_id ||
-            !code ||
-            !percentage
+            !code
             || !start_date ||
             !end_date
         ) {
@@ -2394,6 +2536,26 @@ exports.update_coupon = async (req, res) => {
 
         }
 
+        if (![1, 2, 3].includes(type)) {
+            return res.json({
+                status: 0,
+                message: "Invalid coupon type"
+            });
+        }
+
+        if (type !== 3 && !percentage) {
+            return res.json({
+                status: 0,
+                message: "Discount value is required"
+            });
+        }
+
+        if (type === 3 && (!buy_item || !get_item)) {
+            return res.json({
+                status: 0,
+                message: "Buy and Get fields are required"
+            });
+        }
 
         const exist_coupon = await Coupon.findOne({
 
@@ -2415,41 +2577,43 @@ exports.update_coupon = async (req, res) => {
         }
 
 
-        const coupon_check = await Coupon.findOne({
+        // const coupon_check = await Coupon.findOne({
 
-            where: {
+        //     where: {
 
-                code: code,
+        //         code: code,
 
-                id: {
-                    [Op.ne]: coupon_id
-                }
+        //         id: {
+        //             [Op.ne]: coupon_id
+        //         }
+
+        //     }
+
+        // });
+
+        // if (coupon_check) {
+
+        //     return res.json({
+        //         status: 0,
+        //         message: "Coupon already exists"
+        //     });
+
+        // }
+        if (type == 1) {
+            if (
+                Number(percentage) < 0 ||
+                Number(percentage) > 100
+            ) {
+
+                return res.json({
+                    status: 0,
+                    message: "Percentage must be between 0 and 100"
+                });
 
             }
-
-        });
-
-        if (coupon_check) {
-
-            return res.json({
-                status: 0,
-                message: "Coupon already exists"
-            });
-
         }
 
 
-        if (
-            Number(percentage) < 0 ||
-            Number(percentage) > 100
-        ) {
-
-            return res.json({
-                status: 0,
-                message: "Percentage must be between 0 and 100"
-            });
-
-        }
 
 
         if (
@@ -2512,17 +2676,17 @@ exports.update_coupon = async (req, res) => {
         }
 
 
-        let banner_image = exist_coupon.banner_image;
+        // let banner_image = exist_coupon.banner_image;
 
-        const bannerFile = req.files.find(
-            file => file.fieldname === "banner_image"
-        );
+        // const bannerFile = req.files.find(
+        //     file => file.fieldname === "banner_image"
+        // );
 
-        if (bannerFile) {
+        // if (bannerFile) {
 
-            banner_image = bannerFile.path.replace(/\\/g, '/');
+        //     banner_image = bannerFile.path.replace(/\\/g, '/');
 
-        }
+        // }
 
 
 
@@ -2568,11 +2732,18 @@ exports.update_coupon = async (req, res) => {
         await exist_coupon.update({
 
             branch_ids: branch_ids,
+            description,
 
             code: code,
             cat_id: cat_id,
+            type,
+            percentage: type === 3 ? 0 : Number(percentage),
 
-            percentage: percentage,
+            buy_item: type === 3 ? buy_item : null,
+
+            get_item: type === 3 ? get_item : null,
+
+
 
             min_amount: min_amount || 0,
 
@@ -2582,7 +2753,7 @@ exports.update_coupon = async (req, res) => {
 
             end_date: end_date,
 
-            banner_image: banner_image
+            // banner_image: banner_image
 
         });
 
@@ -3427,11 +3598,14 @@ exports.branch_id = async (req, res) => {
                 'name',
                 'email',
                 'phone',
+                'country_code',
                 'profile_image',
                 'lat',
                 'lon',
                 'address',
                 'merchant_id',
+                'visibility',
+                'age_group'
 
             ]
 
@@ -3474,3 +3648,65 @@ exports.branch_id = async (req, res) => {
     }
 
 };
+
+
+exports.generate_coupon = async (req, res) => {
+    try {
+        const { id } = req.body;
+
+        const merchant = await Merchant.findOne({
+            where: {
+                id,
+                del_status: 0
+            },
+            attributes: ["name", "bus_name"]
+        });
+
+        if (!merchant) {
+            return res.json({
+                status: 0,
+                message: "Merchant not found"
+            });
+        }
+
+        const merchantName = (merchant.bus_name || merchant.name || "MERCHANT").trim();
+
+        const shortName = merchantName
+            .split(/\s+/)
+            .map(word => word.charAt(0))
+            .join("")
+            .toUpperCase();
+
+        let couponCode;
+        let couponCheck;
+
+        do {
+            couponCode = `${shortName}${Math.floor(1000 + Math.random() * 9000)}`;
+
+            couponCheck = await Coupon.findOne({
+                where: {
+                    code: couponCode,
+                    del_status: 0
+                }
+            });
+        } while (couponCheck);
+
+        return res.json({
+            status: 1,
+            message: "Coupon Generated Successfully",
+            data: {
+                code: couponCode
+            }
+        });
+
+    } catch (err) {
+        console.error("COUPON GENERATE ERROR:", err);
+
+        return res.json({
+            status: 0,
+            message: err.message
+        });
+    }
+};
+
+

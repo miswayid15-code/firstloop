@@ -43,6 +43,7 @@ const initialForm = {
     longitude: '',
     countryCode: '',
     status: '1',
+    description: '',
 }
 
 export default function EditMerchant() {
@@ -229,6 +230,7 @@ export default function EditMerchant() {
                     longitude: merchant.lon || '',
                     countryCode: merchant.country_code || '',
                     status: merchant.status?.toString() ?? '1',
+                    description: merchant.description || '',
                 })
 
                 // Set image previews from existing URLs
@@ -270,6 +272,7 @@ export default function EditMerchant() {
             formData.append('lat', form.latitude)
             formData.append('lon', form.longitude)
             formData.append('status', form.status)
+            formData.append('description', form.description || '')
 
             // Only include password if user entered a new one
             if (form.password) {
@@ -502,7 +505,7 @@ export default function EditMerchant() {
                                 />
 
                                 <label className="form-label">
-                                    Business Owner Name
+                                    Business Owner Name <span style={{ color: '#ef4444' }}>*</span>
                                 </label>
                             </div>
 
@@ -518,13 +521,14 @@ export default function EditMerchant() {
                                 />
 
                                 <label className="form-label">
-                                    Email Address
+                                    Email Address <span style={{ color: '#ef4444' }}>*</span>
                                 </label>
                             </div>
 
                             <PhoneNumberField
                                 value={form.phone}
                                 countryCode={form.countryCode}
+                                required={true}
                                 onChange={(value, countryCode) =>
                                     setForm((prev) => ({
                                         ...prev,
@@ -575,7 +579,7 @@ export default function EditMerchant() {
                                 />
 
                                 <label className="form-label">
-                                    Business Name
+                                    Business Name <span style={{ color: '#ef4444' }}>*</span>
                                 </label>
                             </div>
 
@@ -587,7 +591,6 @@ export default function EditMerchant() {
                                     onChange={handleChange}
                                     className="form-control"
                                     placeholder=" "
-                                    required
                                 />
 
                                 <label className="form-label">
@@ -597,7 +600,7 @@ export default function EditMerchant() {
 
                             <div className="form-group-classic">
                                 <label className="form-label-classic">
-                                    Business Category
+                                    Business Category <span style={{ color: '#ef4444' }}>*</span>
                                 </label>
 
                                 <select
@@ -700,6 +703,22 @@ export default function EditMerchant() {
                             </article>
                         </div>
 
+                        <div style={{ marginTop: 18, width: '100%' }}>
+                            <div className="form-group-classic">
+                                <label className="form-label-classic">
+                                    Merchant Description
+                                </label>
+                                <textarea
+                                    name="description"
+                                    className="form-control textarea-field"
+                                    value={form.description || ''}
+                                    onChange={handleChange}
+                                    placeholder="Type description here"
+                                    rows={3}
+                                />
+                            </div>
+                        </div>
+
                         <div
                             style={{
                                 fontWeight: 700,
@@ -725,6 +744,7 @@ export default function EditMerchant() {
                             onMarkerDragEnd={handleMarkerDragEnd}
                             center={center}
                             mapContainerStyle={mapContainerStyle}
+                            isMerchant={true}
                         />
 
                         <div

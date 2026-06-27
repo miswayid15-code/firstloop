@@ -1,4 +1,4 @@
-const { Merchant, Coupon, RefreshToken, Branch, Receptionist, MerchantFp } = require('../../models');
+const { Merchant, Coupon, RefreshToken, Branch, Receptionist, MerchantFp,BranchTiming } = require('../../models');
 const bcrypt = require('bcryptjs');
 const { parsePhoneNumber } = require('libphonenumber-js');
 const jwt = require('jsonwebtoken');

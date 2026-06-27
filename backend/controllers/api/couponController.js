@@ -133,24 +133,24 @@ exports.create_coupon = async (req, res) => {
 
         }
 
-        const coupon_check = await Coupon.findOne({
+        // const coupon_check = await Coupon.findOne({
 
-            where: {
-                code: code
-            }
+        //     where: {
+        //         code: code
+        //     }
 
-        });
+        // });
 
-        if (coupon_check) {
+        // if (coupon_check) {
 
-            return res.json({
-                status: 0,
-                message: "Coupon already exists"
-            });
+        //     return res.json({
+        //         status: 0,
+        //         message: "Coupon already exists"
+        //     });
 
-        }
+        // }
 
-
+if(type==1){
         if (
             Number(percentage) < 0 ||
             Number(percentage) > 100
@@ -162,6 +162,8 @@ exports.create_coupon = async (req, res) => {
             });
 
         }
+}
+
 
 
         if (
@@ -429,24 +431,25 @@ exports.update_coupon = async (req, res) => {
             });
         }
 
-        const coupon_check = await Coupon.findOne({
-            where: {
-                code,
-                id: {
-                    [Op.ne]: coupon_id
-                }
-            }
-        });
+        // const coupon_check = await Coupon.findOne({
+        //     where: {
+        //         code,
+        //         id: {
+        //             [Op.ne]: coupon_id
+        //         }
+        //     }
+        // });
 
-        if (coupon_check) {
-            return res.json({
-                status: 0,
-                message: "Coupon already exists"
-            });
-        }
+        // if (coupon_check) {
+        //     return res.json({
+        //         status: 0,
+        //         message: "Coupon already exists"
+        //     });
+        // }
+if(type==1){
+
 
         if (
-            type !== 3 &&
             (Number(percentage) < 0 || Number(percentage) > 100)
         ) {
             return res.json({
@@ -454,7 +457,7 @@ exports.update_coupon = async (req, res) => {
                 message: "Percentage must be between 0 and 100"
             });
         }
-
+}
         if (
             min_amount &&
             Number(min_amount) < 0
@@ -725,7 +728,11 @@ exports.fetch_coupon_details = async (req, res) => {
                 'start_date',
                 'banner_image',
                 'end_date',
-                'status'
+                'status',
+                 'description',
+                   'type',
+            'buy_item',
+            'get_item'
             ],
             where: {
                 id: coupon_id
@@ -1382,7 +1389,11 @@ exports.fetch_coupon_by_id = async (req, res) => {
                 'start_date',
                 'banner_image',
                 'end_date',
-                'status'
+                'status',
+                'description',
+                  'type',
+            'buy_item',
+            'get_item'
             ],
             where: {
                 id: coupon_id,
@@ -1486,7 +1497,11 @@ exports.fetch_coupon_details_by_id = async (req, res) => {
                 'start_date',
                 'banner_image',
                 'end_date',
-                'status'
+                'status',
+                          'description',
+                  'type',
+            'buy_item',
+            'get_item'
             ],
             where: {
                 id: coupon_id,

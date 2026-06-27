@@ -64,7 +64,8 @@ exports.create_banner = async (req, res) => {
         const banner = await Banner.create({
             title,
             status: 1,
-            image
+            image,
+            country_code
         });
 
         return res.status(201).json({
@@ -122,6 +123,7 @@ exports.update_banner = async (req, res) => {
         await banner.update({
             title: title ?? banner.title,
             status: status ?? banner.status,
+            country_code: country_code ?? banner.country_code,
             image: imageFile ? imageFile.filename : banner.image
         });
 

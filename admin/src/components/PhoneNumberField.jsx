@@ -4,7 +4,8 @@ import 'react-phone-input-2/lib/style.css'
 export default function PhoneNumberField({
     value,
     countryCode,
-    onChange
+    onChange,
+    required = false
 }) {
 
     return (
@@ -15,7 +16,7 @@ export default function PhoneNumberField({
                 className="form-label-classic"
                 style={{ marginBottom: 8 }}
             >
-                Phone Number
+                Phone Number {required && <span style={{ color: '#ef4444' }}>*</span>}
             </label>
 
             <PhoneInput

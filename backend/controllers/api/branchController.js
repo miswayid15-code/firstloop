@@ -1,4 +1,4 @@
-const { Branch, Merchant, BranchImage, MenuImage, Receptionist, Appointment, Customer, Coupon, CouponApplied } = require('../../models');
+const { Branch, Merchant, BranchImage, BranchTiming, MenuImage, Receptionist, Appointment, Customer, Coupon, CouponApplied } = require('../../models');
 const { Op } = require('sequelize');
 const { db, admin } = require('../../config/firebase');
 const { parsePhoneNumber } = require('libphonenumber-js');
@@ -9,9 +9,9 @@ const { json } = require('sequelize');
 
 exports.register = async (req, res) => {
 
-    // console.log("========== CREATE BRANCH API ==========");
-    // console.log("BODY:", req.body);
-    // console.log("USER:", req.user);
+    console.log("========== CREATE BRANCH API ==========");
+    console.log("BODY:", req.body);
+    console.log("USER:", req.user);
 
     try {
 
@@ -25,7 +25,10 @@ exports.register = async (req, res) => {
             description,
             open_time,
             close_time,
-            country_code
+            country_code,
+            timings,
+            visibility,
+            age_group
         } = req.body;
 
         const merchant_id = req.user.id;
@@ -48,25 +51,43 @@ exports.register = async (req, res) => {
 
         }
 
-        // console.log("REQUIRED FIELD VALIDATION PASSED");
 
-        // ✅ Time Validation
-        if (
-            open_time &&
-            close_time &&
-            open_time >= close_time
-        ) {
+        let timingData = [];
 
-            // console.log("TIME VALIDATION FAILED");
-            // console.log("OPEN TIME:", open_time);
-            // console.log("CLOSE TIME:", close_time);
+        if (timings) {
 
-            return res.json({
-                status: 0,
-                message: "Close time must be greater than open time"
-            });
+            timingData = typeof timings === "string"
+                ? JSON.parse(timings)
+                : timings;
 
+            for (const item of timingData) {
+
+                if (!item.is_closed) {
+
+                    if (
+                        !item.open_time ||
+                        !item.close_time
+                    ) {
+
+                        return res.json({
+                            status: 0,
+                            message: `Opening and closing time are required for day ${item.day}`
+                        });
+
+                    }
+
+                    // if (item.open_time >= item.close_time) {
+
+                    //     return res.json({
+                    //         status: 0,
+                    //         message: `Closing time must be greater than opening time for day ${item.day}`
+                    //     });
+
+                    // }
+                }
+            }
         }
+
 
         // console.log("TIME VALIDATION PASSED");
 
@@ -258,18 +279,38 @@ exports.register = async (req, res) => {
                 address,
 
                 description,
+                visibility,
+                age_group,
 
-                open_time,
-
-                close_time,
 
                 merchant_id,
 
                 status: 1,
 
-                del_status: 0
+                del_status: 0,
+
 
             });
+
+        if (timingData.length > 0) {
+
+            const branchTimings = timingData.map(item => ({
+
+                branch_id: branch.id,
+
+                day: item.day,
+
+                open_time: item.is_closed ? null : item.open_time,
+
+                close_time: item.is_closed ? null : item.close_time,
+
+                is_closed: item.is_closed || false
+
+            }));
+
+            await BranchTiming.bulkCreate(branchTimings);
+
+        }
 
         // console.log("BRANCH CREATED:", branch);
 
@@ -569,10 +610,47 @@ exports.update_branch = async (req, res) => {
             description,
             open_time,
             close_time,
-            country_code
+            country_code,
+            timings,
+            visibility,
+            age_group
         } = req.body;
 
         const merchant_id = req.user.id;
+        let timingData = [];
+
+        if (timings) {
+
+            timingData = typeof timings === "string"
+                ? JSON.parse(timings)
+                : timings;
+
+            for (const item of timingData) {
+
+                if (!item.is_closed) {
+
+                    if (!item.open_time || !item.close_time) {
+
+                        return res.json({
+                            status: 0,
+                            message: `Opening and closing time are required for day ${item.day}`
+                        });
+
+                    }
+
+                    // Optional validation
+                    // if (item.open_time >= item.close_time) {
+                    //     return res.json({
+                    //         status: 0,
+                    //         message: `Closing time must be greater than opening time for day ${item.day}`
+                    //     });
+                    // }
+
+                }
+
+            }
+
+        }
 
         // ✅ Branch ID Check
         if (!branch_id) {
@@ -716,19 +794,7 @@ exports.update_branch = async (req, res) => {
         }
 
         // ✅ Time Validation
-        if (
-            open_time &&
-            close_time &&
-            open_time >= close_time
-        ) {
 
-            return res.json({
-                status: 0,
-                message:
-                    "Close time must be greater than open time"
-            });
-
-        }
 
         // ✅ Files
         const files = req.files || [];
@@ -802,13 +868,46 @@ exports.update_branch = async (req, res) => {
             description:
                 description || branch.description,
 
-            open_time:
-                open_time || branch.open_time,
+            visibility:
+                visibility || branch.visibility,
+            age_group:
+                age_group || branch.age_group,
 
-            close_time:
-                close_time || branch.close_time
 
         });
+
+        // ✅ Replace Branch Timings
+        if (timingData.length > 0) {
+
+            // Delete old timings
+            await BranchTiming.destroy({
+                where: {
+                    branch_id
+                }
+            });
+
+            // Insert new timings
+            const branchTimings = timingData.map(item => ({
+
+                branch_id,
+
+                day: item.day,
+
+                open_time: item.is_closed
+                    ? null
+                    : item.open_time,
+
+                close_time: item.is_closed
+                    ? null
+                    : item.close_time,
+
+                is_closed: item.is_closed || false
+
+            }));
+
+            await BranchTiming.bulkCreate(branchTimings);
+
+        }
 
         // ✅ Replace Branch Images
         if (files.length > 0) {
@@ -932,6 +1031,9 @@ exports.branch_id = async (req, res) => {
                     {
                         model: Receptionist,
                         attributes: ['id', 'name']
+                    }, {
+                        model: BranchTiming,
+                        attributes: ['id', 'day', 'open_time', 'close_time', 'is_closed']
                     }
                 ],
                 attributes: [
@@ -945,10 +1047,11 @@ exports.branch_id = async (req, res) => {
                     'address',
                     'merchant_id',
                     'description',
-                    'open_time',
-                    'close_time',
-                    'country_code'
+                    'country_code',
+                        'visibility',
+                    'age_group'
                 ]
+
             }),
 
             Coupon.count({
@@ -1006,7 +1109,7 @@ exports.branch_id = async (req, res) => {
             }));
         }
 
-   
+
 
         // Counts
         data.active_coupon = active_coupon;

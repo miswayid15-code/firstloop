@@ -24,10 +24,24 @@ module.exports = (sequelize, DataTypes) => {
         country_code: DataTypes.STRING,
 
         // ✅ Added
-        open_time: DataTypes.TIME,
+        open_time: {
+            type: DataTypes.TIME,
+            allowNull: true,
+            defaultValue: null
+        },
 
-        close_time: DataTypes.TIME,
-
+        close_time: {
+            type: DataTypes.TIME,
+            allowNull: true,
+            defaultValue: null
+        },
+        description: DataTypes.TEXT,
+        visibility: {
+            type: DataTypes.TEXT,
+            defaultValue: 1,
+            comment: '0=all,1 = Male, 2 = Female, 3 = children'
+        },
+        age_group: DataTypes.TEXT,
         description: DataTypes.TEXT,
 
         merchant_id: DataTypes.BIGINT,
@@ -83,6 +97,9 @@ module.exports = (sequelize, DataTypes) => {
             foreignKey: 'branch_ids'
         });
         Branch.hasMany(models.Receptionist, {
+            foreignKey: 'branch_id'
+        });
+        Branch.hasMany(models.BranchTiming, {
             foreignKey: 'branch_id'
         });
         Branch.hasMany(models.CouponApplied, {

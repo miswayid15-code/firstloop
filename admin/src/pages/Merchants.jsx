@@ -303,6 +303,7 @@ const handleDeleteAccount = async (id) => {
                     <thead>
                         <tr>
                             <th>Merchant Name</th>
+                            <th>Business Name</th>
                             <th>Email</th>
                             <th>Phone</th>
 
@@ -342,9 +343,6 @@ const handleDeleteAccount = async (id) => {
                                     <td>
                                         <span className="skeleton-text" style={{ width: '100px' }} />
                                     </td>
-                                    <td>
-                                        <span className="skeleton-text" style={{ width: '90px' }} />
-                                    </td>
                                 </tr>
                             ))
 
@@ -379,6 +377,8 @@ const handleDeleteAccount = async (id) => {
 
                                         </div>
                                     </td>
+
+                                    <td>{row.bus_name}</td>
 
                                     <td>{row.email}</td>
 

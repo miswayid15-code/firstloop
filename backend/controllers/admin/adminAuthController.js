@@ -4,7 +4,7 @@ const { Sequelize } = require("sequelize");
 const { Op } = require('sequelize');
 const {
     RefreshToken,
-    admins, Merchant, Branch, Receptionist, Coupon,CouponApplied
+    admins, Merchant, Branch, Receptionist, Coupon, CouponApplied
 } = require('../../models');
 
 exports.login = async (req, res) => {
@@ -309,6 +309,7 @@ exports.merchant_list = async (req, res) => {
 
                 'id',
                 'name',
+                'bus_name',
                 'email',
                 'phone',
                 'country_code',
@@ -442,8 +443,8 @@ exports.fetchmerchant = async (req, res) => {
                         'profile_image',
                         'country_code',
                         'status',
-
-
+                        'visibility',
+                        'age_group'
                     ],
 
                     required: false,
@@ -503,10 +504,13 @@ exports.fetchmerchant = async (req, res) => {
             }
 
         });
+        const branchMap = {};
 
 
         if (data.Branches && data.Branches.length > 0) {
-
+            data.Branches.forEach(branch => {
+                branchMap[branch.id] = branch.name;
+            });
             for (const branch of data.Branches) {
 
                 // Branch Image
@@ -592,6 +596,11 @@ exports.fetchmerchant = async (req, res) => {
             item.banner_image = item.banner_image
                 ? baseUrl + '/' + item.banner_image.replace(/\\/g, '/')
                 : null;
+
+            item.branch_names = (item.branch_ids || []).map(id => ({
+                id,
+                name: branchMap[id] || null
+            }));
 
             return item;
 

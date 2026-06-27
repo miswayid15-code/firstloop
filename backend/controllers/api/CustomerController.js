@@ -947,6 +947,8 @@ exports.home = async (req, res) => {
 
         const lat = req.body?.lat || req.query?.lat || null;
         const lon = req.body?.lon || req.query?.lon || null;
+        const choose_country = req.body?.ch_code || req.query?.ch_code || null;
+        // console.log("choose_country",choose_country)
 
         const customer_id =
             req.user?.id ||
@@ -986,12 +988,13 @@ exports.home = async (req, res) => {
 
             where: {
                 status: 1,
-                del_status: 0
+                del_status: 0,
+                country_code:choose_country
             },
 
             include: [{
                 model: Merchant,
-                required: true, // INNER JOIN
+                required: true, 
                 attributes: [],
                 where: {
                     status: 1,

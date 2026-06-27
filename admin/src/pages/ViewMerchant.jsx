@@ -97,6 +97,26 @@ const getReceptionistPhone = (receptionist) => {
         : receptionist.phone
 }
 
+const defaultBranchTimings = [
+    { day: 1, open_time: '00:00', close_time: '00:00', is_closed: false },
+    { day: 2, open_time: '00:00', close_time: '00:00', is_closed: false },
+    { day: 3, open_time: '00:00', close_time: '00:00', is_closed: false },
+    { day: 4, open_time: '00:00', close_time: '00:00', is_closed: false },
+    { day: 5, open_time: '00:00', close_time: '00:00', is_closed: false },
+    { day: 6, open_time: '00:00', close_time: '00:00', is_closed: false },
+    { day: 7, open_time: '', close_time: '', is_closed: true }
+]
+
+const dayNamesMap = {
+    1: { full: 'Monday', short: 'Mon' },
+    2: { full: 'Tuesday', short: 'Tue' },
+    3: { full: 'Wednesday', short: 'Wed' },
+    4: { full: 'Thursday', short: 'Thu' },
+    5: { full: 'Friday', short: 'Fri' },
+    6: { full: 'Saturday', short: 'Sat' },
+    7: { full: 'Sunday', short: 'Sun' }
+}
+
 export default function ViewMerchant() {
 
     const navigate = useNavigate()
@@ -140,10 +160,9 @@ export default function ViewMerchant() {
         latitude: '',
         longitude: '',
         description: '',
-        open_time: '',
-        close_time: '',
         profile_image: null,
-        profileImagePreview: ''
+        profileImagePreview: '',
+        timings: defaultBranchTimings
     })
 
     const [branchAutocomplete, setBranchAutocomplete] = useState(null)
@@ -166,7 +185,7 @@ export default function ViewMerchant() {
         email: '',
         phone: '',
         country_code: '+91',
-        password: '',
+        receptionist_id: '',
         address: '',
         city: '',
         state: '',
@@ -175,11 +194,11 @@ export default function ViewMerchant() {
         latitude: '',
         longitude: '',
         description: '',
-        receptionist_id: '',
-        open_time: '',
-        close_time: '',
         profile_image: null,
-        profileImagePreview: ''
+        profileImagePreview: '',
+        timings: defaultBranchTimings,
+        visibility: 0,
+        age_group: 'All Age'
     }
 
     const [addBranchForm, setAddBranchForm] = useState(initialAddBranchForm)
@@ -212,15 +231,17 @@ export default function ViewMerchant() {
 
     const initialCouponForm = {
         code: '',
+        type: 1,
+        description: '',
+        buy_item: '',
+        get_item: '',
         percentage: '',
         min_amount: '',
         usage_limit: '1',
         start_date: '',
         end_date: '',
         branch_ids: [],
-        cat_id: '',
-        banner_image: null,
-        bannerImagePreview: ''
+        cat_id: ''
     }
 
     const [showCreateCouponModal, setShowCreateCouponModal] = useState(false)
@@ -238,6 +259,12 @@ export default function ViewMerchant() {
     const [deletingCouponId, setDeletingCouponId] = useState(null)
     const [deletingBranchId, setDeletingBranchId] = useState(null)
     const [deletingReceptionistId, setDeletingReceptionistId] = useState(null)
+
+    const [showBranchCouponsModal, setShowBranchCouponsModal] = useState(false)
+    const [selectedBranchForCoupons, setSelectedBranchForCoupons] = useState(null)
+
+    const [showViewCouponModal, setShowViewCouponModal] = useState(false)
+    const [selectedCouponForView, setSelectedCouponForView] = useState(null)
 
     const [confirmDialog, setConfirmDialog] = useState({
         open: false,
@@ -406,7 +433,7 @@ export default function ViewMerchant() {
 
             )
 
-            // console.log(response.data)
+            console.log("merchant data",response.data)
 
             if (isSuccessResponse(response.data)) {
 
@@ -576,10 +603,11 @@ export default function ViewMerchant() {
             latitude: '',
             longitude: '',
             description: '',
-            open_time: '',
-            close_time: '',
             profile_image: null,
-            profileImagePreview: ''
+            profileImagePreview: '',
+            timings: defaultBranchTimings,
+            visibility: 0,
+            age_group: 'All Age'
         })
 
         setBranchGalleryImages([])
@@ -600,18 +628,29 @@ export default function ViewMerchant() {
 
                 const branch = data.data
 
-                const rawOpen = branch.open_time || ''
-                const rawClose = branch.close_time || ''
-
                 const toTimeInput = (val) => {
                     if (!val) return ''
-                    // Already HH:MM or HH:MM:SS
                     const parts = val.split(':')
                     if (parts.length >= 2) {
                         return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`
                     }
                     return val
                 }
+
+                const loadedTimings = (branch.BranchTimings || []).map((t) => ({
+                    day: Number(t.day),
+                    open_time: t.open_time ? toTimeInput(t.open_time) : '',
+                    close_time: t.close_time ? toTimeInput(t.close_time) : '',
+                    is_closed: !!t.is_closed
+                }));
+
+                const sortedTimings = Array.from({ length: 7 }, (_, i) => {
+                    const dayNum = i + 1;
+                    const existing = loadedTimings.find((t) => t.day === dayNum);
+                    if (existing) return existing;
+                    const def = defaultBranchTimings.find((t) => t.day === dayNum);
+                    return { ...def };
+                });
 
                 setEditBranchForm({
                     name: branch.name || '',
@@ -627,10 +666,11 @@ export default function ViewMerchant() {
                     latitude: branch.lat || '',
                     longitude: branch.lon || '',
                     description: branch.description || '',
-                    open_time: toTimeInput(rawOpen),
-                    close_time: toTimeInput(rawClose),
                     profile_image: null,
-                    profileImagePreview: branch.profile_image || ''
+                    profileImagePreview: branch.profile_image || '',
+                    timings: sortedTimings,
+                    visibility: branch.visibility !== undefined ? Number(branch.visibility) : 0,
+                    age_group: branch.age_group || 'All Age'
                 })
 
                 setBranchGalleryImages(
@@ -697,10 +737,11 @@ export default function ViewMerchant() {
             latitude: '',
             longitude: '',
             description: '',
-            open_time: '',
-            close_time: '',
             profile_image: null,
-            profileImagePreview: ''
+            profileImagePreview: '',
+            timings: defaultBranchTimings,
+            visibility: 0,
+            age_group: 'All Age'
         })
 
         setBranchGalleryImages([])
@@ -1029,6 +1070,221 @@ export default function ViewMerchant() {
         setCouponForm(initialCouponForm)
     }
 
+    const openBranchCouponsModal = (branch) => {
+        setSelectedBranchForCoupons(branch)
+        setShowBranchCouponsModal(true)
+    }
+
+    const closeBranchCouponsModal = () => {
+        setShowBranchCouponsModal(false)
+        setSelectedBranchForCoupons(null)
+    }
+
+    const openViewCouponModal = (coupon) => {
+        setSelectedCouponForView(coupon)
+        setShowViewCouponModal(true)
+    }
+
+    const closeViewCouponModal = () => {
+        setShowViewCouponModal(false)
+        setSelectedCouponForView(null)
+    }
+
+    const [quickOpenAdd, setQuickOpenAdd] = useState('')
+    const [quickCloseAdd, setQuickCloseAdd] = useState('')
+    const [selectedDaysAdd, setSelectedDaysAdd] = useState([1, 2, 3, 4, 5, 6, 7])
+
+    const [quickOpenEdit, setQuickOpenEdit] = useState('')
+    const [quickCloseEdit, setQuickCloseEdit] = useState('')
+    const [selectedDaysEdit, setSelectedDaysEdit] = useState([1, 2, 3, 4, 5, 6, 7])
+
+    const handleAddTimingDayToggle = (dayNum) => {
+        setSelectedDaysAdd(prev => 
+            prev.includes(dayNum) ? prev.filter(d => d !== dayNum) : [...prev, dayNum]
+        )
+    }
+
+    const handleEditTimingDayToggle = (dayNum) => {
+        setSelectedDaysEdit(prev => 
+            prev.includes(dayNum) ? prev.filter(d => d !== dayNum) : [...prev, dayNum]
+        )
+    }
+
+    const handleAddTimingAllToggle = () => {
+        if (selectedDaysAdd.length === 7) {
+            setSelectedDaysAdd([])
+        } else {
+            setSelectedDaysAdd([1, 2, 3, 4, 5, 6, 7])
+        }
+    }
+
+    const handleEditTimingAllToggle = () => {
+        if (selectedDaysEdit.length === 7) {
+            setSelectedDaysEdit([])
+        } else {
+            setSelectedDaysEdit([1, 2, 3, 4, 5, 6, 7])
+        }
+    }
+
+    const updateTimingField = (isEdit, dayNum, field, value) => {
+        const setForm = isEdit ? setEditBranchForm : setAddBranchForm;
+        setForm(prev => {
+            const updated = (prev.timings || []).map(item => {
+                if (item.day === dayNum) {
+                    let openVal = item.open_time;
+                    let closeVal = item.close_time;
+                    let closedVal = item.is_closed;
+
+                    if (field === 'open_time') openVal = value;
+                    if (field === 'close_time') closeVal = value;
+                    if (field === 'is_closed') {
+                        closedVal = value;
+                        if (value) {
+                            openVal = '';
+                            closeVal = '';
+                        } else {
+                            openVal = '00:00';
+                            closeVal = '00:00';
+                        }
+                    }
+                    return { ...item, open_time: openVal, close_time: closeVal, is_closed: closedVal };
+                }
+                return item;
+            });
+            return { ...prev, timings: updated };
+        });
+    }
+
+    const applyQuickSetup = (isEdit) => {
+        const openTime = isEdit ? quickOpenEdit : quickOpenAdd;
+        const closeTime = isEdit ? quickCloseEdit : quickCloseAdd;
+        const selected = isEdit ? selectedDaysEdit : selectedDaysAdd;
+        const setForm = isEdit ? setEditBranchForm : setAddBranchForm;
+
+        if (!openTime || !closeTime) {
+            toast.error('Please specify both opening and closing times for quick setup');
+            return;
+        }
+
+        setForm(prev => {
+            const updated = (prev.timings || []).map(item => {
+                if (selected.includes(item.day)) {
+                    return { ...item, open_time: openTime, close_time: closeTime, is_closed: false };
+                }
+                return item;
+            });
+            return { ...prev, timings: updated };
+        });
+        toast.success('Quick setup applied to selected days');
+    }
+
+    const clearAllTimes = (isEdit) => {
+        const setForm = isEdit ? setEditBranchForm : setAddBranchForm;
+        setForm(prev => {
+            const updated = (prev.timings || []).map(item => {
+                return { ...item, open_time: '', close_time: '', is_closed: true };
+            });
+            return { ...prev, timings: updated };
+        });
+        toast.success('All times cleared and days set to closed');
+    }
+
+    const applyPreset = (isEdit, type) => {
+        const setForm = isEdit ? setEditBranchForm : setAddBranchForm;
+        setForm(prev => {
+            const updated = (prev.timings || []).map(item => {
+                const isWeekend = item.day === 6 || item.day === 7;
+                if (type === 'weekdays') {
+                    if (isWeekend) {
+                        return { ...item, open_time: '', close_time: '', is_closed: true };
+                    } else {
+                        return { ...item, open_time: '09:00', close_time: '18:00', is_closed: false };
+                    }
+                } else if (type === 'alldays') {
+                    return { ...item, open_time: '09:00', close_time: '18:00', is_closed: false };
+                }
+                return item;
+            });
+            return { ...prev, timings: updated };
+        });
+    }
+
+    const copyTimeToAllSelected = (isEdit, sourceDay) => {
+        const setForm = isEdit ? setEditBranchForm : setAddBranchForm;
+        const selected = isEdit ? selectedDaysEdit : selectedDaysAdd;
+        
+        setForm(prev => {
+            const sourceTiming = (prev.timings || []).find(item => item.day === sourceDay);
+            if (!sourceTiming) return prev;
+            if (sourceTiming.is_closed) {
+                toast.error('Cannot copy timings from a closed day');
+                return prev;
+            }
+
+            const updated = (prev.timings || []).map(item => {
+                if (selected.includes(item.day) && item.day !== sourceDay) {
+                    return { 
+                        ...item, 
+                        open_time: sourceTiming.open_time, 
+                        close_time: sourceTiming.close_time, 
+                        is_closed: false 
+                    };
+                }
+                return item;
+            });
+            return { ...prev, timings: updated };
+        });
+        toast.success('Timings copied to selected days');
+    }
+
+    const [generatingCode, setGeneratingCode] = useState(false)
+
+    const generateCouponCodeForCreate = async () => {
+        try {
+            setGeneratingCode(true)
+            const response = await API.post('admin/coupon-generate', { id: id })
+            const data = response.data || {}
+            if (data.status === 1 && data.data?.code) {
+                setCouponForm(prev => ({
+                    ...prev,
+                    code: data.data.code
+                }))
+                toast.success(data.message || 'Coupon code generated!')
+            } else {
+                toast.error(data.message || 'Failed to generate code')
+            }
+        } catch (error) {
+            console.error('Error generating coupon code:', error)
+            toast.error('Failed to generate coupon code')
+        } finally {
+            setGeneratingCode(false)
+        }
+    }
+
+    const [generatingEditCode, setGeneratingEditCode] = useState(false)
+
+    const generateCouponCodeForEdit = async () => {
+        try {
+            setGeneratingEditCode(true)
+            const response = await API.post('admin/coupon-generate', { id: id })
+            const data = response.data || {}
+            if (data.status === 1 && data.data?.code) {
+                setEditCouponForm(prev => ({
+                    ...prev,
+                    code: data.data.code
+                }))
+                toast.success(data.message || 'Coupon code generated!')
+            } else {
+                toast.error(data.message || 'Failed to generate code')
+            }
+        } catch (error) {
+            console.error('Error generating coupon code:', error)
+            toast.error('Failed to generate coupon code')
+        } finally {
+            setGeneratingEditCode(false)
+        }
+    }
+
     const handleCouponChange = (e) => {
         const { name, value } = e.target
 
@@ -1064,27 +1320,26 @@ export default function ViewMerchant() {
         }))
     }
 
-    const handleCouponBannerChange = (e) => {
-        const file = e.target.files?.[0]
-
-        if (!file) return
-
-        setCouponForm((prev) => ({
-            ...prev,
-            banner_image: file,
-            bannerImagePreview: URL.createObjectURL(file)
-        }))
-    }
-
     const handleCreateCoupon = async () => {
         if (!couponForm.code.trim()) {
             toast.error('Coupon code is required')
             return
         }
 
-        if (couponForm.percentage === '' || couponForm.percentage === null) {
-            toast.error('Percentage is required')
-            return
+        if (Number(couponForm.type) !== 3) {
+            if (couponForm.percentage === '' || couponForm.percentage === null) {
+                toast.error(Number(couponForm.type) === 2 ? 'Fixed Amount is required' : 'Discount percentage is required')
+                return
+            }
+        } else {
+            if (!couponForm.buy_item?.trim()) {
+                toast.error('Buy Item/Service is required')
+                return
+            }
+            if (!couponForm.get_item?.trim()) {
+                toast.error('Get Item/Service is required')
+                return
+            }
         }
 
         if (!couponForm.start_date) {
@@ -1114,17 +1369,23 @@ export default function ViewMerchant() {
 
             formData.append('mer_id', id)
             formData.append('code', couponForm.code.trim())
-            formData.append('percentage', couponForm.percentage)
+            formData.append('type', couponForm.type)
+            formData.append('description', couponForm.description || '')
+
+            if (Number(couponForm.type) === 3) {
+                formData.append('percentage', '0')
+                formData.append('buy_item', couponForm.buy_item.trim())
+                formData.append('get_item', couponForm.get_item.trim())
+            } else {
+                formData.append('percentage', couponForm.percentage)
+            }
+
             formData.append('min_amount', couponForm.min_amount || '0')
             formData.append('usage_limit', couponForm.usage_limit || '0')
             formData.append('start_date', toCouponApiDate(couponForm.start_date))
             formData.append('end_date', toCouponApiDate(couponForm.end_date))
             formData.append('cat_id', couponForm.cat_id)
             formData.append('branch_ids', JSON.stringify(couponForm.branch_ids))
-
-            if (couponForm.banner_image) {
-                formData.append('banner_image', couponForm.banner_image)
-            }
 
             const response = await API.post('admin/coupon/create', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
@@ -1169,15 +1430,17 @@ export default function ViewMerchant() {
 
         setEditCouponForm({
             code: coupon.code || '',
+            type: coupon.type || 1,
+            description: coupon.description || '',
+            buy_item: coupon.buy_item || '',
+            get_item: coupon.get_item || '',
             percentage: coupon.percentage || '',
             min_amount: coupon.min_amount || '',
             usage_limit: coupon.usage_limit || '1',
             start_date: formatDateForInput(coupon.start_date),
             end_date: formatDateForInput(coupon.end_date),
             branch_ids: Array.isArray(coupon.branch_ids) ? coupon.branch_ids.map(Number) : [],
-            cat_id: coupon.cat_id?.toString() || coupon.category_id?.toString() || '',
-            banner_image: null,
-            bannerImagePreview: coupon.banner_image || ''
+            cat_id: coupon.cat_id?.toString() || coupon.category_id?.toString() || ''
         })
         setEditingCoupon(false)
         setShowEditCouponModal(true)
@@ -1222,25 +1485,26 @@ export default function ViewMerchant() {
         }))
     }
 
-    const handleEditCouponBannerChange = (e) => {
-        const file = e.target.files?.[0]
-        if (!file) return
-        setEditCouponForm((prev) => ({
-            ...prev,
-            banner_image: file,
-            bannerImagePreview: URL.createObjectURL(file)
-        }))
-    }
-
     const handleEditCoupon = async () => {
         if (!editCouponForm.code.trim()) {
             toast.error('Coupon code is required')
             return
         }
 
-        if (editCouponForm.percentage === '' || editCouponForm.percentage === null) {
-            toast.error('Percentage is required')
-            return
+        if (Number(editCouponForm.type) !== 3) {
+            if (editCouponForm.percentage === '' || editCouponForm.percentage === null) {
+                toast.error(Number(editCouponForm.type) === 2 ? 'Fixed Amount is required' : 'Discount percentage is required')
+                return
+            }
+        } else {
+            if (!editCouponForm.buy_item?.trim()) {
+                toast.error('Buy Item/Service is required')
+                return
+            }
+            if (!editCouponForm.get_item?.trim()) {
+                toast.error('Get Item/Service is required')
+                return
+            }
         }
 
         if (!editCouponForm.start_date) {
@@ -1271,17 +1535,23 @@ export default function ViewMerchant() {
             formData.append('coupon_id', editCouponId)
             formData.append('mer_id', id)
             formData.append('code', editCouponForm.code.trim())
-            formData.append('percentage', editCouponForm.percentage)
+            formData.append('type', editCouponForm.type)
+            formData.append('description', editCouponForm.description || '')
+
+            if (Number(editCouponForm.type) === 3) {
+                formData.append('percentage', '0')
+                formData.append('buy_item', editCouponForm.buy_item.trim())
+                formData.append('get_item', editCouponForm.get_item.trim())
+            } else {
+                formData.append('percentage', editCouponForm.percentage)
+            }
+
             formData.append('min_amount', editCouponForm.min_amount || '0')
             formData.append('usage_limit', editCouponForm.usage_limit || '0')
             formData.append('start_date', toCouponApiDate(editCouponForm.start_date))
             formData.append('end_date', toCouponApiDate(editCouponForm.end_date))
             formData.append('cat_id', editCouponForm.cat_id)
             formData.append('branch_ids', JSON.stringify(editCouponForm.branch_ids))
-
-            if (editCouponForm.banner_image) {
-                formData.append('banner_image', editCouponForm.banner_image)
-            }
 
             const response = await API.post('admin/coupon/edit', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
@@ -1306,6 +1576,11 @@ export default function ViewMerchant() {
     }
 
     const handleAddBranch = async () => {
+        if (!addBranchForm.profile_image) {
+            toast.error('Profile image is required')
+            return
+        }
+
         if (!addBranchForm.name.trim()) {
             toast.error('Branch name is required')
             return
@@ -1321,10 +1596,13 @@ export default function ViewMerchant() {
             return
         }
 
-
-
         if (!addBranchForm.address.trim()) {
-            toast.error('Address is required')
+            toast.error('Business Address is required')
+            return
+        }
+
+        if (!addBranchForm.country || !addBranchForm.country.trim()) {
+            toast.error('Country is required')
             return
         }
 
@@ -1349,8 +1627,9 @@ export default function ViewMerchant() {
             formData.append('lat', addBranchForm.latitude)
             formData.append('lon', addBranchForm.longitude)
             formData.append('description', addBranchForm.description)
-            formData.append('open_time', addBranchForm.open_time)
-            formData.append('close_time', addBranchForm.close_time)
+            formData.append('timings', JSON.stringify(addBranchForm.timings || []))
+            formData.append('visibility', String(addBranchForm.visibility !== undefined ? addBranchForm.visibility : 0))
+            formData.append('age_group', addBranchForm.age_group || 'All Age')
             formData.append('receptionist_id', addBranchForm.receptionist_id || '')
 
             if (addBranchForm.profile_image) {
@@ -1523,6 +1802,21 @@ export default function ViewMerchant() {
             return
         }
 
+        if (!editBranchForm.address || !editBranchForm.address.trim()) {
+            toast.error('Business Address is required')
+            return
+        }
+
+        if (!editBranchForm.country || !editBranchForm.country.trim()) {
+            toast.error('Country is required')
+            return
+        }
+
+        if (!editBranchForm.profile_image && !editBranchForm.profileImagePreview) {
+            toast.error('Profile image is required')
+            return
+        }
+
         try {
 
             setSavingBranch(true)
@@ -1542,8 +1836,9 @@ export default function ViewMerchant() {
             formData.append('country', editBranchForm.country)
             formData.append('zip_code', editBranchForm.zipcode)
             formData.append('description', editBranchForm.description)
-            formData.append('open_time', editBranchForm.open_time)
-            formData.append('close_time', editBranchForm.close_time)
+            formData.append('timings', JSON.stringify(editBranchForm.timings || []))
+            formData.append('visibility', String(editBranchForm.visibility !== undefined ? editBranchForm.visibility : 0))
+            formData.append('age_group', editBranchForm.age_group || 'All Age')
 
             if (editBranchForm.profile_image && typeof editBranchForm.profile_image !== 'string') {
                 formData.append('profile_image', editBranchForm.profile_image)
@@ -2175,7 +2470,7 @@ export default function ViewMerchant() {
                                     <thead>
                                         <tr>
                                             <th>Code</th>
-                                            <th>Percentage</th>
+                                            <th>Type / Deal</th>
                                             <th>Min Amount</th>
                                             <th>Usage Limit</th>
                                             <th>Start Date</th>
@@ -2187,7 +2482,14 @@ export default function ViewMerchant() {
                                         {merchantData.coupon_list.map((coupon) => (
                                             <tr key={coupon.id}>
                                                 <td>{coupon.code}</td>
-                                                <td>{coupon.percentage}%</td>
+                                                <td>
+                                                    {Number(coupon.type) === 3
+                                                        ? `Buy ${coupon.buy_item || '-'} Get ${coupon.get_item || '-'}`
+                                                        : Number(coupon.type) === 2
+                                                            ? `${coupon.percentage} (Fixed)`
+                                                            : `${coupon.percentage}%`
+                                                    }
+                                                </td>
                                                 <td>{coupon.min_amount}</td>
                                                 <td>{coupon.usage_limit}</td>
                                                 <td>{formatDisplayDate(coupon.start_date)}</td>
@@ -2559,6 +2861,23 @@ export default function ViewMerchant() {
                                             {merchantData?.address}
                                         </p>
                                     </div>
+                                    <div style={{ gridColumn: '1 / -1' }}>
+                                        <small className="merchant-sub-label">
+                                            Description
+                                        </small>
+
+                                        <p
+                                            className="merchant-subtext"
+                                            style={{
+                                                whiteSpace: 'normal',
+                                                wordBreak: 'break-word',
+                                                lineHeight: '1.6',
+                                                maxWidth: '100%'
+                                            }}
+                                        >
+                                            {merchantData?.description}
+                                        </p>
+                                    </div>
 
                                     <div style={{ gridColumn: '1 / -1' }}>
                                         <small className="merchant-sub-label">
@@ -2791,12 +3110,13 @@ export default function ViewMerchant() {
                         <table className="data-table">
                             <thead>
                                 <tr>
-                                    <th>Code</th>
-                                    <th>Percentage</th>
+                                    <th>Name</th>
+                                    <th>Value</th>
+                                    <th>Branches</th>
                                     <th>Min Amount</th>
-                                    <th>Usage Limit</th>
-                                    <th>Start Date</th>
-                                    <th>End Date</th>
+                                    {/* <th>Usage Limit</th> */}
+                                    {/* <th>Start Date</th>
+                                    <th>End Date</th> */}
                                     <th>Status</th>
                                     <th style={{ textAlign: 'right' }}>Actions</th>
                                 </tr>
@@ -2805,11 +3125,43 @@ export default function ViewMerchant() {
                                 {merchantData.coupon_list.map((coupon) => (
                                     <tr key={coupon.id}>
                                         <td>{coupon.code}</td>
-                                        <td>{coupon.percentage}%</td>
+                                        <td>
+                                            {Number(coupon.type) === 3
+                                                ? `Buy ${coupon.buy_item || '-'} Get ${coupon.get_item || '-'}`
+                                                : Number(coupon.type) === 2
+                                                    ? `${coupon.percentage} (Fixed)`
+                                                    : `${coupon.percentage}%`
+                                            }
+                                        </td>
+                                        <td>
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                                                {coupon.branch_names && coupon.branch_names.length > 0 ? (
+                                                    coupon.branch_names.map((b) => (
+                                                        <span
+                                                            key={b.id}
+                                                            style={{
+                                                                padding: '2px 8px',
+                                                                background: 'rgba(142,45,226,0.06)',
+                                                                border: '1px solid rgba(142,45,226,0.15)',
+                                                                borderRadius: '12px',
+                                                                color: 'var(--primary)',
+                                                                fontSize: '0.75rem',
+                                                                fontWeight: 500,
+                                                                whiteSpace: 'nowrap'
+                                                            }}
+                                                        >
+                                                            {b.name}
+                                                        </span>
+                                                    ))
+                                                ) : (
+                                                    <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>-</span>
+                                                )}
+                                            </div>
+                                        </td>
                                         <td>{coupon.min_amount}</td>
-                                        <td>{coupon.usage_limit}</td>
-                                        <td>{formatDisplayDate(coupon.start_date)}</td>
-                                        <td>{formatDisplayDate(coupon.end_date)}</td>
+                                        {/* <td>{coupon.usage_limit}</td> */}
+                                        {/* <td>{formatDisplayDate(coupon.start_date)}</td>
+                                        <td>{formatDisplayDate(coupon.end_date)}</td> */}
                                         <td>
                                             <span className={`badge ${coupon.status === 1 ? 'active' : 'pending'}`}>
                                                 {coupon.status === 1 ? 'Active' : 'Inactive'}
@@ -2817,6 +3169,15 @@ export default function ViewMerchant() {
                                         </td>
                                         <td>
                                             <div className="action-group" style={{ justifyContent: 'flex-end', gap: 8 }}>
+                                                <button
+                                                    className="btn-icon view"
+                                                    title="View Coupon Details"
+                                                    onClick={() => openViewCouponModal(coupon)}
+                                                    disabled={deletingCouponId === coupon.id}
+                                                >
+                                                    <i className="fas fa-eye"></i>
+                                                </button>
+
                                                 <button
                                                     className="btn-icon edit"
                                                     title="Edit Coupon"
@@ -3011,7 +3372,10 @@ export default function ViewMerchant() {
                                         </button>
                                     </td>
                                     <td>
-                                        <button className="btn-sm-action-secondary">
+                                        <button
+                                            className="btn-sm-action-secondary"
+                                            onClick={() => openBranchCouponsModal(branch)}
+                                        >
                                             <i className="fas fa-ticket-alt"></i>
                                             {' '}
                                             {
@@ -3302,10 +3666,7 @@ export default function ViewMerchant() {
 
             {selectedReceptionist && (
                 <div className="modal active">
-                    <div
-                        className="modal-backdrop"
-                        onClick={closeAssignReceptionistModal}
-                    ></div>
+                    <div className="modal-backdrop"></div>
 
                     <div className="modal-content">
                         <div className="modal-header">
@@ -3537,10 +3898,7 @@ export default function ViewMerchant() {
 
             {showAddReceptionistModal && (
                 <div className="modal active">
-                    <div
-                        className="modal-backdrop"
-                        onClick={closeAddReceptionistModal}
-                    ></div>
+                    <div className="modal-backdrop"></div>
 
                     <div className="modal-content">
                         <div className="modal-header">
@@ -3669,10 +4027,7 @@ export default function ViewMerchant() {
 
             {showCreateCouponModal && (
                 <div className="modal active">
-                    <div
-                        className="modal-backdrop"
-                        onClick={() => { if (!creatingCoupon) closeCreateCouponModal() }}
-                    />
+                    <div className="modal-backdrop" />
 
                     <div className="modal-content" style={{ maxWidth: 640, width: '100%' }}>
                         <div className="modal-header">
@@ -3696,68 +4051,231 @@ export default function ViewMerchant() {
                                 onSubmit={(e) => { e.preventDefault(); handleCreateCoupon() }}
                                 style={{ display: 'flex', flexDirection: 'column', gap: 18 }}
                             >
-                                <div className="form-row">
-                                    <div className="form-group">
-                                        <input
-                                            type="text"
-                                            name="code"
-                                            className="form-control"
-                                            placeholder=" "
-                                            value={couponForm.code}
-                                            onChange={handleCouponChange}
-                                            disabled={creatingCoupon}
-                                            required
-                                            autoComplete="off"
-                                        />
-                                        <label className="form-label">Coupon Code</label>
+                                <div className="form-row" style={{ alignItems: 'flex-end' }}>
+                                    <div className="form-group-classic" style={{ marginBottom: 0 }}>
+                                        <label className="form-label-classic">Coupon Name</label>
+                                        <div style={{ display: 'flex', gap: 8 }}>
+                                            <input
+                                                type="text"
+                                                name="code"
+                                                className="form-control"
+                                                placeholder="Enter the Name"
+                                                value={couponForm.code}
+                                                onChange={handleCouponChange}
+                                                disabled={creatingCoupon}
+                                                required
+                                                autoComplete="off"
+                                                style={{ flex: 1 }}
+                                            />
+                                            {/* <button
+                                                type="button"
+                                                className="btn btn-secondary"
+                                                onClick={generateCouponCodeForCreate}
+                                                disabled={creatingCoupon || generatingCode}
+                                                style={{ padding: '0 14px', height: 40, flexShrink: 0, margin: 0, whiteSpace: 'nowrap' }}
+                                            >
+                                                {generatingCode ? (
+                                                    <i className="fas fa-spinner fa-spin" />
+                                                ) : (
+                                                    <i className="fas fa-magic" />
+                                                )}
+                                                {' '}
+                                            </button> */}
+                                        </div>
                                     </div>
 
-                                    <div className="form-group">
-                                        <input
-                                            type="number"
-                                            name="percentage"
-                                            className="form-control"
-                                            placeholder=" "
-                                            value={couponForm.percentage}
+                                    <div className="form-group-classic">
+                                        <label className="form-label-classic">Coupon Type</label>
+                                        <select
+                                            name="type"
+                                            className="form-select"
+                                            value={couponForm.type}
                                             onChange={handleCouponChange}
                                             disabled={creatingCoupon}
-                                            min="0"
-                                            max="100"
                                             required
-                                        />
-                                        <label className="form-label">Discount (%)</label>
+                                        >
+                                            <option value={1}>Discount (%)</option>
+                                            <option value={2}>Fixed Amount</option>
+                                            <option value={3}>Buy X Get Y</option>
+                                        </select>
                                     </div>
                                 </div>
 
-                                <div className="form-row">
-                                    <div className="form-group">
-                                        <input
-                                            type="number"
-                                            name="min_amount"
-                                            className="form-control"
-                                            placeholder=" "
-                                            value={couponForm.min_amount}
-                                            onChange={handleCouponChange}
-                                            disabled={creatingCoupon}
-                                            min="0"
-                                        />
-                                        <label className="form-label">Minimum Amount</label>
-                                    </div>
+                                {Number(couponForm.type) !== 3 ? (
+                                    <>
+                                        <div className="form-row">
+                                            <div className="form-group">
+                                                <input
+                                                    type="number"
+                                                    name="percentage"
+                                                    className="form-control"
+                                                    placeholder=" "
+                                                    value={couponForm.percentage}
+                                                    onChange={handleCouponChange}
+                                                    disabled={creatingCoupon}
+                                                    min="0"
+                                                    max={Number(couponForm.type) === 1 ? "100" : undefined}
+                                                    required
+                                                />
+                                                <label className="form-label">
+                                                    {Number(couponForm.type) === 2 ? 'Fixed Amount' : 'Discount (%)'}
+                                                </label>
+                                            </div>
 
-                                    <div className="form-group">
-                                        <input
-                                            type="number"
-                                            name="usage_limit"
-                                            className="form-control"
-                                            placeholder=" "
-                                            value={couponForm.usage_limit}
-                                            onChange={handleCouponChange}
-                                            disabled={creatingCoupon}
-                                            min="0"
-                                            required
-                                        />
-                                        <label className="form-label">Usage Limit</label>
-                                    </div>
+                                            <div className="form-group">
+                                                <input
+                                                    type="number"
+                                                    name="min_amount"
+                                                    className="form-control"
+                                                    placeholder=" "
+                                                    value={couponForm.min_amount}
+                                                    onChange={handleCouponChange}
+                                                    disabled={creatingCoupon}
+                                                    min="0"
+                                                />
+                                                <label className="form-label">Minimum Amount</label>
+                                            </div>
+                                        </div>
+
+                                        <div className="form-row">
+                                            <div className="form-group">
+                                                <input
+                                                    type="number"
+                                                    name="usage_limit"
+                                                    className="form-control"
+                                                    placeholder=" "
+                                                    value={couponForm.usage_limit}
+                                                    onChange={handleCouponChange}
+                                                    disabled={creatingCoupon}
+                                                    min="0"
+                                                    required
+                                                />
+                                                <label className="form-label">Usage Limit</label>
+                                            </div>
+
+                                            <div className="form-group-classic">
+                                                <label className="form-label-classic">Coupon Category</label>
+                                                <select
+                                                    name="cat_id"
+                                                    className="form-select"
+                                                    value={couponForm.cat_id}
+                                                    onChange={handleCouponChange}
+                                                    disabled={creatingCoupon}
+                                                    required
+                                                >
+                                                    <option value="">Select category</option>
+                                                    {couponCategories.map((category) => (
+                                                        <option key={category.id} value={category.id}>
+                                                            {category.name}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="form-row">
+                                            <div className="form-group">
+                                                <input
+                                                    type="text"
+                                                    name="buy_item"
+                                                    className="form-control"
+                                                    placeholder=" "
+                                                    value={couponForm.buy_item}
+                                                    onChange={handleCouponChange}
+                                                    disabled={creatingCoupon}
+                                                    required
+                                                />
+                                                <label className="form-label">Buy Item / Service</label>
+                                            </div>
+
+                                            <div className="form-group">
+                                                <input
+                                                    type="text"
+                                                    name="get_item"
+                                                    className="form-control"
+                                                    placeholder=" "
+                                                    value={couponForm.get_item}
+                                                    onChange={handleCouponChange}
+                                                    disabled={creatingCoupon}
+                                                    required
+                                                />
+                                                <label className="form-label">Get Item / Service</label>
+                                            </div>
+                                        </div>
+
+                                        <div className="form-row">
+                                            <div className="form-group">
+                                                <input
+                                                    type="number"
+                                                    name="min_amount"
+                                                    className="form-control"
+                                                    placeholder=" "
+                                                    value={couponForm.min_amount}
+                                                    onChange={handleCouponChange}
+                                                    disabled={creatingCoupon}
+                                                    min="0"
+                                                />
+                                                <label className="form-label">Minimum Amount</label>
+                                            </div>
+
+                                            <div className="form-group">
+                                                <input
+                                                    type="number"
+                                                    name="usage_limit"
+                                                    className="form-control"
+                                                    placeholder=" "
+                                                    value={couponForm.usage_limit}
+                                                    onChange={handleCouponChange}
+                                                    disabled={creatingCoupon}
+                                                    min="0"
+                                                    required
+                                                />
+                                                <label className="form-label">Usage Limit</label>
+                                            </div>
+                                        </div>
+
+                                        <div className="form-group-classic">
+                                            <label className="form-label-classic">Coupon Category</label>
+                                            <select
+                                                name="cat_id"
+                                                className="form-select"
+                                                value={couponForm.cat_id}
+                                                onChange={handleCouponChange}
+                                                disabled={creatingCoupon}
+                                                required
+                                            >
+                                                <option value="">Select category</option>
+                                                {couponCategories.map((category) => (
+                                                    <option key={category.id} value={category.id}>
+                                                        {category.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </>
+                                )}
+                                <div className="form-group-classic">
+                                    <label className="form-label-classic">Description</label>
+                                    <textarea
+                                        name="description"
+                                        className="form-control"
+                                        placeholder=" "
+                                        value={couponForm.description}
+                                        onChange={handleCouponChange}
+                                        disabled={creatingCoupon}
+                                        rows="3"
+                                        style={{
+                                            resize: 'vertical',
+                                            padding: '10px 14px',
+                                            height: 'auto',
+                                            borderRadius: 8,
+                                            border: '1px solid var(--border)',
+                                            background: 'var(--bg-surface)',
+                                            color: 'var(--text-primary)'
+                                        }}
+                                    />
                                 </div>
 
                                 <div className="form-row">
@@ -3788,24 +4306,7 @@ export default function ViewMerchant() {
                                     </div>
                                 </div>
 
-                                <div className="form-group-classic">
-                                    <label className="form-label-classic">Coupon Category</label>
-                                    <select
-                                        name="cat_id"
-                                        className="form-select"
-                                        value={couponForm.cat_id}
-                                        onChange={handleCouponChange}
-                                        disabled={creatingCoupon}
-                                        required
-                                    >
-                                        <option value="">Select category</option>
-                                        {couponCategories.map((category) => (
-                                            <option key={category.id} value={category.id}>
-                                                {category.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
+
 
                                 <div className="form-group-classic">
                                     <div
@@ -3901,42 +4402,6 @@ export default function ViewMerchant() {
                                         {couponForm.branch_ids.length} branch(es) selected
                                     </small>
                                 </div>
-
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
-                                    {couponForm.bannerImagePreview ? (
-                                        <img
-                                            src={couponForm.bannerImagePreview}
-                                            alt="Coupon banner preview"
-                                            style={{
-                                                width: '100%',
-                                                maxWidth: 320,
-                                                height: 120,
-                                                objectFit: 'cover',
-                                                borderRadius: 10,
-                                                border: '1px solid var(--border)'
-                                            }}
-                                        />
-                                    ) : null}
-
-                                    <label
-                                        className="btn btn-sm-action-secondary"
-                                        style={{ cursor: creatingCoupon ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 6, margin: 0 }}
-                                    >
-                                        <i className="fas fa-image" />
-                                        {couponForm.banner_image ? 'Change Banner Image' : 'Upload Banner Image'}
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={handleCouponBannerChange}
-                                            disabled={creatingCoupon}
-                                            hidden
-                                        />
-                                    </label>
-
-                                    <small style={{ color: 'var(--text-muted)', fontSize: '0.74rem' }}>
-                                        Optional banner image for the coupon.
-                                    </small>
-                                </div>
                             </form>
                         </div>
 
@@ -3969,10 +4434,7 @@ export default function ViewMerchant() {
 
             {showEditCouponModal && (
                 <div className="modal active">
-                    <div
-                        className="modal-backdrop"
-                        onClick={() => { if (!editingCoupon) closeEditCouponModal() }}
-                    />
+                    <div className="modal-backdrop" />
 
                     <div className="modal-content" style={{ maxWidth: 640, width: '100%' }}>
                         <div className="modal-header">
@@ -3996,69 +4458,210 @@ export default function ViewMerchant() {
                                 onSubmit={(e) => { e.preventDefault(); handleEditCoupon() }}
                                 style={{ display: 'flex', flexDirection: 'column', gap: 18 }}
                             >
-                                <div className="form-row">
-                                    <div className="form-group">
-                                        <input
-                                            type="text"
-                                            name="code"
-                                            className="form-control"
-                                            placeholder=" "
-                                            value={editCouponForm.code}
-                                            onChange={handleEditCouponChange}
-                                            disabled={editingCoupon}
-                                            required
-                                            autoComplete="off"
-                                        />
-                                        <label className="form-label">Coupon Code</label>
+                                <div className="form-row" style={{ alignItems: 'flex-end' }}>
+                                    <div className="form-group-classic" style={{ marginBottom: 0 }}>
+                                        <label className="form-label-classic">Coupon Code</label>
+                                        <div style={{ display: 'flex', gap: 8 }}>
+                                            <input
+                                                type="text"
+                                                name="code"
+                                                className="form-control"
+                                                placeholder="Enter or generate code"
+                                                value={editCouponForm.code}
+                                                onChange={handleEditCouponChange}
+                                                disabled={editingCoupon}
+                                                required
+                                                autoComplete="off"
+                                                style={{ flex: 1 }}
+                                            />
+                                            <button
+                                                type="button"
+                                                className="btn btn-secondary"
+                                                onClick={generateCouponCodeForEdit}
+                                                disabled={editingCoupon || generatingEditCode}
+                                                style={{ padding: '0 14px', height: 40, flexShrink: 0, margin: 0, whiteSpace: 'nowrap' }}
+                                            >
+                                                {generatingEditCode ? (
+                                                    <i className="fas fa-spinner fa-spin" />
+                                                ) : (
+                                                    <i className="fas fa-magic" />
+                                                )}
+                                            </button>
+                                        </div>
                                     </div>
 
-                                    <div className="form-group">
-                                        <input
-                                            type="number"
-                                            name="percentage"
-                                            className="form-control"
-                                            placeholder=" "
-                                            value={editCouponForm.percentage}
+                                    <div className="form-group-classic" style={{ marginBottom: 0 }}>
+                                        <label className="form-label-classic">Coupon Type</label>
+                                        <select
+                                            name="type"
+                                            className="form-select"
+                                            value={editCouponForm.type}
                                             onChange={handleEditCouponChange}
                                             disabled={editingCoupon}
-                                            min="0"
-                                            max="100"
                                             required
-                                        />
-                                        <label className="form-label">Discount (%)</label>
+                                        >
+                                            <option value={1}>Discount (%)</option>
+                                            <option value={2}>Fixed Amount</option>
+                                            <option value={3}>Buy X Get Y</option>
+                                        </select>
                                     </div>
                                 </div>
 
-                                <div className="form-row">
-                                    <div className="form-group">
-                                        <input
-                                            type="number"
-                                            name="min_amount"
-                                            className="form-control"
-                                            placeholder=" "
-                                            value={editCouponForm.min_amount}
-                                            onChange={handleEditCouponChange}
-                                            disabled={editingCoupon}
-                                            min="0"
-                                        />
-                                        <label className="form-label">Minimum Amount</label>
-                                    </div>
+                                {Number(editCouponForm.type) !== 3 ? (
+                                    <>
+                                        <div className="form-row">
+                                            <div className="form-group">
+                                                <input
+                                                    type="number"
+                                                    name="percentage"
+                                                    className="form-control"
+                                                    placeholder=" "
+                                                    value={editCouponForm.percentage}
+                                                    onChange={handleEditCouponChange}
+                                                    disabled={editingCoupon}
+                                                    min="0"
+                                                    max={Number(editCouponForm.type) === 1 ? "100" : undefined}
+                                                    required
+                                                />
+                                                <label className="form-label">
+                                                    {Number(editCouponForm.type) === 2 ? 'Fixed Amount' : 'Discount (%)'}
+                                                </label>
+                                            </div>
 
-                                    <div className="form-group">
-                                        <input
-                                            type="number"
-                                            name="usage_limit"
-                                            className="form-control"
-                                            placeholder=" "
-                                            value={editCouponForm.usage_limit}
-                                            onChange={handleEditCouponChange}
-                                            disabled={editingCoupon}
-                                            min="0"
-                                            required
-                                        />
-                                        <label className="form-label">Usage Limit</label>
-                                    </div>
-                                </div>
+                                            <div className="form-group">
+                                                <input
+                                                    type="number"
+                                                    name="min_amount"
+                                                    className="form-control"
+                                                    placeholder=" "
+                                                    value={editCouponForm.min_amount}
+                                                    onChange={handleEditCouponChange}
+                                                    disabled={editingCoupon}
+                                                    min="0"
+                                                />
+                                                <label className="form-label">Minimum Amount</label>
+                                            </div>
+                                        </div>
+
+                                        <div className="form-row">
+                                            <div className="form-group">
+                                                <input
+                                                    type="number"
+                                                    name="usage_limit"
+                                                    className="form-control"
+                                                    placeholder=" "
+                                                    value={editCouponForm.usage_limit}
+                                                    onChange={handleEditCouponChange}
+                                                    disabled={editingCoupon}
+                                                    min="0"
+                                                    required
+                                                />
+                                                <label className="form-label">Usage Limit</label>
+                                            </div>
+
+                                            <div className="form-group-classic">
+                                                <label className="form-label-classic">Coupon Category</label>
+                                                <select
+                                                    name="cat_id"
+                                                    className="form-select"
+                                                    value={editCouponForm.cat_id}
+                                                    onChange={handleEditCouponChange}
+                                                    disabled={editingCoupon}
+                                                    required
+                                                >
+                                                    <option value="">Select category</option>
+                                                    {couponCategories.map((category) => (
+                                                        <option key={category.id} value={category.id}>
+                                                            {category.name}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="form-row">
+                                            <div className="form-group">
+                                                <input
+                                                    type="text"
+                                                    name="buy_item"
+                                                    className="form-control"
+                                                    placeholder=" "
+                                                    value={editCouponForm.buy_item}
+                                                    onChange={handleEditCouponChange}
+                                                    disabled={editingCoupon}
+                                                    required
+                                                />
+                                                <label className="form-label">Buy Item / Service</label>
+                                            </div>
+
+                                            <div className="form-group">
+                                                <input
+                                                    type="text"
+                                                    name="get_item"
+                                                    className="form-control"
+                                                    placeholder=" "
+                                                    value={editCouponForm.get_item}
+                                                    onChange={handleEditCouponChange}
+                                                    disabled={editingCoupon}
+                                                    required
+                                                />
+                                                <label className="form-label">Get Item / Service</label>
+                                            </div>
+                                        </div>
+
+                                        <div className="form-row">
+                                            <div className="form-group">
+                                                <input
+                                                    type="number"
+                                                    name="min_amount"
+                                                    className="form-control"
+                                                    placeholder=" "
+                                                    value={editCouponForm.min_amount}
+                                                    onChange={handleEditCouponChange}
+                                                    disabled={editingCoupon}
+                                                    min="0"
+                                                />
+                                                <label className="form-label">Minimum Amount</label>
+                                            </div>
+
+                                            <div className="form-group">
+                                                <input
+                                                    type="number"
+                                                    name="usage_limit"
+                                                    className="form-control"
+                                                    placeholder=" "
+                                                    value={editCouponForm.usage_limit}
+                                                    onChange={handleEditCouponChange}
+                                                    disabled={editingCoupon}
+                                                    min="0"
+                                                    required
+                                                />
+                                                <label className="form-label">Usage Limit</label>
+                                            </div>
+                                        </div>
+
+                                        <div className="form-group-classic">
+                                            <label className="form-label-classic">Coupon Category</label>
+                                            <select
+                                                name="cat_id"
+                                                className="form-select"
+                                                value={editCouponForm.cat_id}
+                                                onChange={handleEditCouponChange}
+                                                disabled={editingCoupon}
+                                                required
+                                            >
+                                                <option value="">Select category</option>
+                                                {couponCategories.map((category) => (
+                                                    <option key={category.id} value={category.id}>
+                                                        {category.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </>
+                                )}
 
                                 <div className="form-row">
                                     <div className="form-group-classic">
@@ -4089,22 +4692,25 @@ export default function ViewMerchant() {
                                 </div>
 
                                 <div className="form-group-classic">
-                                    <label className="form-label-classic">Coupon Category</label>
-                                    <select
-                                        name="cat_id"
-                                        className="form-select"
-                                        value={editCouponForm.cat_id}
+                                    <label className="form-label-classic">Description</label>
+                                    <textarea
+                                        name="description"
+                                        className="form-control"
+                                        placeholder=" "
+                                        value={editCouponForm.description}
                                         onChange={handleEditCouponChange}
                                         disabled={editingCoupon}
-                                        required
-                                    >
-                                        <option value="">Select category</option>
-                                        {couponCategories.map((category) => (
-                                            <option key={category.id} value={category.id}>
-                                                {category.name}
-                                            </option>
-                                        ))}
-                                    </select>
+                                        rows="3"
+                                        style={{
+                                            resize: 'vertical',
+                                            padding: '10px 14px',
+                                            height: 'auto',
+                                            borderRadius: 8,
+                                            border: '1px solid var(--border)',
+                                            background: 'var(--bg-surface)',
+                                            color: 'var(--text-primary)'
+                                        }}
+                                    />
                                 </div>
 
                                 <div className="form-group-classic">
@@ -4201,42 +4807,6 @@ export default function ViewMerchant() {
                                         {editCouponForm.branch_ids.length} branch(es) selected
                                     </small>
                                 </div>
-
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
-                                    {editCouponForm.bannerImagePreview ? (
-                                        <img
-                                            src={editCouponForm.bannerImagePreview}
-                                            alt="Coupon banner preview"
-                                            style={{
-                                                width: '100%',
-                                                maxWidth: 320,
-                                                height: 120,
-                                                objectFit: 'cover',
-                                                borderRadius: 10,
-                                                border: '1px solid var(--border)'
-                                            }}
-                                        />
-                                    ) : null}
-
-                                    <label
-                                        className="btn btn-sm-action-secondary"
-                                        style={{ cursor: editingCoupon ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 6, margin: 0 }}
-                                    >
-                                        <i className="fas fa-image" />
-                                        {editCouponForm.banner_image ? 'Change Banner Image' : 'Upload Banner Image'}
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={handleEditCouponBannerChange}
-                                            disabled={editingCoupon}
-                                            hidden
-                                        />
-                                    </label>
-
-                                    <small style={{ color: 'var(--text-muted)', fontSize: '0.74rem' }}>
-                                        Optional banner image for the coupon.
-                                    </small>
-                                </div>
                             </form>
                         </div>
 
@@ -4267,12 +4837,228 @@ export default function ViewMerchant() {
                 </div>
             )}
 
+            {showBranchCouponsModal && selectedBranchForCoupons && (
+                <div className="modal active">
+                    <div className="modal-backdrop" />
+
+                    <div className="modal-content" style={{ maxWidth: 800, width: '100%' }}>
+                        <div className="modal-header">
+                            <h3 className="modal-title">
+                                <i className="fas fa-ticket-alt" style={{ marginRight: 8, color: 'var(--primary)' }} />
+                                Coupons for {selectedBranchForCoupons.name}
+                            </h3>
+
+                            <button
+                                type="button"
+                                className="modal-close"
+                                onClick={closeBranchCouponsModal}
+                            >
+                                <i className="fas fa-times"></i>
+                            </button>
+                        </div>
+
+                        <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+                            {(() => {
+                                const branchCoupons = (merchantData?.coupon_list || []).filter(coupon => {
+                                    const bIds = Array.isArray(coupon.branch_ids) 
+                                        ? coupon.branch_ids.map(Number) 
+                                        : [];
+                                    return bIds.includes(Number(selectedBranchForCoupons.id));
+                                });
+
+                                if (branchCoupons.length === 0) {
+                                    return (
+                                        <p style={{ padding: '24px 0', textAlign: 'center', color: 'var(--text-muted)' }}>
+                                            No coupons assigned to this branch.
+                                        </p>
+                                    );
+                                }
+
+                                return (
+                                    <table className="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Code</th>
+                                                <th>Type / Deal</th>
+                                                <th>Min Amount</th>
+                                                <th>Usage Limit</th>
+                                                <th>Start Date</th>
+                                                <th>End Date</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {branchCoupons.map((coupon) => (
+                                                <tr key={coupon.id}>
+                                                    <td style={{ fontWeight: 600 }}>{coupon.code}</td>
+                                                    <td>
+                                                        {Number(coupon.type) === 3
+                                                            ? `Buy ${coupon.buy_item || '-'} Get ${coupon.get_item || '-'}`
+                                                            : Number(coupon.type) === 2
+                                                                ? `${coupon.percentage} (Fixed)`
+                                                                : `${coupon.percentage}%`
+                                                        }
+                                                    </td>
+                                                    <td>{coupon.min_amount}</td>
+                                                    <td>{coupon.usage_limit}</td>
+                                                    <td>{formatDisplayDate(coupon.start_date)}</td>
+                                                    <td>{formatDisplayDate(coupon.end_date)}</td>
+                                                    <td>
+                                                        <span className={`badge ${coupon.status === 1 ? 'active' : 'pending'}`}>
+                                                            {coupon.status === 1 ? 'Active' : 'Inactive'}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                );
+                            })()}
+                        </div>
+
+                        <div className="modal-footer">
+                            <button
+                                type="button"
+                                className="btn btn-secondary"
+                                onClick={closeBranchCouponsModal}
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showViewCouponModal && selectedCouponForView && (
+                <div className="modal active">
+                    <div className="modal-backdrop" />
+
+                    <div className="modal-content" style={{ maxWidth: 600, width: '100%' }}>
+                        <div className="modal-header">
+                            <h3 className="modal-title">
+                                <i className="fas fa-eye" style={{ marginRight: 8, color: 'var(--primary)' }} />
+                                Coupon Details - {selectedCouponForView.code}
+                            </h3>
+
+                            <button
+                                type="button"
+                                className="modal-close"
+                                onClick={closeViewCouponModal}
+                            >
+                                <i className="fas fa-times"></i>
+                            </button>
+                        </div>
+
+                        <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+                            <div className="detail-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+                                <div>
+                                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', fontWeight: 600, textTransform: 'uppercase' }}>Coupon Name</span>
+                                    <strong style={{ fontSize: '1.1rem', color: 'var(--text-primary)' }}>{selectedCouponForView.code}</strong>
+                                </div>
+                                <div>
+                                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', fontWeight: 600, textTransform: 'uppercase' }}>Status</span>
+                                    <span className={`badge ${selectedCouponForView.status === 1 ? 'active' : 'pending'}`} style={{ display: 'inline-block', marginTop: '4px' }}>
+                                        {selectedCouponForView.status === 1 ? 'Active' : 'Inactive'}
+                                    </span>
+                                </div>
+
+                                <div>
+                                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', fontWeight: 600, textTransform: 'uppercase' }}>Coupon Type</span>
+                                    <span style={{ color: 'var(--text-primary)' }}>
+                                        {Number(selectedCouponForView.type) === 1 && 'Discount (%)'}
+                                        {Number(selectedCouponForView.type) === 2 && 'Fixed Amount'}
+                                        {Number(selectedCouponForView.type) === 3 && 'Buy X Get Y'}
+                                    </span>
+                                </div>
+                                <div>
+                                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', fontWeight: 600, textTransform: 'uppercase' }}>Deal Value</span>
+                                    <strong style={{ color: 'var(--text-primary)' }}>
+                                        {Number(selectedCouponForView.type) === 3
+                                            ? `Buy ${selectedCouponForView.buy_item || '-'} Get ${selectedCouponForView.get_item || '-'}`
+                                            : Number(selectedCouponForView.type) === 2
+                                                ? `${selectedCouponForView.percentage} (Fixed)`
+                                                : `${selectedCouponForView.percentage}%`
+                                        }
+                                    </strong>
+                                </div>
+
+                                <div>
+                                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', fontWeight: 600, textTransform: 'uppercase' }}>Minimum Spend</span>
+                                    <span style={{ color: 'var(--text-primary)' }}>{selectedCouponForView.min_amount}</span>
+                                </div>
+                                <div>
+                                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', fontWeight: 600, textTransform: 'uppercase' }}>Usage Limit</span>
+                                    <span style={{ color: 'var(--text-primary)' }}>{selectedCouponForView.usage_limit}</span>
+                                </div>
+
+                                <div>
+                                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', fontWeight: 600, textTransform: 'uppercase' }}>Start Date</span>
+                                    <span style={{ color: 'var(--text-primary)' }}>{formatDisplayDate(selectedCouponForView.start_date)}</span>
+                                </div>
+                                <div>
+                                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', fontWeight: 600, textTransform: 'uppercase' }}>End Date</span>
+                                    <span style={{ color: 'var(--text-primary)' }}>{formatDisplayDate(selectedCouponForView.end_date)}</span>
+                                </div>
+                            </div>
+
+                            <div style={{ marginBottom: '20px', padding: '12px', background: 'var(--bg-hover)', borderRadius: '8px', borderLeft: '4px solid var(--primary)' }}>
+                                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px' }}>Description</span>
+                                <p style={{ margin: 0, color: 'var(--text-primary)', whiteSpace: 'pre-wrap', fontSize: '0.9rem', lineHeight: '1.4' }}>
+                                    {selectedCouponForView.description || 'No description provided.'}
+                                </p>
+                            </div>
+
+                            <div>
+                                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', fontWeight: 600, textTransform: 'uppercase', marginBottom: '8px' }}>Assigned Branches</span>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                    {(() => {
+                                        const bIds = Array.isArray(selectedCouponForView.branch_ids)
+                                            ? selectedCouponForView.branch_ids.map(Number)
+                                            : [];
+                                        const assigned = branchesData.filter(b => bIds.includes(Number(b.id)));
+                                        
+                                        if (assigned.length === 0) {
+                                            return <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No branches assigned.</span>;
+                                        }
+
+                                        return assigned.map(b => (
+                                            <span 
+                                                key={b.id} 
+                                                style={{ 
+                                                    padding: '4px 10px', 
+                                                    background: 'rgba(142,45,226,0.08)', 
+                                                    border: '1px solid rgba(142,45,226,0.2)', 
+                                                    borderRadius: '16px', 
+                                                    color: 'var(--primary)', 
+                                                    fontSize: '0.8rem',
+                                                    fontWeight: 500
+                                                }}
+                                            >
+                                                <i className="fas fa-store" style={{ marginRight: '4px' }}></i>
+                                                {b.name}
+                                            </span>
+                                        ));
+                                    })()}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="modal-footer">
+                            <button
+                                type="button"
+                                className="btn btn-secondary"
+                                onClick={closeViewCouponModal}
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {addModal && (
                 <div className="modal active">
-                    <div
-                        className="modal-backdrop"
-                        onClick={() => { if (!addingBranch) closeAddBranchModal() }}
-                    />
+                    <div className="modal-backdrop" />
 
                     <div className="modal-content" style={{ maxWidth: 720, width: '100%' }}>
                         <div className="modal-header">
@@ -4313,7 +5099,7 @@ export default function ViewMerchant() {
                                             required
                                             autoComplete="off"
                                         />
-                                        <label className="form-label">Branch Name</label>
+                                        <label className="form-label">Branch Name <span style={{ color: '#ef4444' }}>*</span></label>
                                     </div>
 
                                     <div className="form-group">
@@ -4328,7 +5114,7 @@ export default function ViewMerchant() {
                                             required
                                             autoComplete="off"
                                         />
-                                        <label className="form-label">Email</label>
+                                        <label className="form-label">Email <span style={{ color: '#ef4444' }}>*</span></label>
                                     </div>
                                 </div>
 
@@ -4342,6 +5128,7 @@ export default function ViewMerchant() {
                                             country_code: codeVal || ''
                                         }))
                                     }
+                                    required={true}
                                 />
 
                                 <div className="form-group-classic" style={{ width: '100%' }}>
@@ -4385,7 +5172,45 @@ export default function ViewMerchant() {
                                     </small>
                                 </div>
 
+                                <div className="form-row">
+                                    <div className="form-group-classic" style={{ flex: 1 }}>
+                                        <label className="form-label-classic">Visibility</label>
+                                        <select
+                                            name="visibility"
+                                            className="form-select"
+                                            value={addBranchForm.visibility !== undefined ? Number(addBranchForm.visibility) : 0}
+                                            onChange={handleAddBranchChange}
+                                            disabled={addingBranch}
+                                        >
+                                            <option value={0}>All</option>
+                                            <option value={1}>Male</option>
+                                            <option value={2}>Female</option>
+                                            <option value={3}>Children</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="form-group-classic" style={{ flex: 1 }}>
+                                        <label className="form-label-classic">Age Group</label>
+                                        <select
+                                            name="age_group"
+                                            className="form-select"
+                                            value={addBranchForm.age_group || 'All Age'}
+                                            onChange={handleAddBranchChange}
+                                            disabled={addingBranch}
+                                        >
+                                            <option value="All Age">All Age</option>
+                                            <option value="18-25">18-25</option>
+                                            <option value="26-35">26-35</option>
+                                            <option value="36-50">36-50</option>
+                                            <option value="50+">50+</option>
+                                        </select>
+                                    </div>
+                                </div>
+
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                                        Branch Profile Image <span style={{ color: '#ef4444' }}>*</span>
+                                    </span>
                                     <div
                                         style={{
                                             width: 80,
@@ -4462,6 +5287,7 @@ export default function ViewMerchant() {
                                         onMarkerDragEnd={handleAddBranchMarkerDragEnd}
                                         center={addBranchMapCenter}
                                         mapContainerStyle={mapContainerStyle}
+                                        isBranch={true}
                                     />
                                 )}
 
@@ -4479,33 +5305,160 @@ export default function ViewMerchant() {
                                     <label className="form-label">Description</label>
                                 </div>
 
-                                <div style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border)', paddingBottom: 6 }}>
-                                    Operating Hours
-                                </div>
-
-                                <div className="form-row">
-                                    <div className="form-group-classic">
-                                        <label className="form-label-classic">Open Time</label>
-                                        <input
-                                            type="time"
-                                            name="open_time"
-                                            className="form-select"
-                                            value={addBranchForm.open_time}
-                                            onChange={handleAddBranchChange}
-                                            disabled={addingBranch}
-                                        />
+                                <div style={{ border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px', marginTop: '16px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: 8 }}>
+                                        <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                                            <i className="far fa-clock" style={{ marginRight: '6px', color: 'var(--primary)' }}></i>
+                                            Working Days & Hours
+                                        </h4>
+                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                            <button 
+                                                type="button" 
+                                                className="btn btn-secondary btn-sm"
+                                                onClick={() => applyPreset(false, 'weekdays')}
+                                                style={{ fontSize: '0.75rem', height: '32px', padding: '0 12px' }}
+                                            >
+                                                <i className="far fa-calendar-minus" style={{ marginRight: '4px' }}></i> Weekdays Only
+                                            </button>
+                                            <button 
+                                                type="button" 
+                                                className="btn btn-secondary btn-sm"
+                                                onClick={() => applyPreset(false, 'alldays')}
+                                                style={{ fontSize: '0.75rem', height: '32px', padding: '0 12px' }}
+                                            >
+                                                <i className="far fa-calendar-alt" style={{ marginRight: '4px' }}></i> All Days
+                                            </button>
+                                        </div>
                                     </div>
 
-                                    <div className="form-group-classic">
-                                        <label className="form-label-classic">Close Time</label>
-                                        <input
-                                            type="time"
-                                            name="close_time"
-                                            className="form-select"
-                                            value={addBranchForm.close_time}
-                                            onChange={handleAddBranchChange}
-                                            disabled={addingBranch}
-                                        />
+                                    <div style={{ background: 'rgba(142,45,226,0.03)', border: '1px solid rgba(142,45,226,0.12)', borderRadius: '8px', padding: '12px', marginBottom: '16px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem', color: 'var(--primary)', fontWeight: 600, marginBottom: '8px' }}>
+                                            <i className="fas fa-magic"></i>
+                                            <span>Quick Setup: Apply Same Time to Multiple Days</span>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                                            <div style={{ flex: 1, minWidth: '120px' }}>
+                                                <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Opening Time</label>
+                                                <input 
+                                                    type="time" 
+                                                    className="form-control"
+                                                    value={quickOpenAdd}
+                                                    onChange={(e) => setQuickOpenAdd(e.target.value)}
+                                                    style={{ height: '36px', fontSize: '0.85rem' }}
+                                                />
+                                            </div>
+                                            <div style={{ flex: 1, minWidth: '120px' }}>
+                                                <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Closing Time</label>
+                                                <input 
+                                                    type="time" 
+                                                    className="form-control"
+                                                    value={quickCloseAdd}
+                                                    onChange={(e) => setQuickCloseAdd(e.target.value)}
+                                                    style={{ height: '36px', fontSize: '0.85rem' }}
+                                                />
+                                            </div>
+                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                <button 
+                                                    type="button" 
+                                                    className="btn btn-primary"
+                                                    onClick={() => applyQuickSetup(false)}
+                                                    style={{ height: '36px', fontSize: '0.78rem', padding: '0 12px' }}
+                                                >
+                                                    Apply
+                                                </button>
+                                                <button 
+                                                    type="button" 
+                                                    className="btn btn-secondary"
+                                                    onClick={() => clearAllTimes(false)}
+                                                    style={{ height: '36px', fontSize: '0.78rem', padding: '0 12px' }}
+                                                >
+                                                    Clear All
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div style={{ overflowX: 'auto' }}>
+                                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                                            <thead>
+                                                <tr style={{ borderBottom: '1px solid var(--border-color)', textAlign: 'left' }}>
+                                                    <th style={{ padding: '8px 4px', width: '32px' }}>
+                                                        <input 
+                                                            type="checkbox" 
+                                                            checked={selectedDaysAdd.length === 7} 
+                                                            onChange={handleAddTimingAllToggle}
+                                                            style={{ cursor: 'pointer' }}
+                                                        />
+                                                    </th>
+                                                    <th style={{ padding: '8px 8px' }}>Day</th>
+                                                    <th style={{ padding: '8px 8px' }}>Opening Time</th>
+                                                    <th style={{ padding: '8px 8px' }}>Closing Time</th>
+                                                    <th style={{ padding: '8px 8px', textAlign: 'center', width: '80px' }}>Closed</th>
+                                                    {/* <th style={{ padding: '8px 4px', textAlign: 'center', width: '60px' }}>Actions</th> */}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {(addBranchForm.timings || []).map((item) => {
+                                                    const isSelected = selectedDaysAdd.includes(item.day);
+                                                    return (
+                                                        <tr key={item.day} style={{ borderBottom: '1px solid var(--bg-hover)', background: isSelected ? 'rgba(142,45,226,0.01)' : 'transparent' }}>
+                                                            <td style={{ padding: '8px 4px' }}>
+                                                                <input 
+                                                                    type="checkbox" 
+                                                                    checked={isSelected}
+                                                                    onChange={() => handleAddTimingDayToggle(item.day)}
+                                                                    style={{ cursor: 'pointer' }}
+                                                                />
+                                                            </td>
+                                                            <td style={{ padding: '8px 8px', fontWeight: 600 }}>
+                                                                <div>{dayNamesMap[item.day].full}</div>
+                                                                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{dayNamesMap[item.day].short}</span>
+                                                            </td>
+                                                            <td style={{ padding: '8px 8px' }}>
+                                                                <input 
+                                                                    type="time" 
+                                                                    className="form-control"
+                                                                    value={item.open_time || ''}
+                                                                    onChange={(e) => updateTimingField(false, item.day, 'open_time', e.target.value)}
+                                                                    disabled={item.is_closed || addingBranch}
+                                                                    style={{ height: '32px', fontSize: '0.8rem', padding: '0 8px', background: item.is_closed ? 'rgba(235,54,54,0.03)' : 'transparent' }}
+                                                                />
+                                                            </td>
+                                                            <td style={{ padding: '8px 8px' }}>
+                                                                <input 
+                                                                    type="time" 
+                                                                    className="form-control"
+                                                                    value={item.close_time || ''}
+                                                                    onChange={(e) => updateTimingField(false, item.day, 'close_time', e.target.value)}
+                                                                    disabled={item.is_closed || addingBranch}
+                                                                    style={{ height: '32px', fontSize: '0.8rem', padding: '0 8px', background: item.is_closed ? 'rgba(235,54,54,0.03)' : 'transparent' }}
+                                                                />
+                                                            </td>
+                                                            <td style={{ padding: '8px 8px', textAlign: 'center' }}>
+                                                                <input 
+                                                                    type="checkbox" 
+                                                                    checked={item.is_closed}
+                                                                    onChange={(e) => updateTimingField(false, item.day, 'is_closed', e.target.checked)}
+                                                                    style={{ cursor: 'pointer' }}
+                                                                />
+                                                            </td>
+                                                            {/* <td style={{ padding: '8px 4px', textAlign: 'center' }}>
+                                                                <button
+                                                                    type="button"
+                                                                    className="btn-icon"
+                                                                    title="Copy to all selected days"
+                                                                    onClick={() => copyTimeToAllSelected(false, item.day)}
+                                                                    disabled={item.is_closed}
+                                                                    style={{ width: '28px', height: '28px', fontSize: '0.8rem' }}
+                                                                >
+                                                                    <i className="far fa-copy"></i>
+                                                                </button>
+                                                            </td> */}
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
 
@@ -4722,10 +5675,7 @@ export default function ViewMerchant() {
 
             {editBranchModal && (
                 <div className="modal active">
-                    <div
-                        className="modal-backdrop"
-                        onClick={() => { if (!savingBranch) closeEditBranchModal() }}
-                    />
+                    <div className="modal-backdrop" />
 
                     <div className="modal-content" style={{ maxWidth: 720, width: '100%' }}>
                         <div className="modal-header">
@@ -4757,6 +5707,9 @@ export default function ViewMerchant() {
                                 >
                                     {/* Profile Image */}
                                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                                        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                                            Branch Profile Image <span style={{ color: '#ef4444' }}>*</span>
+                                        </span>
                                         <div
                                             style={{
                                                 width: 80, height: 80,
@@ -4817,7 +5770,7 @@ export default function ViewMerchant() {
                                                 disabled={savingBranch}
                                                 required
                                             />
-                                            <label className="form-label">Branch Name</label>
+                                            <label className="form-label">Branch Name <span style={{ color: '#ef4444' }}>*</span></label>
                                         </div>
 
                                         <div className="form-group">
@@ -4831,7 +5784,7 @@ export default function ViewMerchant() {
                                                 disabled={savingBranch}
                                                 required
                                             />
-                                            <label className="form-label">Email</label>
+                                            <label className="form-label">Email <span style={{ color: '#ef4444' }}>*</span></label>
                                         </div>
                                     </div>
 
@@ -4845,6 +5798,7 @@ export default function ViewMerchant() {
                                                 country_code: codeVal || ''
                                             }))
                                         }
+                                        required={true}
                                     />
 
                                     <div className="form-group-classic" style={{ width: '100%' }}>
@@ -4889,6 +5843,41 @@ export default function ViewMerchant() {
                                         </small>
                                     </div>
 
+                                    <div className="form-row">
+                                        <div className="form-group-classic" style={{ flex: 1 }}>
+                                            <label className="form-label-classic">Visibility</label>
+                                            <select
+                                                name="visibility"
+                                                className="form-select"
+                                                value={editBranchForm.visibility !== undefined ? Number(editBranchForm.visibility) : 0}
+                                                onChange={handleEditBranchChange}
+                                                disabled={savingBranch}
+                                            >
+                                                <option value={0}>All</option>
+                                                <option value={1}>Male</option>
+                                                <option value={2}>Female</option>
+                                                <option value={3}>Children</option>
+                                            </select>
+                                        </div>
+
+                                        <div className="form-group-classic" style={{ flex: 1 }}>
+                                            <label className="form-label-classic">Age Group</label>
+                                            <select
+                                                name="age_group"
+                                                className="form-select"
+                                                value={editBranchForm.age_group || 'All Age'}
+                                                onChange={handleEditBranchChange}
+                                                disabled={savingBranch}
+                                            >
+                                                <option value="All Age">All Age</option>
+                                                <option value="18-25">18-25</option>
+                                                <option value="26-35">26-35</option>
+                                                <option value="36-50">36-50</option>
+                                                <option value="50+">50+</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
                                     <div style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border)', paddingBottom: 6 }}>
                                         Location
                                     </div>
@@ -4919,6 +5908,7 @@ export default function ViewMerchant() {
                                             onMarkerDragEnd={handleBranchMarkerDragEnd}
                                             center={branchMapCenter}
                                             mapContainerStyle={mapContainerStyle}
+                                            isBranch={true}
                                         />
                                     )}
 
@@ -4937,33 +5927,160 @@ export default function ViewMerchant() {
                                     </div>
 
                                     {/* Section: Hours */}
-                                    <div style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border)', paddingBottom: 6 }}>
-                                        Operating Hours
-                                    </div>
-
-                                    <div className="form-row">
-                                        <div className="form-group-classic">
-                                            <label className="form-label-classic">Open Time</label>
-                                            <input
-                                                type="time"
-                                                name="open_time"
-                                                className="form-select"
-                                                value={editBranchForm.open_time}
-                                                onChange={handleEditBranchChange}
-                                                disabled={savingBranch}
-                                            />
+                                    <div style={{ border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px', marginTop: '16px', gridColumn: '1 / -1' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: 8 }}>
+                                            <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                                                <i className="far fa-clock" style={{ marginRight: '6px', color: 'var(--primary)' }}></i>
+                                                Working Days & Hours
+                                            </h4>
+                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                <button 
+                                                    type="button" 
+                                                    className="btn btn-secondary btn-sm"
+                                                    onClick={() => applyPreset(true, 'weekdays')}
+                                                    style={{ fontSize: '0.75rem', height: '32px', padding: '0 12px' }}
+                                                >
+                                                    <i className="far fa-calendar-minus" style={{ marginRight: '4px' }}></i> Weekdays Only
+                                                </button>
+                                                <button 
+                                                    type="button" 
+                                                    className="btn btn-secondary btn-sm"
+                                                    onClick={() => applyPreset(true, 'alldays')}
+                                                    style={{ fontSize: '0.75rem', height: '32px', padding: '0 12px' }}
+                                                >
+                                                    <i className="far fa-calendar-alt" style={{ marginRight: '4px' }}></i> All Days
+                                                </button>
+                                            </div>
                                         </div>
 
-                                        <div className="form-group-classic">
-                                            <label className="form-label-classic">Close Time</label>
-                                            <input
-                                                type="time"
-                                                name="close_time"
-                                                className="form-select"
-                                                value={editBranchForm.close_time}
-                                                onChange={handleEditBranchChange}
-                                                disabled={savingBranch}
-                                            />
+                                        <div style={{ background: 'rgba(142,45,226,0.03)', border: '1px solid rgba(142,45,226,0.12)', borderRadius: '8px', padding: '12px', marginBottom: '16px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem', color: 'var(--primary)', fontWeight: 600, marginBottom: '8px' }}>
+                                                <i className="fas fa-magic"></i>
+                                                <span>Quick Setup: Apply Same Time to Multiple Days</span>
+                                            </div>
+                                            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                                                <div style={{ flex: 1, minWidth: '120px' }}>
+                                                    <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Opening Time</label>
+                                                    <input 
+                                                        type="time" 
+                                                        className="form-control"
+                                                        value={quickOpenEdit}
+                                                        onChange={(e) => setQuickOpenEdit(e.target.value)}
+                                                        style={{ height: '36px', fontSize: '0.85rem' }}
+                                                    />
+                                                </div>
+                                                <div style={{ flex: 1, minWidth: '120px' }}>
+                                                    <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Closing Time</label>
+                                                    <input 
+                                                        type="time" 
+                                                        className="form-control"
+                                                        value={quickCloseEdit}
+                                                        onChange={(e) => setQuickCloseEdit(e.target.value)}
+                                                        style={{ height: '36px', fontSize: '0.85rem' }}
+                                                    />
+                                                </div>
+                                                <div style={{ display: 'flex', gap: '8px' }}>
+                                                    <button 
+                                                        type="button" 
+                                                        className="btn btn-primary"
+                                                        onClick={() => applyQuickSetup(true)}
+                                                        style={{ height: '36px', fontSize: '0.78rem', padding: '0 12px' }}
+                                                    >
+                                                        Apply
+                                                    </button>
+                                                    <button 
+                                                        type="button" 
+                                                        className="btn btn-secondary"
+                                                        onClick={() => clearAllTimes(true)}
+                                                        style={{ height: '36px', fontSize: '0.78rem', padding: '0 12px' }}
+                                                    >
+                                                        Clear All
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div style={{ overflowX: 'auto' }}>
+                                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                                                <thead>
+                                                    <tr style={{ borderBottom: '1px solid var(--border-color)', textAlign: 'left' }}>
+                                                        <th style={{ padding: '8px 4px', width: '32px' }}>
+                                                            <input 
+                                                                type="checkbox" 
+                                                                checked={selectedDaysEdit.length === 7} 
+                                                                onChange={handleEditTimingAllToggle}
+                                                                style={{ cursor: 'pointer' }}
+                                                            />
+                                                        </th>
+                                                        <th style={{ padding: '8px 8px' }}>Day</th>
+                                                        <th style={{ padding: '8px 8px' }}>Opening Time</th>
+                                                        <th style={{ padding: '8px 8px' }}>Closing Time</th>
+                                                        <th style={{ padding: '8px 8px', textAlign: 'center', width: '80px' }}>Closed</th>
+                                                        {/* <th style={{ padding: '8px 4px', textAlign: 'center', width: '60px' }}>Actions</th> */}
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {(editBranchForm.timings || []).map((item) => {
+                                                        const isSelected = selectedDaysEdit.includes(item.day);
+                                                        return (
+                                                            <tr key={item.day} style={{ borderBottom: '1px solid var(--bg-hover)', background: isSelected ? 'rgba(142,45,226,0.01)' : 'transparent' }}>
+                                                                <td style={{ padding: '8px 4px' }}>
+                                                                    <input 
+                                                                        type="checkbox" 
+                                                                        checked={isSelected}
+                                                                        onChange={() => handleEditTimingDayToggle(item.day)}
+                                                                        style={{ cursor: 'pointer' }}
+                                                                    />
+                                                                </td>
+                                                                <td style={{ padding: '8px 8px', fontWeight: 600 }}>
+                                                                    <div>{dayNamesMap[item.day].full}</div>
+                                                                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{dayNamesMap[item.day].short}</span>
+                                                                </td>
+                                                                <td style={{ padding: '8px 8px' }}>
+                                                                    <input 
+                                                                        type="time" 
+                                                                        className="form-control"
+                                                                        value={item.open_time || ''}
+                                                                        onChange={(e) => updateTimingField(true, item.day, 'open_time', e.target.value)}
+                                                                        disabled={item.is_closed || savingBranch}
+                                                                        style={{ height: '32px', fontSize: '0.8rem', padding: '0 8px', background: item.is_closed ? 'rgba(235,54,54,0.03)' : 'transparent' }}
+                                                                    />
+                                                                </td>
+                                                                <td style={{ padding: '8px 8px' }}>
+                                                                    <input 
+                                                                        type="time" 
+                                                                        className="form-control"
+                                                                        value={item.close_time || ''}
+                                                                        onChange={(e) => updateTimingField(true, item.day, 'close_time', e.target.value)}
+                                                                        disabled={item.is_closed || savingBranch}
+                                                                        style={{ height: '32px', fontSize: '0.8rem', padding: '0 8px', background: item.is_closed ? 'rgba(235,54,54,0.03)' : 'transparent' }}
+                                                                    />
+                                                                </td>
+                                                                <td style={{ padding: '8px 8px', textAlign: 'center' }}>
+                                                                    <input 
+                                                                        type="checkbox" 
+                                                                        checked={item.is_closed}
+                                                                        onChange={(e) => updateTimingField(true, item.day, 'is_closed', e.target.checked)}
+                                                                        style={{ cursor: 'pointer' }}
+                                                                    />
+                                                                </td>
+                                                                {/* <td style={{ padding: '8px 4px', textAlign: 'center' }}>
+                                                                    <button
+                                                                        type="button"
+                                                                        className="btn-icon"
+                                                                        title="Copy to all selected days"
+                                                                        onClick={() => copyTimeToAllSelected(true, item.day)}
+                                                                        disabled={item.is_closed}
+                                                                        style={{ width: '28px', height: '28px', fontSize: '0.8rem' }}
+                                                                    >
+                                                                        <i className="far fa-copy"></i>
+                                                                    </button>
+                                                                </td> */}
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
                                         </div>
                                     </div>
 
