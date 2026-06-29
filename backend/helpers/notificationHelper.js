@@ -146,18 +146,35 @@ const getNotificationTemplate = (
     status,
     reason = null
 ) => {
+
+    console.log("========== NOTIFICATION TEMPLATE ==========");
+    console.log("Event:", event);
+    console.log("Audience:", audience);
+    console.log("Status:", status);
+    console.log("Reason:", reason);
+
     const template = NotificationTemplates[event]?.[audience]?.[status];
 
+    console.log("Template Found:", template);
+
     if (!template) {
+
+        console.log("Using Default Notification");
+
         return {
             title: "🔔 Notification",
             body: "You have a new update."
         };
     }
 
-    return typeof template === "function"
+    const notification = typeof template === "function"
         ? template(reason)
         : template;
+
+    console.log("Final Notification:", notification);
+    console.log("==========================================");
+
+    return notification;
 };
 
 module.exports = {

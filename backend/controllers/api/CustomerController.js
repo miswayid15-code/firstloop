@@ -13,7 +13,7 @@ const {
     CouponApplied,
     Wishlist,
     Appointment,
-    Category
+    Category,UserNotificationToken
 } = require('../../models');
 const { sendPushNotification, getNotificationTemplate } = require("../../helpers/notificationHelper");
 const bcrypt = require('bcryptjs');
