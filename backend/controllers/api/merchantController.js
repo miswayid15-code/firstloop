@@ -419,13 +419,18 @@ exports.registerStep2 = async (req, res) => {
             ...fileData,
 
         });
-        console.log("Merchant Notification Token:", merchant.UserNotificationToken);
-        console.log(merchant);
-        console.log(merchant.toJSON ? merchant.toJSON() : merchant);
+        const notificationToken = await UserNotificationToken.findOne({
+            where: {
+                user_id: merchant.id,
+                user_type: "merchant"
+            }
+        });
+
+        console.log(notificationToken?.toJSON());
 
         try {
             const result = await sendPushNotification({
-                token: merchant.UserNotificationToken,
+                token: notificationToken?.token,
                 title: "Update Successful",
                 body: "Your details were updated successfully.",
             });
