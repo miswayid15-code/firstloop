@@ -420,6 +420,8 @@ exports.registerStep2 = async (req, res) => {
 
         });
         console.log("Merchant Notification Token:", merchant.UserNotificationToken);
+        console.log(merchant);
+        console.log(merchant.toJSON ? merchant.toJSON() : merchant);
 
         try {
             const result = await sendPushNotification({
