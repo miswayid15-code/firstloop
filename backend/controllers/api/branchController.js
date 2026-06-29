@@ -1,4 +1,4 @@
-const { Branch, Merchant, BranchImage, BranchTiming, MenuImage, Receptionist, Appointment, Customer, Coupon, CouponApplied,UserNotificationToken } = require('../../models');
+const { Branch, Merchant, BranchImage, BranchTiming, MenuImage, Receptionist, Appointment, Customer, Coupon, CouponApplied, UserNotificationToken } = require('../../models');
 const { Op } = require('sequelize');
 const { db, admin } = require('../../config/firebase');
 const { parsePhoneNumber } = require('libphonenumber-js');
@@ -6,7 +6,7 @@ const { parsePhoneNumber } = require('libphonenumber-js');
 const fs = require('fs');
 const path = require('path');
 const { json } = require('sequelize');
-const { sendPushNotification } = require("../../helpers/notificationHelper");
+const { sendPushNotification,getNotificationTemplate } = require("../../helpers/notificationHelper");
 exports.register = async (req, res) => {
 
     // console.log("========== CREATE BRANCH API ==========");
@@ -1944,6 +1944,7 @@ exports.update_appointment_status = async (req, res) => {
 
         await appointment.update(updateData);
 
+
         return res.json({
 
             status: 1,
@@ -2255,6 +2256,8 @@ exports.update_appointment_status_by_mer = async (req, res) => {
 
         };
 
+        let notification;
+        let merchantNotification;
 
         if (Number(status) === 1) {
 
@@ -2263,6 +2266,17 @@ exports.update_appointment_status_by_mer = async (req, res) => {
 
             updateData.approved_by_id =
                 merchant.id;
+
+            notification = getNotificationTemplate(
+                "appointment",
+                "b2c",
+                "approved"
+            );
+            merchantNotification = getNotificationTemplate(
+                "appointment",
+                "b2b",
+                "approved"
+            );
 
         }
 
@@ -2274,12 +2288,60 @@ exports.update_appointment_status_by_mer = async (req, res) => {
 
             updateData.cancel_reason =
                 cancel_reason || null;
+            notification = getNotificationTemplate(
+                "appointment",
+                "b2c",
+                "cancelled",
+                cancel_reason
+            );
+            merchantNotification = getNotificationTemplate(
+                "appointment",
+                "b2b",
+                "cancelled",
+                cancel_reason
+            );
 
         }
 
 
         await appointment.update(updateData);
 
+        const notificationToken = await UserNotificationToken.findOne({
+            where: {
+                user_id: appointment.customer_id,
+                user_type: "customer"
+            }
+        });
+        const merchantToken = await UserNotificationToken.findOne({
+            where: {
+                user_id: merchant.id,
+                user_type: "merchant"
+            }
+        });
+
+        if (merchantToken?.token) {
+            await sendPushNotification({
+                token: merchantToken.token,
+                ...merchantNotification,
+                data: {
+                    type: "appointment",
+                    appointment_id: appointment.id,
+                    status: Number(status)
+                }
+            });
+        }
+
+        if (notification && notificationToken?.token) {
+            await sendPushNotification({
+                token: notificationToken.token,
+                ...notification,
+                data: {
+                    type: "appointment",
+                    appointment_id: appointment.id,
+                    status
+                }
+            });
+        }
         return res.json({
 
             status: 1,

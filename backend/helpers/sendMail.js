@@ -1,7 +1,7 @@
 const { Resend } = require('resend');
 
-console.log('RESEND_API_KEY:', process.env.RESEND_API_KEY ? 'FOUND' : 'MISSING');
-console.log('MAIL_USER:', process.env.MAIL_USER);
+// console.log('RESEND_API_KEY:', process.env.RESEND_API_KEY ? 'FOUND' : 'MISSING');
+// console.log('MAIL_USER:', process.env.MAIL_USER);
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 

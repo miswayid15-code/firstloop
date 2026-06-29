@@ -15,7 +15,7 @@ const {
     Appointment,
     Category
 } = require('../../models');
-const { sendPushNotification } = require("../../helpers/notificationHelper");
+const { sendPushNotification, getNotificationTemplate } = require("../../helpers/notificationHelper");
 const bcrypt = require('bcryptjs');
 const { parsePhoneNumber } = require('libphonenumber-js');
 const jwt = require('jsonwebtoken');
@@ -1651,24 +1651,24 @@ exports.coupon_apply = async (req, res) => {
 
 
         // ✅ Usage Limit Check
-        const applied_count =
-            await CouponApplied.count({
+        // const applied_count =
+        //     await CouponApplied.count({
 
-                where: {
+        //         where: {
 
-                    coupon_id:
-                        coupon.id,
-                    cus_id:
-                        customer_id,
-                    branch_id: branch_id,
+        //             coupon_id:
+        //                 coupon.id,
+        //             cus_id:
+        //                 customer_id,
+        //             branch_id: branch_id,
 
-                    status: 1,
+        //             status: 1,
 
-                    del_status: 0
+        //             del_status: 0
 
-                }
+        //         }
 
-            });
+        //     });
 
         // if (
         //     applied_count >=
@@ -1743,6 +1743,64 @@ exports.coupon_apply = async (req, res) => {
             del_status: 0
 
         });
+
+        // Get branch
+        const branch = await Branch.findByPk(branch_id);
+
+        if (branch) {
+
+            const customerNotification = getNotificationTemplate(
+                "coupon_redeem",
+                "b2c",
+                "pending"
+            );
+
+            const customerToken = await UserNotificationToken.findOne({
+                where: {
+                    user_id: customer_id,
+                    user_type: "customer"
+                }
+            });
+
+            if (customerToken?.token) {
+                await sendPushNotification({
+                    token: customerToken.token,
+                    ...customerNotification,
+                    data: {
+                        type: "coupon_redeem",
+                        coupon_id: coupon.id,
+                        coupon_applied_id: couponApplied.id
+                    }
+                });
+            }
+
+            // Get merchant notification token
+            const merchantToken = await UserNotificationToken.findOne({
+                where: {
+                    user_id: branch.merchant_id,
+                    user_type: "merchant"
+                }
+            });
+
+            const merchantNotification = getNotificationTemplate(
+                "coupon_redeem",
+                "b2b",
+                "pending"
+            );
+
+            if (merchantToken?.token) {
+                await sendPushNotification({
+                    token: merchantToken.token,
+                    ...merchantNotification,
+                    data: {
+                        type: "coupon_redeem",
+                        coupon_id: coupon.id,
+                        coupon_applied_id: couponApplied.id,
+                        branch_id: branch.id
+                    }
+                });
+            }
+        }
 
 
         return res.json({
@@ -3169,6 +3227,6 @@ exports.send_tests = async (req, res) => {
         token: customer.notification_token,
         title: "Order Placed",
         body: "Your order has been placed successfully.",
-       
+
     });
 };
