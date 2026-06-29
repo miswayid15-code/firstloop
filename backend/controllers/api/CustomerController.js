@@ -13,7 +13,7 @@ const {
     CouponApplied,
     Wishlist,
     Appointment,
-    Category,UserNotificationToken
+    Category, UserNotificationToken
 } = require('../../models');
 const { sendPushNotification, getNotificationTemplate } = require("../../helpers/notificationHelper");
 const bcrypt = require('bcryptjs');
@@ -3213,20 +3213,14 @@ exports.send_test = async (req, res) => {
     }
 }
 exports.send_tests = async (req, res) => {
-    const result = await sendPushNotification({
-        token: "ExponentPushToken[nQh49rHIvhEVhesiYZNdQz]",
-        title: "🎉 Test from Node.js!",
-        body: "If you receive this, your setup is complete!",
-        data: {
-            test: true,
-        },
-    });
-
-    return res.json(result);
-    await sendPushNotification({
-        token: customer.notification_token,
-        title: "Order Placed",
-        body: "Your order has been placed successfully.",
-
-    });
+    try {
+        await sendMail(
+            'minsway01@gmail.com',
+            'Customer Registration Successful',
+            RegisterTemplate('customer', 'rahulraj')
+        );
+    }
+    catch (err) {
+        console.log(err)
+    }
 };
