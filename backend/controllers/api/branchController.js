@@ -1,4 +1,4 @@
-const { Branch, Merchant, BranchImage, BranchTiming, MenuImage, Receptionist, Appointment, Customer, Coupon, CouponApplied } = require('../../models');
+const { Branch, Merchant, BranchImage, BranchTiming, MenuImage, Receptionist, Appointment, Customer, Coupon, CouponApplied,UserNotificationToken } = require('../../models');
 const { Op } = require('sequelize');
 const { db, admin } = require('../../config/firebase');
 const { parsePhoneNumber } = require('libphonenumber-js');
