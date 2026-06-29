@@ -14,7 +14,7 @@ const baseUrl = process.env.APP_URL;
 const { Op } = require('sequelize');
 const fs = require('fs');
 const path = require('path');
-
+const { sendPushNotification } = require("../../helpers/notificationHelper");
 exports.registerStep1 = async (req, res) => {
 
     try {
