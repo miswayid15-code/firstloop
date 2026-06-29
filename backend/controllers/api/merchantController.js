@@ -426,7 +426,7 @@ exports.registerStep2 = async (req, res) => {
             }
         });
 
-        console.log(notificationToken?.toJSON());
+        // console.log(notificationToken?.toJSON());
 
         try {
             const result = await sendPushNotification({
@@ -435,7 +435,7 @@ exports.registerStep2 = async (req, res) => {
                 body: "Your details were updated successfully.",
             });
 
-            console.log("Push Notification Sent:", result);
+
         } catch (error) {
             console.error("Push Notification Error:", error);
         }
@@ -636,6 +636,27 @@ exports.login = async (req, res) => {
                 expiresIn: '1d'
             }
         );
+
+        const notificationToken = await UserNotificationToken.findOne({
+            where: {
+                user_id: merchant.id,
+                user_type: "merchant"
+            }
+        });
+
+
+
+        try {
+            const result = await sendPushNotification({
+                token: notificationToken?.token,
+                title: "🎊 Welcome!",
+                body: "Login successful! Enjoy using FirstPass. 😊",
+            });
+
+
+        } catch (error) {
+            console.error("Push Notification Error:", error);
+        }
         return res.json({
             status: 1,
             message: "Login successful",
@@ -965,6 +986,26 @@ exports.forget_password = async (req, res) => {
             'Forget Password OTP',
             otpTemplate(otp, 'merchant')
         );
+        const notificationToken = await UserNotificationToken.findOne({
+            where: {
+                user_id: merchant.id,
+                user_type: "merchant"
+            }
+        });
+
+
+
+        try {
+            const result = await sendPushNotification({
+                token: notificationToken?.token,
+                title: "Check Your Email",
+                body: "We've sent a password reset link to your email address. 🔐"
+            });
+
+
+        } catch (error) {
+            console.error("Push Notification Error:", error);
+        }
 
         return res.status(200).json({
             status: 1,
@@ -1070,6 +1111,27 @@ exports.reset_ps = async (req, res) => {
             'Password Reset Successful',
             ResetsTemplate('merchant')
         );
+
+        const notificationToken = await UserNotificationToken.findOne({
+            where: {
+                user_id: merchant.id,
+                user_type: "merchant"
+            }
+        });
+
+
+
+        try {
+            const result = await sendPushNotification({
+                token: notificationToken?.token,
+                title: "✅ Success!",
+                body: "Your password has been reset successfully. 🔐"
+            });
+
+
+        } catch (error) {
+            console.error("Push Notification Error:", error);
+        }
 
         // final response
         return res.status(200).json({
@@ -1272,6 +1334,39 @@ exports.change_status_br = async (req, res) => {
             }
         );
 
+        const notification_text =
+            status === 1
+                ? {
+                    title: "🟢 Branch Activated",
+                    body: "Your branch has been activated successfully and is now available to customers. 🎉",
+                }
+                : {
+                    title: "🔴 Branch Deactivated",
+                    body: "Your branch has been deactivated.",
+                };
+
+
+        const notificationToken = await UserNotificationToken.findOne({
+            where: {
+                user_id: merchant.id,
+                user_type: "merchant"
+            }
+        });
+
+
+
+        try {
+            const result = await sendPushNotification({
+                token: notificationToken?.token,
+                title: notification_text.title,
+                body: notification_text.body,
+            });
+
+
+        } catch (error) {
+            console.error("Push Notification Error:", error);
+        }
+
         return res.status(200).json({
             status: 1,
             message: "Branch status updated successfully"
@@ -1312,6 +1407,40 @@ exports.change_status_res = async (req, res) => {
                 }
             }
         );
+
+
+        const notification_text =
+            status === 1
+                ? {
+                    title: "🟢 Receptionist Activated",
+                    body: "Your Receptionist has been activated successfully. 🎉",
+                }
+                : {
+                    title: "🔴 Receptionist Deactivated",
+                    body: "Your Receptionist has been deactivated.",
+                };
+
+
+        const notificationToken = await UserNotificationToken.findOne({
+            where: {
+                user_id: merchant.id,
+                user_type: "merchant"
+            }
+        });
+
+
+
+        try {
+            const result = await sendPushNotification({
+                token: notificationToken?.token,
+                title: notification_text.title,
+                body: notification_text.body,
+            });
+
+
+        } catch (error) {
+            console.error("Push Notification Error:", error);
+        }
 
         return res.status(200).json({
             status: 1,
