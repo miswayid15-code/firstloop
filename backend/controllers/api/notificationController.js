@@ -5,6 +5,7 @@ const registerNotificationToken = async (req, res) => {
     try {
         const {
             user_id,
+            user_type,
             notification_token,
             platform = "unknown",
             device_name = "Unknown",
@@ -19,10 +20,10 @@ const registerNotificationToken = async (req, res) => {
             });
         }
 
-        // Check existing token for user
         const existing = await UserNotificationToken.findOne({
             where: {
-                user_id: user_id
+                user_id: user_id,
+                user_type: user_type
             }
         });
 
@@ -44,6 +45,7 @@ const registerNotificationToken = async (req, res) => {
             // Create new token
             const newToken = await UserNotificationToken.create({
                 user_id,
+                user_type,
                 token: notification_token,
                 platform,
                 device_name,

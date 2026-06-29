@@ -39,7 +39,7 @@ module.exports = (sequelize, DataTypes) => {
     document: DataTypes.STRING,
     profile_image: DataTypes.STRING,
     brand_image: DataTypes.STRING,
-    
+
     description: {
       type: DataTypes.TEXT,
       allowNull: true
@@ -80,6 +80,10 @@ module.exports = (sequelize, DataTypes) => {
     Merchant.belongsTo(models.Category, {
       foreignKey: 'cat_id',
       targetKey: 'id'
+    });
+    Merchant.hasMany(models.UserNotificationToken, {
+      foreignKey: "user_id",
+      constraints: false,
     });
   };
 

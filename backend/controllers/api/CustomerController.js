@@ -15,7 +15,7 @@ const {
     Appointment,
     Category
 } = require('../../models');
-
+const { sendPushNotification } = require("../../helpers/notificationHelper");
 const bcrypt = require('bcryptjs');
 const { parsePhoneNumber } = require('libphonenumber-js');
 const jwt = require('jsonwebtoken');
@@ -3155,14 +3155,20 @@ exports.send_test = async (req, res) => {
     }
 }
 exports.send_tests = async (req, res) => {
-    try {
-        await sendMail(
-            'minsway01@gmail.com',
-            'Customer Registration Successful',
-            RegisterTemplate('merchant', 'rahulraj')
-        );
-    }
-    catch (err) {
-        console.log(err)
-    }
-}
+    const result = await sendPushNotification({
+        token: "ExponentPushToken[nQh49rHIvhEVhesiYZNdQz]",
+        title: "🎉 Test from Node.js!",
+        body: "If you receive this, your setup is complete!",
+        data: {
+            test: true,
+        },
+    });
+
+    return res.json(result);
+    await sendPushNotification({
+        token: customer.notification_token,
+        title: "Order Placed",
+        body: "Your order has been placed successfully.",
+       
+    });
+};

@@ -5290,7 +5290,7 @@ export default function ViewMerchant() {
                                             <option value={0}>All</option>
                                             <option value={1}>Male</option>
                                             <option value={2}>Female</option>
-                                        
+                                            <option value={3}>Others</option>
                                         </select>
                                     </div>
 
@@ -5959,7 +5959,7 @@ export default function ViewMerchant() {
                                                 <option value={0}>All</option>
                                                 <option value={1}>Male</option>
                                                 <option value={2}>Female</option>
-                                                <option value={3}>Children</option>
+                                                <option value={3}>Others</option>
                                             </select>
                                         </div>
 

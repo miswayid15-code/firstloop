@@ -11,6 +11,11 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.INTEGER,
                 allowNull: false,
             },
+            user_type: {
+                type: DataTypes.STRING,
+                defaultValue: "null",
+                comment: '1 = Merchant, 2 = Receptionist, 3 = Customer'
+            },
             token: {
                 type: DataTypes.TEXT,
                 allowNull: false,
@@ -39,6 +44,25 @@ module.exports = (sequelize, DataTypes) => {
             updatedAt: "updated_at",
         }
     );
+    UserNotificationToken.associate = (models) => {
+
+        UserNotificationToken.belongsTo(models.Merchant, {
+            foreignKey: "user_id",
+            constraints: false,
+        });
+
+        UserNotificationToken.belongsTo(models.Receptionist, {
+            foreignKey: "user_id",
+
+            constraints: false,
+        });
+
+        UserNotificationToken.belongsTo(models.Customer, {
+            foreignKey: "user_id",
+            constraints: false,
+        });
+
+    };
 
     return UserNotificationToken;
 };

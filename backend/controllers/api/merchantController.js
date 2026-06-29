@@ -1,4 +1,4 @@
-const { Merchant, Coupon, RefreshToken, Branch, Receptionist, MerchantFp,BranchTiming } = require('../../models');
+const { Merchant, Coupon, RefreshToken, Branch, Receptionist, MerchantFp, BranchTiming, UserNotificationToken } = require('../../models');
 const bcrypt = require('bcryptjs');
 const { parsePhoneNumber } = require('libphonenumber-js');
 const jwt = require('jsonwebtoken');
@@ -14,6 +14,7 @@ const baseUrl = process.env.APP_URL;
 const { Op } = require('sequelize');
 const fs = require('fs');
 const path = require('path');
+
 exports.registerStep1 = async (req, res) => {
 
     try {
@@ -237,6 +238,15 @@ exports.registerStep1 = async (req, res) => {
 
         }
 
+        // await sendPushNotification({
+        //     token: customer.notification_token,
+        //     title: "Order Placed",
+        //     body: "Your order has been placed successfully.",
+
+        // });
+
+
+
         // =========================
         // RESPONSE
         // =========================
@@ -275,7 +285,7 @@ exports.registerStep1 = async (req, res) => {
 
 exports.registerStep2 = async (req, res) => {
     try {
-// console.log("Body",req.body)
+        // console.log("Body",req.body)
         const merchant = await Merchant.findByPk(req.user.id);
 
         if (!merchant) {
@@ -409,6 +419,19 @@ exports.registerStep2 = async (req, res) => {
             ...fileData,
 
         });
+        console.log("Merchant Notification Token:", merchant.UserNotificationToken);
+
+        try {
+            const result = await sendPushNotification({
+                token: merchant.UserNotificationToken,
+                title: "Update Successful",
+                body: "Your details were updated successfully.",
+            });
+
+            console.log("Push Notification Sent:", result);
+        } catch (error) {
+            console.error("Push Notification Error:", error);
+        }
 
         return res.json({
             status: 1,
@@ -702,6 +725,7 @@ exports.dashboard = async (req, res) => {
             data.profile_image = null;
 
         }
+
 
         return res.json({
             status: 1,

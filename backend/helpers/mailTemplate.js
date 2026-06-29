@@ -296,7 +296,7 @@ const otpTemplate = (otp, type) => {
                             ">
                                 This is an automated message, please do not reply.
                                 <br>
-                                © ${new Date().getFullYear()} Dealora. All rights reserved.
+                                © ${new Date().getFullYear()} FirstPass. All rights reserved.
                             </p>
 
                         </td>

@@ -9,12 +9,12 @@ const sendMail = async (to, subject, html) => {
 
     try {
 
-        console.log('================================');
-        console.log('SENDMAIL FUNCTION CALLED');
-        console.log('TO:', to);
-        console.log('SUBJECT:', subject);
-        console.log('FROM:', process.env.MAIL_USER || 'onboarding@resend.dev');
-        console.log('================================');
+        // console.log('================================');
+        // console.log('SENDMAIL FUNCTION CALLED');
+        // console.log('TO:', to);
+        // console.log('SUBJECT:', subject);
+        // console.log('FROM:', process.env.MAIL_USER || 'onboarding@resend.dev');
+        // console.log('================================');
 
         const response = await resend.emails.send({
 
@@ -28,8 +28,8 @@ const sendMail = async (to, subject, html) => {
 
         });
 
-        console.log('EMAIL SENT SUCCESS');
-        console.log(JSON.stringify(response, null, 2));
+        // console.log('EMAIL SENT SUCCESS');
+        // console.log(JSON.stringify(response, null, 2));
 
         return true;
 

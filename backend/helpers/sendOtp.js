@@ -119,7 +119,7 @@ const config =
                                 font-size:18px;
                                 line-height:34px;
                             ">
-                                Thank you for registering with Dealora.
+                                Thank you for registering with FirstPass.
                                 <br>
                                 Please use the OTP below to verify your email address and complete your account setup.
                             </p>
@@ -209,7 +209,7 @@ const config =
                                             line-height:28px;
                                         ">
                                             Never share this OTP with anyone.
-                                            Dealora will never ask for your OTP via phone, email, or chat.
+                                            FirstPass will never ask for your OTP via phone, email, or chat.
                                         </div>
 
                                     </td>
@@ -262,7 +262,7 @@ const config =
                                             font-size:15px;
                                             line-height:28px;
                                         ">
-                                            If you did not create a Dealora account,
+                                            If you did not create a FirstPass account,
                                             you can safely ignore this email.
                                             No further action is required.
                                         </div>
@@ -298,7 +298,7 @@ const config =
                             ">
                                 This is an automated message, please do not reply.
                                 <br>
-                                © ${new Date().getFullYear()} Dealora. All rights reserved.
+                                © ${new Date().getFullYear()} FirstPass. All rights reserved.
                             </p>
 
                         </td>

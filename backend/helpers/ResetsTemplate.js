@@ -160,7 +160,7 @@ const ResetsTemplate = (type = 'merchant') => {
                     color:#a0aec0;
                     font-size:13px;
                 ">
-                    © ${currentYear}  Dealora. All rights reserved.
+                    © ${currentYear}  FirstPass. All rights reserved.
                 </p>
 
             </div>

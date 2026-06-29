@@ -17,10 +17,10 @@ module.exports = (sequelize, DataTypes) => {
       password: DataTypes.STRING,
       dob: DataTypes.DATEONLY,
       gender: {
-    type: DataTypes.INTEGER,
-    defaultValue: 1,
-    comment: '1 = Male, 2 = Female, 3 = Other'
-},
+        type: DataTypes.INTEGER,
+        defaultValue: 1,
+        comment: '1 = Male, 2 = Female, 3 = Other'
+      },
       address: DataTypes.TEXT,
       lat: DataTypes.STRING,
       lon: DataTypes.STRING,
@@ -28,9 +28,9 @@ module.exports = (sequelize, DataTypes) => {
       city: DataTypes.STRING,
       state: DataTypes.STRING,
       country: DataTypes.STRING,
-  country_code: DataTypes.STRING,
-  zip_code: DataTypes.STRING,
-    
+      country_code: DataTypes.STRING,
+      zip_code: DataTypes.STRING,
+
       status: {
         type: DataTypes.INTEGER,
         defaultValue: 1,
@@ -47,17 +47,17 @@ module.exports = (sequelize, DataTypes) => {
       tableName: 'customers',
     }
   );
-Customer.associate = (models) => {
+  Customer.associate = (models) => {
 
     Customer.hasMany(models.RefreshToken, {
-        foreignKey: 'user_id',
-        constraints: false
+      foreignKey: 'user_id',
+      constraints: false
     });
 
     Customer.hasMany(models.Appointment, {
-        foreignKey: 'cus_id'
+      foreignKey: 'cus_id'
     });
 
-};
+  };
   return Customer;
 };
