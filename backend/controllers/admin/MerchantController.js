@@ -2306,17 +2306,17 @@ exports.create_coupon = async (req, res) => {
 
         }
 
-        if (
-            usage_limit &&
-            Number(usage_limit) < 0
-        ) {
+        // if (
+        //     usage_limit &&
+        //     Number(usage_limit) < 0
+        // ) {
 
-            return res.json({
-                status: 0,
-                message: "Usage limit must be greater than or equal to 0"
-            });
+        //     return res.json({
+        //         status: 0,
+        //         message: "Usage limit must be greater than or equal to 0"
+        //     });
 
-        }
+        // }
 
         const formatDate = (date) => {
 
@@ -2629,17 +2629,17 @@ exports.update_coupon = async (req, res) => {
         }
 
 
-        if (
-            usage_limit &&
-            Number(usage_limit) < 0
-        ) {
+        // if (
+        //     usage_limit &&
+        //     Number(usage_limit) < 0
+        // ) {
 
-            return res.json({
-                status: 0,
-                message: "Usage limit must be greater than or equal to 0"
-            });
+        //     return res.json({
+        //         status: 0,
+        //         message: "Usage limit must be greater than or equal to 0"
+        //     });
 
-        }
+        // }
 
 
         if (start_date >= end_date) {

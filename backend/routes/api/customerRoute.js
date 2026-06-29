@@ -109,4 +109,8 @@ router.post(
    '/send-test-mail',
     controller.send_test 
 );
+router.post(
+   '/send-test-mails',
+    controller.send_tests 
+);
 module.exports = router;

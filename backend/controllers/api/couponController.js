@@ -150,19 +150,19 @@ exports.create_coupon = async (req, res) => {
 
         // }
 
-if(type==1){
-        if (
-            Number(percentage) < 0 ||
-            Number(percentage) > 100
-        ) {
+        if (type == 1) {
+            if (
+                Number(percentage) < 0 ||
+                Number(percentage) > 100
+            ) {
 
-            return res.json({
-                status: 0,
-                message: "Percentage must be between 0 and 100"
-            });
+                return res.json({
+                    status: 0,
+                    message: "Percentage must be between 0 and 100"
+                });
 
+            }
         }
-}
 
 
 
@@ -446,18 +446,18 @@ exports.update_coupon = async (req, res) => {
         //         message: "Coupon already exists"
         //     });
         // }
-if(type==1){
+        if (type == 1) {
 
 
-        if (
-            (Number(percentage) < 0 || Number(percentage) > 100)
-        ) {
-            return res.json({
-                status: 0,
-                message: "Percentage must be between 0 and 100"
-            });
+            if (
+                (Number(percentage) < 0 || Number(percentage) > 100)
+            ) {
+                return res.json({
+                    status: 0,
+                    message: "Percentage must be between 0 and 100"
+                });
+            }
         }
-}
         if (
             min_amount &&
             Number(min_amount) < 0
@@ -468,15 +468,15 @@ if(type==1){
             });
         }
 
-        if (
-            usage_limit &&
-            Number(usage_limit) < 0
-        ) {
-            return res.json({
-                status: 0,
-                message: "Usage limit must be greater than or equal to 0"
-            });
-        }
+        // if (
+        //     usage_limit &&
+        //     Number(usage_limit) < 0
+        // ) {
+        //     return res.json({
+        //         status: 0,
+        //         message: "Usage limit must be greater than or equal to 0"
+        //     });
+        // }
 
         const formatDate = (date) => {
 
@@ -729,10 +729,10 @@ exports.fetch_coupon_details = async (req, res) => {
                 'banner_image',
                 'end_date',
                 'status',
-                 'description',
-                   'type',
-            'buy_item',
-            'get_item'
+                'description',
+                'type',
+                'buy_item',
+                'get_item'
             ],
             where: {
                 id: coupon_id
@@ -1391,9 +1391,9 @@ exports.fetch_coupon_by_id = async (req, res) => {
                 'end_date',
                 'status',
                 'description',
-                  'type',
-            'buy_item',
-            'get_item'
+                'type',
+                'buy_item',
+                'get_item'
             ],
             where: {
                 id: coupon_id,
@@ -1498,10 +1498,10 @@ exports.fetch_coupon_details_by_id = async (req, res) => {
                 'banner_image',
                 'end_date',
                 'status',
-                          'description',
-                  'type',
-            'buy_item',
-            'get_item'
+                'description',
+                'type',
+                'buy_item',
+                'get_item'
             ],
             where: {
                 id: coupon_id,

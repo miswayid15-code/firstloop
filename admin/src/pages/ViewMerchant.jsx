@@ -249,6 +249,7 @@ export default function ViewMerchant() {
     const [creatingCoupon, setCreatingCoupon] = useState(false)
 
     const [couponForm, setCouponForm] = useState(initialCouponForm)
+    const [minAmountToggle, setMinAmountToggle] = useState(false)
 
     const [showEditCouponModal, setShowEditCouponModal] = useState(false)
 
@@ -277,6 +278,7 @@ export default function ViewMerchant() {
     })
 
     const [editCouponForm, setEditCouponForm] = useState(initialCouponForm)
+    const [editMinAmountToggle, setEditMinAmountToggle] = useState(false)
 
     const [categories, setCategories] = useState([])
     const [couponCategories, setCouponCategories] = useState([])
@@ -1060,6 +1062,7 @@ export default function ViewMerchant() {
 
     const openCreateCouponModal = () => {
         setCouponForm(initialCouponForm)
+        setMinAmountToggle(false)
         setCreatingCoupon(false)
         setShowCreateCouponModal(true)
     }
@@ -1068,6 +1071,7 @@ export default function ViewMerchant() {
         setShowCreateCouponModal(false)
         setCreatingCoupon(false)
         setCouponForm(initialCouponForm)
+        setMinAmountToggle(false)
     }
 
     const openBranchCouponsModal = (branch) => {
@@ -1380,7 +1384,7 @@ export default function ViewMerchant() {
                 formData.append('percentage', couponForm.percentage)
             }
 
-            formData.append('min_amount', couponForm.min_amount || '0')
+            formData.append('min_amount', minAmountToggle ? (couponForm.min_amount || '0') : '0')
             formData.append('usage_limit', couponForm.usage_limit || '0')
             formData.append('start_date', toCouponApiDate(couponForm.start_date))
             formData.append('end_date', toCouponApiDate(couponForm.end_date))
@@ -1428,6 +1432,8 @@ export default function ViewMerchant() {
             return d.toISOString().split('T')[0]
         }
 
+        const hasMinAmount = coupon.min_amount && Number(coupon.min_amount) > 0;
+        setEditMinAmountToggle(!!hasMinAmount);
         setEditCouponForm({
             code: coupon.code || '',
             type: coupon.type || 1,
@@ -1435,8 +1441,8 @@ export default function ViewMerchant() {
             buy_item: coupon.buy_item || '',
             get_item: coupon.get_item || '',
             percentage: coupon.percentage || '',
-            min_amount: coupon.min_amount || '',
-            usage_limit: coupon.usage_limit || '1',
+            min_amount: hasMinAmount ? coupon.min_amount : '0',
+            usage_limit: coupon.usage_limit || '0',
             start_date: formatDateForInput(coupon.start_date),
             end_date: formatDateForInput(coupon.end_date),
             branch_ids: Array.isArray(coupon.branch_ids) ? coupon.branch_ids.map(Number) : [],
@@ -1451,6 +1457,7 @@ export default function ViewMerchant() {
         setEditingCoupon(false)
         setEditCouponForm(initialCouponForm)
         setEditCouponId(null)
+        setEditMinAmountToggle(false)
     }
 
     const handleEditCouponChange = (e) => {
@@ -1546,7 +1553,7 @@ export default function ViewMerchant() {
                 formData.append('percentage', editCouponForm.percentage)
             }
 
-            formData.append('min_amount', editCouponForm.min_amount || '0')
+            formData.append('min_amount', editMinAmountToggle ? (editCouponForm.min_amount || '0') : '0')
             formData.append('usage_limit', editCouponForm.usage_limit || '0')
             formData.append('start_date', toCouponApiDate(editCouponForm.start_date))
             formData.append('end_date', toCouponApiDate(editCouponForm.end_date))
@@ -2491,7 +2498,7 @@ export default function ViewMerchant() {
                                                     }
                                                 </td>
                                                 <td>{coupon.min_amount}</td>
-                                                <td>{coupon.usage_limit}</td>
+                                                {/* <td>{coupon.usage_limit}</td> */}
                                                 <td>{formatDisplayDate(coupon.start_date)}</td>
                                                 <td>{formatDisplayDate(coupon.end_date)}</td>
                                                 <td>{coupon.status === 1 ? 'Active' : 'Inactive'}</td>
@@ -4103,6 +4110,26 @@ export default function ViewMerchant() {
 
                                 {Number(couponForm.type) !== 3 ? (
                                     <>
+                                        <div className="form-group-classic" style={{ marginBottom: 12 }}>
+                                            <label className="form-label-classic" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer', textTransform: 'none', fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={minAmountToggle}
+                                                    onChange={(e) => {
+                                                        const checked = e.target.checked
+                                                        setMinAmountToggle(checked)
+                                                        setCouponForm(prev => ({
+                                                            ...prev,
+                                                            min_amount: checked ? '' : '0'
+                                                        }))
+                                                    }}
+                                                    disabled={creatingCoupon}
+                                                    style={{ width: 16, height: 16, accentColor: 'var(--primary)', cursor: 'pointer' }}
+                                                />
+                                                <span>Minimum Amount Required</span>
+                                            </label>
+                                        </div>
+
                                         <div className="form-row">
                                             <div className="form-group">
                                                 <input
@@ -4122,23 +4149,28 @@ export default function ViewMerchant() {
                                                 </label>
                                             </div>
 
-                                            <div className="form-group">
-                                                <input
-                                                    type="number"
-                                                    name="min_amount"
-                                                    className="form-control"
-                                                    placeholder=" "
-                                                    value={couponForm.min_amount}
-                                                    onChange={handleCouponChange}
-                                                    disabled={creatingCoupon}
-                                                    min="0"
-                                                />
-                                                <label className="form-label">Minimum Amount</label>
-                                            </div>
+                                            {minAmountToggle ? (
+                                                <div className="form-group">
+                                                    <input
+                                                        type="number"
+                                                        name="min_amount"
+                                                        className="form-control"
+                                                        placeholder=" "
+                                                        value={couponForm.min_amount === '0' ? '' : couponForm.min_amount}
+                                                        onChange={handleCouponChange}
+                                                        disabled={creatingCoupon}
+                                                        min="1"
+                                                        required
+                                                    />
+                                                    <label className="form-label">Minimum Amount</label>
+                                                </div>
+                                            ) : (
+                                                <div />
+                                            )}
                                         </div>
 
                                         <div className="form-row">
-                                            <div className="form-group">
+                                            {/* <div className="form-group">
                                                 <input
                                                     type="number"
                                                     name="usage_limit"
@@ -4151,7 +4183,7 @@ export default function ViewMerchant() {
                                                     required
                                                 />
                                                 <label className="form-label">Usage Limit</label>
-                                            </div>
+                                            </div> */}
 
                                             <div className="form-group-classic">
                                                 <label className="form-label-classic">Coupon Category</label>
@@ -4205,22 +4237,47 @@ export default function ViewMerchant() {
                                             </div>
                                         </div>
 
-                                        <div className="form-row">
-                                            <div className="form-group">
+                                        <div className="form-group-classic" style={{ marginBottom: 12 }}>
+                                            <label className="form-label-classic" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer', textTransform: 'none', fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)' }}>
                                                 <input
-                                                    type="number"
-                                                    name="min_amount"
-                                                    className="form-control"
-                                                    placeholder=" "
-                                                    value={couponForm.min_amount}
-                                                    onChange={handleCouponChange}
+                                                    type="checkbox"
+                                                    checked={minAmountToggle}
+                                                    onChange={(e) => {
+                                                        const checked = e.target.checked
+                                                        setMinAmountToggle(checked)
+                                                        setCouponForm(prev => ({
+                                                            ...prev,
+                                                            min_amount: checked ? '' : '0'
+                                                        }))
+                                                    }}
                                                     disabled={creatingCoupon}
-                                                    min="0"
+                                                    style={{ width: 16, height: 16, accentColor: 'var(--primary)', cursor: 'pointer' }}
                                                 />
-                                                <label className="form-label">Minimum Amount</label>
-                                            </div>
+                                                <span>Minimum Amount Required</span>
+                                            </label>
+                                        </div>
 
-                                            <div className="form-group">
+                                        {minAmountToggle && (
+                                            <div className="form-row">
+                                                <div className="form-group">
+                                                    <input
+                                                        type="number"
+                                                        name="min_amount"
+                                                        className="form-control"
+                                                        placeholder=" "
+                                                        value={couponForm.min_amount === '0' ? '' : couponForm.min_amount}
+                                                        onChange={handleCouponChange}
+                                                        disabled={creatingCoupon}
+                                                        min="1"
+                                                        required
+                                                    />
+                                                    <label className="form-label">Minimum Amount</label>
+                                                </div>
+                                                <div />
+                                            </div>
+                                        )}
+
+                                            {/* <div className="form-group">
                                                 <input
                                                     type="number"
                                                     name="usage_limit"
@@ -4233,8 +4290,7 @@ export default function ViewMerchant() {
                                                     required
                                                 />
                                                 <label className="form-label">Usage Limit</label>
-                                            </div>
-                                        </div>
+                                            </div> */}
 
                                         <div className="form-group-classic">
                                             <label className="form-label-classic">Coupon Category</label>
@@ -4257,7 +4313,7 @@ export default function ViewMerchant() {
                                     </>
                                 )}
                                 <div className="form-group-classic">
-                                    <label className="form-label-classic">Description</label>
+                                    <label className="form-label-classic">Term and Condtions</label>
                                     <textarea
                                         name="description"
                                         className="form-control"
@@ -4460,7 +4516,7 @@ export default function ViewMerchant() {
                             >
                                 <div className="form-row" style={{ alignItems: 'flex-end' }}>
                                     <div className="form-group-classic" style={{ marginBottom: 0 }}>
-                                        <label className="form-label-classic">Coupon Code</label>
+                                        <label className="form-label-classic">Coupon Name</label>
                                         <div style={{ display: 'flex', gap: 8 }}>
                                             <input
                                                 type="text"
@@ -4474,7 +4530,7 @@ export default function ViewMerchant() {
                                                 autoComplete="off"
                                                 style={{ flex: 1 }}
                                             />
-                                            <button
+                                            {/* <button
                                                 type="button"
                                                 className="btn btn-secondary"
                                                 onClick={generateCouponCodeForEdit}
@@ -4486,7 +4542,7 @@ export default function ViewMerchant() {
                                                 ) : (
                                                     <i className="fas fa-magic" />
                                                 )}
-                                            </button>
+                                            </button> */}
                                         </div>
                                     </div>
 
@@ -4509,6 +4565,26 @@ export default function ViewMerchant() {
 
                                 {Number(editCouponForm.type) !== 3 ? (
                                     <>
+                                        <div className="form-group-classic" style={{ marginBottom: 12 }}>
+                                            <label className="form-label-classic" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer', textTransform: 'none', fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={editMinAmountToggle}
+                                                    onChange={(e) => {
+                                                        const checked = e.target.checked
+                                                        setEditMinAmountToggle(checked)
+                                                        setEditCouponForm(prev => ({
+                                                            ...prev,
+                                                            min_amount: checked ? '' : '0'
+                                                        }))
+                                                    }}
+                                                    disabled={editingCoupon}
+                                                    style={{ width: 16, height: 16, accentColor: 'var(--primary)', cursor: 'pointer' }}
+                                                />
+                                                <span>Minimum Amount Required</span>
+                                            </label>
+                                        </div>
+
                                         <div className="form-row">
                                             <div className="form-group">
                                                 <input
@@ -4528,23 +4604,28 @@ export default function ViewMerchant() {
                                                 </label>
                                             </div>
 
-                                            <div className="form-group">
-                                                <input
-                                                    type="number"
-                                                    name="min_amount"
-                                                    className="form-control"
-                                                    placeholder=" "
-                                                    value={editCouponForm.min_amount}
-                                                    onChange={handleEditCouponChange}
-                                                    disabled={editingCoupon}
-                                                    min="0"
-                                                />
-                                                <label className="form-label">Minimum Amount</label>
-                                            </div>
+                                            {editMinAmountToggle ? (
+                                                <div className="form-group">
+                                                    <input
+                                                        type="number"
+                                                        name="min_amount"
+                                                        className="form-control"
+                                                        placeholder=" "
+                                                        value={editCouponForm.min_amount === '0' ? '' : editCouponForm.min_amount}
+                                                        onChange={handleEditCouponChange}
+                                                        disabled={editingCoupon}
+                                                        min="1"
+                                                        required
+                                                    />
+                                                    <label className="form-label">Minimum Amount</label>
+                                                </div>
+                                            ) : (
+                                                <div />
+                                            )}
                                         </div>
 
                                         <div className="form-row">
-                                            <div className="form-group">
+                                            {/* <div className="form-group">
                                                 <input
                                                     type="number"
                                                     name="usage_limit"
@@ -4557,7 +4638,7 @@ export default function ViewMerchant() {
                                                     required
                                                 />
                                                 <label className="form-label">Usage Limit</label>
-                                            </div>
+                                            </div> */}
 
                                             <div className="form-group-classic">
                                                 <label className="form-label-classic">Coupon Category</label>
@@ -4611,21 +4692,46 @@ export default function ViewMerchant() {
                                             </div>
                                         </div>
 
-                                        <div className="form-row">
-                                            <div className="form-group">
+                                        <div className="form-group-classic" style={{ marginBottom: 12 }}>
+                                            <label className="form-label-classic" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer', textTransform: 'none', fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)' }}>
                                                 <input
-                                                    type="number"
-                                                    name="min_amount"
-                                                    className="form-control"
-                                                    placeholder=" "
-                                                    value={editCouponForm.min_amount}
-                                                    onChange={handleEditCouponChange}
+                                                    type="checkbox"
+                                                    checked={editMinAmountToggle}
+                                                    onChange={(e) => {
+                                                        const checked = e.target.checked
+                                                        setEditMinAmountToggle(checked)
+                                                        setEditCouponForm(prev => ({
+                                                            ...prev,
+                                                            min_amount: checked ? '' : '0'
+                                                        }))
+                                                    }}
                                                     disabled={editingCoupon}
-                                                    min="0"
+                                                    style={{ width: 16, height: 16, accentColor: 'var(--primary)', cursor: 'pointer' }}
                                                 />
-                                                <label className="form-label">Minimum Amount</label>
-                                            </div>
+                                                <span>Minimum Amount Required</span>
+                                            </label>
+                                        </div>
 
+                                        {editMinAmountToggle && (
+                                            <div className="form-row">
+                                                <div className="form-group">
+                                                    <input
+                                                        type="number"
+                                                        name="min_amount"
+                                                        className="form-control"
+                                                        placeholder=" "
+                                                        value={editCouponForm.min_amount === '0' ? '' : editCouponForm.min_amount}
+                                                        onChange={handleEditCouponChange}
+                                                        disabled={editingCoupon}
+                                                        min="1"
+                                                        required
+                                                    />
+                                                    <label className="form-label">Minimum Amount</label>
+                                                </div>
+                                                <div />
+                                            </div>
+                                        )}
+{/* 
                                             <div className="form-group">
                                                 <input
                                                     type="number"
@@ -4639,8 +4745,7 @@ export default function ViewMerchant() {
                                                     required
                                                 />
                                                 <label className="form-label">Usage Limit</label>
-                                            </div>
-                                        </div>
+                                            </div> */}
 
                                         <div className="form-group-classic">
                                             <label className="form-label-classic">Coupon Category</label>
@@ -4692,7 +4797,7 @@ export default function ViewMerchant() {
                                 </div>
 
                                 <div className="form-group-classic">
-                                    <label className="form-label-classic">Description</label>
+                                    <label className="form-label-classic">Term and Condtions</label>
                                     <textarea
                                         name="description"
                                         className="form-control"
@@ -4900,7 +5005,7 @@ export default function ViewMerchant() {
                                                         }
                                                     </td>
                                                     <td>{coupon.min_amount}</td>
-                                                    <td>{coupon.usage_limit}</td>
+                                                    {/* <td>{coupon.usage_limit}</td> */}
                                                     <td>{formatDisplayDate(coupon.start_date)}</td>
                                                     <td>{formatDisplayDate(coupon.end_date)}</td>
                                                     <td>
@@ -4986,10 +5091,10 @@ export default function ViewMerchant() {
                                     <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', fontWeight: 600, textTransform: 'uppercase' }}>Minimum Spend</span>
                                     <span style={{ color: 'var(--text-primary)' }}>{selectedCouponForView.min_amount}</span>
                                 </div>
-                                <div>
+                                {/* <div>
                                     <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', fontWeight: 600, textTransform: 'uppercase' }}>Usage Limit</span>
                                     <span style={{ color: 'var(--text-primary)' }}>{selectedCouponForView.usage_limit}</span>
-                                </div>
+                                </div> */}
 
                                 <div>
                                     <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', fontWeight: 600, textTransform: 'uppercase' }}>Start Date</span>
@@ -5002,7 +5107,7 @@ export default function ViewMerchant() {
                             </div>
 
                             <div style={{ marginBottom: '20px', padding: '12px', background: 'var(--bg-hover)', borderRadius: '8px', borderLeft: '4px solid var(--primary)' }}>
-                                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px' }}>Description</span>
+                                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px' }}>Term and Condtions </span>
                                 <p style={{ margin: 0, color: 'var(--text-primary)', whiteSpace: 'pre-wrap', fontSize: '0.9rem', lineHeight: '1.4' }}>
                                     {selectedCouponForView.description || 'No description provided.'}
                                 </p>
@@ -5185,7 +5290,7 @@ export default function ViewMerchant() {
                                             <option value={0}>All</option>
                                             <option value={1}>Male</option>
                                             <option value={2}>Female</option>
-                                            <option value={3}>Children</option>
+                                        
                                         </select>
                                     </div>
 
@@ -5198,11 +5303,9 @@ export default function ViewMerchant() {
                                             onChange={handleAddBranchChange}
                                             disabled={addingBranch}
                                         >
-                                            <option value="All Age">All Age</option>
-                                            <option value="18-25">18-25</option>
-                                            <option value="26-35">26-35</option>
-                                            <option value="36-50">36-50</option>
-                                            <option value="50+">50+</option>
+                                            <option value="1">All Age</option>
+                                            <option value="2">Below 18</option>
+                                            <option value="3">Above 18</option>
                                         </select>
                                     </div>
                                 </div>
@@ -5870,10 +5973,8 @@ export default function ViewMerchant() {
                                                 disabled={savingBranch}
                                             >
                                                 <option value="All Age">All Age</option>
-                                                <option value="18-25">18-25</option>
-                                                <option value="26-35">26-35</option>
-                                                <option value="36-50">36-50</option>
-                                                <option value="50+">50+</option>
+                                                <option value="Below 18">Below 18</option>
+                                                <option value="Above 18">Above 18</option>
                                             </select>
                                         </div>
                                     </div>

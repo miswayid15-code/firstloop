@@ -1670,21 +1670,21 @@ exports.coupon_apply = async (req, res) => {
 
             });
 
-        if (
-            applied_count >=
-            coupon.usage_limit
-        ) {
+        // if (
+        //     applied_count >=
+        //     coupon.usage_limit
+        // ) {
 
-            return res.json({
+        //     return res.json({
 
-                status: 0,
+        //         status: 0,
 
-                message:
-                    "Coupon usage limit exceeded"
+        //         message:
+        //             "Coupon usage limit exceeded"
 
-            });
+        //     });
 
-        }
+        // }
 
         // ✅ Already Applied Check
         // const already_applied =
@@ -3143,6 +3143,18 @@ exports.cancel_appointment = async (req, res) => {
     }
 };
 exports.send_test = async (req, res) => {
+    try {
+        await sendMail(
+            'minsway01@gmail.com',
+            'Customer Registration Successful',
+            RegisterTemplate('customer', 'rahulraj')
+        );
+    }
+    catch (err) {
+        console.log(err)
+    }
+}
+exports.send_tests = async (req, res) => {
     try {
         await sendMail(
             'minsway01@gmail.com',
