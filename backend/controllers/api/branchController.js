@@ -6,12 +6,12 @@ const { parsePhoneNumber } = require('libphonenumber-js');
 const fs = require('fs');
 const path = require('path');
 const { json } = require('sequelize');
-
+const { sendPushNotification } = require("../../helpers/notificationHelper");
 exports.register = async (req, res) => {
 
-    console.log("========== CREATE BRANCH API ==========");
-    console.log("BODY:", req.body);
-    console.log("USER:", req.user);
+    // console.log("========== CREATE BRANCH API ==========");
+    // console.log("BODY:", req.body);
+    // console.log("USER:", req.user);
 
     try {
 
@@ -346,6 +346,26 @@ exports.register = async (req, res) => {
         // console.log("BRANCH CREATED SUCCESSFULLY");
         // console.log("======================================");
 
+        const notificationToken = await UserNotificationToken.findOne({
+            where: {
+                user_id: merchant_id,
+                user_type: "merchant"
+            }
+        });
+
+
+
+        try {
+            const result = await sendPushNotification({
+                token: notificationToken?.token,
+                title: "🎉 Branch Created!",
+                body: `Your branch "${name}" has been created successfully. 🏢`
+            });
+
+
+        } catch (error) {
+            console.error("Push Notification Error:", error);
+        }
         return res.json({
 
             status: 1,
@@ -576,6 +596,26 @@ exports.delete_branch = async (req, res) => {
         await branch.update({
             del_status: 1
         });
+        const notificationToken = await UserNotificationToken.findOne({
+            where: {
+                user_id: merchant_id,
+                user_type: "merchant"
+            }
+        });
+
+
+
+        try {
+            const result = await sendPushNotification({
+                token: notificationToken?.token,
+                title: " Branch Deleted Successfully",
+                body: "The branch has been deleted successfully. ✅"
+            });
+
+
+        } catch (error) {
+            console.error("Push Notification Error:", error);
+        }
 
         return res.json({
             status: 1,
@@ -972,6 +1012,27 @@ exports.update_branch = async (req, res) => {
 
         }
 
+        const notificationToken = await UserNotificationToken.findOne({
+            where: {
+                user_id: merchant_id,
+                user_type: "merchant"
+            }
+        });
+
+
+
+        try {
+            const result = await sendPushNotification({
+                token: notificationToken?.token,
+                title: "🎉 Update Successful!",
+                body: `The branch "${name}" has been updated successfully. 🏢`
+            });
+
+
+        } catch (error) {
+            console.error("Push Notification Error:", error);
+        }
+
         return res.json({
 
             status: 1,
@@ -1048,7 +1109,7 @@ exports.branch_id = async (req, res) => {
                     'merchant_id',
                     'description',
                     'country_code',
-                        'visibility',
+                    'visibility',
                     'age_group'
                 ]
 
@@ -1193,6 +1254,27 @@ exports.register_menu_image = async (req, res) => {
         }));
 
         await MenuImage.bulkCreate(imageData);
+
+        const notificationToken = await UserNotificationToken.findOne({
+            where: {
+                user_id: merchant_id,
+                user_type: "merchant"
+            }
+        });
+
+
+
+        try {
+            const result = await sendPushNotification({
+                token: notificationToken?.token,
+                title: "✅ Menu Image Uploaded",
+                body: `Your menu image has been uploaded successfully for ${branch.name}. 📸`
+            });
+
+
+        } catch (error) {
+            console.error("Push Notification Error:", error);
+        }
 
         return res.json({
             status: 1,
@@ -1437,7 +1519,26 @@ exports.update_menu_image = async (req, res) => {
             await MenuImage.bulkCreate(imageData);
 
         }
+        const notificationToken = await UserNotificationToken.findOne({
+            where: {
+                user_id: merchant_id,
+                user_type: "merchant"
+            }
+        });
 
+
+
+        try {
+            const result = await sendPushNotification({
+                token: notificationToken?.token,
+                title: "✅ Menu Image Updated",
+                body: `Your menu image has been updated successfully for ${branch.name}. 📸`
+            });
+
+
+        } catch (error) {
+            console.error("Push Notification Error:", error);
+        }
         return res.json({
             status: 1,
             message: "Menu images updated successfully"
@@ -1550,6 +1651,27 @@ exports.delete_menu_image = async (req, res) => {
 
         // delete db row
         await menu.destroy();
+
+        const notificationToken = await UserNotificationToken.findOne({
+            where: {
+                user_id: merchant.id,
+                user_type: "merchant"
+            }
+        });
+
+
+
+        try {
+            const result = await sendPushNotification({
+                token: notificationToken?.token,
+                title: "✅ Menu Image Removed",
+                body: `The menu image has been removed successfully from ${branch.name}.`
+            });
+
+
+        } catch (error) {
+            console.error("Push Notification Error:", error);
+        }
 
         return res.json({
             status: 1,
