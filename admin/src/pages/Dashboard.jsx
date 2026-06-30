@@ -12,6 +12,7 @@ import API from '../api.js';
 
 
 export default function Dashboard() {
+    const navigate = useNavigate();
     const [dashboard, setDashboard] = useState(null);
 
     const FetchDashboard = async () => {
@@ -226,7 +227,8 @@ export default function Dashboard() {
                         icon: 'fa-store',
                         gradient: 'bg-gradient-purple',
                         trend: `+${cards.new_merchants_this_week}`,
-                        trendLabel: 'new this week'
+                        trendLabel: 'new this week',
+                        path: '/merchants'
                     },
                     {
                         title: 'Redeemed Coupons',
@@ -234,7 +236,8 @@ export default function Dashboard() {
                         icon: 'fa-ticket-alt',
                         gradient: 'bg-gradient-blue',
                         trend: `+${cards.redeemed_today}`,
-                        trendLabel: 'redeemed today'
+                        trendLabel: 'redeemed today',
+                        path: '/coupon-claim'
                     },
                     {
                         title: 'Pending Bookings',
@@ -242,7 +245,8 @@ export default function Dashboard() {
                         icon: 'fa-calendar-check',
                         gradient: 'bg-gradient-orange',
                         trend: `${cards.pending_bookings}`,
-                        trendLabel: 'requires action'
+                        trendLabel: 'requires action',
+                        path: '/appointments'
                     },
                     {
                         title: 'Active Customers',
@@ -250,10 +254,16 @@ export default function Dashboard() {
                         icon: 'fa-users',
                         gradient: 'bg-gradient-teal',
                         trend: `+${cards.new_customers_this_week}`,
-                        trendLabel: 'new signups'
+                        trendLabel: 'new signups',
+                        path: '/customers'
                     }
                 ].map((item) => (
-                    <div key={item.title} className={`card stat-card ${item.gradient}`}>
+                    <div
+                        key={item.title}
+                        className={`card stat-card ${item.gradient}`}
+                        onClick={() => navigate(item.path)}
+                        style={{ cursor: 'pointer' }}
+                    >
                         <i className={`fas ${item.icon} stat-bg-icon`} />
                         <div className="stat-header">
                             <div className="flex-column">

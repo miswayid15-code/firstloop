@@ -534,14 +534,25 @@ export default function ViewBranch() {
                                 </p>
                             </div>
 
-                            <button
-                                type="button"
-                                className="btn btn-secondary"
-                                onClick={() => navigate(merchantId ? `/view-merchant/${merchantId}` : '/merchants')}
-                            >
-                                <i className="fas fa-arrow-left" />
-                                {' '}Back to Merchant
-                            </button>
+                            <div style={{ display: 'flex', gap: 12 }}>
+                                <button
+                                    type="button"
+                                    className="btn btn-primary"
+                                    onClick={() => navigate(`/branch-report/${id}`)}
+                                >
+                                    <i className="fas fa-chart-line" />
+                                    {' '}Branch Report
+                                </button>
+
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary"
+                                    onClick={() => navigate(merchantId ? `/view-merchant/${merchantId}` : '/merchants')}
+                                >
+                                    <i className="fas fa-arrow-left" />
+                                    {' '}Back to Merchant
+                                </button>
+                            </div>
                         </div>
                     </>
                 )}

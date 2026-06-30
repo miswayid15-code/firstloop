@@ -3791,3 +3791,198 @@ exports.generate_rep_id = async (req, res) => {
     }
 };
 
+
+exports.branch_report = async (req, res) => {
+    try {
+
+        const branch_id = parseInt(req.params.id);
+        const { from_date, to_date } = req.query;
+
+        if (!branch_id) {
+            return res.json({
+                status: 0,
+                message: "Branch ID required"
+            });
+        }
+
+        const baseUrl = process.env.APP_URL;
+
+        const dateFilter = {};
+
+        if (from_date && to_date) {
+            dateFilter.created_at = {
+                [Op.between]: [
+                    new Date(`${from_date} 00:00:00`),
+                    new Date(`${to_date} 23:59:59`)
+                ]
+            };
+        } else if (from_date) {
+            dateFilter.created_at = {
+                [Op.gte]: new Date(`${from_date} 00:00:00`)
+            };
+        } else if (to_date) {
+            dateFilter.created_at = {
+                [Op.lte]: new Date(`${to_date} 23:59:59`)
+            };
+        }
+
+        // ===========================
+        // Coupon List
+        // ===========================
+        const coupons = await Coupon.findAll({
+            where: {
+                del_status: 0,
+                status: 1,
+                [Op.and]: Sequelize.literal(`${branch_id} = ANY("branch_ids")`),
+                ...dateFilter
+            },
+            attributes: [
+                "id",
+                "merchant_id",
+                "code",
+                "percentage",
+                "min_amount",
+                "usage_limit",
+                "start_date",
+                "end_date",
+                "banner_image",
+                "created_at"
+            ],
+            order: [["id", "DESC"]]
+        });
+
+        const couponData = coupons.map(item => {
+
+            const coupon = item.toJSON();
+
+            if (coupon.banner_image) {
+                coupon.banner_image =
+                    `${baseUrl}/${coupon.banner_image.replace(/\\/g, "/")}`;
+            }
+
+            coupon.is_expired =
+                coupon.end_date &&
+                new Date() > new Date(coupon.end_date)
+                    ? 1
+                    : 0;
+
+            return coupon;
+        });
+
+        const couponIds = coupons.map(c => c.id);
+
+        // ===========================
+        // Appointment List
+        // ===========================
+        const appointments = await Appointment.findAll({
+            where: {
+                br_id: branch_id,
+                ...dateFilter
+            },
+            attributes: [
+                "id",
+                "cus_id",
+                "br_id",
+                "br_name",
+                "appointment_date",
+                "slot",
+                "status",
+                "cancel_by",
+                "cancel_reason",
+                "approved_by",
+                "approved_by_id",
+                "created_at"
+            ],
+            order: [["appointment_date", "DESC"]]
+        });
+
+        // ===========================
+        // Applied Coupons
+        // ===========================
+        const appliedCoupons = await CouponApplied.findAll({
+            where: {
+                coupon_id: {
+                    [Op.in]: couponIds
+                },
+                ...dateFilter
+            },
+            order: [["id", "DESC"]]
+        });
+
+
+
+        // ===========================
+        // Summary Counts
+        // ===========================
+        const [
+            pendingAppointment,
+            approvedAppointment,
+            rejectedAppointment
+        ] = await Promise.all([
+
+            Appointment.count({
+                where: {
+                    br_id: branch_id,
+                    status: 0,
+                    ...dateFilter
+                }
+            }),
+
+            Appointment.count({
+                where: {
+                    br_id: branch_id,
+                    status: 1,
+                    ...dateFilter
+                }
+            }),
+
+            Appointment.count({
+                where: {
+                    br_id: branch_id,
+                    status: 2,
+                    ...dateFilter
+                }
+            })
+        ]);
+
+        const report = {
+
+            pending_appointment: pendingAppointment,
+
+            approved_appointment: approvedAppointment,
+
+            rejected_appointment: rejectedAppointment,
+
+            total_coupon: couponData.length,
+
+            active_coupon: couponData.filter(c => c.is_expired === 0).length,
+
+            expired_coupon: couponData.filter(c => c.is_expired === 1).length,
+
+            applied_coupon: appliedCoupons.length,
+
+          
+        };
+
+        return res.json({
+            status: 1,
+            report,
+            lists: {
+                appointments,
+                coupons: couponData,
+                applied_coupons: appliedCoupons,
+               
+            }
+        });
+
+    } catch (err) {
+
+        console.log("BRANCH REPORT ERROR:", err);
+
+        return res.json({
+            status: 0,
+            message: err.message
+        });
+    }
+};
+

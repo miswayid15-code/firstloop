@@ -83,8 +83,8 @@ const sendOtp = (otp, type, name = 'User') => {
                     src="${logoUrl}"
                     alt="FirstPass"
                     style="
-                        max-width:110px;
-                        max-height:110px;
+                        max-width:130px;
+                        max-height:130px;
                         display:block;
                         object-fit: contain;
                         ">

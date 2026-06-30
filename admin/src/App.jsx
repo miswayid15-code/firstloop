@@ -19,6 +19,7 @@ import Branches from './pages/Branches'
 import Receptionists from './pages/Receptionists'
 import ViewMerchant from './pages/ViewMerchant'
 import ViewBranch from './pages/ViewBranch'
+import ViewBranchReport from './pages/ViewBranchReport'
 import BranchChat from './pages/BranchChat'
 import CouponClaim from './pages/CouponClaim'
 import ProtectedRoute from './pages/ProtectedRoute'
@@ -73,6 +74,7 @@ function App() {
                 <Route path="edit-merchant/:id" element={<EditMerchant />} />
                 <Route path="view-merchant/:id" element={<ViewMerchant />} />
                 <Route path="view-branch/:id" element={<ViewBranch />} />
+                <Route path="branch-report/:id" element={<ViewBranchReport />} />
                 <Route path="branch-chat/:id" element={<BranchChat />} />
                 <Route path="branches" element={<Branches />} />
                 <Route path="receptionists" element={<Receptionists />} />

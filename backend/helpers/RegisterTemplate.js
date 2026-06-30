@@ -163,7 +163,7 @@ const RegisterTemplate = (type = 'merchant', name = 'User', status = 'inactive')
                 <img
                     src="${logoUrl}"
                     alt="FirstPass"
-                    style="max-width:110px;max-height:110px;display:block;object-fit:contain;"
+                    style="max-width:130px;max-height:130px;display:block;object-fit:contain;"
                 />
             </div>
 

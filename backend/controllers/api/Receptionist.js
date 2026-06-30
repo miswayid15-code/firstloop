@@ -488,6 +488,7 @@ exports.fetch_receptionist_by_id = async (req, res) => {
         const receptionist = await Receptionist.findOne({
             attributes: [
                 'id',
+                'rep_id',
                 'name',
                 'email',
                 'phone',
