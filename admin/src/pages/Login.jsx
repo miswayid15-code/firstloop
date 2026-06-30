@@ -112,16 +112,16 @@ export default function Login() {
                 src={logo}
                 alt="Logo"
                 style={{
-                  width: 32,
-                  height: 32,
-                  objectFit: "contain",
+                  width: 90,
+                  height: 90,
+                  // objectFit: "contain",
                 }}
               />
             </div>
 
-            <h1 className="login-title">
+            {/* <h1 className="login-title">
               First Pass
-            </h1>
+            </h1> */}
 
             <p className="login-subtitle">
               Enterprise Merchant & Campaign Platform
