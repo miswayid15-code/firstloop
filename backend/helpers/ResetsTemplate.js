@@ -1,174 +1,215 @@
 // helpers/ResetsTemplate.js
 
-const ResetsTemplate = (type = 'merchant') => {
+const ResetsTemplate = (type = 'merchant', name = 'User') => {
 
     const currentYear = new Date().getFullYear();
+    const appUrl = (process.env.APP_URL || '').replace(/\/$/, '');
+    const logoUrl = `${appUrl}/uploads/public/firstpass.png`;
 
     const config = type === 'merchant'
         ? {
             title: 'Merchant Password Reset',
-            topBg: 'linear-gradient(135deg,#ff4f8b 0%,#ff7eb3 100%)',
-            primary: '#ff4f8b',
-            light: '#fff4f8'
+            headerBg: 'radial-gradient(circle at top right, #fff5f5 0%, #ffffff 70%)',
+            gradientBar: 'linear-gradient(90deg, #ff4d4d 0%, #c1121f 50%, #780000 100%)',
+            iconGradient: 'linear-gradient(135deg, #c1121f, #780000)',
+            primary: '#c1121f',
+            dark: '#780000',
+            light: '#fffcfc',
+            border: '#fce8e8',
+            shadowColor: 'rgba(193, 18, 31, 0.2)',
+            tagline: 'Manage Offers • Track Performance • Grow Your Brand • Real-Time Analytics',
         }
         : {
             title: 'Customer Password Reset',
-            topBg: 'linear-gradient(135deg,#ff5fa2 0%,#ff9ac2 100%)',
-            primary: '#ff5fa2',
-            light: '#fff4f8'
+            headerBg: 'radial-gradient(circle at top right, #f5f5ff 0%, #ffffff 70%)',
+            gradientBar: 'linear-gradient(90deg, #667eea 0%, #4f46e5 50%, #3730a3 100%)',
+            iconGradient: 'linear-gradient(135deg, #4f46e5, #3730a3)',
+            primary: '#4f46e5',
+            dark: '#3730a3',
+            light: '#fafaff',
+            border: '#e8e8ff',
+            shadowColor: 'rgba(79, 70, 229, 0.2)',
+            tagline: 'Exclusive Deals • Smart Coupons • Trusted Offers • Global Experience',
         };
 
     return `
+<div style="margin:0;padding:0;background:#f6f8fb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
 
-    <div style="
-        margin:0;
-        padding:50px 20px;
-        background:#f3f5fb;
-        font-family:Arial,sans-serif;
-    ">
+    <div style="max-width:600px;margin:40px auto;background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 25px 70px rgba(0,0,0,0.07);border:1px solid #eef2f5;">
 
+        <!-- Top Accent Bar -->
+        <div style="height:6px;background:${config.gradientBar};"></div>
+
+        <!-- Header -->
         <div style="
-            max-width:620px;
-            margin:auto;
-            background:#ffffff;
-            border-radius:24px;
-            overflow:hidden;
-            box-shadow:0 15px 40px rgba(0,0,0,0.08);
-        ">
-
-            <!-- TOP HEADER -->
-            <div style="
-                background:${config.topBg};
-                padding:50px 30px;
+                padding:60px 40px 45px;
                 text-align:center;
-                position:relative;
-            ">
+                background:${config.headerBg};
+                border-bottom:1px solid #f0f4f8;
+                ">
+
+            <div style="
+                    width:130px;
+                    height:130px;
+                    margin:0 auto 28px;
+                    background:#ffffff;
+                    border-radius:32px;
+                    box-shadow:0 20px 40px ${config.shadowColor};
+                    display:flex;
+                    align-items:center;
+                    justify-content:center;
+                    border:1px solid ${config.border};
+                    ">
+
+                <img
+                    src="${logoUrl}"
+                    alt="FirstPass"
+                    style="
+                        max-width:110px;
+                        max-height:110px;
+                        display:block;
+                        object-fit: contain;
+                        ">
+            </div>
+
+            <h1 style="
+                    margin:0;
+                    color:#1a1a1a;
+                    font-size:32px;
+                    font-weight:800;
+                    letter-spacing:-0.8px;
+                    line-height: 1.2;
+                    ">
+                Password Updated
+            </h1>
+
+            <p style="
+                    margin:12px 0 0;
+                    color:#626d7a;
+                    font-size:16px;
+                    line-height:1.6;
+                    font-weight: 500;
+                    ">
+                Your account credentials have been successfully reset.
+            </p>
+
+        </div>
+
+        <!-- Body -->
+        <div style="padding:45px 50px;color:#333333;background:#ffffff;">
+
+            <p style="margin:0;color:#1a1a1a;font-size:16px;font-weight:600;">
+                Hello <strong>${name}</strong>,
+            </p>
+
+            <p style="margin:16px 0 32px;color:#4a5568;font-size:15.5px;line-height:1.8;">
+                Your <strong>FirstPass</strong> account password has been reset successfully. You can now log in securely using your new credentials.
+            </p>
+
+            <!-- Success Card -->
+            <div style="
+                    background:linear-gradient(135deg, #ffffff 0%, #fffbfb 100%);
+                    border:1px solid ${config.border};
+                    border-radius:20px;
+                    padding:35px 24px;
+                    text-align:center;
+                    box-shadow:0 15px 35px rgba(0,0,0,0.03);
+                    margin-bottom:32px;
+                    ">
 
                 <div style="
-                    width:80px;
-                    height:80px;
-                    background:rgba(255,255,255,0.18);
-                    border-radius:50%;
-                    margin:auto;
-                    line-height:80px;
-                    font-size:38px;
-                    color:#ffffff;
-                    font-weight:bold;
-                    backdrop-filter:blur(10px);
-                ">
+                        width:56px;
+                        height:56px;
+                        margin:0 auto 20px;
+                        border-radius:18px;
+                        background:${config.iconGradient};
+                        color:#ffffff;
+                        font-size:22px;
+                        line-height:56px;
+                        font-weight: bold;
+                        box-shadow: 0 10px 22px ${config.shadowColor};
+                        ">
                     ✓
                 </div>
 
-                <h1 style="
-                    margin:25px 0 10px;
-                    color:#ffffff;
-                    font-size:32px;
-                    font-weight:700;
-                    letter-spacing:0.5px;
-                ">
-                    Password Reset Successful
-                </h1>
-
-                <p style="
-                    margin:0;
-                    color:rgba(255,255,255,0.92);
-                    font-size:16px;
-                ">
-                    ${config.title}
-                </p>
-
-            </div>
-
-            <!-- CONTENT -->
-            <div style="
-                padding:45px 35px;
-                color:#2d3748;
-                line-height:1.8;
-            ">
-
-                <h2 style="
-                    margin-top:0;
-                    font-size:24px;
-                    color:${config.primary};
-                    font-weight:700;
-                ">
-                    Hello 👋
-                </h2>
-
-                <p style="
-                    font-size:16px;
-                    color:#4a5568;
-                    margin-bottom:25px;
-                ">
-                    Your account password has been reset successfully.
-                    You can now login using your new password.
-                </p>
-
                 <div style="
-                    background:${config.light};
-                    border:1px solid rgba(255,79,139,0.12);
-                    border-left:5px solid ${config.primary};
-                    padding:22px;
-                    border-radius:14px;
-                    margin:30px 0;
-                ">
-
-                    <h3 style="
-                        margin-top:0;
-                        margin-bottom:12px;
                         color:${config.primary};
-                        font-size:18px;
-                    ">
-                        Security Notice
-                    </h3>
-
-                    <p style="
-                        margin:0;
-                        font-size:15px;
-                        color:#555;
-                        line-height:1.7;
-                    ">
-                        If you did not perform this password reset,
-                        please contact our support team immediately
-                        and secure your account.
-                    </p>
-
+                        font-size:12px;
+                        font-weight:800;
+                        letter-spacing:2px;
+                        text-transform:uppercase;
+                        margin-bottom:14px;
+                        ">
+                    Security Update Complete
                 </div>
 
+                <h2 style="margin:0;color:#1a1a1a;font-size:24px;font-weight:800;letter-spacing:-0.5px;">
+                    ${config.title}
+                </h2>
 
+                <p style="margin:16px 0 0;color:#718096;font-size:14.5px;line-height:1.7;font-weight:500;">
+                    Your security profile has been changed. Please use your updated, unique password configuration for future app interactions.
+                </p>
 
             </div>
 
-            <!-- FOOTER -->
+            <!-- Security Notice -->
             <div style="
-                background:#fafbff;
-                padding:25px;
-                text-align:center;
-                border-top:1px solid #edf2f7;
-            ">
+                    background:${config.light};
+                    border:1px solid ${config.border};
+                    border-left:4px solid ${config.primary};
+                    border-radius:16px;
+                    padding:24px;
+                    margin-bottom:32px;
+                    ">
 
-                <p style="
-                    margin:0 0 8px;
-                    color:#718096;
-                    font-size:14px;
-                ">
-                    This is an automated email. Please do not reply.
-                </p>
+                <div style="font-size:20px;margin-bottom:12px;">
+                    🛡️
+                </div>
 
-                <p style="
-                    margin:0;
-                    color:#a0aec0;
-                    font-size:13px;
-                ">
-                    © ${currentYear}  FirstPass. All rights reserved.
+                <h3 style="margin:0 0 8px;font-size:16px;font-weight:700;color:#1a1a1a;">
+                    Security Notice
+                </h3>
+
+                <p style="margin:0;color:#4a5568;line-height:1.7;font-size:14.5px;">
+                    If you did not request this password modification, please contact our support team immediately and secure your account.
                 </p>
 
             </div>
 
+            <!-- Divider Line -->
+            <div style="height:1px;background:#f0f4f8;margin:32px 0;"></div>
+
+            <p style="margin:0;text-align:center;color:#718096;font-size:14px;line-height:1.8;font-weight:500;">
+                FirstPass helps protect your account while giving you access to exclusive offers, premium deals, and everyday savings.
+            </p>
+
+        </div>
+
+        <!-- Tagline Strip -->
+        <div style="background:linear-gradient(135deg, #0f1115 0%, #1a1d24 100%);padding:22px 30px;text-align:center;border-bottom: 1px solid #242933;">
+            <p style="margin:0;color:#f7fafc;font-size:13px;line-height:1.6;letter-spacing: 0.5px;font-weight: 500;">
+                ${config.tagline}
+            </p>
+        </div>
+
+        <!-- Footer -->
+        <div style="background:#fafbfc;padding:35px 40px;text-align:center;">
+            <p style="margin:0 0 12px;color:#4a5568;font-size:14px;font-weight: 500;">
+                Thank you for choosing FirstPass.
+            </p>
+            <p style="margin:0;color:#a0aec0;font-size:12px;line-height:1.7;">
+                This is an automated email to confirm your password reset. Please do not reply directly to this inbox.
+            </p>
+            <div style="margin:20px auto 0; width:40px; height:2px; background:#e2e8f0; border-radius:2px;"></div>
+            <p style="margin:20px 0 0;color:#a0aec0;font-size:12px;letter-spacing: 0.2px;">
+                © ${currentYear} FirstPass. All Rights Reserved.
+            </p>
         </div>
 
     </div>
 
+</div>
     `;
 };
 

@@ -271,7 +271,8 @@ exports.createOrUpdateMerchant = async (req, res) => {
 
                     RegisterTemplate(
                         'merchant',
-                        merchant.name
+                        merchant.name,
+                        'active'
                     )
 
                 );

@@ -22,7 +22,9 @@ const jwt = require('jsonwebtoken');
 
 const sendMail = require('../../helpers/sendMail');
 const RegisterTemplate = require('../../helpers/RegisterTemplate');
-const ResetsTemplate = require('../../helpers/ResetsTemplate');
+const { sendOtp } = require('../../helpers/sendOtp');
+const  ResetsTemplate  = require('../../helpers/ResetsTemplate');
+
 const { otpTemplate } = require('../../helpers/mailTemplate');
 const { Op } = require('sequelize');
 const axios = require("axios");
@@ -245,7 +247,7 @@ exports.register = async (req, res) => {
             await sendMail(
                 email,
                 'Customer Registration Successful',
-                RegisterTemplate('customer', customer.name)
+                RegisterTemplate('customer', customer.name, 'active')
             );
 
             // console.log("REGISTRATION MAIL SENT");
@@ -3214,11 +3216,13 @@ exports.send_test = async (req, res) => {
 }
 exports.send_tests = async (req, res) => {
     try {
+
         await sendMail(
             'minsway01@gmail.com',
-            'Customer Registration Successful',
-            RegisterTemplate('merchant', 'rahulraj','1')
+            'Password Reset Successful',
+            ResetsTemplate('merchant')
         );
+
     }
     catch (err) {
         console.log(err)

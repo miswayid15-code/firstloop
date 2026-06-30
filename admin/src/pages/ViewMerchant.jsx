@@ -299,6 +299,8 @@ export default function ViewMerchant() {
 
     const [receptionistForm, setReceptionistForm] = useState({
 
+        rep_id: '',
+
         name: '',
 
         email: '',
@@ -319,7 +321,11 @@ export default function ViewMerchant() {
 
     const [addingReceptionist, setAddingReceptionist] = useState(false)
 
+    const [generatingId, setGeneratingId] = useState(false)
+
     const [addReceptionistForm, setAddReceptionistForm] = useState({
+
+        rep_id: '',
 
         name: '',
 
@@ -409,7 +415,7 @@ export default function ViewMerchant() {
 
         try {
             const response = await API.post('admin/receptionist/list', { merchant_id: id })
-            console.log('Receptionists Response:', response.data)
+            // console.log('Receptionists Response:', response.data)
             const list = Array.isArray(response.data?.data)
                 ? response.data.data
                 : []
@@ -435,7 +441,7 @@ export default function ViewMerchant() {
 
             )
 
-            console.log("merchant data",response.data)
+            // console.log("merchant data",response.data)
 
             if (isSuccessResponse(response.data)) {
 
@@ -1962,6 +1968,8 @@ export default function ViewMerchant() {
 
         setReceptionistForm({
 
+            rep_id: '',
+
             name: '',
 
             email: '',
@@ -1985,6 +1993,8 @@ export default function ViewMerchant() {
         if (!selectedReceptionist) return;
 
         setReceptionistForm({
+
+            rep_id: selectedReceptionist.rep_id || '',
 
             name: selectedReceptionist.name || '',
 
@@ -2190,6 +2200,8 @@ export default function ViewMerchant() {
 
         setAddReceptionistForm({
 
+            rep_id: '',
+
             name: '',
 
             email: '',
@@ -2208,7 +2220,63 @@ export default function ViewMerchant() {
 
     }
 
+    const generateReceptionistId = async () => {
+
+        try {
+
+            setGeneratingId(true)
+
+            const response = await API.post('admin/receptionists-id-generate', { id: id })
+
+            const data = response.data || {}
+
+            if (isSuccessResponse(data)) {
+
+                toast.success(data.message || 'Receptionist ID generated!')
+
+                setAddReceptionistForm((prev) => ({
+
+                    ...prev,
+
+                    rep_id: data.data?.rep_id || data.data || ''
+
+                }))
+
+            } else {
+
+                toast.error(data.message || 'Failed to generate ID')
+
+            }
+
+        } catch (error) {
+
+            toast.error('Failed to generate receptionist ID')
+
+            console.error('Error generating receptionist ID:', error)
+
+        } finally {
+
+            setGeneratingId(false)
+
+        }
+
+    }
+
+    const openAddReceptionistModal = () => {
+
+        setShowAddReceptionistModal(true)
+
+    }
+
     const handleAddReceptionist = async () => {
+
+        if (!addReceptionistForm.rep_id.trim()) {
+
+            toast.error('Receptionist ID is required')
+
+            return
+
+        }
 
         if (!addReceptionistForm.name.trim()) {
 
@@ -2250,6 +2318,8 @@ export default function ViewMerchant() {
 
             formData.append('mer_id', id)
 
+            formData.append('rep_id', addReceptionistForm.rep_id)
+
             formData.append('name', addReceptionistForm.name)
 
             formData.append('email', addReceptionistForm.email)
@@ -2288,6 +2358,8 @@ export default function ViewMerchant() {
                     const newRec = data.data || {
 
                         id: data.data?.id || Math.floor(Math.random() * 10000),
+
+                        rep_id: addReceptionistForm.rep_id,
 
                         name: addReceptionistForm.name,
 
@@ -3513,7 +3585,7 @@ export default function ViewMerchant() {
 
                 <button
                     className="btn btn-primary"
-                    onClick={() => setShowAddReceptionistModal(true)}
+                    onClick={openAddReceptionistModal}
                 >
                     <i className="fas fa-plus"></i>
                     {' '}Add Receptionist
@@ -3730,6 +3802,19 @@ export default function ViewMerchant() {
                                         <input
                                             type="text"
                                             className="form-control"
+                                            value={receptionistForm.rep_id || ''}
+                                            readOnly
+                                            disabled
+                                            placeholder=" "
+                                            style={{ background: 'var(--bg-hover)', cursor: 'not-allowed' }}
+                                        />
+                                        <label className="form-label">Receptionist ID</label>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <input
+                                            type="text"
+                                            className="form-control"
                                             value={receptionistForm.name}
                                             onChange={(e) => setReceptionistForm({ ...receptionistForm, name: e.target.value })}
                                             placeholder=" "
@@ -3817,6 +3902,16 @@ export default function ViewMerchant() {
                                     </div>
 
                                     <div className="merchant-details-grid" style={{ marginBottom: 20 }}>
+                                        <div>
+                                            <small className="merchant-sub-label">
+                                                Receptionist ID
+                                            </small>
+
+                                            <p className="merchant-subtext">
+                                                {selectedReceptionist.rep_id || '-'}
+                                            </p>
+                                        </div>
+
                                         <div>
                                             <small className="merchant-sub-label">
                                                 Email
@@ -3955,6 +4050,34 @@ export default function ViewMerchant() {
                                             hidden
                                         />
                                     </label>
+                                </div>
+
+                                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                                    <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            value={addReceptionistForm.rep_id}
+                                            onChange={(e) => setAddReceptionistForm({ ...addReceptionistForm, rep_id: e.target.value })}
+                                            placeholder=" "
+                                            required
+                                            autoComplete="off"
+                                        />
+                                        <label className="form-label">Receptionist ID</label>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        className="btn btn-secondary"
+                                        onClick={generateReceptionistId}
+                                        disabled={generatingId}
+                                        style={{ height: '42px', padding: '0 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, borderRadius: '8px', fontSize: '0.875rem' }}
+                                    >
+                                        {generatingId ? (
+                                            <i className="fas fa-spinner fa-spin" />
+                                        ) : (
+                                            'Generate'
+                                        )}
+                                    </button>
                                 </div>
 
                                 <div className="form-group">

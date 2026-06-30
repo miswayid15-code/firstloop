@@ -280,7 +280,7 @@ exports.register = async (req, res) => {
             await sendMail(
                 customer.email,
                 'Customer Registration Successful',
-                RegisterTemplate('customer', customer.name)
+                RegisterTemplate('customer', customer.name,'active')
             );
 
         } catch (mailErr) {
