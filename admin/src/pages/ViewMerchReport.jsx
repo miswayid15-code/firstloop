@@ -1006,7 +1006,14 @@ export default function ViewMerchReport() {
                                 </div>
                             </div>
 
-                            <div className="modal-footer" style={{ background: 'var(--bg-primary)', padding: '12px 20px', display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid rgba(0,0,0,0.03)' }}>
+                            <div className="modal-footer" style={{ background: 'var(--bg-primary)', padding: '12px 20px', display: 'flex', justifyContent: 'flex-end', gap: '10px', borderTop: '1px solid rgba(0,0,0,0.03)' }}>
+                                <button 
+                                    className="btn btn-primary" 
+                                    onClick={() => navigate(`/branch-report/${activePieBranch.branch_id}`)} 
+                                    style={{ padding: '8px 16px', fontSize: '0.82rem', height: 36 }}
+                                >
+                                    <i className="fas fa-chart-line" /> View Branch Report
+                                </button>
                                 <button className="btn btn-secondary" onClick={() => setActivePieBranchId(null)} style={{ padding: '8px 16px', fontSize: '0.82rem', height: 36 }}>
                                     Close Details
                                 </button>

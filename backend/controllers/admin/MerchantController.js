@@ -1,4 +1,4 @@
-const { Merchant, Coupon, RefreshToken, Branch, BranchTiming, Receptionist, MerchantFp, Category, BranchImage, MenuImage, Appointment, CouponApplied, Customer } = require('../../models');
+const { Merchant, Coupon, RefreshToken, Branch, BranchTiming, Receptionist, MerchantFp, Category, BranchImage, MenuImage, Appointment, CouponApplied, Customer, sequelize } = require('../../models');
 const bcrypt = require('bcryptjs');
 const { parsePhoneNumber } = require('libphonenumber-js');
 const jwt = require('jsonwebtoken');
@@ -440,7 +440,7 @@ exports.update_category = async (req, res) => {
     try {
 
         const { id, cat_id } = req.body;
-
+        console.log("Request body", req.body);
         if (!id || !cat_id) {
             return res.json({
                 status: 0,
@@ -454,7 +454,7 @@ exports.update_category = async (req, res) => {
                 del_status: 0
             }
         });
-
+        console.log("Merchant:", merchant);
         if (!merchant) {
             return res.json({
                 status: 0,
@@ -479,7 +479,7 @@ exports.update_category = async (req, res) => {
 
         await merchant.update({
             cat_id: category.id,
-            bus_cat: category.name
+
         });
 
         return res.json({
@@ -3796,7 +3796,8 @@ exports.branch_report = async (req, res) => {
     try {
 
         const branch_id = parseInt(req.params.id);
-        const { from_date, to_date } = req.query;
+        const from_date = req.query.from_date || req.query.fromdate;
+        const to_date = req.query.to_date || req.query.end_date;
 
         if (!branch_id) {
             return res.json({
@@ -3862,7 +3863,7 @@ exports.branch_report = async (req, res) => {
 
             coupon.is_expired =
                 coupon.end_date &&
-                new Date() > new Date(coupon.end_date)
+                    new Date() > new Date(coupon.end_date)
                     ? 1
                     : 0;
 
@@ -3879,6 +3880,12 @@ exports.branch_report = async (req, res) => {
                 br_id: branch_id,
                 ...dateFilter
             },
+            include: [
+                {
+                    model: Customer,
+                    attributes: ["id", "name"],
+                }
+            ],
             attributes: [
                 "id",
                 "cus_id",
@@ -3906,6 +3913,12 @@ exports.branch_report = async (req, res) => {
                 },
                 ...dateFilter
             },
+            include: [
+                {
+                    model: Customer,
+                    attributes: ["id", "name"],
+                }
+            ],
             order: [["id", "DESC"]]
         });
 
@@ -3961,17 +3974,102 @@ exports.branch_report = async (req, res) => {
 
             applied_coupon: appliedCoupons.length,
 
-          
+
+        };
+
+        // ===========================
+        // Graph Data Queries
+        // ===========================
+        const couponAppliedGraph = await CouponApplied.findAll({
+            where: {
+                coupon_id: { [Op.in]: couponIds },
+                ...dateFilter
+            },
+            attributes: [
+                [sequelize.fn("DATE", sequelize.col("CouponApplied.created_at")), "date"],
+                [sequelize.fn("COUNT", sequelize.col("CouponApplied.id")), "count"],
+            ],
+            group: [sequelize.fn("DATE", sequelize.col("CouponApplied.created_at"))],
+            order: [[sequelize.fn("DATE", sequelize.col("CouponApplied.created_at")), "ASC"]],
+            raw: true,
+        });
+
+        const appointmentGraph = await Appointment.findAll({
+            where: {
+                br_id: branch_id,
+                ...dateFilter
+            },
+            attributes: [
+                [sequelize.fn("DATE", sequelize.col("Appointment.created_at")), "date"],
+                [sequelize.fn("COUNT", sequelize.col("Appointment.id")), "count"],
+            ],
+            group: [sequelize.fn("DATE", sequelize.col("Appointment.created_at"))],
+            order: [[sequelize.fn("DATE", sequelize.col("Appointment.created_at")), "ASC"]],
+            raw: true,
+        });
+
+        const getDatesInRange = (start, end, graphData) => {
+            if (!start && !end) {
+                const uniqueDates = new Set();
+                graphData.forEach(g => {
+                    if (g.date) uniqueDates.add(g.date);
+                });
+                const sorted = Array.from(uniqueDates).sort();
+                if (sorted.length > 1) return sorted;
+
+                // Default last 7 days
+                const dates = [];
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                for (let i = 6; i >= 0; i--) {
+                    const d = new Date(today);
+                    d.setDate(today.getDate() - i);
+                    const yr = d.getFullYear();
+                    const mo = String(d.getMonth() + 1).padStart(2, '0');
+                    const dy = String(d.getDate()).padStart(2, '0');
+                    dates.push(`${yr}-${mo}-${dy}`);
+                }
+                return dates;
+            }
+
+            const dates = [];
+            const current = new Date(start);
+            const stop = new Date(end);
+            while (current <= stop) {
+                const yr = current.getFullYear();
+                const mo = String(current.getMonth() + 1).padStart(2, '0');
+                const dy = String(current.getDate()).padStart(2, '0');
+                dates.push(`${yr}-${mo}-${dy}`);
+                current.setDate(current.getDate() + 1);
+            }
+            return dates;
+        };
+
+        const allDates = getDatesInRange(from_date, to_date, [...couponAppliedGraph, ...appointmentGraph]);
+
+        const coupMap = Object.fromEntries(couponAppliedGraph.map(r => [r.date, parseInt(r.count)]));
+        const apptMap = Object.fromEntries(appointmentGraph.map(r => [r.date, parseInt(r.count)]));
+
+        const graphs = {
+            coupon_applied_per_day: allDates.map(date => ({
+                date,
+                count: coupMap[date] || 0
+            })),
+            appointments_per_day: allDates.map(date => ({
+                date,
+                count: apptMap[date] || 0
+            }))
         };
 
         return res.json({
             status: 1,
             report,
+            graphs,
             lists: {
                 appointments,
                 coupons: couponData,
                 applied_coupons: appliedCoupons,
-               
+
             }
         });
 

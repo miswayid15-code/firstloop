@@ -93,7 +93,7 @@ const getReceptionistPhone = (receptionist) => {
     }
 
     return receptionist.country_code
-        ? `${receptionist.country_code}${receptionist.phone}`
+        ? `${receptionist.country_code} ${receptionist.phone}`
         : receptionist.phone
 }
 
@@ -441,7 +441,7 @@ export default function ViewMerchant() {
 
             )
 
-            // console.log("merchant data",response.data)
+            console.log("merchant data",response.data)
 
             if (isSuccessResponse(response.data)) {
 
@@ -509,11 +509,15 @@ export default function ViewMerchant() {
 
             const branchName = branch.name || ''
             const branchAddress = branch.address || ''
+            const receptionistNames = branch.Receptionists && branch.Receptionists.length > 0
+                ? branch.Receptionists.map(r => r.name || '').join(' ')
+                : ''
             const searchValue = search.toLowerCase()
 
             return (
                 branchName.toLowerCase().includes(searchValue) ||
-                branchAddress.toLowerCase().includes(searchValue)
+                branchAddress.toLowerCase().includes(searchValue) ||
+                receptionistNames.toLowerCase().includes(searchValue)
             )
 
         })
@@ -2466,6 +2470,7 @@ export default function ViewMerchant() {
             )
 
             const data = response.data || {}
+            console.log("Data",data)
 
             if (isSuccessResponse(data)) {
 
@@ -2473,7 +2478,15 @@ export default function ViewMerchant() {
                     ? {
                         ...prev,
                         cat_id: data.data?.cat_id?.toString() || selectedCategoryId,
-                        bus_cat: data.data?.bus_cat || data.data?.name || selectedCategory?.name || prev.bus_cat
+                        bus_cat: data.data?.bus_cat || data.data?.name || selectedCategory?.name || prev.bus_cat,
+                        Category: {
+                            ...prev.Category,
+                            name: selectedCategory?.name || prev.Category?.name
+                        },
+                        category: {
+                            ...prev.category,
+                            name: selectedCategory?.name || prev.category?.name
+                        }
                     }
                     : prev
                 )
@@ -2664,15 +2677,25 @@ export default function ViewMerchant() {
 
                     </div>
 
-                    <NavLink
-                        to="/merchants"
-                        className="btn btn-secondary"
-                    >
-                        <i className="fas fa-arrow-left"></i>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                        <button
+                            type="button"
+                            className="btn btn-primary"
+                            onClick={() => navigate(`/merchant-report/${id}`)}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                        >
+                            <i className="fas fa-chart-line"></i> View Report
+                        </button>
+                        <NavLink
+                            to="/merchants"
+                            className="btn btn-secondary"
+                        >
+                            <i className="fas fa-arrow-left"></i>
 
-                        {' '}Back to Merchants
+                            {' '}Back to Merchants
 
-                    </NavLink>
+                        </NavLink>
+                    </div>
 
                 </div>
 
@@ -2773,6 +2796,16 @@ export default function ViewMerchant() {
                                     </div>
 
                                     <div>
+                                        <small className="merchant-sub-label">
+                                            Service Provider Name
+                                        </small>
+
+                                        <p className="merchant-subtext">
+                                            {merchantData?.bus_cat || '-'}
+                                        </p>
+                                    </div>
+
+                                    <div>
                                         <div className="merchant-detail-label-row">
                                             <small className="merchant-sub-label">
                                                 Category
@@ -2842,7 +2875,7 @@ export default function ViewMerchant() {
                                             <p className="merchant-subtext merchant-category-view">
                                                 <i className="fas fa-tag" />
                                                 <span>
-                                                    {merchantData?.bus_cat || 'Not assigned'}
+                                                    {merchantData?.Category?.name || merchantData?.category?.name || 'Not assigned'}
                                                 </span>
                                             </p>
                                         )}
@@ -3476,6 +3509,18 @@ export default function ViewMerchant() {
                                                 onClick={() => navigate(`/view-branch/${branch.id}`)}
                                             >
                                                 <i className="fas fa-eye"></i>
+                                            </button>
+                                            <button
+                                                className="btn-icon"
+                                                title="Branch Report"
+                                                onClick={() => navigate(`/branch-report/${branch.id}`)}
+                                                style={{
+                                                    background: 'linear-gradient(135deg, rgba(59,130,246,0.12) 0%, rgba(59,130,246,0.06) 100%)',
+                                                    color: '#3b82f6',
+                                                    border: '1.5px solid rgba(59,130,246,0.22)'
+                                                }}
+                                            >
+                                                <i className="fas fa-chart-line"></i>
                                             </button>
                                             <button
                                                 className="btn-icon"

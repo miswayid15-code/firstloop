@@ -239,7 +239,7 @@ export default function ViewBranch() {
             }
         } catch (error) {
             setAppliedCoupons([])
-            console.error('Error fetching applied coupons:', error)
+            console.error('Error fetching redeemeed coupons:', error)
         } finally {
             setAppliedCouponsLoading(false)
         }
@@ -396,7 +396,7 @@ export default function ViewBranch() {
         setConfirmDialog({
             open: true,
             title: 'Delete Applied Coupons',
-            message: 'Delete all applied coupons for this branch? This action cannot be undone.',
+            message: 'Delete all redeemeed coupons for this branch? This action cannot be undone.',
             confirmText: 'Delete',
             cancelText: 'Cancel',
             onConfirm: () => performDeleteAppliedCoupons(couponId),
@@ -534,7 +534,7 @@ export default function ViewBranch() {
                                 </p>
                             </div>
 
-                            <div style={{ display: 'flex', gap: 12 }}>
+                            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                                 <button
                                     type="button"
                                     className="btn btn-primary"
@@ -543,7 +543,6 @@ export default function ViewBranch() {
                                     <i className="fas fa-chart-line" />
                                     {' '}Branch Report
                                 </button>
-
                                 <button
                                     type="button"
                                     className="btn btn-secondary"
@@ -1292,7 +1291,7 @@ export default function ViewBranch() {
                             ) : (
                                 <tr>
                                     <td colSpan="8" style={{ textAlign: 'center', padding: '28px 16px' }}>
-                                        No applied coupons found for this branch.
+                                        No redeemeed coupons found for this branch.
                                     </td>
                                 </tr>
                             )}

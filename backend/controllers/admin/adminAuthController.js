@@ -4,7 +4,7 @@ const { Sequelize } = require("sequelize");
 const { Op } = require('sequelize');
 const {
     RefreshToken,
-    admins, Merchant, Branch, Receptionist, Coupon, CouponApplied
+    admins, Merchant, Branch, Receptionist, Coupon, CouponApplied,Category
 } = require('../../models');
 
 exports.login = async (req, res) => {
@@ -464,6 +464,7 @@ exports.fetchmerchant = async (req, res) => {
                             attributes: [
                                 'id',
                                 'name',
+                                'country_code',
                                 'profile_image',
                             ]
 
@@ -471,7 +472,24 @@ exports.fetchmerchant = async (req, res) => {
 
                     ]
 
+                },
+                 {
+                    model:Category,
+                      required: false,
+                    where: {
+                                del_status: 0,
+                                status:1
+                            },
+                             attributes: [
+                                'id',
+                                'name',
+                           
+                            ]
+
+
+
                 }
+            
 
             ]
 
@@ -723,6 +741,7 @@ exports.fetchmerchant = async (req, res) => {
                 'name',
                 'email',
                 'phone',
+                'country_code',
                 'profile_image'
             ]
 
