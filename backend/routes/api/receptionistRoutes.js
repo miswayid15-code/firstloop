@@ -10,7 +10,7 @@ router.post('/receptionist/register', (req, res, next) => {
   req.uploadFolder = 'Receptionist';
   next();
 }, auth('merchant'),upload, controller.register);
-
+router.post('/coupon-rep-id', auth('merchant'),controller.generate_rep_id);
 router.get('/receptionist/details/:id', auth('merchant'), controller.fetch_receptionist_by_id);
 
 router.post('/receptionist/update', (req, res, next) => {
@@ -20,7 +20,8 @@ router.post('/receptionist/update', (req, res, next) => {
 
 router.post('/receptionist/login', controller.login);
 router.post('/receptionist/logout', auth('receptionist'), controller.logout);
-router.post('/receptionist/refreshAccessToken', auth('receptionist'), controller.refreshAccessToken);
+router.post('/receptionist/refreshAccessToken', controller.refreshAccessToken);
+
 router.get(
     '/receptionist/dashboard',
     auth('receptionist'),

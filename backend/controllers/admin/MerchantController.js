@@ -634,6 +634,7 @@ exports.receptionistsbyid = async (req, res) => {
             },
             attributes: [
                 'id',
+                'rep_id',
                 'name',
                 'email',
                 'country_code',
@@ -847,6 +848,7 @@ exports.receptionistsRegister = async (req, res) => {
     try {
 
         const {
+            rep_id,
             name,
             email,
             phone,
@@ -918,39 +920,52 @@ exports.receptionistsRegister = async (req, res) => {
 
         }
 
-        // Phone exists check
-        const phexists = await Receptionist.findOne({
-            where: {
-                country_code: callingCode,
-                phone: nationalNumber,
-                del_status: 0
-            }
-        });
-
-        if (phexists) {
-
-            return res.json({
-                status: 0,
-                message: "Phone already exists"
+        // Phone exists
+        if (nationalNumber && nationalNumber.trim() !== "") {
+            const phoneExists = await Receptionist.findOne({
+                where: { phone: nationalNumber.trim() }
             });
 
+            if (phoneExists) {
+                return res.json({
+                    status: 0,
+                    message: "Phone already exists"
+                });
+            }
         }
 
-        // Email exists check
-        const exists = await Receptionist.findOne({
-            where: {
-                email,
-                del_status: 0
-            }
-        });
-
-        if (exists) {
-
-            return res.json({
-                status: 0,
-                message: "Email already exists"
+        // Email exists
+        if (email && email.trim() !== "") {
+            const emailExists = await Receptionist.findOne({
+                where: { email: email.trim() }
             });
 
+            if (emailExists) {
+                return res.json({
+                    status: 0,
+                    message: "Email already exists"
+                });
+            }
+        }
+
+
+        if (!rep_id || rep_id.trim() === "") {
+            return res.json({
+                status: 0,
+                message: "Reception ID is required"
+            });
+        }
+
+        // Reception ID already exists
+        const repIdExists = await Receptionist.findOne({
+            where: { rep_id: rep_id.trim() }
+        });
+
+        if (repIdExists) {
+            return res.json({
+                status: 0,
+                message: "Reception ID already exists"
+            });
         }
 
         // Profile image upload
@@ -977,11 +992,12 @@ exports.receptionistsRegister = async (req, res) => {
         const receptionist = await Receptionist.create({
 
             merchant_id: merchant.id,
+            rep_id,
 
             branch_id: null,
 
             name,
-            email,
+            email: email?.trim() || null,
 
             country_code: callingCode,
             phone: nationalNumber,
@@ -3135,6 +3151,7 @@ exports.receptionist_list = async (req, res) => {
 
             attributes: [
                 'id',
+                'rep_id',
                 'name',
                 'email',
                 'phone',
@@ -3708,5 +3725,68 @@ exports.generate_coupon = async (req, res) => {
         });
     }
 };
+exports.generate_rep_id = async (req, res) => {
+    try {
 
+        const { id } = req.body;
+
+        const merchant = await Merchant.findOne({
+            where: {
+                id,
+                del_status: 0
+            },
+            attributes: ["name", "bus_name"]
+        });
+
+
+        if (!merchant) {
+            return res.json({
+                status: 0,
+                message: "Merchant not found"
+            });
+        }
+
+        const merchantName = merchant.bus_name || merchant.name || "MERCHANT";
+
+        // Create initials from merchant name
+        const shortName = merchantName
+            .trim()
+            .split(/\s+/)
+            .map(word => word.charAt(0))
+            .join("")
+            .toUpperCase();
+
+        let repId = "";
+        let exists;
+
+        do {
+            repId = `REP-${shortName}${Math.floor(1000 + Math.random() * 9000)}`;
+
+            exists = await Receptionist.findOne({
+                where: {
+                    rep_id: repId
+                }
+            });
+
+        } while (exists);
+
+        return res.json({
+            status: 1,
+            message: "Reception ID generated successfully",
+            data: {
+                rep_id: repId
+            }
+        });
+
+    } catch (err) {
+
+        console.error("RECEPTION ID GENERATE ERROR:", err);
+
+        return res.json({
+            status: 0,
+            message: err.message
+        });
+
+    }
+};
 

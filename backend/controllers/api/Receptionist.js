@@ -10,7 +10,8 @@ exports.register = async (req, res) => {
 
     try {
 
-        const { name, email, phone, password, branch_id, country_code } = req.body;
+        const { name, email, rep_id, phone, password, branch_id, country_code } = req.body;
+        console.log("Body", req.body)
 
         // merchant check
         const merchant = await Merchant.findByPk(req.user.id);
@@ -70,9 +71,9 @@ exports.register = async (req, res) => {
             phoneNumber =
                 num.number;
 
-            console.log("CALLING CODE:", callingCode);
-            console.log("NATIONAL NUMBER:", nationalNumber);
-            console.log("INTERNATIONAL NUMBER:", phoneNumber);
+            // console.log("CALLING CODE:", callingCode);
+            // console.log("NATIONAL NUMBER:", nationalNumber);
+            // console.log("INTERNATIONAL NUMBER:", phoneNumber);
 
         } catch (err) {
 
@@ -96,33 +97,54 @@ exports.register = async (req, res) => {
 
         }
 
-        // phone exists
-        const phexists = await Receptionist.findOne({
-            where: { phone: nationalNumber  }
-        });
-
-        if (phexists) {
-
-            return res.json({
-                status: 0,
-                message: "Phone already exists"
+        // Phone exists
+        if (nationalNumber && nationalNumber.trim() !== "") {
+            const phoneExists = await Receptionist.findOne({
+                where: { phone: nationalNumber.trim() }
             });
 
+            if (phoneExists) {
+                return res.json({
+                    status: 0,
+                    message: "Phone already exists"
+                });
+            }
         }
 
-        // email exists
-        const exists = await Receptionist.findOne({
-            where: { email }
-        });
-
-        if (exists) {
-
-            return res.json({
-                status: 0,
-                message: "Email already exists"
+        // Email exists
+        if (email && email.trim() !== "") {
+            const emailExists = await Receptionist.findOne({
+                where: { email: email.trim() }
             });
 
+            if (emailExists) {
+                return res.json({
+                    status: 0,
+                    message: "Email already exists"
+                });
+            }
         }
+
+        // Reception ID is required
+        if (!rep_id || rep_id.trim() === "") {
+            return res.json({
+                status: 0,
+                message: "Reception ID is required"
+            });
+        }
+
+        // Reception ID already exists
+        const repIdExists = await Receptionist.findOne({
+            where: { rep_id: rep_id.trim() }
+        });
+
+        if (repIdExists) {
+            return res.json({
+                status: 0,
+                message: "Reception ID already exists"
+            });
+        }
+
 
         // image upload
         let profileImage = '';
@@ -144,15 +166,29 @@ exports.register = async (req, res) => {
         // password hash
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        const emailValue = email?.trim() || null;
+
+        // console.log("EMAIL VALUE:", emailValue);
+        // console.log(typeof emailValue);
+        // Remove branch assignment from existing receptionist(s)
+        await Receptionist.update(
+            { branch_id: null },
+            {
+                where: {
+                    branch_id: branch_id
+                }
+            }
+        );
         // create receptionist
         const receptionist = await Receptionist.create({
 
             merchant_id: merchant.id,
             branch_id,
+            rep_id,
 
             name,
-            email,
-           phone: nationalNumber,
+            email: emailValue,
+            phone: nationalNumber,
             country_code,
             password: hashedPassword,
 
@@ -168,7 +204,7 @@ exports.register = async (req, res) => {
         const accessToken = jwt.sign(
             {
                 id: receptionist.id,
-                email: receptionist.email,
+                rep_id: receptionist.rep_id,
                 user_type: 'receptionist',
                 token_type: 'access'
             },
@@ -231,10 +267,10 @@ exports.register = async (req, res) => {
 
 exports.login = async (req, res) => {
     try {
-        const { email, password } = req.body;
-        const receptionist = await Receptionist.findOne({ where: { email } })
+        const { rep_id, password } = req.body;
+        const receptionist = await Receptionist.findOne({ where: { rep_id } })
         if (!receptionist) {
-            return res.json({ status: 0, message: "Invalid email or password" });
+            return res.json({ status: 0, message: "Invalid Reception Id" });
         }
         const match = await bcrypt.compare(password, receptionist.password);
         if (!match) {
@@ -259,7 +295,7 @@ exports.login = async (req, res) => {
         const accessToken = jwt.sign(
             {
                 id: receptionist.id,
-                email: receptionist.email,
+                rep_id: receptionist.rep_id,
                 user_type: 'receptionist',
                 token_type: 'access'
             },
@@ -308,6 +344,8 @@ exports.refreshAccessToken = async (req, res) => {
 
         const authHeader = req.headers.authorization;
 
+        // console.log("authHeader",authHeader)
+
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
             return res.json({
                 status: 0,
@@ -330,13 +368,25 @@ exports.refreshAccessToken = async (req, res) => {
 
         const decoded = jwt.verify(
             refresh_token,
-            process.env.JWT_SECRET
+            process.env.JWT_REFRESH_SECRET
         );
+
+        const receptionist = await Receptionist.findByPk(decoded.id);
+        console.log("receptionist",receptionist )
+
+        if (!receptionist) {
+            return res.json({
+                status: 0,
+                message: "Receptionist not found"
+            });
+        }
 
         const newAccessToken = jwt.sign(
             {
-                id: decoded.id,
-                user_type: stored.user_type
+                id: receptionist.id,
+                rep_id: receptionist.rep_id,
+                user_type: 'receptionist',
+                token_type: 'access'
             },
             process.env.JWT_SECRET,
             { expiresIn: '1d' }
@@ -356,7 +406,63 @@ exports.refreshAccessToken = async (req, res) => {
 
     }
 };
+exports.generate_rep_id = async (req, res) => {
+    try {
 
+        const merchantId = req.user.id;
+
+        const merchant = await Merchant.findByPk(merchantId);
+
+        if (!merchant) {
+            return res.json({
+                status: 0,
+                message: "Merchant not found"
+            });
+        }
+
+        const merchantName = merchant.bus_name || merchant.name || "MERCHANT";
+
+        // Create initials from merchant name
+        const shortName = merchantName
+            .trim()
+            .split(/\s+/)
+            .map(word => word.charAt(0))
+            .join("")
+            .toUpperCase();
+
+        let repId = "";
+        let exists;
+
+        do {
+            repId = `REP-${shortName}${Math.floor(1000 + Math.random() * 9000)}`;
+
+            exists = await Receptionist.findOne({
+                where: {
+                    rep_id: repId
+                }
+            });
+
+        } while (exists);
+
+        return res.json({
+            status: 1,
+            message: "Reception ID generated successfully",
+            data: {
+                rep_id: repId
+            }
+        });
+
+    } catch (err) {
+
+        console.error("RECEPTION ID GENERATE ERROR:", err);
+
+        return res.json({
+            status: 0,
+            message: err.message
+        });
+
+    }
+};
 // fetch receptionist details by ID for edit page
 exports.fetch_receptionist_by_id = async (req, res) => {
 
@@ -446,7 +552,7 @@ exports.fetch_receptionist_by_id = async (req, res) => {
 exports.update_receptionist = async (req, res) => {
 
     try {
-        console.log("Body",req.body)
+        // console.log("Body", req.body)
 
         const merchant_id = req.user.id;
         const receptionist_id = req.body.id || req.params.id;
@@ -521,7 +627,7 @@ exports.update_receptionist = async (req, res) => {
 
         // Check if phone already exists for other receptionist
         let phoneNumber = receptionist.phone;
-        
+
         if (phone && phone !== receptionist.phone) {
             try {
                 const cleanPhone = phone.replace(/\s+/g, '');
@@ -624,7 +730,7 @@ exports.update_receptionist = async (req, res) => {
         });
 
         const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
-        
+
         const data = updatedReceptionist.toJSON();
         data.profile_image = data.profile_image
             ? baseUrl + '/' + data.profile_image.replace(/\\/g, '/')
@@ -687,7 +793,7 @@ exports.dashboard = async (req, res) => {
 
                         {
                             model: Appointment,
-                             limit: 10,
+                            limit: 10,
 
                             required: false,
 
@@ -1007,7 +1113,7 @@ exports.fetch_appointment = async (req, res) => {
 
                         {
                             model: Appointment,
-                             limit: 10,
+                            limit: 10,
 
                             required: false,
 
@@ -1052,7 +1158,7 @@ exports.fetch_appointment = async (req, res) => {
             const branch = receptionist.Branch;
 
             // branch image
-          
+
 
             // appointment count
             branch.dataValues.appointment_count =

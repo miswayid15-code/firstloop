@@ -3217,7 +3217,7 @@ exports.send_tests = async (req, res) => {
         await sendMail(
             'minsway01@gmail.com',
             'Customer Registration Successful',
-            RegisterTemplate('customer', 'rahulraj')
+            RegisterTemplate('merchant', 'rahulraj','1')
         );
     }
     catch (err) {

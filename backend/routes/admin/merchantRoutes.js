@@ -100,5 +100,6 @@ router.post('/branch/delete-claim-coupon', auth('admin'),checkAdmin, controller.
 router.post('/branch/update-appointment', auth('admin'),checkAdmin, controller.update_appointment);
 router.get('/branch/details/:id', auth('admin'),checkAdmin, controller.branch_id);
 router.post('/coupon-generate', auth('admin'),checkAdmin,controller.generate_coupon);
+router.post('/receptionists-id-generate', auth('admin'),checkAdmin,controller.generate_rep_id);
 
 module.exports = router;
