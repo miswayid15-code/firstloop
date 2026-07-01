@@ -1,7 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
-import AppToaster from '../components/AppToaster.jsx'
 import API from '../api.js';
 
 const NEW_MERCHANT_DAYS = 7
@@ -246,8 +245,7 @@ const handleDeleteAccount = async (id) => {
     return (
 
         <>
-            <AppToaster />
-
+            
             <div className="card" style={{ marginBottom: 18 }}>
                 <div className="flex-between" style={{ gap: 12, flexWrap: 'wrap' }}>
                     <div>

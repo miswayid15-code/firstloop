@@ -12,6 +12,10 @@ export default function MerchantReports() {
     const [sortBy, setSortBy] = useState('highest_appointment')
     const [merchantSearch, setMerchantSearch] = useState('')
 
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1)
+    const [rowsPerPage, setRowsPerPage] = useState(10)
+
     const formatDateToDMY = (dateStr) => {
         if (!dateStr) return '';
         const [year, month, day] = dateStr.split('-');
@@ -49,6 +53,11 @@ export default function MerchantReports() {
         fetchMerchantReport()
     }, [fromDate, toDate, sortBy])
 
+    // Reset pagination to first page when search or filters change
+    useEffect(() => {
+        setCurrentPage(1)
+    }, [fromDate, toDate, sortBy, merchantSearch])
+
     const filteredMerchantRows = useMemo(
         () => merchantReportData.filter((row) =>
             (row.business_name || '').toLowerCase().includes(merchantSearch.toLowerCase()) ||
@@ -59,6 +68,13 @@ export default function MerchantReports() {
         ),
         [merchantReportData, merchantSearch]
     )
+
+    // Pagination calculations
+    const totalPages = Math.ceil(filteredMerchantRows.length / rowsPerPage)
+    const paginatedRows = useMemo(() => {
+        const start = (currentPage - 1) * rowsPerPage
+        return filteredMerchantRows.slice(start, start + rowsPerPage)
+    }, [filteredMerchantRows, currentPage, rowsPerPage])
 
     const totalMerchants = merchantReportData.length
     const activeMerchants = merchantReportData.filter(m => m.status === 1 || m.status === '1').length
@@ -74,6 +90,44 @@ export default function MerchantReports() {
     const handleExportClick = () => {
         setShowExport((prev) => !prev)
     }
+
+    const exportToCSV = (data, filename) => {
+        const headers = ["Business Name", "Owner Name", "Category", "Phone", "Email", "Status", "Total Branches", "Total Coupons", "Total Appointments", "Total Customers", "Total Receptionists", "Joined Date"];
+        const rows = data.map(row => [
+            `"${(row.business_name || '').replace(/"/g, '""')}"`,
+            `"${(row.owner_name || '').replace(/"/g, '""')}"`,
+            `"${(row.cat_name || '').replace(/"/g, '""')}"`,
+            `"${(row.phone || '').replace(/"/g, '""')}"`,
+            `"${(row.email || '').replace(/"/g, '""')}"`,
+            `"${row.status == 1 ? 'Active' : 'Inactive'}"`,
+            row.total_branches || 0,
+            row.total_coupons || 0,
+            row.total_appointments || 0,
+            row.total_customers || 0,
+            row.total_receptionists || 0,
+            `"${row.created_at ? new Date(row.created_at).toLocaleDateString() : ''}"`
+        ]);
+
+        const csvContent = [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", filename);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    const handleExport = (format) => {
+        setShowExport(false);
+        if (format === 'CSV' || format === 'Excel') {
+            const filename = format === 'CSV' ? 'merchant_performance_report.csv' : 'merchant_performance_report.csv';
+            exportToCSV(filteredMerchantRows, filename);
+        } else if (format === 'PDF') {
+            window.print();
+        }
+    };
 
     const resetFilters = () => {
         setFromDate('')
@@ -106,9 +160,9 @@ export default function MerchantReports() {
                                 <i className="fas fa-file-export"></i> Export Report <i className="fas fa-chevron-down" style={{ fontSize: '0.7rem', marginLeft: 4 }} />
                             </button>
                             <div className={`export-dropdown${showExport ? ' active' : ''}`} style={{ opacity: showExport ? 1 : 0, visibility: showExport ? 'visible' : 'hidden', transform: showExport ? 'translateY(0)' : 'translateY(10px)' }}>
-                                {['CSV', 'Excel', 'PDF', 'Print', 'Email', 'Schedule'].map((item) => (
-                                    <div key={item} className="export-dropdown-item" onClick={() => window.alert(`Exporting ${item}`)}>
-                                        <i className={`fas fa-file-${item === 'Print' ? 'print' : item.toLowerCase()}`}></i> {item}
+                                {['CSV', 'Excel', 'PDF'].map((item) => (
+                                    <div key={item} className="export-dropdown-item" onClick={() => handleExport(item)}>
+                                        <i className={`fas fa-file-${item === 'PDF' ? 'pdf' : 'csv'}`}></i> {item}
                                     </div>
                                 ))}
                             </div>
@@ -153,28 +207,20 @@ export default function MerchantReports() {
                                     value={sortBy}
                                     onChange={(e) => setSortBy(e.target.value)}
                                 >
-                                    <option value="newest">Newest Joined</option>
-                                    <option value="oldest">Oldest Joined</option>
                                     <option value="highest_appointment">Highest Appointments</option>
                                     <option value="lowest_appointment">Lowest Appointments</option>
-                                    <option value="highest_completed_appointment">Highest Completed Appointments</option>
-                                    <option value="lowest_completed_appointment">Lowest Completed Appointments</option>
-                                    <option value="highest_pending_appointment">Highest Pending Appointments</option>
-                                    <option value="lowest_pending_appointment">Lowest Pending Appointments</option>
-                                    <option value="highest_coupon">Highest Coupons Offered</option>
-                                    <option value="lowest_coupon">Lowest Coupons Offered</option>
-                                    <option value="highest_active_coupon">Highest Active Coupons</option>
-                                    <option value="lowest_active_coupon">Lowest Active Coupons</option>
-                                    <option value="highest_redeemed">Highest Coupons Redeemed</option>
-                                    <option value="lowest_redeemed">Lowest Coupons Redeemed</option>
+                                    <option value="highest_coupon">Highest Coupons Claimed</option>
+                                    <option value="lowest_coupon">Lowest Coupons Claimed</option>
                                     <option value="highest_customer">Highest Customers</option>
                                     <option value="lowest_customer">Lowest Customers</option>
+                                    <option value="newest">Newest Registered</option>
+                                    <option value="oldest">Oldest Registered</option>
                                 </select>
                             </div>
                         </div>
                     </div>
 
-                    <div className="reports-stats-grid">
+                    <div className="reports-stats-grid" style={{ marginBottom: 24 }}>
                         {dynamicMerchantSummaryCards.map((card) => (
                             <div key={card.title} className={`card stat-card ${card.gradient}`}>
                                 <i className={`fas ${card.icon} stat-bg-icon`} />
@@ -234,12 +280,17 @@ export default function MerchantReports() {
                                                 <i className="fas fa-spinner fa-spin" style={{ marginRight: 8 }} /> Loading report data...
                                             </td>
                                         </tr>
-                                    ) : filteredMerchantRows.length > 0 ? (
-                                        filteredMerchantRows.map((row) => (
+                                    ) : paginatedRows.length > 0 ? (
+                                        paginatedRows.map((row) => (
                                             <tr key={row.merchant_id}>
                                                 <td>
                                                     <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                        <strong>{row.business_name || row.owner_name || '-'}</strong>
+                                                        <strong 
+                                                            style={{ cursor: 'pointer', color: 'var(--primary)', textDecoration: 'underline' }} 
+                                                            onClick={() => navigate(`/merchant-report/${row.merchant_id}`)}
+                                                        >
+                                                            {row.business_name || row.owner_name || '-'}
+                                                        </strong>
                                                         {row.owner_name && <small style={{ color: 'var(--text-muted)' }}>Owner: {row.owner_name}</small>}
                                                         <small style={{ color: 'var(--text-muted)' }}>{row.email} | {row.phone}</small>
                                                     </div>
@@ -306,6 +357,62 @@ export default function MerchantReports() {
                                 </tbody>
                             </table>
                         </div>
+
+                        {/* Pagination Footer */}
+                        {filteredMerchantRows.length > 0 && (
+                            <div className="flex-between" style={{ marginTop: 20, flexWrap: 'wrap', gap: 16 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Show</span>
+                                    <select
+                                        className="form-control"
+                                        style={{ width: 70, height: 32, padding: '0 8px', fontSize: '0.85rem', background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}
+                                        value={rowsPerPage}
+                                        onChange={(e) => {
+                                            setRowsPerPage(Number(e.target.value))
+                                            setCurrentPage(1)
+                                        }}
+                                    >
+                                        {[5, 10, 25, 50].map(val => (
+                                            <option key={val} value={val}>{val}</option>
+                                        ))}
+                                    </select>
+                                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>entries</span>
+                                </div>
+
+                                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                    Showing {(currentPage - 1) * rowsPerPage + 1} to {Math.min(currentPage * rowsPerPage, filteredMerchantRows.length)} of {filteredMerchantRows.length} entries
+                                </div>
+
+                                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                                    <button
+                                        className="btn btn-secondary"
+                                        style={{ height: 32, padding: '0 12px', fontSize: '0.8rem' }}
+                                        disabled={currentPage === 1}
+                                        onClick={() => setCurrentPage(prev => prev - 1)}
+                                    >
+                                        Previous
+                                    </button>
+                                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                        <button
+                                            key={page}
+                                            className={`btn ${currentPage === page ? 'btn-primary' : 'btn-secondary'}`}
+                                            style={{ height: 32, width: 32, padding: 0, fontSize: '0.8rem', minWidth: 32 }}
+                                            onClick={() => setCurrentPage(page)}
+                                        >
+                                            {page}
+                                        </button>
+                                    ))}
+                                    <button
+                                        className="btn btn-secondary"
+                                        style={{ height: 32, padding: '0 12px', fontSize: '0.8rem' }}
+                                        disabled={currentPage === totalPages || totalPages === 0}
+                                        onClick={() => setCurrentPage(prev => prev + 1)}
+                                    >
+                                        Next
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

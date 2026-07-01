@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 
 import API from '../api.js';
-import AppToaster from "../components/AppToaster.jsx";
 
 import logo from "../assets/img/logo.png";
 
@@ -95,8 +94,7 @@ export default function Login() {
   return (
     <>
       {/* Custom Toaster */}
-      <AppToaster />
-
+      
       <div className="login-page">
 
         <div className="deco-blob blob-1" />

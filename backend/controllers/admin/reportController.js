@@ -479,7 +479,7 @@ exports.merchant_details_reports = async (req, res) => {
                 // Default to last 7 days ending today
                 const dates = [];
                 const today = new Date();
-                today.setHours(0,0,0,0);
+                today.setHours(0, 0, 0, 0);
                 for (let i = 6; i >= 0; i--) {
                     const d = new Date(today);
                     d.setDate(today.getDate() - i);
@@ -566,6 +566,483 @@ exports.merchant_details_reports = async (req, res) => {
         });
     } catch (err) {
         console.error("Error:", err);
+        return res.status(500).json({ status: 0, message: "Network Issues", error: err.message });
+    }
+};
+
+exports.customer_report = async (req, res) => {
+    try {
+
+        const { from_date, to_date, end_date, sort_by = "newest" } = req.body;
+
+        const parseStartDate = (dateStr) => {   
+            if (!dateStr) return null;
+            if (dateStr.includes('-')) {
+                const parts = dateStr.split('-');
+                if (parts[0].length === 4) {
+                    // YYYY-MM-DD
+                    const d = new Date(`${parts[0]}-${parts[1]}-${parts[2]}T00:00:00`);
+                    return isNaN(d.getTime()) ? null : d;
+                } else {
+                    // DD-MM-YYYY
+                    const d = new Date(`${parts[2]}-${parts[1]}-${parts[0]}T00:00:00`);
+                    return isNaN(d.getTime()) ? null : d;
+                }
+            }
+            const d = new Date(dateStr);
+            return isNaN(d.getTime()) ? null : d;
+        };
+
+        const parseEndDate = (dateStr) => {
+            if (!dateStr) return null;
+            if (dateStr.includes('-')) {
+                const parts = dateStr.split('-');
+                if (parts[0].length === 4) {
+                    // YYYY-MM-DD
+                    const d = new Date(`${parts[0]}-${parts[1]}-${parts[2]}T23:59:59`);
+                    return isNaN(d.getTime()) ? null : d;
+                } else {
+                    // DD-MM-YYYY
+                    const d = new Date(`${parts[2]}-${parts[1]}-${parts[0]}T23:59:59`);
+                    return isNaN(d.getTime()) ? null : d;
+                }
+            }
+            const d = new Date(dateStr);
+            if (!isNaN(d.getTime())) {
+                d.setHours(23, 59, 59, 999);
+                return d;
+            }
+            return null;
+        };
+
+        const effectiveToDate = to_date || end_date;
+        const fromDate = parseStartDate(from_date);
+        const toDate = parseEndDate(effectiveToDate);
+
+        const customers = await Customer.findAll({
+            where: {
+                del_status: 0
+            },
+            raw: true
+        });
+
+        const report = await Promise.all(
+            customers.map(async (customer) => {
+
+                const appointmentWhere = {
+                    cus_id: customer.id
+                };
+
+                const couponWhere = {
+                    cus_id: customer.id
+                };
+
+                if (fromDate && toDate) {
+                    appointmentWhere.created_at = {
+                        [Op.between]: [fromDate, toDate]
+                    };
+
+                    couponWhere.created_at = {
+                        [Op.between]: [fromDate, toDate]
+                    };
+                } else if (fromDate) {
+                    appointmentWhere.created_at = {
+                        [Op.gte]: fromDate
+                    };
+
+                    couponWhere.created_at = {
+                        [Op.gte]: fromDate
+                    };
+                } else if (toDate) {
+                    appointmentWhere.created_at = {
+                        [Op.lte]: toDate
+                    };
+
+                    couponWhere.created_at = {
+                        [Op.lte]: toDate
+                    };
+                }
+
+                const [
+                    totalAppointments,
+                    pendingAppointments,
+                    approvedAppointments,
+                    completedAppointments,
+                    cancelledAppointments,
+                    rejectedAppointments,
+
+                    totalCoupons,
+                    pendingCoupons,
+                    approvedCoupons,
+                    rejectedCoupons
+                ] = await Promise.all([
+
+                    Appointment.count({
+                        where: appointmentWhere
+                    }),
+
+                    Appointment.count({
+                        where: {
+                            ...appointmentWhere,
+                            status: 0
+                        }
+                    }),
+
+                    Appointment.count({
+                        where: {
+                            ...appointmentWhere,
+                            status: 1
+                        }
+                    }),
+
+                    Appointment.count({
+                        where: {
+                            ...appointmentWhere,
+                            status: 2
+                        }
+                    }),
+
+                    Appointment.count({
+                        where: {
+                            ...appointmentWhere,
+                            status: 3
+                        }
+                    }),
+
+                    Appointment.count({
+                        where: {
+                            ...appointmentWhere,
+                            status: 4
+                        }
+                    }),
+
+                    CouponApplied.count({
+                        where: couponWhere
+                    }),
+
+                    CouponApplied.count({
+                        where: {
+                            ...couponWhere,
+                            status: 0
+                        }
+                    }),
+
+                    CouponApplied.count({
+                        where: {
+                            ...couponWhere,
+                            status: 1
+                        }
+                    }),
+
+                    CouponApplied.count({
+                        where: {
+                            ...couponWhere,
+                            status: 2
+                        }
+                    })
+                ]);
+
+                return {
+                    customer_id: customer.id,
+                    customer_name: customer.name,
+                    phone: customer.phone,
+                    country_code: customer.country_code,
+                      full_phone: `${customer.country_code} ${customer.phone}`,
+                    email: customer.email,
+                    status: customer.status,
+                    created_at: customer.createdAt || customer.created_at,
+
+                    total_appointments: totalAppointments,
+                    pending_appointments: pendingAppointments,
+                    approved_appointments: approvedAppointments,
+                    completed_appointments: completedAppointments,
+                    cancelled_appointments: cancelledAppointments,
+                    rejected_appointments: rejectedAppointments,
+
+                    total_coupon_applied: totalCoupons,
+                    pending_coupon: pendingCoupons,
+                    approved_coupon: approvedCoupons,
+                    rejected_coupon: rejectedCoupons
+                };
+            })
+        );
+
+        switch (sort_by) {
+            case "oldest":
+                report.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+                break;
+
+            case "highest_appointment":
+                report.sort((a, b) => b.total_appointments - a.total_appointments);
+                break;
+
+            case "lowest_appointment":
+                report.sort((a, b) => a.total_appointments - b.total_appointments);
+                break;
+
+            case "highest_coupon":
+                report.sort((a, b) => b.total_coupon_applied - a.total_coupon_applied);
+                break;
+
+            case "lowest_coupon":
+                report.sort((a, b) => a.total_coupon_applied - b.total_coupon_applied);
+                break;
+
+            default:
+                report.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        }
+
+        return res.status(200).json({
+            status: 1,
+            message: "Customer report fetched successfully",
+            total_records: report.length,
+            data: report
+        });
+
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({
+            status: 0,
+            message: "Network Issues"
+        });
+    }
+};
+
+exports.customer_report_details = async (req, res) => {
+    try {
+        const cus_id = parseInt(req.params.id, 10);
+
+        if (!cus_id || isNaN(cus_id)) {
+            return res.status(400).json({ status: 0, message: "Customer ID is required" });
+        }
+
+        const { from_date, to_date, end_date } = req.body || req.query;
+
+        const parseStartDate = (dateStr) => {
+            if (!dateStr) return null;
+            if (dateStr.includes('-')) {
+                const parts = dateStr.split('-');
+                if (parts[0].length === 4) {
+                    // YYYY-MM-DD
+                    const d = new Date(`${parts[0]}-${parts[1]}-${parts[2]}T00:00:00`);
+                    return isNaN(d.getTime()) ? null : d;
+                } else {
+                    // DD-MM-YYYY
+                    const d = new Date(`${parts[2]}-${parts[1]}-${parts[0]}T00:00:00`);
+                    return isNaN(d.getTime()) ? null : d;
+                }
+            }
+            const d = new Date(dateStr);
+            return isNaN(d.getTime()) ? null : d;
+        };
+
+        const parseEndDate = (dateStr) => {
+            if (!dateStr) return null;
+            if (dateStr.includes('-')) {
+                const parts = dateStr.split('-');
+                if (parts[0].length === 4) {
+                    // YYYY-MM-DD
+                    const d = new Date(`${parts[0]}-${parts[1]}-${parts[2]}T23:59:59`);
+                    return isNaN(d.getTime()) ? null : d;
+                } else {
+                    // DD-MM-YYYY
+                    const d = new Date(`${parts[2]}-${parts[1]}-${parts[0]}T23:59:59`);
+                    return isNaN(d.getTime()) ? null : d;
+                }
+            }
+            const d = new Date(dateStr);
+            if (!isNaN(d.getTime())) {
+                d.setHours(23, 59, 59, 999);
+                return d;
+            }
+            return null;
+        };
+
+        const effectiveToDate = to_date || end_date;
+        const fromDate = parseStartDate(from_date);
+        const toDate = parseEndDate(effectiveToDate);
+
+        const customer = await Customer.findOne({
+            where: { id: cus_id, del_status: 0 }
+        });
+
+        if (!customer) {
+            return res.status(404).json({ status: 0, message: "Customer not found" });
+        }
+
+        const buildDateFilter = (field) => {
+            if (fromDate && toDate) return { [field]: { [Op.between]: [fromDate, toDate] } };
+            if (fromDate) return { [field]: { [Op.gte]: fromDate } };
+            if (toDate) return { [field]: { [Op.lte]: toDate } };
+            return {};
+        };
+
+        const appointmentWhere = { cus_id, ...buildDateFilter("created_at") };
+        const couponWhere = { cus_id, ...buildDateFilter("created_at") };
+
+        const [
+            totalAppointments,
+            pendingAppointments,
+            approvedAppointments,
+            completedAppointments,
+            cancelledAppointments,
+            rejectedAppointments,
+
+            totalCoupons,
+            pendingCoupons,
+            approvedCoupons,
+            rejectedCoupons
+        ] = await Promise.all([
+            Appointment.count({ where: appointmentWhere }),
+            Appointment.count({ where: { ...appointmentWhere, status: 0 } }),
+            Appointment.count({ where: { ...appointmentWhere, status: 1 } }),
+            Appointment.count({ where: { ...appointmentWhere, status: 2 } }),
+            Appointment.count({ where: { ...appointmentWhere, status: 3 } }),
+            Appointment.count({ where: { ...appointmentWhere, status: 4 } }),
+
+            CouponApplied.count({ where: couponWhere }),
+            CouponApplied.count({ where: { ...couponWhere, status: 0 } }),
+            CouponApplied.count({ where: { ...couponWhere, status: 1 } }),
+            CouponApplied.count({ where: { ...couponWhere, status: 2 } })
+        ]);
+
+        // ── List: Appointment records ─────────────────────────────────────────
+        const appointmentList = await Appointment.findAll({
+            where: appointmentWhere,
+            attributes: ["id", "cus_id", "br_id", "br_name", "appointment_date", "slot", "status", "cancel_by", "cancel_reason", "approved_by", "created_at"],
+            include: [
+                {
+                    model: Branch,
+                    attributes: ["id", "name"],
+                    required: false
+                }
+            ],
+            order: [["created_at", "DESC"]],
+        });
+
+        // ── List: CouponApplied records ───────────────────────────────────────
+        const couponAppliedList = await CouponApplied.findAll({
+            where: couponWhere,
+            attributes: ["id", "cus_id", "coupon_id", "branch_id", "coupon_code", "percentage", "used_at", "approved_by", "status", "created_at"],
+            include: [
+                {
+                    model: Branch,
+                    attributes: ["id", "name"],
+                    required: false
+                },
+                {
+                    model: Coupon,
+                    attributes: ["id", "code", "percentage"],
+                    required: false
+                }
+            ],
+            order: [["created_at", "DESC"]],
+        });
+
+        // ── Graph: Coupons applied per day ─────────────────────────
+        const couponAppliedGraph = await CouponApplied.findAll({
+            where: couponWhere,
+            attributes: [
+                [sequelize.fn("DATE", sequelize.col("CouponApplied.created_at")), "date"],
+                [sequelize.fn("COUNT", sequelize.col("CouponApplied.id")), "count"],
+            ],
+            group: [sequelize.fn("DATE", sequelize.col("CouponApplied.created_at"))],
+            order: [[sequelize.fn("DATE", sequelize.col("CouponApplied.created_at")), "ASC"]],
+            raw: true,
+        });
+
+        // ── Graph: Appointments per day ────────────────────────────
+        const appointmentGraph = await Appointment.findAll({
+            where: appointmentWhere,
+            attributes: [
+                [sequelize.fn("DATE", sequelize.col("Appointment.created_at")), "date"],
+                [sequelize.fn("COUNT", sequelize.col("Appointment.id")), "count"],
+            ],
+            group: [sequelize.fn("DATE", sequelize.col("Appointment.created_at"))],
+            order: [[sequelize.fn("DATE", sequelize.col("Appointment.created_at")), "ASC"]],
+            raw: true,
+        });
+
+        // ── Generate all dates in range to fill missing days with 0 ──────────
+        const getDatesInRange = (start, end, graphData) => {
+            if (!start && !end) {
+                const uniqueDates = new Set();
+                graphData.forEach(g => {
+                    if (g.date) uniqueDates.add(g.date);
+                });
+                const sorted = Array.from(uniqueDates).sort();
+                if (sorted.length > 1) return sorted;
+
+                // Default to last 7 days ending today
+                const dates = [];
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                for (let i = 6; i >= 0; i--) {
+                    const d = new Date(today);
+                    d.setDate(today.getDate() - i);
+                    const yr = d.getFullYear();
+                    const mo = String(d.getMonth() + 1).padStart(2, '0');
+                    const dy = String(d.getDate()).padStart(2, '0');
+                    dates.push(`${yr}-${mo}-${dy}`);
+                }
+                return dates;
+            }
+
+            const dates = [];
+            const current = new Date(start);
+            const stop = new Date(end);
+            while (current <= stop) {
+                const yr = current.getFullYear();
+                const mo = String(current.getMonth() + 1).padStart(2, '0');
+                const dy = String(current.getDate()).padStart(2, '0');
+                dates.push(`${yr}-${mo}-${dy}`);
+                current.setDate(current.getDate() + 1);
+            }
+            return dates;
+        };
+
+        const allDates = getDatesInRange(fromDate, toDate, [...couponAppliedGraph, ...appointmentGraph.map(g => ({ date: g.date }))]);
+
+        const apptMap = Object.fromEntries(appointmentGraph.map(g => [g.date, parseInt(g.count)]));
+        const coupMap = Object.fromEntries(couponAppliedGraph.map(g => [g.date, parseInt(g.count)]));
+
+        const graphs = {
+            appointments_per_day: allDates.map(date => ({ date, count: apptMap[date] || 0 })),
+            coupon_applied_per_day: allDates.map(date => ({ date, count: coupMap[date] || 0 }))
+        };
+
+        return res.status(200).json({
+            status: 1,
+            message: "Customer report details fetched successfully",
+            data: {
+                customer_id: Number(customer.id),
+                customer_name: customer.name,
+                phone: customer.phone,
+                country_code: customer.country_code,
+                full_phone: `${customer.country_code} ${customer.phone}`,
+                email: customer.email,
+                status: customer.status,
+                created_at: customer.createdAt || customer.created_at,
+                total_appointments: totalAppointments,
+                pending_appointments: pendingAppointments,
+                approved_appointments: approvedAppointments,
+                completed_appointments: completedAppointments,
+                cancelled_appointments: cancelledAppointments,
+                rejected_appointments: rejectedAppointments,
+                total_coupon_applied: totalCoupons,
+                pending_coupon: pendingCoupons,
+                approved_coupon: approvedCoupons,
+                rejected_coupon: rejectedCoupons,
+                graphs,
+                lists: {
+                    coupon_applied: couponAppliedList,
+                    appointments: appointmentList,
+                }
+            }
+        });
+
+    } catch (err) {
+        console.error("Error fetching customer report details:", err);
         return res.status(500).json({ status: 0, message: "Network Issues", error: err.message });
     }
 };

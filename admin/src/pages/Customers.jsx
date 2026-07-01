@@ -4,7 +4,6 @@ import { useSearchParams } from 'react-router-dom'
 import { useJsApiLoader } from '@react-google-maps/api'
 import { toast } from 'react-hot-toast'
 
-import AppToaster from '../components/AppToaster.jsx'
 import PhoneNumberField from '../components/PhoneNumberField'
 import CorporateAddressField from '../components/CorporateAddressField'
 import API from '../api.js';
@@ -743,8 +742,7 @@ export default function Customers() {
 
     return (
         <>
-            <AppToaster />
-
+            
             <div className="flex-between" style={{ marginBottom: 24, gap: 20, flexWrap: 'wrap' }}>
                 <div className="flex-row gap-md" style={{ flex: 1, flexWrap: 'nowrap' }}>
                     <div className="search-wrapper" style={{ marginBottom: 0, maxWidth: 360, flex: 1, minWidth: 200 }}>

@@ -4,7 +4,7 @@ const { Sequelize } = require("sequelize");
 const { Op } = require('sequelize');
 const {
     RefreshToken,
-    admins, Merchant, Branch, Receptionist, Coupon, CouponApplied,Category
+    admins, Merchant, Branch, Receptionist, Coupon, CouponApplied, Category
 } = require('../../models');
 
 exports.login = async (req, res) => {
@@ -81,7 +81,7 @@ exports.login = async (req, res) => {
 
             },
 
-            process.env.JWT_SECRET,
+            process.env.JWT_REFRESH_SECRET,
 
             {
 
@@ -221,6 +221,12 @@ exports.refreshAccessToken = async (req, res) => {
         }
 
         const refresh_token = authHeader.split(' ')[1];
+        if (!refresh_token) {
+            return res.json({
+                status: 0,
+                message: "Refresh token required"
+            });
+        }
 
         const stored = await RefreshToken.findOne({
             where: { token: refresh_token }
@@ -235,13 +241,29 @@ exports.refreshAccessToken = async (req, res) => {
 
         const decoded = jwt.verify(
             refresh_token,
-            process.env.JWT_SECRET
+            process.env.JWT_REFRESH_SECRET
         );
 
+        const admin = await admins.findOne({
+            where: {
+                id: decoded.id,
+                status: 1,
+                del_status: 0
+            }
+        });
+
+        if (!admin) {
+            return res.json({
+                status: 0,
+                message: "Admin not found"
+            });
+        }
         const newAccessToken = jwt.sign(
             {
-                id: decoded.id,
-                user_type: stored.user_type
+                id: admin.id,
+                username: admin.username,
+                user_type: "admin",
+                token_type: "access"
             },
             process.env.JWT_SECRET,
             { expiresIn: '1d' }
@@ -473,23 +495,23 @@ exports.fetchmerchant = async (req, res) => {
                     ]
 
                 },
-                 {
-                    model:Category,
-                      required: false,
+                {
+                    model: Category,
+                    required: false,
                     where: {
-                                del_status: 0,
-                                status:1
-                            },
-                             attributes: [
-                                'id',
-                                'name',
-                           
-                            ]
+                        del_status: 0,
+                        status: 1
+                    },
+                    attributes: [
+                        'id',
+                        'name',
+
+                    ]
 
 
 
                 }
-            
+
 
             ]
 

@@ -9,6 +9,7 @@ import Categories from './pages/Categories'
 import Appointments from './pages/Appointments'
 import MerchantReports from './pages/MerchantReports'
 import CustomerReports from './pages/CustomerReports'
+import CustomerReportDetails from './pages/CustomerReportDetails'
 import ViewMerchReport from './pages/ViewMerchReport'
 import Notifications from './pages/Notifications'
 import NotificationList from './pages/NotificationList'
@@ -67,6 +68,7 @@ function App() {
                 <Route path="merchant-reports" element={<MerchantReports />} />
                 <Route path="merchant-report/:id" element={<ViewMerchReport />} />
                 <Route path="customer-reports" element={<CustomerReports />} />
+                <Route path="customer-report/:id" element={<CustomerReportDetails />} />
                 <Route path="notifications" element={<Notifications />} />
                 <Route path="notification-list" element={<NotificationList />} />
                 <Route path="profile" element={<Profile />} />

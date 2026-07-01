@@ -69,7 +69,7 @@ module.exports = (...roles) => {
 
         } catch (err) {
 
-            // console.log("AUTH ERROR:", err);
+            console.log("AUTH ERROR:", err);
 
             return res.status(401).json({
                 status: 0,

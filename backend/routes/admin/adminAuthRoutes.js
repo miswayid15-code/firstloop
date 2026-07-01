@@ -6,11 +6,11 @@ const auth = require('../../middleware/auth');
 const controller = require('../../controllers/admin/adminAuthController');
 
 router.post('/login', (req, res, next) => {
-    console.log("================================");
-    console.log("LOGIN API HIT");
-    console.log("BODY:", req.body);
-    console.log("TIME:", new Date().toISOString());
-    console.log("================================");
+    // console.log("================================");
+    // console.log("LOGIN API HIT");
+    // console.log("BODY:", req.body);
+    // console.log("TIME:", new Date().toISOString());
+    // console.log("================================");
 
     next();
 }, controller.login);

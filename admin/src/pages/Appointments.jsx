@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import API from '../api.js'
-import AppToaster from '../components/AppToaster.jsx'
 import DecisionDialog from '../components/DecisionDialog.jsx'
 
 const getAppointmentStatus = (status) => {
@@ -218,8 +217,7 @@ export default function Appointments() {
 
     return (
         <>
-            <AppToaster />
-
+            
             <div
                 className="flex-between"
                 style={{

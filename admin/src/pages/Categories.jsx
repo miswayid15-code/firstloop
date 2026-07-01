@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
-import AppToaster from '../components/AppToaster.jsx'
 import API from '../api.js';
 
 export default function Categories() {
@@ -263,8 +262,7 @@ export default function Categories() {
 
     return (
         <>
-            <AppToaster />
-            
+                        
             {/* Tabs for Merchant Categories vs Coupon Categories */}
             <div style={{ display: 'flex', gap: 16, borderBottom: '1px solid var(--border)', marginBottom: 24 }}>
                 <button

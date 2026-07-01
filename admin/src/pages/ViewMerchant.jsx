@@ -8,7 +8,6 @@ import {
 import { useJsApiLoader } from '@react-google-maps/api'
 import { toast } from 'react-hot-toast'
 
-import AppToaster from '../components/AppToaster.jsx'
 import ConfirmDialog from '../components/ConfirmDialog.jsx'
 import PhoneNumberField from '../components/PhoneNumberField'
 import CorporateAddressField from '../components/CorporateAddressField'
@@ -2528,8 +2527,7 @@ export default function ViewMerchant() {
     if (!loading && !merchantData) {
         return (
             <>
-                <AppToaster />
-
+                
                 <div className="card" style={{ marginBottom: 18 }}>
                     <div className="flex-between" style={{ gap: 16, flexWrap: 'wrap' }}>
                         <div>
@@ -2605,8 +2603,7 @@ export default function ViewMerchant() {
 
     return (
         <>
-            <AppToaster />
-            <ConfirmDialog
+                        <ConfirmDialog
                 open={confirmDialog.open}
                 title={confirmDialog.title}
                 message={confirmDialog.message}

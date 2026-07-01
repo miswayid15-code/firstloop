@@ -23,6 +23,18 @@ router.get(
 
 
 
+router.post(
+    '/customer-report',
+    auth('admin'), checkAdmin,
+    controller.customer_report
+);
+
+
+router.get(
+    '/customer-details-report/:id',
+    auth('admin'), checkAdmin,
+    controller.customer_report_details
+);
 
 
 

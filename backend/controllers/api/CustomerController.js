@@ -23,7 +23,7 @@ const jwt = require('jsonwebtoken');
 const sendMail = require('../../helpers/sendMail');
 const RegisterTemplate = require('../../helpers/RegisterTemplate');
 const { sendOtp } = require('../../helpers/sendOtp');
-const  ResetsTemplate  = require('../../helpers/ResetsTemplate');
+const ResetsTemplate = require('../../helpers/ResetsTemplate');
 
 const { otpTemplate } = require('../../helpers/mailTemplate');
 const { Op } = require('sequelize');
@@ -950,181 +950,186 @@ exports.home = async (req, res) => {
 
         const lat = req.body?.lat || req.query?.lat || null;
         const lon = req.body?.lon || req.query?.lon || null;
-        const choose_country = req.body?.ch_code || req.query?.ch_code || null;
-        // console.log("choose_country",choose_country)
+        let choose_country = req.body?.ch_code || req.query?.ch_code || null;
 
-        const customer_id =
-            req.user?.id ||
-            req.body?.customer_id ||
-            req.query?.customer_id ||
-            null;
+        if (choose_country && !choose_country.startsWith('+')) {
+            choose_country = '+' + choose_country.trim();
+        
+    }
+        console.log("choose_country", choose_country)
 
-        const baseUrl = process.env.APP_URL;
-        const googleApiKey = process.env.GOOGLE_MAP_KEY;
+    const customer_id =
+        req.user?.id ||
+        req.body?.customer_id ||
+        req.query?.customer_id ||
+        null;
 
-        // ✅ Check Customer
-        if (customer_id) {
+    const baseUrl = process.env.APP_URL;
+    const googleApiKey = process.env.GOOGLE_MAP_KEY;
 
-            const customer = await Customer.findOne({
+    // ✅ Check Customer
+    if (customer_id) {
 
-                where: {
-                    id: customer_id,
-                    status: 1,
-                    del_status: 0
-                }
-
-            });
-
-            if (!customer) {
-
-                return res.json({
-                    status: 0,
-                    message: "Invalid customer"
-                });
-
-            }
-
-        }
-
-
-        const branches = await Branch.findAll({
+        const customer = await Customer.findOne({
 
             where: {
+                id: customer_id,
                 status: 1,
-                del_status: 0,
-                country_code: choose_country
-            },
-
-            include: [{
-                model: Merchant,
-                required: true,
-                attributes: [],
-                where: {
-                    status: 1,
-                    del_status: 0
-                }
-            }],
-            attributes: [
-                'id',
-                'name',
-                'lat',
-                'lon',
-                'address',
-                'profile_image'
-            ],
-
-            order: [['id', 'DESC']]
+                del_status: 0
+            }
 
         });
 
-        if (branches.length === 0) {
+        if (!customer) {
 
             return res.json({
                 status: 0,
-                message: "Branch list not found"
+                message: "Invalid customer"
             });
 
         }
 
-        const data = await Promise.all(
-
-            branches.map(async (branch) => {
-
-                const item = branch.toJSON();
+    }
 
 
-                item.profile_image = item.profile_image
-                    ? `${baseUrl}/${item.profile_image.replace(/\\/g, '/')}`
-                    : null;
+    const branches = await Branch.findAll({
 
-
-                item.user_lat = lat;
-                item.user_lon = lon;
-                item.customer_id = customer_id;
-
-
-                item.distance = null;
-                item.duration = null;
-                item.distance_value = null;
-
-
-                if (
-                    lat &&
-                    lon &&
-                    item.lat &&
-                    item.lon &&
-                    !isNaN(Number(lat)) &&
-                    !isNaN(Number(lon)) &&
-                    !isNaN(Number(item.lat)) &&
-                    !isNaN(Number(item.lon))
-                ) {
-
-                    const distanceData =
-                        await getDistanceDuration(
-
-                            lat,
-                            lon,
-
-                            item.lat,
-                            item.lon,
-
-                            googleApiKey
-
-                        );
-
-                    item.distance =
-                        distanceData.distance;
-
-                    item.duration =
-                        distanceData.duration;
-
-                }
-
-                return item;
-
-            })
-
-        );
-
-
-        data.sort((a, b) => {
-
-            return (
-                (a.distance_value || 999999999) -
-                (b.distance_value || 999999999)
-            );
-
-        });
-
-
-        const finalData = data.map(item => {
-
-            delete item.distance_value;
-
-            return item;
-
-        });
-
-        return res.json({
-
+        where: {
             status: 1,
-            message: "Successfully fetched details",
-            data: finalData
+            del_status: 0,
+            country_code: choose_country
+        },
 
-        });
+        include: [{
+            model: Merchant,
+            required: true,
+            attributes: [],
+            where: {
+                status: 1,
+                del_status: 0
+            }
+        }],
+        attributes: [
+            'id',
+            'name',
+            'lat',
+            'lon',
+            'address',
+            'profile_image'
+        ],
 
-    } catch (err) {
+        order: [['id', 'DESC']]
 
-        console.log("FETCH ERROR:", err);
+    });
+
+    if (branches.length === 0) {
 
         return res.json({
-
             status: 0,
-            message: err.message
-
+            message: "Branch list not found"
         });
 
     }
+
+    const data = await Promise.all(
+
+        branches.map(async (branch) => {
+
+            const item = branch.toJSON();
+
+
+            item.profile_image = item.profile_image
+                ? `${baseUrl}/${item.profile_image.replace(/\\/g, '/')}`
+                : null;
+
+
+            item.user_lat = lat;
+            item.user_lon = lon;
+            item.customer_id = customer_id;
+
+
+            item.distance = null;
+            item.duration = null;
+            item.distance_value = null;
+
+
+            if (
+                lat &&
+                lon &&
+                item.lat &&
+                item.lon &&
+                !isNaN(Number(lat)) &&
+                !isNaN(Number(lon)) &&
+                !isNaN(Number(item.lat)) &&
+                !isNaN(Number(item.lon))
+            ) {
+
+                const distanceData =
+                    await getDistanceDuration(
+
+                        lat,
+                        lon,
+
+                        item.lat,
+                        item.lon,
+
+                        googleApiKey
+
+                    );
+
+                item.distance =
+                    distanceData.distance;
+
+                item.duration =
+                    distanceData.duration;
+
+            }
+
+            return item;
+
+        })
+
+    );
+
+
+    data.sort((a, b) => {
+
+        return (
+            (a.distance_value || 999999999) -
+            (b.distance_value || 999999999)
+        );
+
+    });
+
+
+    const finalData = data.map(item => {
+
+        delete item.distance_value;
+
+        return item;
+
+    });
+
+    return res.json({
+
+        status: 1,
+        message: "Successfully fetched details",
+        data: finalData
+
+    });
+
+} catch (err) {
+
+    console.log("FETCH ERROR:", err);
+
+    return res.json({
+
+        status: 0,
+        message: err.message
+
+    });
+
+}
 
 };
 

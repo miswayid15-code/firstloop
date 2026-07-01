@@ -3,7 +3,6 @@ import { NavLink, useNavigate, useParams } from 'react-router-dom'
 import { useJsApiLoader } from '@react-google-maps/api'
 import { toast } from 'react-hot-toast'
 
-import AppToaster from '../components/AppToaster.jsx'
 import PhoneNumberField from '../components/PhoneNumberField'
 import CorporateAddressField from '../components/CorporateAddressField'
 import API from '../api.js';
@@ -339,8 +338,7 @@ export default function EditMerchant() {
 
     return (
         <>
-            <AppToaster />
-
+            
             {mapLoadError && (
                 <div className="card" style={{ maxWidth: 1400, margin: '0 auto' }}>
                     Failed to load Google Maps. Please check the Maps API key.

@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { NavLink, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import ConfirmDialog from '../components/ConfirmDialog.jsx'
-import AppToaster from '../components/AppToaster.jsx'
 import DecisionDialog from '../components/DecisionDialog.jsx'
 import API from '../api.js'
 
@@ -295,8 +294,7 @@ export default function ViewBranch() {
     if (!loading && !branchData) {
         return (
             <>
-                <AppToaster />
-
+                
                 <div className="card" style={{ marginBottom: 18 }}>
                     <div className="flex-between" style={{ gap: 16, flexWrap: 'wrap' }}>
                         <div>
@@ -472,8 +470,7 @@ export default function ViewBranch() {
 
     return (
         <>
-            <AppToaster />
-
+            
             <div style={{ marginBottom: 24 }}>
                 {loading ? (
                     <>

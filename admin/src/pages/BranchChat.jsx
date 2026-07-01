@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import { NavLink, useNavigate, useParams } from 'react-router-dom'
-import AppToaster from '../components/AppToaster.jsx'
 import API from '../api.js'
 import { db } from "../firebase";
 import {
@@ -439,8 +438,7 @@ export default function BranchChat() {
 
     return (
         <>
-            <AppToaster />
-            <style>{`
+                        <style>{`
                 /* ─── layout ─── */
                 .bch-page{display:flex;flex-direction:column;height:calc(100vh - 118px);min-height:540px}
                 .bch-shell{display:flex;flex:1;border-radius:20px;overflow:hidden;
