@@ -826,13 +826,19 @@ exports.reset_ps = async (req, res) => {
             });
 
         }
+        const records = await CustomerFp.findAll({
+            logging: console.log
+        });
+
+        console.log("ALL OTP RECORDS:");
+        console.log(records.map(r => r.toJSON()));
         console.log("OTP from request:", otp, typeof otp);
         console.log("Customer ID:", customer.id, typeof customer.id);
         // Check OTP
         const otp_check = await CustomerFp.findOne({
             where: {
                 cus_id: customer.id,
-                 otp: otp.toString().trim(),
+                otp: otp.toString().trim(),
                 status: 0
             }
         });
