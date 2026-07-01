@@ -4,6 +4,7 @@ const router = express.Router();
 const controller = require('../../controllers/api/CustomerController');
 const upload = require('../../middleware/upload');
 const auth = require('../../middleware/auth');
+const optionalAuth = require('../../middleware/optionalAuth');
 const baseUrl = process.env.APP_URL;
 const checkCustomer = require('../../middleware/checkCustomer'); 
 
@@ -39,11 +40,12 @@ router.post(
 );
 router.get(
     '/branch-details',
+        auth('customer'),
     controller.branch_details
 );
 router.post(
    '/branch-details',
-    auth('customer'),
+    optionalAuth,
     controller.branch_details
 );
 router.post(
