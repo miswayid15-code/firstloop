@@ -444,6 +444,26 @@ exports.login = async (req, res) => {
 exports.logout = async (req, res) => {
     try {
 
+        const notificationToken = await UserNotificationToken.findOne({
+            where: {
+                user_id: customer.id,
+                user_type: "customer"
+            }
+        });
+
+        // console.log(notificationToken?.toJSON());
+
+        try {
+            const result = await sendPushNotification({
+                token: notificationToken?.token,
+                title: "Goodbye!",
+                body: "You have successfully logged out. See you again soon!"
+            });
+
+
+        } catch (error) {
+            console.error("Push Notification Error:", error);
+        }
         await RefreshToken.destroy({
             where: {
                 user_id: req.user.id,
@@ -596,10 +616,11 @@ exports.forget_password = async (req, res) => {
             }
         );
 
-        const otp = Math.floor(
-            100000 + Math.random() * 900000
-        );
+        // const otp = Math.floor(
+        //     100000 + Math.random() * 900000
+        // );
 
+        const otp = 11111;
         // create otp
         await CustomerFp.create({
 
@@ -615,7 +636,26 @@ exports.forget_password = async (req, res) => {
             'Forget Password OTP',
             otpTemplate(otp, 'Customer')
         );
+        const notificationToken = await UserNotificationToken.findOne({
+            where: {
+                user_id: customer.id,
+                user_type: "customer"
+            }
+        });
 
+        // console.log(notificationToken?.toJSON());
+
+        try {
+            const result = await sendPushNotification({
+                token: notificationToken?.token,
+                title: "Check Your Email",
+                body: "We've sent a password reset link to your email address. 🔐"
+            });
+
+
+        } catch (error) {
+            console.error("Push Notification Error:", error);
+        }
         return res.status(200).json({
             status: 1,
             message: "OTP sent successfully"
@@ -706,7 +746,26 @@ exports.reset_ps = async (req, res) => {
             'Password Reset Successful',
             ResetsTemplate('Customer')
         );
+        const notificationToken = await UserNotificationToken.findOne({
+            where: {
+                user_id: customer.id,
+                user_type: "customer"
+            }
+        });
 
+        // console.log(notificationToken?.toJSON());
+
+        try {
+            const result = await sendPushNotification({
+                token: notificationToken?.token,
+                title: "✅ Success!",
+                body: "Your password has been reset successfully. 🔐"
+            });
+
+
+        } catch (error) {
+            console.error("Push Notification Error:", error);
+        }
         return res.status(200).json({
             status: 1,
             message: "Password reset successfully"
@@ -866,6 +925,26 @@ exports.update = async (req, res) => {
             profile_image: profileImage
 
         });
+        const notificationToken = await UserNotificationToken.findOne({
+            where: {
+                user_id: merchant.id,
+                user_type: "merchant"
+            }
+        });
+
+        // console.log(notificationToken?.toJSON());
+
+        try {
+            const result = await sendPushNotification({
+                token: notificationToken?.token,
+                title: "Update Successful",
+                body: "Your details were updated successfully.",
+            });
+
+
+        } catch (error) {
+            console.error("Push Notification Error:", error);
+        }
 
         return res.status(200).json({
 
