@@ -1373,7 +1373,7 @@ exports.branch_details = async (req, res) => {
 
         // Get today's day (1 = Monday ... 7 = Sunday)
         const today = moment().isoWeekday();
-
+const todayDate = moment().format("YYYY-MM-DD");
         const todayTiming = item.BranchTimings.find(
             timing => timing.day === today
         );
@@ -1400,7 +1400,7 @@ exports.branch_details = async (req, res) => {
                     ? 1
                     : 0;
         }
-
+console.log("Today:", today);
         const coupons =
             await Coupon.findAll({
 
@@ -1414,11 +1414,11 @@ exports.branch_details = async (req, res) => {
                         [Op.contains]: [parseInt(branch_id)]
                     },
                     start_date: {
-                        [Op.lte]: today
+                        [Op.lte]: todayDate
                     },
 
                     end_date: {
-                        [Op.gte]: today
+                        [Op.gte]: todayDate
                     }
 
 
