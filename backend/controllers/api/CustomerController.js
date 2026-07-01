@@ -2502,7 +2502,7 @@ exports.appointment = async (req, res) => {
             });
 
         }
-console.log("slot", slot)
+        console.log("slot", slot)
 
         if (!appointment_date || !slot) {
 
@@ -2563,7 +2563,20 @@ console.log("slot", slot)
                 status: 1,
                 del_status: 0
 
-            }
+            },
+            include: [
+                {
+                    model: BranchTiming,
+                    attributes: [
+                        "id",
+                        "day",
+                        "branch_id",
+                        "open_time",
+                        "close_time",
+                        "is_closed"
+                    ]
+                }
+            ]
 
         });
 
@@ -2578,7 +2591,45 @@ console.log("slot", slot)
 
         }
 
+       
+        const dayNumber = moment(dbDate).isoWeekday();
 
+        
+        const branchTiming = branch.BranchTimings.find(
+            timing => Number(timing.day) === dayNumber
+        );
+
+        
+        if (!branchTiming ||  branchTiming.is_closed === true) {
+            return res.json({
+                status: 0,
+                message: "Branch is closed on the selected day."
+            });
+        }
+
+        // Parse times
+        const slotTime = moment(slot, ["HH:mm", "HH:mm:ss"], true);
+        const openTime = moment(branchTiming.open_time, "HH:mm:ss");
+        const closeTime = moment(branchTiming.close_time, "HH:mm:ss");
+
+        // Invalid slot format
+        if (!slotTime.isValid()) {
+            return res.json({
+                status: 0,
+                message: "Invalid slot format."
+            });
+        }
+
+        // Check whether slot is within branch timings
+        if (
+            slotTime.isBefore(openTime) ||
+            slotTime.isSameOrAfter(closeTime)
+        ) {
+            return res.json({
+                status: 0,
+                message: "Branch is closed for the selected slot."
+            });
+        }
         const alreadyAppointment = await Appointment.findOne({
 
             where: {
@@ -2723,6 +2774,7 @@ exports.fetch_appointment = async (req, res) => {
                 'status',
                 'cancel_by',
                 'cancel_reason',
+                'ref_id',
 
             ],
 
@@ -3394,6 +3446,98 @@ exports.cancel_appointment = async (req, res) => {
 
     }
 };
+exports.get_brach_by_coupon = async (req, res) => {
+    try {
+
+        const baseUrl = process.env.APP_URL;
+
+        const coupon_id =
+            req.params?.coupon_id ||
+            req.query?.coupon_id;
+
+        if (!coupon_id) {
+            return res.json({
+                status: 0,
+                message: "Coupon ID is required"
+            });
+        }
+
+        const coupon = await Coupon.findOne({
+            where: {
+                id: coupon_id
+            },
+            attributes: [
+                "id",
+                "code",
+                "branch_ids"
+            ]
+        });
+
+        if (!coupon) {
+            return res.json({
+                status: 0,
+                message: "Coupon not found"
+            });
+        }
+
+        let branchIds = [];
+
+        if (Array.isArray(coupon.branch_ids)) {
+            branchIds = coupon.branch_ids.map(Number);
+        } else if (typeof coupon.branch_ids === "string") {
+            branchIds = coupon.branch_ids
+                .replace(/[{}]/g, "")
+                .split(",")
+                .map(id => Number(id.trim()))
+                .filter(id => !isNaN(id));
+        }
+
+        const branches = await Branch.findAll({
+            where: {
+                id: {
+                    [Op.in]: branchIds
+                },
+                status: 1,
+                del_status: 0
+            },
+            attributes: [
+                "id",
+                "name",
+                "image",
+                "address",
+                "lat",
+                "lon"
+            ]
+        });
+
+        const branchList = branches.map(branch => ({
+            ...branch.toJSON(),
+            image: branch.image
+                ? `${baseUrl}/uploads/branch/${branch.image}`
+                : null
+        }));
+
+        return res.json({
+            status: 1,
+            message: "Branches fetched successfully",
+            data: {
+                coupon,
+                branches: branchList
+            }
+        });
+
+    } catch (err) {
+
+        console.log("GET BRANCH BY COUPON ERROR:", err);
+
+        return res.json({
+            status: 0,
+            message: err.message
+        });
+
+    }
+};
+
 exports.send_test = async (req, res) => {
     try {
         const refId = await generateRefId("Test Branch");
@@ -3480,3 +3624,4 @@ exports.send_tests = async (req, res) => {
         });
     }
 };
+

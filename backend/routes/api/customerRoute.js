@@ -107,6 +107,10 @@ router.post(
     checkCustomer,
     controller.cancel_appointment 
 );
+router.get(
+   '/get-branch-coupon-id/:coupon_id',
+    controller.get_brach_by_coupon 
+);
 router.post(
    '/send-test-mail',
     controller.send_test 
