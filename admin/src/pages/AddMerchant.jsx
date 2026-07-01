@@ -6,6 +6,7 @@ import { toast } from 'react-hot-toast'
 import PhoneNumberField from '../components/PhoneNumberField'
 import CorporateAddressField from '../components/CorporateAddressField'
 import API from '../api.js';
+import { useMerchantFormStore } from '../store/useMerchantFormStore.js'
 
 const libraries = ['places']
 
@@ -20,33 +21,8 @@ const defaultCenter = {
     lng: 80.2707
 }
 
-const initialForm = {
-    profilePhoto: null,
-    businessLogo: null,
-    kycDocument: null,
-    ownerName: '',
-    businessName: '',
-    serviceProvided: '',
-    category: '',
-    email: '',
-    phone: '',
-    country: '',
-    password: '',
-    taxNumber: '',
-    address: '',
-    city: '',
-    state: '',
-    zipcode: '',
-    latitude: '',
-    longitude: '', 
-    countryCode: '',
-    description: '',
-}
-
 export default function AddMerchant() {
-    const [form, setForm] = useState(initialForm)
-    const [profilePreview, setProfilePreview] = useState('')
-    const [logoPreview, setLogoPreview] = useState('')
+    const { form, profilePreview, logoPreview, setFormFields, setPreviews, resetForm } = useMerchantFormStore()
     const [autocomplete, setAutocomplete] = useState(null)
     const [categories, setCategories] = useState([])
 
@@ -66,11 +42,7 @@ export default function AddMerchant() {
 
     const handleChange = (event) => {
         const { name, value } = event.target
-
-        setForm((prev) => ({
-            ...prev,
-            [name]: value
-        }))
+        setFormFields({ [name]: value })
     }
 
     const handleFileChange = (event) => {
@@ -80,28 +52,24 @@ export default function AddMerchant() {
 
         const file = files[0]
 
-        setForm((prev) => ({
-            ...prev,
-            [name]: file
-        }))
+        setFormFields({ [name]: file })
 
         if (name === 'profilePhoto') {
-            setProfilePreview(URL.createObjectURL(file))
+            setPreviews({ profilePreview: URL.createObjectURL(file) })
         }
 
         if (name === 'businessLogo') {
-            setLogoPreview(URL.createObjectURL(file))
+            setPreviews({ logoPreview: URL.createObjectURL(file) })
         }
     }
 
     const updateLocationDetails = (lat, lng, placeName = '', countryName = '') => {
         if (!window.google?.maps?.Geocoder) {
-            setForm((prev) => ({
-                ...prev,
+            setFormFields({
                 latitude: String(lat),
                 longitude: String(lng),
-                country: countryName || prev.country
-            }))
+                country: countryName || form.country
+            })
             return
         }
 
@@ -109,13 +77,12 @@ export default function AddMerchant() {
 
         geocoder.geocode({ location: { lat, lng } }, (results, status) => {
             if (status !== 'OK' || !results || !results[0]) {
-                setForm((prev) => ({
-                    ...prev,
+                setFormFields({
                     latitude: String(lat),
                     longitude: String(lng),
-                    address: placeName || prev.address,
-                    country: countryName || prev.country
-                }))
+                    address: placeName || form.address,
+                    country: countryName || form.country
+                })
                 return
             }
 
@@ -134,16 +101,15 @@ export default function AddMerchant() {
                 if (types.includes('postal_code')) zipcode = component.long_name
             })
 
-            setForm((prev) => ({
-                ...prev,
-                address: place.formatted_address || placeName || prev.address,
+            setFormFields({
+                address: place.formatted_address || placeName || form.address,
                 city,
                 state,
                 country,
                 zipcode,
                 latitude: String(lat),
                 longitude: String(lng)
-            }))
+            })
         })
     }
 
@@ -195,7 +161,6 @@ export default function AddMerchant() {
     }
 
     const handleSubmit = async (event) => {
-
         event.preventDefault()
 
         if (!form.kycDocument) {
@@ -210,7 +175,6 @@ export default function AddMerchant() {
                 'name',
                 form.ownerName
             )
-            // console.log(formData);
 
             formData.append(
                 'bus_name',
@@ -286,21 +250,17 @@ export default function AddMerchant() {
             )
 
             if (form.profilePhoto) {
-
                 formData.append(
                     'profile_image',
                     form.profilePhoto
                 )
-
             }
 
             if (form.businessLogo) {
-
                 formData.append(
                     'brand_image',
                     form.businessLogo
                 )
-
             }
 
             if (form.kycDocument) {
@@ -317,18 +277,14 @@ export default function AddMerchant() {
             console.log('PHONE:', form.phone)
             console.log('COUNTRY CODE:', form.countryCode)
             const response = await API.post(
-
                 '/admin/merchant/register',
-
                 formData,
-
                 {
                     headers: {
                         'Content-Type':
                             'multipart/form-data'
                     }
                 }
-
             )
 
             const data = response.data || {}
@@ -337,6 +293,7 @@ export default function AddMerchant() {
 
             if (data.status === 1 || data.success === true) {
                 toast.success(data.message || 'Merchant added successfully')
+                resetForm()
                 setTimeout(() => navigate('/merchants'), 800)
             } else {
                 toast.error(data.message || 'Merchant registration failed')
@@ -347,18 +304,12 @@ export default function AddMerchant() {
 
             console.log('Merchant Add Error:', error.response?.data || error)
             toast.error(apiMessage)
-
         }
-
     }
 
-
     useEffect(() => {
-
         const fetchCategories = async () => {
-
             try {
-
                 const response = await API.get(
                     'api/category-list'
                 )
@@ -366,24 +317,19 @@ export default function AddMerchant() {
                 setCategories(
                     response.data.data || response.data
                 )
-
             } catch (error) {
-
                 console.log(
                     'Category Fetch Error:',
                     error.response?.data || error
                 )
-
             }
-
         }
 
         fetchCategories()
-
     }, [])
+
     return (
         <>
-            
             {mapLoadError && (
                 <div className="card" style={{ maxWidth: 1400, margin: '0 auto' }}>
                     Failed to load Google Maps. Please check the Maps API key.
@@ -427,8 +373,6 @@ export default function AddMerchant() {
                         </div>
 
                         <div className="flex-between" style={{ gap: 20, flexWrap: 'wrap' }}>
-
-
                             <button
                                 type="button"
                                 className="btn btn-secondary"
@@ -570,23 +514,15 @@ export default function AddMerchant() {
                                 </label>
                             </div>
 
-
-
                             <PhoneNumberField
                                 value={form.phone}
                                 countryCode={form.countryCode}
                                 required={true}
                                 onChange={(value, countryCode) =>
-
-                                    setForm((prev) => ({
-
-                                        ...prev,
-
+                                    setFormFields({
                                         phone: value || '',
                                         countryCode: countryCode || ''
-
-                                    }))
-
+                                    })
                                 }
                             />
 
@@ -652,7 +588,6 @@ export default function AddMerchant() {
                             </div>
 
                             <div className="form-group-classic">
-
                                 <label className="form-label-classic">
                                     Business Category <span style={{ color: '#ef4444' }}>*</span>
                                 </label>
@@ -664,24 +599,19 @@ export default function AddMerchant() {
                                     className="form-select"
                                     required
                                 >
-
                                     <option value="">
                                         Select Category
                                     </option>
 
                                     {categories.map((item) => (
-
                                         <option
                                             key={item.id}
                                             value={item.id}
                                         >
                                             {item.name}
                                         </option>
-
                                     ))}
-
                                 </select>
-
                             </div>
 
                             <article className="upload-card upload-card--documents">
@@ -713,7 +643,7 @@ export default function AddMerchant() {
                                             {
                                                 form.kycDocument
                                                     ? form.kycDocument.name
-                                                    : 'Choose Document'
+                                                     : 'Choose Document'
                                             }
                                         </span>
                                     </label>
@@ -722,7 +652,6 @@ export default function AddMerchant() {
                                         form.kycDocument && (
                                             <div className="document-upload-success">
                                                 <i className="fas fa-check-circle"></i>
-
                                                 <span>
                                                     Document uploaded successfully
                                                 </span>
@@ -779,8 +708,6 @@ export default function AddMerchant() {
                             mapContainerStyle={mapContainerStyle}
                             isMerchant={true}
                         />
-
-                     
 
                         <div
                             style={{

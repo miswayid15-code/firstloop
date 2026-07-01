@@ -2318,13 +2318,14 @@ exports.update_appointment_status_by_mer = async (req, res) => {
                 user_type: "merchant"
             }
         });
-        console.log("Customer Notification:", notification);
-        console.log("Merchant Notification:", merchantNotification);
-        console.log("Appointment Updated:", appointment.toJSON());
-        console.log("Customer Token:", notificationToken?.token || "Not Found");
-        console.log("Merchant Token:", merchantToken?.token || "Not Found");
+        // console.log("Customer Notification:", notification);
+        // console.log("Merchant Notification:", merchantNotification);
+        // console.log("Appointment Updated:", appointment.toJSON());
+        // console.log("Customer Token:", notificationToken?.token || "Not Found");
+        // console.log("Merchant Token:", merchantToken?.token || "Not Found");
         if (merchantToken?.token) {
-              console.log("Sending Merchant Notification...");
+
+            
             await sendPushNotification({
                 token: merchantToken.token,
                 ...merchantNotification,
