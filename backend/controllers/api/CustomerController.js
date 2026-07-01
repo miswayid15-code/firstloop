@@ -1258,7 +1258,7 @@ exports.branch_details = async (req, res) => {
             req.body?.customer_id ||
             req.query?.customer_id ||
             null;
-console.log("customer_id", customer_id)
+        console.log("customer_id", customer_id)
 
         if (!branch_id) {
 
@@ -1559,7 +1559,7 @@ console.log("customer_id", customer_id)
                 distanceData.duration;
 
         }
-                
+
 
         const wishlist = await Wishlist.findOne({
             where: {
@@ -1572,7 +1572,7 @@ console.log("customer_id", customer_id)
 
         item.is_wishlist = wishlist !== null ? 1 : 0;
 
-        
+
 
         // ✅ Final Response
         return res.json({
@@ -2515,16 +2515,15 @@ exports.appointment = async (req, res) => {
         }
         const formattedDate = moment(
             appointment_date,
-            "DD-MM-YYYY",
-            true   // strict mode
+            ["YYYY-MM-DD", "DD-MM-YYYY"],
+            true
         );
-        console.log("Appointment Date:", appointment_date);
-       console.log("Formatted Date:", formattedDate.format("YYYY-MM-DD"));
-
+console.log("Formatted Date:", formattedDate.format("YYYY-MM-DD"));
+console.log("appointment_date:", appointment_date);
         if (!formattedDate.isValid()) {
             return res.json({
                 status: 0,
-                message: "Invalid appointment date format. Use DD-MM-YYYY"
+                message: "Invalid appointment date format."
             });
         }
 
@@ -2625,8 +2624,8 @@ exports.appointment = async (req, res) => {
 
         });
 
-          if (branch) {
-             const customerNotification = getNotificationTemplate(
+        if (branch) {
+            const customerNotification = getNotificationTemplate(
                 "appointment",
                 "b2c",
                 "pending"
@@ -2670,13 +2669,13 @@ exports.appointment = async (req, res) => {
                     token: merchantToken.token,
                     ...merchantNotification,
                     data: {
-                         type: "appointment",
+                        type: "appointment",
                         branch_id: branch.id,
                         appointment_id: appointment.id
                     }
                 });
             }
-          }
+        }
 
         return res.json({
 
