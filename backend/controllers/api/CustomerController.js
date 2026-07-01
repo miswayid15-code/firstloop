@@ -2502,7 +2502,7 @@ exports.appointment = async (req, res) => {
             });
 
         }
-
+console.log("slot", slot)
 
         if (!appointment_date || !slot) {
 
