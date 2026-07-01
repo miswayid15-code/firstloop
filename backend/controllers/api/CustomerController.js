@@ -2519,7 +2519,7 @@ exports.appointment = async (req, res) => {
             true   // strict mode
         );
         console.log("Appointment Date:", appointment_date);
-        console.log("Formatted Date:", formattedDate);
+       console.log("Formatted Date:", formattedDate.format("YYYY-MM-DD"));
 
         if (!formattedDate.isValid()) {
             return res.json({
