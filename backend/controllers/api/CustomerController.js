@@ -21,6 +21,7 @@ const { parsePhoneNumber } = require('libphonenumber-js');
 const jwt = require('jsonwebtoken');
 
 const sendMail = require('../../helpers/sendMail');
+const generateRefId = require('../../helpers/generateRefHelper');
 const RegisterTemplate = require('../../helpers/RegisterTemplate');
 const { sendOtp } = require('../../helpers/sendOtp');
 const ResetsTemplate = require('../../helpers/ResetsTemplate');
@@ -2518,8 +2519,7 @@ exports.appointment = async (req, res) => {
             ["YYYY-MM-DD", "DD-MM-YYYY"],
             true
         );
-console.log("Formatted Date:", formattedDate.format("YYYY-MM-DD"));
-console.log("appointment_date:", appointment_date);
+
         if (!formattedDate.isValid()) {
             return res.json({
                 status: 0,
@@ -2603,8 +2603,9 @@ console.log("appointment_date:", appointment_date);
 
         }
 
-
+        const refId = await generateRefId(branch.name);
         const appointment = await Appointment.create({
+            ref_id: refId,
 
             cus_id: customer_id,
 

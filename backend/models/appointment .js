@@ -56,6 +56,10 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.TEXT,
             allowNull: true
         },
+        ref_id: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
 
         // admin
         // merchant
