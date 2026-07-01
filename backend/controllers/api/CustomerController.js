@@ -826,12 +826,13 @@ exports.reset_ps = async (req, res) => {
             });
 
         }
-
+        console.log("OTP from request:", otp, typeof otp);
+        console.log("Customer ID:", customer.id, typeof customer.id);
         // Check OTP
         const otp_check = await CustomerFp.findOne({
             where: {
                 cus_id: customer.id,
-                otp: otp,
+                 otp: otp.toString().trim(),
                 status: 0
             }
         });
