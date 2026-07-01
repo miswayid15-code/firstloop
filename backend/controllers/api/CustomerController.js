@@ -1827,7 +1827,7 @@ exports.coupon_apply = async (req, res) => {
         // }
 
         // ✅ Store Coupon Apply
-        await CouponApplied.create({
+       const couponApplied = await CouponApplied.create({
 
             cus_id:
                 customer_id,
@@ -1876,7 +1876,7 @@ exports.coupon_apply = async (req, res) => {
                     data: {
                         type: "coupon_redeem",
                         coupon_id: coupon.id,
-                        coupon_applied_id: couponApplied.id
+                         coupon_applied_id: couponApplied.id
                     }
                 });
             }
@@ -1902,7 +1902,7 @@ exports.coupon_apply = async (req, res) => {
                     data: {
                         type: "coupon_redeem",
                         coupon_id: coupon.id,
-                        coupon_applied_id: couponApplied.id,
+                         coupon_applied_id: couponApplied.id,
                         branch_id: branch.id
                     }
                 });
