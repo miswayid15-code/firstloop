@@ -3222,6 +3222,8 @@ exports.send_test = async (req, res) => {
 exports.send_tests = async (req, res) => {
     try {
 
+        console.log("=== SEND TEST START ===");
+
         const notificationToken = await UserNotificationToken.findOne({
             where: {
                 user_id: 1,
@@ -3229,22 +3231,60 @@ exports.send_tests = async (req, res) => {
             }
         });
 
+        console.log("Notification Token Record:", notificationToken?.toJSON());
 
+        if (!notificationToken?.token) {
+            console.log("No notification token found.");
 
-        try {
-            const result = await sendPushNotification({
-                token: notificationToken?.token,
-                title: "🎉 Branch Created!",
-                body: `Your branch "${name}" has been created successfully. 🏢`
+            return res.json({
+                status: 0,
+                message: "Notification token not found"
             });
-
-
-        } catch (error) {
-            console.error("Push Notification Error:", error);
         }
 
-    }
-    catch (err) {
-        console.log(err)
+        const payload = {
+            token: notificationToken.token,
+            title: "🎉 Branch Created!",
+            body: `Your branch has been created successfully. 🏢`
+        };
+
+        console.log("Push Payload:", payload);
+
+        try {
+
+            const result = await sendPushNotification(payload);
+
+            console.log("Push Notification Result:", result);
+
+            return res.json({
+                status: 1,
+                message: "Notification sent successfully",
+                data: result
+            });
+
+        } catch (error) {
+
+            console.error("Push Notification Error:", error);
+            console.error("Error Message:", error.message);
+            console.error("Error Stack:", error.stack);
+
+            return res.json({
+                status: 0,
+                message: "Failed to send notification",
+                error: error.message
+            });
+        }
+
+    } catch (err) {
+
+        console.error("Controller Error:", err);
+        console.error("Error Message:", err.message);
+        console.error("Error Stack:", err.stack);
+
+        return res.status(500).json({
+            status: 0,
+            message: "Internal Server Error",
+            error: err.message
+        });
     }
 };
