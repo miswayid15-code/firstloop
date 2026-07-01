@@ -673,13 +673,132 @@ exports.forget_password = async (req, res) => {
     }
 
 };
-exports.reset_ps = async (req, res) => {
+// exports.reset_ps = async (req, res) => {
 
+//     try {
+
+//         const { email, otp, password } = req.body;
+
+//         if (!email || !otp || !password) {
+
+//             return res.status(400).json({
+//                 status: 0,
+//                 message: "Email, OTP and password are required"
+//             });
+
+//         }
+
+//         // find customer
+//         const customer = await Customer.findOne({
+//             where: {
+//                 email: email
+//             }
+//         });
+
+//         if (!customer) {
+
+//             return res.status(404).json({
+//                 status: 0,
+//                 message: "Customer not found"
+//             });
+
+//         }
+
+//         // check otp
+//         const otp_check = await CustomerFp.findOne({
+
+//             where: {
+//                 cus_id: customer.id,
+//                 otp: otp,
+//                 status: 0
+//             }
+
+//         });
+
+//         if (!otp_check) {
+
+//             return res.status(400).json({
+//                 status: 0,
+//                 message: "Invalid OTP"
+//             });
+
+//         }
+
+//         // hash password
+//         const hashedPassword = await bcrypt.hash(
+//             password.toString(),
+//             10
+//         );
+
+//         // update password
+//         await customer.update({
+//             password: hashedPassword
+//         });
+
+//         // otp completed
+//         await otp_check.update({
+//             status: 1
+//         });
+
+//         // send mail
+//         await sendMail(
+//             email,
+//             'Password Reset Successful',
+//             ResetsTemplate('Customer')
+//         );
+//         const notificationToken = await UserNotificationToken.findOne({
+//             where: {
+//                 user_id: customer.id,
+//                 user_type: "customer"
+//             }
+//         });
+
+//         // console.log(notificationToken?.toJSON());
+
+//         try {
+//             const result = await sendPushNotification({
+//                 token: notificationToken?.token,
+//                 title: "✅ Success!",
+//                 body: "Your password has been reset successfully. 🔐"
+//             });
+
+
+//         } catch (error) {
+//             console.error("Push Notification Error:", error);
+//         }
+//         return res.status(200).json({
+//             status: 1,
+//             message: "Password reset successfully"
+//         });
+
+//     } catch (err) {
+
+//         console.log("ERROR:", err);
+
+//         return res.status(500).json({
+//             status: 0,
+//             message: err.message
+//         });
+
+//     }
+
+// };
+
+exports.reset_ps = async (req, res) => {
     try {
 
         const { email, otp, password } = req.body;
 
+        console.log("===== RESET PASSWORD START =====");
+        console.log("Request Body:", {
+            email,
+            otp,
+            password: password ? "******" : null
+        });
+
         if (!email || !otp || !password) {
+
+            console.log("Validation Failed");
 
             return res.status(400).json({
                 status: 0,
@@ -688,14 +807,18 @@ exports.reset_ps = async (req, res) => {
 
         }
 
-        // find customer
+        // Find Customer
         const customer = await Customer.findOne({
             where: {
                 email: email
             }
         });
 
+        console.log("Customer:", customer ? customer.toJSON() : null);
+
         if (!customer) {
+
+            console.log("Customer not found");
 
             return res.status(404).json({
                 status: 0,
@@ -704,18 +827,20 @@ exports.reset_ps = async (req, res) => {
 
         }
 
-        // check otp
+        // Check OTP
         const otp_check = await CustomerFp.findOne({
-
             where: {
                 cus_id: customer.id,
                 otp: otp,
                 status: 0
             }
-
         });
 
+        console.log("OTP Record:", otp_check ? otp_check.toJSON() : null);
+
         if (!otp_check) {
+
+            console.log("Invalid OTP");
 
             return res.status(400).json({
                 status: 0,
@@ -724,28 +849,48 @@ exports.reset_ps = async (req, res) => {
 
         }
 
-        // hash password
+        console.log("OTP Verified Successfully");
+
+        // Hash Password
         const hashedPassword = await bcrypt.hash(
             password.toString(),
             10
         );
 
-        // update password
+        console.log("Password Hashed");
+
+        // Update Password
         await customer.update({
             password: hashedPassword
         });
 
-        // otp completed
+        console.log("Password Updated");
+
+        // OTP Completed
         await otp_check.update({
             status: 1
         });
 
-        // send mail
-        await sendMail(
-            email,
-            'Password Reset Successful',
-            ResetsTemplate('Customer')
-        );
+        console.log("OTP Status Updated");
+
+        // Send Mail
+        try {
+
+            await sendMail(
+                email,
+                "Password Reset Successful",
+                ResetsTemplate("Customer")
+            );
+
+            console.log("Password Reset Mail Sent");
+
+        } catch (mailErr) {
+
+            console.log("MAIL ERROR:", mailErr);
+
+        }
+
+        // Notification Token
         const notificationToken = await UserNotificationToken.findOne({
             where: {
                 user_id: customer.id,
@@ -753,19 +898,30 @@ exports.reset_ps = async (req, res) => {
             }
         });
 
-        // console.log(notificationToken?.toJSON());
+        console.log(
+            "Notification Token:",
+            notificationToken ? notificationToken.toJSON() : null
+        );
 
+        // Push Notification
         try {
+
             const result = await sendPushNotification({
                 token: notificationToken?.token,
                 title: "✅ Success!",
                 body: "Your password has been reset successfully. 🔐"
             });
 
+            console.log("Push Notification Result:", result);
 
         } catch (error) {
-            console.error("Push Notification Error:", error);
+
+            console.log("Push Notification Error:", error);
+
         }
+
+        console.log("===== RESET PASSWORD SUCCESS =====");
+
         return res.status(200).json({
             status: 1,
             message: "Password reset successfully"
@@ -773,7 +929,8 @@ exports.reset_ps = async (req, res) => {
 
     } catch (err) {
 
-        console.log("ERROR:", err);
+        console.log("===== RESET PASSWORD ERROR =====");
+        console.log(err);
 
         return res.status(500).json({
             status: 0,
@@ -781,10 +938,7 @@ exports.reset_ps = async (req, res) => {
         });
 
     }
-
 };
-
-
 exports.update = async (req, res) => {
 
     try {
