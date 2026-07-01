@@ -1373,7 +1373,7 @@ exports.branch_details = async (req, res) => {
 
         // Get today's day (1 = Monday ... 7 = Sunday)
         const today = moment().isoWeekday();
-const todayDate = moment().format("YYYY-MM-DD");
+        const todayDate = moment().format("YYYY-MM-DD");
         const todayTiming = item.BranchTimings.find(
             timing => timing.day === today
         );
@@ -1400,7 +1400,7 @@ const todayDate = moment().format("YYYY-MM-DD");
                     ? 1
                     : 0;
         }
-console.log("Today:", today);
+        console.log("Today:", today);
         const coupons =
             await Coupon.findAll({
 
@@ -1827,7 +1827,7 @@ exports.coupon_apply = async (req, res) => {
         // }
 
         // ✅ Store Coupon Apply
-       const couponApplied = await CouponApplied.create({
+        const couponApplied = await CouponApplied.create({
 
             cus_id:
                 customer_id,
@@ -1876,7 +1876,7 @@ exports.coupon_apply = async (req, res) => {
                     data: {
                         type: "coupon_redeem",
                         coupon_id: coupon.id,
-                         coupon_applied_id: couponApplied.id
+                        coupon_applied_id: couponApplied.id
                     }
                 });
             }
@@ -1902,7 +1902,7 @@ exports.coupon_apply = async (req, res) => {
                     data: {
                         type: "coupon_redeem",
                         coupon_id: coupon.id,
-                         coupon_applied_id: couponApplied.id,
+                        coupon_applied_id: couponApplied.id,
                         branch_id: branch.id
                     }
                 });
@@ -2308,7 +2308,12 @@ exports.wishlist = async (req, res) => {
             });
 
         }
-
+        const notificationToken = await UserNotificationToken.findOne({
+            where: {
+                user_id: customer_id,
+                user_type: "customer"
+            }
+        });
         // ✅ Branch Check
         const branch =
             await Branch.findOne({
@@ -2362,6 +2367,17 @@ exports.wishlist = async (req, res) => {
                 del_status: 1
 
             });
+            try {
+                const result = await sendPushNotification({
+                    token: notificationToken?.token,
+                    title: "Wishlist Updated!",
+                    body: `The branch "${branch.name}" has been removed from your wishlist.`
+                });
+
+
+            } catch (error) {
+                console.error("Push Notification Error:", error);
+            }
 
             return res.json({
 
@@ -2400,6 +2416,21 @@ exports.wishlist = async (req, res) => {
 
             });
 
+
+
+
+
+        try {
+            const result = await sendPushNotification({
+                token: notificationToken?.token,
+                title: "🎉 Wishlist Updated!",
+                body: `The branch "${branch.name}" has been added to your wishlist. ❤️`
+            });
+
+
+        } catch (error) {
+            console.error("Push Notification Error:", error);
+        }
         // ✅ Response
         return res.json({
 
