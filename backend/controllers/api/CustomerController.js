@@ -21,7 +21,7 @@ const { parsePhoneNumber } = require('libphonenumber-js');
 const jwt = require('jsonwebtoken');
 
 const sendMail = require('../../helpers/sendMail');
-const generateRefId = require('../../helpers/generateRefHelper');
+const generateRefId = require("../../helpers/generateRefHelper");
 const RegisterTemplate = require('../../helpers/RegisterTemplate');
 const { sendOtp } = require('../../helpers/sendOtp');
 const ResetsTemplate = require('../../helpers/ResetsTemplate');
@@ -2604,6 +2604,7 @@ exports.appointment = async (req, res) => {
         }
 
         const refId = await generateRefId(branch.name);
+
         const appointment = await Appointment.create({
             ref_id: refId,
 
@@ -3395,16 +3396,21 @@ exports.cancel_appointment = async (req, res) => {
 };
 exports.send_test = async (req, res) => {
     try {
-        await sendMail(
-            'minsway01@gmail.com',
-            'Customer Registration Successful',
-            RegisterTemplate('customer', 'rahulraj')
-        );
+        const refId = await generateRefId("Test Branch");
+        console.log("Generated Ref ID:", refId);
+
+        return res.json({
+            status: 1,
+            refId
+        });
+    } catch (err) {
+        console.log(err);
+        return res.json({
+            status: 0,
+            message: err.message
+        });
     }
-    catch (err) {
-        console.log(err)
-    }
-}
+};
 exports.send_tests = async (req, res) => {
     try {
 
