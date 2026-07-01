@@ -397,6 +397,27 @@ exports.login = async (req, res) => {
             }
         );
 
+        const notificationToken = await UserNotificationToken.findOne({
+            where: {
+                user_id: customer.id,
+                user_type: "customer"
+            }
+        });
+
+        // console.log(notificationToken?.toJSON());
+
+        try {
+            const result = await sendPushNotification({
+                token: notificationToken?.token,
+                title: "Welcome Back!",
+                body: "You have successfully signed in to your account."
+            });
+
+
+        } catch (error) {
+            console.error("Push Notification Error:", error);
+        }
+
         return res.json({
 
             status: 1,
