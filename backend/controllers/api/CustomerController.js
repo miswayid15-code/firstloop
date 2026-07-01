@@ -2518,6 +2518,7 @@ exports.appointment = async (req, res) => {
             "DD-MM-YYYY",
             true   // strict mode
         );
+        console.log("Formatted Date:", formattedDate);
 
         if (!formattedDate.isValid()) {
             return res.json({
@@ -2527,8 +2528,8 @@ exports.appointment = async (req, res) => {
         }
 
         const dbDate = formattedDate.format("YYYY-MM-DD");
-        console.log("appointment_date:", appointment_date);
-        console.log("new Date:", new Date(appointment_date));
+        // console.log("appointment_date:", appointment_date);
+        // console.log("new Date:", new Date(appointment_date));
 
         const customer = await Customer.findOne({
 
@@ -2622,6 +2623,59 @@ exports.appointment = async (req, res) => {
             cancel_reason: null
 
         });
+
+          if (branch) {
+             const customerNotification = getNotificationTemplate(
+                "appointment",
+                "b2c",
+                "pending"
+            );
+
+            const customerToken = await UserNotificationToken.findOne({
+                where: {
+                    user_id: customer_id,
+                    user_type: "customer"
+                }
+            });
+
+            if (customerToken?.token) {
+                await sendPushNotification({
+                    token: customerToken.token,
+                    ...customerNotification,
+                    data: {
+                        type: "appointment",
+                        branch_id: branch.id,
+                        appointment_id: appointment.id
+                    }
+                });
+            }
+
+            // Get merchant notification token
+            const merchantToken = await UserNotificationToken.findOne({
+                where: {
+                    user_id: branch.merchant_id,
+                    user_type: "merchant"
+                }
+            });
+
+            const merchantNotification = getNotificationTemplate(
+                "appointment",
+                "b2b",
+                "pending"
+            );
+
+            if (merchantToken?.token) {
+                await sendPushNotification({
+                    token: merchantToken.token,
+                    ...merchantNotification,
+                    data: {
+                         type: "appointment",
+                        branch_id: branch.id,
+                        appointment_id: appointment.id
+                    }
+                });
+            }
+          }
 
         return res.json({
 
