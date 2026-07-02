@@ -1858,7 +1858,7 @@ exports.coupon_apply = async (req, res) => {
 
         if (branch) {
 
-            const receptionist = await Receptionist.findAll({
+            const receptionist = await Receptionist.findOne({
                 where: {
                     branch_id: branch.id,
                     status: 1,
@@ -2763,7 +2763,7 @@ exports.appointment = async (req, res) => {
                     }
                 });
             }
-            const receptionist = await Receptionist.findAll({
+            const receptionist = await Receptionist.findOne({
                 where: {
                     branch_id: branch.id,
                     status: 1,
@@ -3563,7 +3563,7 @@ exports.cancel_appointment = async (req, res) => {
                 });
             }
 
-            const receptionist = await Receptionist.findAll({
+            const receptionist = await Receptionist.findOne({
                 where: {
                     branch_id: branch.id,
                     status: 1,
