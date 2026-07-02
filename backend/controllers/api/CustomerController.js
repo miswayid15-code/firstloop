@@ -1858,9 +1858,11 @@ exports.coupon_apply = async (req, res) => {
 
         if (branch) {
 
-            const Receptionists = await Receptionist.findAll({
+            const receptionists = await Receptionist.findAll({
                 where: {
-                    branch_id: branch.id
+                    branch_id: branch.id,
+                    status: 1,
+                    del_status: 0
                 }
             });
 
@@ -2761,9 +2763,11 @@ exports.appointment = async (req, res) => {
                     }
                 });
             }
-            const Receptionists = await Receptionist.findAll({
+            const receptionists = await Receptionist.findAll({
                 where: {
-                    branch_id: branch.id
+                    branch_id: branch.id,
+                    status: 1,
+                    del_status: 0
                 }
             });
 
@@ -3559,9 +3563,11 @@ exports.cancel_appointment = async (req, res) => {
                 });
             }
 
-            const Receptionists = await Receptionist.findAll({
+            const receptionists = await Receptionist.findAll({
                 where: {
-                    branch_id: branch.id
+                    branch_id: branch.id,
+                    status: 1,
+                    del_status: 0
                 }
             });
 
