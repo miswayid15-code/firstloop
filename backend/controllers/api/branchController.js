@@ -165,19 +165,19 @@ exports.register = async (req, res) => {
 
         // console.log("EMAIL EXISTS RESULT:", emailExists);
 
-        if (emailExists) {
+        // if (emailExists) {
 
-            // console.log("EMAIL ALREADY EXISTS");
+        //     // console.log("EMAIL ALREADY EXISTS");
 
-            return res.json({
+        //     return res.json({
 
-                status: 0,
+        //         status: 0,
 
-                message: "Email already exists"
+        //         message: "Email already exists"
 
-            });
+        //     });
 
-        }
+        // }
 
         // console.log("EMAIL VALIDATION PASSED");
 
@@ -199,19 +199,19 @@ exports.register = async (req, res) => {
 
         // console.log("PHONE EXISTS RESULT:", phoneExists);
 
-        if (phoneExists) {
+        // if (phoneExists) {
 
-            // console.log("PHONE ALREADY EXISTS");
+        //     // console.log("PHONE ALREADY EXISTS");
 
-            return res.json({
+        //     return res.json({
 
-                status: 0,
+        //         status: 0,
 
-                message: "Phone already exists"
+        //         message: "Phone already exists"
 
-            });
+        //     });
 
-        }
+        // }
 
         // console.log("PHONE VALIDATION PASSED");
 

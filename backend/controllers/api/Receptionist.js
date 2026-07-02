@@ -117,12 +117,12 @@ exports.register = async (req, res) => {
                 where: { email: email.trim() }
             });
 
-            if (emailExists) {
-                return res.json({
-                    status: 0,
-                    message: "Email already exists"
-                });
-            }
+            // if (emailExists) {
+            //     return res.json({
+            //         status: 0,
+            //         message: "Email already exists"
+            //     });
+            // }
         }
 
         // Reception ID is required

@@ -2592,16 +2592,16 @@ exports.appointment = async (req, res) => {
 
         }
 
-       
+
         const dayNumber = moment(dbDate).isoWeekday();
 
-        
+
         const branchTiming = branch.BranchTimings.find(
             timing => Number(timing.day) === dayNumber
         );
 
-        
-        if (!branchTiming ||  branchTiming.is_closed === true) {
+
+        if (!branchTiming || branchTiming.is_closed === true) {
             return res.json({
                 status: 0,
                 message: "Branch is closed on the selected day."
@@ -3429,6 +3429,75 @@ exports.cancel_appointment = async (req, res) => {
             cancel_by: 'customer',
             cancel_reason: cancel_reason || null
         });
+        // Get branch details
+        const branch = await Branch.findOne({
+            where: {
+                id: appointment.br_id
+            }
+        });
+
+        if (branch) {
+
+            // =========================
+            // Customer Notification
+            // =========================
+            const customerNotification = getNotificationTemplate(
+                "appointment",
+                "b2c",
+                "cancelled",
+                "you",
+                appointment.cancel_reason
+            );
+
+            const customerToken = await UserNotificationToken.findOne({
+                where: {
+                    user_id: customer_id,
+                    user_type: "customer"
+                }
+            });
+
+            if (customerToken?.token) {
+                await sendPushNotification({
+                    token: customerToken.token,
+                    ...customerNotification,
+                    data: {
+                        type: "appointment",
+                        branch_id: branch.id,
+                        appointment_id: appointment.id
+                    }
+                });
+            }
+
+            // =========================
+            // Merchant Notification
+            // =========================
+            const merchantNotification = getNotificationTemplate(
+                "appointment",
+                "b2b",
+                "cancelled",
+                "the customer",
+                appointment.cancel_reason
+            );
+
+            const merchantToken = await UserNotificationToken.findOne({
+                where: {
+                    user_id: branch.merchant_id,
+                    user_type: "merchant"
+                }
+            });
+
+            if (merchantToken?.token) {
+                await sendPushNotification({
+                    token: merchantToken.token,
+                    ...merchantNotification,
+                    data: {
+                        type: "appointment",
+                        branch_id: branch.id,
+                        appointment_id: appointment.id
+                    }
+                });
+            }
+        }
 
         return res.json({
             status: 1,
@@ -3504,7 +3573,7 @@ exports.get_brach_by_coupon = async (req, res) => {
             attributes: [
                 "id",
                 "name",
-                "image",
+                "profile_image",
                 "address",
                 "lat",
                 "lon"
@@ -3513,8 +3582,8 @@ exports.get_brach_by_coupon = async (req, res) => {
 
         const branchList = branches.map(branch => ({
             ...branch.toJSON(),
-            image: branch.image
-                ? `${baseUrl}/uploads/branch/${branch.image}`
+            profile_image: branch.profile_image
+                ? `${baseUrl}/${branch.profile_image}`
                 : null
         }));
 

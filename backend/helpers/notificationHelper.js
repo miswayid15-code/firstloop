@@ -77,11 +77,9 @@ const NotificationTemplates = {
                 title: "✅ Appointment Approved",
                 body: "Your appointment has been approved."
             },
-            cancelled: (reason) => ({
-                title: "❌ Appointment Cancelled",
-                body: reason
-                    ? `Your appointment has been cancelled. Reason: ${reason}`
-                    : "Your appointment has been cancelled."
+            cancelled: (cancelBy, reason) => ({
+                title: " Appointment Cancelled",
+                body: `Your appointment has been cancelled by ${cancelBy}.${reason ? ` Reason: ${reason}` : ""}`
             })
         },
 
@@ -94,11 +92,9 @@ const NotificationTemplates = {
                 title: "✅ Appointment Approved",
                 body: "The appointment request has been approved."
             },
-            cancelled: (reason) => ({
+            cancelled: (cancelBy, reason) => ({
                 title: "❌ Appointment Cancelled",
-                body: reason
-                    ? `The appointment has been cancelled. Reason: ${reason}`
-                    : "The appointment has been cancelled."
+                body: `Your appointment has been cancelled by ${cancelBy}.${reason ? ` Reason: ${reason}` : ""}`
             })
         }
     },
@@ -144,6 +140,7 @@ const getNotificationTemplate = (
     event,
     audience,
     status,
+    cancelBy = null,
     reason = null
 ) => {
 
@@ -167,8 +164,8 @@ const getNotificationTemplate = (
         };
     }
 
-    const notification = typeof template === "function"
-        ? template(reason)
+    return typeof template === "function"
+        ? template(cancelBy, reason)
         : template;
 
     console.log("Final Notification:", notification);

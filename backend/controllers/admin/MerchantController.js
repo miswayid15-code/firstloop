@@ -807,14 +807,14 @@ exports.receptionistsEdit = async (req, res) => {
                 }
             });
 
-            if (emailExists) {
+            // if (emailExists) {
 
-                return res.json({
-                    status: 0,
-                    message: "Email already exists"
-                });
+            //     return res.json({
+            //         status: 0,
+            //         message: "Email already exists"
+            //     });
 
-            }
+            // }
 
         }
 
@@ -941,12 +941,12 @@ exports.receptionistsRegister = async (req, res) => {
                 where: { email: email.trim() }
             });
 
-            if (emailExists) {
-                return res.json({
-                    status: 0,
-                    message: "Email already exists"
-                });
-            }
+            // if (emailExists) {
+            //     return res.json({
+            //         status: 0,
+            //         message: "Email already exists"
+            //     });
+            // }
         }
 
 
@@ -1063,7 +1063,7 @@ exports.branchRegister = async (req, res) => {
             age_group
         } = req.body;
 
-        console.log("BODY:", req.body);
+        // console.log("BODY:", req.body);
         // console.log("mer_id:", mer_id);
 
         if (
@@ -1121,14 +1121,14 @@ exports.branchRegister = async (req, res) => {
             where: { email }
         });
 
-        if (emailExists) {
+        // if (emailExists) {
 
-            return res.json({
-                status: 0,
-                message: "Email already exists"
-            });
+        //     return res.json({
+        //         status: 0,
+        //         message: "Email already exists"
+        //     });
 
-        }
+        // }
 
         // Phone Exists Check
         const phoneExists = await Branch.findOne({
@@ -1138,14 +1138,14 @@ exports.branchRegister = async (req, res) => {
             }
         });
 
-        if (phoneExists) {
+        // if (phoneExists) {
 
-            return res.json({
-                status: 0,
-                message: "Phone already exists"
-            });
+        //     return res.json({
+        //         status: 0,
+        //         message: "Phone already exists"
+        //     });
 
-        }
+        // }
 
         // Merchant Check
         const merchant = await Merchant.findByPk(mer_id);
