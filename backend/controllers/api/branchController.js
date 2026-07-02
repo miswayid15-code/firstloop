@@ -2519,7 +2519,7 @@ exports.update_appointment_status_by_mer = async (req, res) => {
             };
 
             if (notification === "cancelled") {
-                notificationData.cancel_by = "receptionist";
+                notificationData.cancel_by = "merchant";
                 notificationData.cancel_reason = cancel_reason || "";
             }
 
