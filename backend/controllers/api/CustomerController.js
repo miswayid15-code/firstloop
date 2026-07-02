@@ -1259,7 +1259,7 @@ exports.branch_details = async (req, res) => {
             req.body?.customer_id ||
             req.query?.customer_id ||
             null;
-        console.log("customer_id", customer_id)
+        // console.log("customer_id", customer_id)
 
         if (!branch_id) {
 
@@ -1401,7 +1401,7 @@ exports.branch_details = async (req, res) => {
                     ? 1
                     : 0;
         }
-        console.log("Today:", today);
+        // console.log("Today:", today);
         const coupons =
             await Coupon.findAll({
 
@@ -1436,6 +1436,7 @@ exports.branch_details = async (req, res) => {
                     'start_date',
                     'end_date',
                     'type',
+                    'description',
                     'buy_item', 'get_item'
                 ]
 

@@ -440,7 +440,7 @@ export default function ViewMerchant() {
 
             )
 
-            console.log("merchant data",response.data)
+            console.log("merchant data", response.data)
 
             if (isSuccessResponse(response.data)) {
 
@@ -599,6 +599,8 @@ export default function ViewMerchant() {
         setEditBranchModal(true)
 
         setEditBranchLoading(true)
+
+        fetchReceptionists()
 
         setEditBranchForm({
             name: '',
@@ -905,6 +907,7 @@ export default function ViewMerchant() {
             if (data.status === 1) {
                 toast.success(data.message || 'Receptionist deleted successfully');
                 fetchMerchant();
+                fetchReceptionists();
             }
             else {
                 toast.error(data.message || 'Failed to delete receptionist');
@@ -1034,6 +1037,7 @@ export default function ViewMerchant() {
         setAddBranchMenuFiles([])
         setAddingBranch(false)
         setAddModal(true)
+        fetchReceptionists()
     }
 
     const closeAddBranchModal = () => {
@@ -1112,13 +1116,13 @@ export default function ViewMerchant() {
     const [selectedDaysEdit, setSelectedDaysEdit] = useState([1, 2, 3, 4, 5, 6, 7])
 
     const handleAddTimingDayToggle = (dayNum) => {
-        setSelectedDaysAdd(prev => 
+        setSelectedDaysAdd(prev =>
             prev.includes(dayNum) ? prev.filter(d => d !== dayNum) : [...prev, dayNum]
         )
     }
 
     const handleEditTimingDayToggle = (dayNum) => {
-        setSelectedDaysEdit(prev => 
+        setSelectedDaysEdit(prev =>
             prev.includes(dayNum) ? prev.filter(d => d !== dayNum) : [...prev, dayNum]
         )
     }
@@ -1225,7 +1229,7 @@ export default function ViewMerchant() {
     const copyTimeToAllSelected = (isEdit, sourceDay) => {
         const setForm = isEdit ? setEditBranchForm : setAddBranchForm;
         const selected = isEdit ? selectedDaysEdit : selectedDaysAdd;
-        
+
         setForm(prev => {
             const sourceTiming = (prev.timings || []).find(item => item.day === sourceDay);
             if (!sourceTiming) return prev;
@@ -1236,11 +1240,11 @@ export default function ViewMerchant() {
 
             const updated = (prev.timings || []).map(item => {
                 if (selected.includes(item.day) && item.day !== sourceDay) {
-                    return { 
-                        ...item, 
-                        open_time: sourceTiming.open_time, 
-                        close_time: sourceTiming.close_time, 
-                        is_closed: false 
+                    return {
+                        ...item,
+                        open_time: sourceTiming.open_time,
+                        close_time: sourceTiming.close_time,
+                        is_closed: false
                     };
                 }
                 return item;
@@ -1670,6 +1674,7 @@ export default function ViewMerchant() {
                 toast.success(data.message || 'Branch registered successfully')
                 closeAddBranchModal()
                 fetchMerchant()
+                fetchReceptionists()
             } else {
                 toast.error(data.message || 'Failed to register branch')
             }
@@ -1905,6 +1910,8 @@ export default function ViewMerchant() {
                 closeEditBranchModal()
 
                 fetchMerchant()
+
+                fetchReceptionists()
 
             } else {
 
@@ -2170,6 +2177,8 @@ export default function ViewMerchant() {
 
                 }
 
+                fetchReceptionists()
+
                 setIsEditingReceptionist(false)
 
             } else {
@@ -2404,6 +2413,8 @@ export default function ViewMerchant() {
 
                 }
 
+                fetchReceptionists()
+
                 closeAddReceptionistModal()
 
             } else {
@@ -2469,7 +2480,7 @@ export default function ViewMerchant() {
             )
 
             const data = response.data || {}
-            console.log("Data",data)
+            console.log("Data", data)
 
             if (isSuccessResponse(data)) {
 
@@ -2527,7 +2538,7 @@ export default function ViewMerchant() {
     if (!loading && !merchantData) {
         return (
             <>
-                
+
                 <div className="card" style={{ marginBottom: 18 }}>
                     <div className="flex-between" style={{ gap: 16, flexWrap: 'wrap' }}>
                         <div>
@@ -2603,7 +2614,7 @@ export default function ViewMerchant() {
 
     return (
         <>
-                        <ConfirmDialog
+            <ConfirmDialog
                 open={confirmDialog.open}
                 title={confirmDialog.title}
                 message={confirmDialog.message}
@@ -2759,20 +2770,20 @@ export default function ViewMerchant() {
                                         {merchantData?.name}
                                     </h2>
 
-                                     <span
+                                    <span
                                         className={`badge ${merchantData?.status == 1
                                             ? 'active'
                                             : 'pending'
                                             }`}
-                                     >
+                                    >
 
-                                         {
-                                             merchantData?.status == 1
-                                                 ? 'Active'
-                                                 : 'Inactive'
-                                         }
+                                        {
+                                            merchantData?.status == 1
+                                                ? 'Active'
+                                                : 'Inactive'
+                                        }
 
-                                     </span>
+                                    </span>
 
                                 </div>
 
@@ -2885,9 +2896,9 @@ export default function ViewMerchant() {
 
                                         <p className="merchant-subtext" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                                             {merchantData?.email}
-                                            <i 
-                                                className="fas fa-check-circle" 
-                                                style={{ color: '#22c55e', fontSize: '0.85rem' }} 
+                                            <i
+                                                className="fas fa-check-circle"
+                                                style={{ color: '#22c55e', fontSize: '0.85rem' }}
                                                 title="Verified"
                                             />
                                         </p>
@@ -3644,6 +3655,7 @@ export default function ViewMerchant() {
                         <tr>
 
                             <th>Name</th>
+                            <th>Receptionist Id</th>
 
                             <th>Email</th>
 
@@ -3716,9 +3728,11 @@ export default function ViewMerchant() {
                                     </td>
 
                                     <td>
+                                        {receptionist.rep_id || '-'}
+                                    </td>
+                                    <td>
                                         {receptionist.email || '-'}
                                     </td>
-
                                     <td>
                                         {getReceptionistPhone(receptionist)}
                                     </td>
@@ -4442,7 +4456,7 @@ export default function ViewMerchant() {
                                             </div>
                                         )}
 
-                                            {/* <div className="form-group">
+                                        {/* <div className="form-group">
                                                 <input
                                                     type="number"
                                                     name="usage_limit"
@@ -4896,7 +4910,7 @@ export default function ViewMerchant() {
                                                 <div />
                                             </div>
                                         )}
-{/* 
+                                        {/* 
                                             <div className="form-group">
                                                 <input
                                                     type="number"
@@ -5130,8 +5144,8 @@ export default function ViewMerchant() {
                         <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
                             {(() => {
                                 const branchCoupons = (merchantData?.coupon_list || []).filter(coupon => {
-                                    const bIds = Array.isArray(coupon.branch_ids) 
-                                        ? coupon.branch_ids.map(Number) 
+                                    const bIds = Array.isArray(coupon.branch_ids)
+                                        ? coupon.branch_ids.map(Number)
                                         : [];
                                     return bIds.includes(Number(selectedBranchForCoupons.id));
                                 });
@@ -5286,20 +5300,20 @@ export default function ViewMerchant() {
                                             ? selectedCouponForView.branch_ids.map(Number)
                                             : [];
                                         const assigned = branchesData.filter(b => bIds.includes(Number(b.id)));
-                                        
+
                                         if (assigned.length === 0) {
                                             return <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No branches assigned.</span>;
                                         }
 
                                         return assigned.map(b => (
-                                            <span 
-                                                key={b.id} 
-                                                style={{ 
-                                                    padding: '4px 10px', 
-                                                    background: 'rgba(142,45,226,0.08)', 
-                                                    border: '1px solid rgba(142,45,226,0.2)', 
-                                                    borderRadius: '16px', 
-                                                    color: 'var(--primary)', 
+                                            <span
+                                                key={b.id}
+                                                style={{
+                                                    padding: '4px 10px',
+                                                    background: 'rgba(142,45,226,0.08)',
+                                                    border: '1px solid rgba(142,45,226,0.2)',
+                                                    borderRadius: '16px',
+                                                    color: 'var(--primary)',
                                                     fontSize: '0.8rem',
                                                     fontWeight: 500
                                                 }}
@@ -5580,16 +5594,16 @@ export default function ViewMerchant() {
                                             Working Days & Hours
                                         </h4>
                                         <div style={{ display: 'flex', gap: '8px' }}>
-                                            <button 
-                                                type="button" 
+                                            <button
+                                                type="button"
                                                 className="btn btn-secondary btn-sm"
                                                 onClick={() => applyPreset(false, 'weekdays')}
                                                 style={{ fontSize: '0.75rem', height: '32px', padding: '0 12px' }}
                                             >
                                                 <i className="far fa-calendar-minus" style={{ marginRight: '4px' }}></i> Weekdays Only
                                             </button>
-                                            <button 
-                                                type="button" 
+                                            <button
+                                                type="button"
                                                 className="btn btn-secondary btn-sm"
                                                 onClick={() => applyPreset(false, 'alldays')}
                                                 style={{ fontSize: '0.75rem', height: '32px', padding: '0 12px' }}
@@ -5607,8 +5621,8 @@ export default function ViewMerchant() {
                                         <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
                                             <div style={{ flex: 1, minWidth: '120px' }}>
                                                 <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Opening Time</label>
-                                                <input 
-                                                    type="time" 
+                                                <input
+                                                    type="time"
                                                     className="form-control"
                                                     value={quickOpenAdd}
                                                     onChange={(e) => setQuickOpenAdd(e.target.value)}
@@ -5617,8 +5631,8 @@ export default function ViewMerchant() {
                                             </div>
                                             <div style={{ flex: 1, minWidth: '120px' }}>
                                                 <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Closing Time</label>
-                                                <input 
-                                                    type="time" 
+                                                <input
+                                                    type="time"
                                                     className="form-control"
                                                     value={quickCloseAdd}
                                                     onChange={(e) => setQuickCloseAdd(e.target.value)}
@@ -5626,16 +5640,16 @@ export default function ViewMerchant() {
                                                 />
                                             </div>
                                             <div style={{ display: 'flex', gap: '8px' }}>
-                                                <button 
-                                                    type="button" 
+                                                <button
+                                                    type="button"
                                                     className="btn btn-primary"
                                                     onClick={() => applyQuickSetup(false)}
                                                     style={{ height: '36px', fontSize: '0.78rem', padding: '0 12px' }}
                                                 >
                                                     Apply
                                                 </button>
-                                                <button 
-                                                    type="button" 
+                                                <button
+                                                    type="button"
                                                     className="btn btn-secondary"
                                                     onClick={() => clearAllTimes(false)}
                                                     style={{ height: '36px', fontSize: '0.78rem', padding: '0 12px' }}
@@ -5651,9 +5665,9 @@ export default function ViewMerchant() {
                                             <thead>
                                                 <tr style={{ borderBottom: '1px solid var(--border-color)', textAlign: 'left' }}>
                                                     <th style={{ padding: '8px 4px', width: '32px' }}>
-                                                        <input 
-                                                            type="checkbox" 
-                                                            checked={selectedDaysAdd.length === 7} 
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={selectedDaysAdd.length === 7}
                                                             onChange={handleAddTimingAllToggle}
                                                             style={{ cursor: 'pointer' }}
                                                         />
@@ -5671,8 +5685,8 @@ export default function ViewMerchant() {
                                                     return (
                                                         <tr key={item.day} style={{ borderBottom: '1px solid var(--bg-hover)', background: isSelected ? 'rgba(142,45,226,0.01)' : 'transparent' }}>
                                                             <td style={{ padding: '8px 4px' }}>
-                                                                <input 
-                                                                    type="checkbox" 
+                                                                <input
+                                                                    type="checkbox"
                                                                     checked={isSelected}
                                                                     onChange={() => handleAddTimingDayToggle(item.day)}
                                                                     style={{ cursor: 'pointer' }}
@@ -5683,8 +5697,8 @@ export default function ViewMerchant() {
                                                                 <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{dayNamesMap[item.day].short}</span>
                                                             </td>
                                                             <td style={{ padding: '8px 8px' }}>
-                                                                <input 
-                                                                    type="time" 
+                                                                <input
+                                                                    type="time"
                                                                     className="form-control"
                                                                     value={item.open_time || ''}
                                                                     onChange={(e) => updateTimingField(false, item.day, 'open_time', e.target.value)}
@@ -5693,8 +5707,8 @@ export default function ViewMerchant() {
                                                                 />
                                                             </td>
                                                             <td style={{ padding: '8px 8px' }}>
-                                                                <input 
-                                                                    type="time" 
+                                                                <input
+                                                                    type="time"
                                                                     className="form-control"
                                                                     value={item.close_time || ''}
                                                                     onChange={(e) => updateTimingField(false, item.day, 'close_time', e.target.value)}
@@ -5703,8 +5717,8 @@ export default function ViewMerchant() {
                                                                 />
                                                             </td>
                                                             <td style={{ padding: '8px 8px', textAlign: 'center' }}>
-                                                                <input 
-                                                                    type="checkbox" 
+                                                                <input
+                                                                    type="checkbox"
                                                                     checked={item.is_closed}
                                                                     onChange={(e) => updateTimingField(false, item.day, 'is_closed', e.target.checked)}
                                                                     style={{ cursor: 'pointer' }}
@@ -6200,16 +6214,16 @@ export default function ViewMerchant() {
                                                 Working Days & Hours
                                             </h4>
                                             <div style={{ display: 'flex', gap: '8px' }}>
-                                                <button 
-                                                    type="button" 
+                                                <button
+                                                    type="button"
                                                     className="btn btn-secondary btn-sm"
                                                     onClick={() => applyPreset(true, 'weekdays')}
                                                     style={{ fontSize: '0.75rem', height: '32px', padding: '0 12px' }}
                                                 >
                                                     <i className="far fa-calendar-minus" style={{ marginRight: '4px' }}></i> Weekdays Only
                                                 </button>
-                                                <button 
-                                                    type="button" 
+                                                <button
+                                                    type="button"
                                                     className="btn btn-secondary btn-sm"
                                                     onClick={() => applyPreset(true, 'alldays')}
                                                     style={{ fontSize: '0.75rem', height: '32px', padding: '0 12px' }}
@@ -6227,8 +6241,8 @@ export default function ViewMerchant() {
                                             <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
                                                 <div style={{ flex: 1, minWidth: '120px' }}>
                                                     <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Opening Time</label>
-                                                    <input 
-                                                        type="time" 
+                                                    <input
+                                                        type="time"
                                                         className="form-control"
                                                         value={quickOpenEdit}
                                                         onChange={(e) => setQuickOpenEdit(e.target.value)}
@@ -6237,8 +6251,8 @@ export default function ViewMerchant() {
                                                 </div>
                                                 <div style={{ flex: 1, minWidth: '120px' }}>
                                                     <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Closing Time</label>
-                                                    <input 
-                                                        type="time" 
+                                                    <input
+                                                        type="time"
                                                         className="form-control"
                                                         value={quickCloseEdit}
                                                         onChange={(e) => setQuickCloseEdit(e.target.value)}
@@ -6246,16 +6260,16 @@ export default function ViewMerchant() {
                                                     />
                                                 </div>
                                                 <div style={{ display: 'flex', gap: '8px' }}>
-                                                    <button 
-                                                        type="button" 
+                                                    <button
+                                                        type="button"
                                                         className="btn btn-primary"
                                                         onClick={() => applyQuickSetup(true)}
                                                         style={{ height: '36px', fontSize: '0.78rem', padding: '0 12px' }}
                                                     >
                                                         Apply
                                                     </button>
-                                                    <button 
-                                                        type="button" 
+                                                    <button
+                                                        type="button"
                                                         className="btn btn-secondary"
                                                         onClick={() => clearAllTimes(true)}
                                                         style={{ height: '36px', fontSize: '0.78rem', padding: '0 12px' }}
@@ -6271,9 +6285,9 @@ export default function ViewMerchant() {
                                                 <thead>
                                                     <tr style={{ borderBottom: '1px solid var(--border-color)', textAlign: 'left' }}>
                                                         <th style={{ padding: '8px 4px', width: '32px' }}>
-                                                            <input 
-                                                                type="checkbox" 
-                                                                checked={selectedDaysEdit.length === 7} 
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={selectedDaysEdit.length === 7}
                                                                 onChange={handleEditTimingAllToggle}
                                                                 style={{ cursor: 'pointer' }}
                                                             />
@@ -6291,8 +6305,8 @@ export default function ViewMerchant() {
                                                         return (
                                                             <tr key={item.day} style={{ borderBottom: '1px solid var(--bg-hover)', background: isSelected ? 'rgba(142,45,226,0.01)' : 'transparent' }}>
                                                                 <td style={{ padding: '8px 4px' }}>
-                                                                    <input 
-                                                                        type="checkbox" 
+                                                                    <input
+                                                                        type="checkbox"
                                                                         checked={isSelected}
                                                                         onChange={() => handleEditTimingDayToggle(item.day)}
                                                                         style={{ cursor: 'pointer' }}
@@ -6303,8 +6317,8 @@ export default function ViewMerchant() {
                                                                     <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{dayNamesMap[item.day].short}</span>
                                                                 </td>
                                                                 <td style={{ padding: '8px 8px' }}>
-                                                                    <input 
-                                                                        type="time" 
+                                                                    <input
+                                                                        type="time"
                                                                         className="form-control"
                                                                         value={item.open_time || ''}
                                                                         onChange={(e) => updateTimingField(true, item.day, 'open_time', e.target.value)}
@@ -6313,8 +6327,8 @@ export default function ViewMerchant() {
                                                                     />
                                                                 </td>
                                                                 <td style={{ padding: '8px 8px' }}>
-                                                                    <input 
-                                                                        type="time" 
+                                                                    <input
+                                                                        type="time"
                                                                         className="form-control"
                                                                         value={item.close_time || ''}
                                                                         onChange={(e) => updateTimingField(true, item.day, 'close_time', e.target.value)}
@@ -6323,8 +6337,8 @@ export default function ViewMerchant() {
                                                                     />
                                                                 </td>
                                                                 <td style={{ padding: '8px 8px', textAlign: 'center' }}>
-                                                                    <input 
-                                                                        type="checkbox" 
+                                                                    <input
+                                                                        type="checkbox"
                                                                         checked={item.is_closed}
                                                                         onChange={(e) => updateTimingField(true, item.day, 'is_closed', e.target.checked)}
                                                                         style={{ cursor: 'pointer' }}

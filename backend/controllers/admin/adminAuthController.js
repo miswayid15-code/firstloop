@@ -485,6 +485,7 @@ exports.fetchmerchant = async (req, res) => {
 
                             attributes: [
                                 'id',
+                                'rep_id',
                                 'name',
                                 'country_code',
                                 'profile_image',
@@ -760,6 +761,7 @@ exports.fetchmerchant = async (req, res) => {
 
             attributes: [
                 'id',
+                'rep_id',
                 'name',
                 'email',
                 'phone',
