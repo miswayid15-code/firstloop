@@ -1,4 +1,4 @@
-const { Coupon, Merchant, Branch, CouponApplied, Customer, CouponCat,UserNotificationToken  } = require('../../models');
+const { Coupon, Merchant, Branch, CouponApplied, Customer, CouponCat, UserNotificationToken } = require('../../models');
 const { Op, Sequelize, where } = require('sequelize');
 const baseUrl = process.env.APP_URL;
 const { sendPushNotification, getNotificationTemplate } = require("../../helpers/notificationHelper");
@@ -1101,19 +1101,23 @@ exports.claim_coupon = async (req, res) => {
         const customerNotification = getNotificationTemplate(
             "coupon_redeem",
             "b2c",
-            notification
+            notification,
+            notification === "cancelled" ? userType : null,
+            notification === "cancelled" ? cancel_reason : null
         );
 
         const merchantNotification = getNotificationTemplate(
             "coupon_redeem",
             "b2b",
-            notification
+            notification === "cancelled" ? userType : null,
+            notification === "cancelled" ? cancel_reason : null
         );
 
         const receptionistNotification = getNotificationTemplate(
             "coupon_redeem",
             "b2b",
-            notification
+            notification === "cancelled" ? userType : null,
+            notification === "cancelled" ? cancel_reason : null
         );
 
         const notificationData = {

@@ -79,7 +79,7 @@ const NotificationTemplates = {
             },
             cancelled: (cancelBy, reason) => ({
                 title: " Appointment Cancelled",
-                body: `Your appointment has been cancelled by ${cancelBy}.${reason ? ` Reason: ${reason}` : ""}`
+                body: `Your appointment has been cancelled.${reason ? ` Reason: ${reason}` : ""}`
             })
         },
 
@@ -109,9 +109,9 @@ const NotificationTemplates = {
                 title: "🎉 Coupon Redeemed",
                 body: "Your coupon has been redeemed successfully."
             },
-                cancelled: (cancelBy, reason) => ({
-                title: " Coupon Cancelled",
-                body: `Your coupon redemption has been cancelled by ${cancelBy}.${reason ? ` Reason: ${reason}` : ""}`
+            cancelled: (reason) => ({
+                title: "❌ Coupon Cancelled",
+                body: `Your coupon redemption has been cancelled.${reason ? ` Reason: ${reason}` : ""}`
             })
         },
 
