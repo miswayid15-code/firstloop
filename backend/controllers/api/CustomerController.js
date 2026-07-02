@@ -1858,7 +1858,7 @@ exports.coupon_apply = async (req, res) => {
 
         if (branch) {
 
-            const receptionists = await Receptionist.findAll({
+            const receptionist = await Receptionist.findAll({
                 where: {
                     branch_id: branch.id,
                     status: 1,
@@ -1920,7 +1920,7 @@ exports.coupon_apply = async (req, res) => {
 
             const receptionToken = await UserNotificationToken.findOne({
                 where: {
-                    user_id: Receptionists.id,
+                    user_id: receptionist.id,
                     user_type: "receptionist"
                 }
             });
@@ -2763,7 +2763,7 @@ exports.appointment = async (req, res) => {
                     }
                 });
             }
-            const receptionists = await Receptionist.findAll({
+            const receptionist = await Receptionist.findAll({
                 where: {
                     branch_id: branch.id,
                     status: 1,
@@ -2773,7 +2773,7 @@ exports.appointment = async (req, res) => {
 
             const receptionToken = await UserNotificationToken.findOne({
                 where: {
-                    user_id: Receptionists.id,
+                    user_id: receptionist.id,
                     user_type: "receptionist"
                 }
             });
@@ -3563,7 +3563,7 @@ exports.cancel_appointment = async (req, res) => {
                 });
             }
 
-            const receptionists = await Receptionist.findAll({
+            const receptionist = await Receptionist.findAll({
                 where: {
                     branch_id: branch.id,
                     status: 1,
@@ -3573,7 +3573,7 @@ exports.cancel_appointment = async (req, res) => {
 
             const receptionToken = await UserNotificationToken.findOne({
                 where: {
-                    user_id: Receptionists.id,
+                    user_id: receptionist.id,
                     user_type: "receptionist"
                 }
             });
