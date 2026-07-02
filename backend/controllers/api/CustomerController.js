@@ -1922,12 +1922,7 @@ exports.coupon_apply = async (req, res) => {
                     user_type: "receptionist"
                 }
             });
-            const receptionToken = await UserNotificationToken.findOne({
-                where: {
-                    user_id: Receptionists.id,
-                    user_type: "receptionist"
-                }
-            });
+
             const receptionistNotification = getNotificationTemplate(
                 "coupon_redeem",
                 "b2b",
@@ -2771,7 +2766,8 @@ exports.appointment = async (req, res) => {
                     branch_id: branch.id
                 }
             });
-                        const receptionToken = await UserNotificationToken.findOne({
+
+            const receptionToken = await UserNotificationToken.findOne({
                 where: {
                     user_id: Receptionists.id,
                     user_type: "receptionist"
@@ -3568,7 +3564,8 @@ exports.cancel_appointment = async (req, res) => {
                     branch_id: branch.id
                 }
             });
-                        const receptionToken = await UserNotificationToken.findOne({
+
+            const receptionToken = await UserNotificationToken.findOne({
                 where: {
                     user_id: Receptionists.id,
                     user_type: "receptionist"
