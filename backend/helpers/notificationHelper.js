@@ -109,11 +109,9 @@ const NotificationTemplates = {
                 title: "🎉 Coupon Redeemed",
                 body: "Your coupon has been redeemed successfully."
             },
-            cancelled: (reason) => ({
-                title: "❌ Coupon Redemption Cancelled",
-                body: reason
-                    ? `Your coupon redemption was cancelled. Reason: ${reason}`
-                    : "Your coupon redemption was cancelled."
+                cancelled: (cancelBy, reason) => ({
+                title: " Coupon Cancelled",
+                body: `Your coupon redemption has been cancelled by ${cancelBy}.${reason ? ` Reason: ${reason}` : ""}`
             })
         },
 
