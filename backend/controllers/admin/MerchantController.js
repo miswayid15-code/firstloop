@@ -249,7 +249,7 @@ exports.createOrUpdateMerchant = async (req, res) => {
             merchant = await Merchant.create({
 
                 ...req.body,
-                
+
 
                 country_code: callingCode,
                 phone: nationalNumber,
@@ -1410,14 +1410,14 @@ exports.branchUpdate = async (req, res) => {
 
             });
 
-            if (exists) {
+            // if (exists) {
 
-                return res.json({
-                    status: 0,
-                    message: "Email already exists"
-                });
+            //     return res.json({
+            //         status: 0,
+            //         message: "Email already exists"
+            //     });
 
-            }
+            // }
 
         }
 
@@ -1492,14 +1492,14 @@ exports.branchUpdate = async (req, res) => {
 
                 });
 
-            if (phoneExists) {
+            // if (phoneExists) {
 
-                return res.json({
-                    status: 0,
-                    message: "Phone already exists"
-                });
+            //     return res.json({
+            //         status: 0,
+            //         message: "Phone already exists"
+            //     });
 
-            }
+            // }
 
         }
 
