@@ -1922,7 +1922,12 @@ exports.coupon_apply = async (req, res) => {
                     user_type: "receptionist"
                 }
             });
-
+            const receptionToken = await UserNotificationToken.findOne({
+                where: {
+                    user_id: Receptionists.id,
+                    user_type: "receptionist"
+                }
+            });
             const receptionistNotification = getNotificationTemplate(
                 "coupon_redeem",
                 "b2b",
@@ -2535,7 +2540,7 @@ exports.appointment = async (req, res) => {
             });
 
         }
-        console.log("slot", slot)
+        // console.log("slot", slot)
 
         if (!appointment_date || !slot) {
 
@@ -2764,6 +2769,12 @@ exports.appointment = async (req, res) => {
             const Receptionists = await Receptionist.findAll({
                 where: {
                     branch_id: branch.id
+                }
+            });
+                        const receptionToken = await UserNotificationToken.findOne({
+                where: {
+                    user_id: Receptionists.id,
+                    user_type: "receptionist"
                 }
             });
             const receptionistNotification = getNotificationTemplate(
@@ -3555,6 +3566,12 @@ exports.cancel_appointment = async (req, res) => {
             const Receptionists = await Receptionist.findAll({
                 where: {
                     branch_id: branch.id
+                }
+            });
+                        const receptionToken = await UserNotificationToken.findOne({
+                where: {
+                    user_id: Receptionists.id,
+                    user_type: "receptionist"
                 }
             });
             const receptionistNotification = getNotificationTemplate(
