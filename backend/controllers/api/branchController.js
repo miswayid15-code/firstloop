@@ -8,6 +8,8 @@ const path = require('path');
 const { json } = require('sequelize');
 const { sendPushNotification, getNotificationTemplate } = require("../../helpers/notificationHelper");
 exports.register = async (req, res) => {
+    if (req.body.lat === '') req.body.lat = null;
+    if (req.body.lon === '') req.body.lon = null;
 
     // console.log("========== CREATE BRANCH API ==========");
     // console.log("BODY:", req.body);
@@ -636,6 +638,8 @@ exports.delete_branch = async (req, res) => {
 };
 
 exports.update_branch = async (req, res) => {
+    if (req.body.lat === '') req.body.lat = null;
+    if (req.body.lon === '') req.body.lon = null;
 
     try {
 
@@ -1918,7 +1922,7 @@ exports.update_appointment_status = async (req, res) => {
             status: status
 
         };
-
+        let notification;
 
         if (Number(status) === 1) {
 
@@ -1927,6 +1931,7 @@ exports.update_appointment_status = async (req, res) => {
 
             updateData.approved_by_id =
                 receptionist_id;
+            notification = 'approved';
 
         }
 
@@ -1938,11 +1943,120 @@ exports.update_appointment_status = async (req, res) => {
 
             updateData.cancel_reason =
                 cancel_reason || null;
+            notification = 'cancelled';
 
         }
 
 
         await appointment.update(updateData);
+        // Get branch
+        const branch = await Branch.findByPk(appointment.br_id);
+
+        if (branch) {
+
+            // Notification template based on status
+            const customerNotification = getNotificationTemplate(
+                "appointment",
+                "b2c",
+                notification
+            );
+
+            const merchantNotification = getNotificationTemplate(
+                "appointment",
+                "b2b",
+                notification
+            );
+
+            const receptionistNotification = getNotificationTemplate(
+                "appointment",
+                "b2b",
+                notification
+            );
+
+            // Common notification data
+            const notificationData = {
+                type: "appointment",
+                appointment_id: appointment.id,
+                branch_id: appointment.br_id,
+            };
+
+            // Add cancellation details only if cancelled
+            if (notification === "cancelled") {
+                notificationData.cancel_by = "receptionist";
+                notificationData.cancel_reason = cancel_reason || "";
+            }
+
+            // ================= Customer =================
+            try {
+                const customerToken = await UserNotificationToken.findOne({
+                    where: {
+                        user_id: appointment.customer_id,
+                        user_type: "customer",
+                    },
+                });
+
+                if (customerToken?.token) {
+                    await sendPushNotification({
+                        token: customerToken.token,
+                        ...customerNotification,
+                        data: notificationData,
+                    });
+                }
+            } catch (err) {
+                console.error("Customer Notification Error:", err);
+            }
+
+            // ================= Merchant =================
+            try {
+                const merchantToken = await UserNotificationToken.findOne({
+                    where: {
+                        user_id: branch.merchant_id,
+                        user_type: "merchant",
+                    },
+                });
+
+                if (merchantToken?.token) {
+                    await sendPushNotification({
+                        token: merchantToken.token,
+                        ...merchantNotification,
+                        data: notificationData,
+                    });
+                }
+            } catch (err) {
+                console.error("Merchant Notification Error:", err);
+            }
+
+            // ================= Receptionists =================
+            try {
+                const receptionists = await Receptionist.findAll({
+                    where: {
+                        branch_id: branch.id,
+                        status: 1,
+                        del_status: 0,
+                    },
+                });
+
+                for (const receptionist of receptionists) {
+
+                    const receptionToken = await UserNotificationToken.findOne({
+                        where: {
+                            user_id: receptionist.id,
+                            user_type: "receptionist",
+                        },
+                    });
+
+                    if (receptionToken?.token) {
+                        await sendPushNotification({
+                            token: receptionToken.token,
+                            ...receptionistNotification,
+                            data: notificationData,
+                        });
+                    }
+                }
+            } catch (err) {
+                console.error("Receptionist Notification Error:", err);
+            }
+        }
 
 
         return res.json({
@@ -2325,7 +2439,7 @@ exports.update_appointment_status_by_mer = async (req, res) => {
         // console.log("Merchant Token:", merchantToken?.token || "Not Found");
         if (merchantToken?.token) {
 
-            
+
             await sendPushNotification({
                 token: merchantToken.token,
                 ...merchantNotification,

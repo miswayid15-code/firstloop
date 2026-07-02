@@ -1858,6 +1858,12 @@ exports.coupon_apply = async (req, res) => {
 
         if (branch) {
 
+            const Receptionists = await Receptionist.findAll({
+                where: {
+                    branch_id: branch.id
+                }
+            });
+
             const customerNotification = getNotificationTemplate(
                 "coupon_redeem",
                 "b2c",
@@ -1901,6 +1907,32 @@ exports.coupon_apply = async (req, res) => {
                 await sendPushNotification({
                     token: merchantToken.token,
                     ...merchantNotification,
+                    data: {
+                        type: "coupon_redeem",
+                        coupon_id: coupon.id,
+                        coupon_applied_id: couponApplied.id,
+                        branch_id: branch.id
+                    }
+                });
+            }
+
+            const receptionToken = await UserNotificationToken.findOne({
+                where: {
+                    user_id: Receptionists.id,
+                    user_type: "receptionist"
+                }
+            });
+
+            const receptionistNotification = getNotificationTemplate(
+                "coupon_redeem",
+                "b2b",
+                "pending"
+            );
+
+            if (receptionToken?.token) {
+                await sendPushNotification({
+                    token: receptionToken.token,
+                    ...receptionistNotification,
                     data: {
                         type: "coupon_redeem",
                         coupon_id: coupon.id,
@@ -2729,6 +2761,28 @@ exports.appointment = async (req, res) => {
                     }
                 });
             }
+            const Receptionists = await Receptionist.findAll({
+                where: {
+                    branch_id: branch.id
+                }
+            });
+            const receptionistNotification = getNotificationTemplate(
+                "appointment",
+                "b2b",
+                "pending"
+            );
+
+            if (receptionToken?.token) {
+                await sendPushNotification({
+                    token: receptionToken.token,
+                    ...receptionistNotification,
+                    data: {
+                        type: "appointment",
+                        appointment_id: appointment.id,
+                        branch_id: branch.id
+                    }
+                });
+            }
         }
 
         return res.json({
@@ -3490,6 +3544,31 @@ exports.cancel_appointment = async (req, res) => {
                 await sendPushNotification({
                     token: merchantToken.token,
                     ...merchantNotification,
+                    data: {
+                        type: "appointment",
+                        branch_id: branch.id,
+                        appointment_id: appointment.id
+                    }
+                });
+            }
+
+            const Receptionists = await Receptionist.findAll({
+                where: {
+                    branch_id: branch.id
+                }
+            });
+            const receptionistNotification = getNotificationTemplate(
+                "appointment",
+                "b2b",
+                "cancelled",
+                "the customer",
+                appointment.cancel_reason
+            );
+
+            if (receptionToken?.token) {
+                await sendPushNotification({
+                    token: receptionToken.token,
+                    ...receptionistNotification,
                     data: {
                         type: "appointment",
                         branch_id: branch.id,

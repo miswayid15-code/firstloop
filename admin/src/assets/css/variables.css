@@ -1,66 +1,103 @@
-/* Dealora CSS Variables - Dealora Design System */
+/* FirstPass CSS Variables - Brand Design System */
 :root {
-    /* Color Palette */
-    --bg-primary: #FFF7F9;         /* Very soft, clean pinkish white */
-    --bg-surface: #FFFFFF;         /* Pure white cards and panels */
-    --bg-sidebar: rgba(255, 255, 255, 0.85); /* Glassmorphic sidebar background */
-    --bg-hover: #FFF0F3;           /* Extremely soft rose highlight for hover states */
-    
-    --primary: #FF4D80;            /* Vibrant signature pink */
-    --primary-hover: #E03E6D;      /* Darker pink for hover */
-    --primary-light: #FFE3EA;      /* Very soft pink accent background */
-    --primary-glow: rgba(255, 77, 128, 0.15);
-    
-    --secondary: #E91E63;          /* Elegant deep rose */
-    --accent: #FF8A80;             /* Soft salmon coral */
-    
-    /* Text Colors */
-    --text-primary: #2C2C35;       /* Premium rich charcoal for readability */
-    --text-secondary: #6F6F7F;     /* Standard grey for subtext */
-    --text-muted: #9E9EAF;         /* Muted grey for helper text, labels */
-    --text-light: #FFFFFF;         /* White text */
-    
-    /* Status Badges Colors */
-    --status-success: #10B981;
-    --status-success-bg: #D1FAE5;
-    --status-warning: #F59E0B;
+    /* =========================
+       Background Colors
+    ========================= */
+    --bg-primary: #FCF8F8;
+    --bg-surface: #FFFFFF;
+    --bg-sidebar: rgba(255, 255, 255, 0.90);
+    --bg-hover: #F8ECEC;
+
+    /* =========================
+       Brand Colors
+    ========================= */
+    --primary: #8F090E;
+    --primary-hover: #74070B;
+    --primary-light: #F5DCDD;
+    --primary-glow: rgba(143, 9, 14, 0.15);
+
+    --secondary: #B11217;
+    --accent: #C94A4F;
+
+    /* =========================
+       Text Colors
+    ========================= */
+    --text-primary: #2D2323;
+    --text-secondary: #6D6161;
+    --text-muted: #9A8F8F;
+    --text-light: #FFFFFF;
+
+    /* =========================
+       Status Colors
+    ========================= */
+
+    /* Success */
+    --status-success: #16A34A;
+    --status-success-bg: #DCFCE7;
+
+    /* Warning */
+    --status-warning: #D97706;
     --status-warning-bg: #FEF3C7;
-    --status-danger: #EF4444;
+
+    /* Danger */
+    --status-danger: #DC2626;
     --status-danger-bg: #FEE2E2;
-    --status-info: #3B82F6;
+
+    /* Info */
+    --status-info: #2563EB;
     --status-info-bg: #DBEAFE;
-    
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, #FF6699 0%, #E91E63 100%);
-    --gradient-soft: linear-gradient(135deg, #FFF0F3 0%, #FFE3EA 100%);
-    --gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.3) 100%);
-    
-    /* Typography */
+
+    /* =========================
+       Gradients
+    ========================= */
+    --gradient-primary: linear-gradient(135deg, #A20A10 0%, #8F090E 100%);
+    --gradient-soft: linear-gradient(135deg, #FAECEC 0%, #F5DCDD 100%);
+    --gradient-glass: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.75) 0%,
+        rgba(255, 255, 255, 0.35) 100%
+    );
+
+    /* =========================
+       Typography
+    ========================= */
     --font-primary: 'Inter', sans-serif;
     --font-heading: 'Poppins', sans-serif;
-    
-    /* Layout & Spacing */
+
+    /* =========================
+       Layout
+    ========================= */
     --sidebar-width: 260px;
     --sidebar-collapsed-width: 80px;
     --navbar-height: 110px;
+
+    /* =========================
+       Border Radius
+    ========================= */
     --border-radius-sm: 8px;
     --border-radius-md: 12px;
     --border-radius-lg: 18px;
     --border-radius-xl: 24px;
-    
-    /* Borders & Glassmorphism */
-    --border-glass: 1px solid rgba(255, 77, 128, 0.08);
-    --border-light: 1px solid #F1ECEF;
+
+    /* =========================
+       Borders
+    ========================= */
+    --border-glass: 1px solid rgba(143, 9, 14, 0.08);
+    --border-light: 1px solid #EFE5E5;
     --glass-backdrop-blur: blur(12px);
-    
-    /* Shadows */
-    --shadow-sm: 0 4px 12px rgba(233, 30, 99, 0.03);
-    --shadow-md: 0 8px 24px -4px rgba(233, 30, 99, 0.06);
-    --shadow-lg: 0 16px 36px -8px rgba(233, 30, 99, 0.09);
-    --shadow-premium: 0 20px 48px -12px rgba(233, 30, 99, 0.12);
+
+    /* =========================
+       Shadows
+    ========================= */
+    --shadow-sm: 0 4px 12px rgba(143, 9, 14, 0.04);
+    --shadow-md: 0 8px 24px -4px rgba(143, 9, 14, 0.08);
+    --shadow-lg: 0 16px 36px -8px rgba(143, 9, 14, 0.10);
+    --shadow-premium: 0 20px 48px -12px rgba(143, 9, 14, 0.14);
     --shadow-inset: inset 0 2px 4px rgba(0, 0, 0, 0.02);
-    
-    /* Transitions */
+
+    /* =========================
+       Transitions
+    ========================= */
     --transition-fast: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-bounce: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);

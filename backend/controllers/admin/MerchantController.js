@@ -24,6 +24,8 @@ const normalizeMerchantStatus = (status, fallback = 1) => {
 };
 
 exports.createOrUpdateMerchant = async (req, res) => {
+    if (req.body.lat === '') req.body.lat = null;
+    if (req.body.lon === '') req.body.lon = null;
 
     try {
 
@@ -247,6 +249,7 @@ exports.createOrUpdateMerchant = async (req, res) => {
             merchant = await Merchant.create({
 
                 ...req.body,
+                
 
                 country_code: callingCode,
                 phone: nationalNumber,
@@ -1039,6 +1042,8 @@ exports.receptionistsRegister = async (req, res) => {
 
 };
 exports.branchRegister = async (req, res) => {
+    if (req.body.lat === '') req.body.lat = null;
+    if (req.body.lon === '') req.body.lon = null;
 
     try {
 
@@ -1333,6 +1338,8 @@ exports.branchRegister = async (req, res) => {
 };
 
 exports.branchUpdate = async (req, res) => {
+    if (req.body.lat === '') req.body.lat = null;
+    if (req.body.lon === '') req.body.lon = null;
     console.log("Update branch BODY:", req.body);
     try {
 

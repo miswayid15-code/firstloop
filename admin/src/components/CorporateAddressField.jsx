@@ -10,7 +10,8 @@ export default function CorporateAddressField({
     center,
     mapContainerStyle,
     isBranch = false,
-    isMerchant = false
+    isMerchant = false,
+    errors = {}
 }) {
     const showRequired = isBranch || isMerchant;
 
@@ -67,7 +68,6 @@ export default function CorporateAddressField({
                         onChange={onInputChange}
                         className="form-control"
                         placeholder=" "
-                        required={!showRequired}
                     />
 
                     <label className="form-label">City</label>
@@ -81,7 +81,6 @@ export default function CorporateAddressField({
                         onChange={onInputChange}
                         className="form-control"
                         placeholder=" "
-                        required={!showRequired}
                     />
 
                     <label className="form-label">State</label>
@@ -119,11 +118,12 @@ export default function CorporateAddressField({
             <div className="form-row">
                 <div className="form-group">
                     <input
+                        name="latitude"
                         type="text"
                         value={form.latitude}
+                        onChange={onInputChange}
                         className="form-control"
                         placeholder=" "
-                        readOnly
                     />
 
                     <label className="form-label">Latitude</label>
@@ -131,11 +131,12 @@ export default function CorporateAddressField({
 
                 <div className="form-group">
                     <input
+                        name="longitude"
                         type="text"
                         value={form.longitude}
+                        onChange={onInputChange}
                         className="form-control"
                         placeholder=" "
-                        readOnly
                     />
 
                     <label className="form-label">Longitude</label>

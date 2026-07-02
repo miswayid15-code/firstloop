@@ -40,7 +40,7 @@ router.post(
 );
 router.get(
     '/branch-details',
-        auth('customer'),
+        optionalAuth,
     controller.branch_details
 );
 router.post(

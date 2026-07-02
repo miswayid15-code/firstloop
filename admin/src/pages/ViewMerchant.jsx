@@ -2036,13 +2036,7 @@ export default function ViewMerchant() {
 
         }
 
-        if (!receptionistForm.email.trim()) {
 
-            toast.error('Email is required')
-
-            return
-
-        }
 
         if (!receptionistForm.phone.trim()) {
 
@@ -2298,13 +2292,7 @@ export default function ViewMerchant() {
 
         }
 
-        if (!addReceptionistForm.email.trim()) {
 
-            toast.error('Email is required')
-
-            return
-
-        }
 
         if (!addReceptionistForm.phone.trim()) {
 
@@ -3887,7 +3875,7 @@ export default function ViewMerchant() {
                                             value={receptionistForm.email}
                                             onChange={(e) => setReceptionistForm({ ...receptionistForm, email: e.target.value })}
                                             placeholder=" "
-                                            required
+                                            
                                             autoComplete="off"
                                         />
                                         <label className="form-label">Corporate Email</label>
@@ -4156,7 +4144,7 @@ export default function ViewMerchant() {
                                         value={addReceptionistForm.email}
                                         onChange={(e) => setAddReceptionistForm({ ...addReceptionistForm, email: e.target.value })}
                                         placeholder=" "
-                                        required
+                                        
                                         autoComplete="off"
                                     />
                                     <label className="form-label">Corporate Email</label>

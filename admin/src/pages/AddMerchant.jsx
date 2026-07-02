@@ -25,6 +25,7 @@ export default function AddMerchant() {
     const { form, profilePreview, logoPreview, setFormFields, setPreviews, resetForm } = useMerchantFormStore()
     const [autocomplete, setAutocomplete] = useState(null)
     const [categories, setCategories] = useState([])
+    const [errors, setErrors] = useState({})
 
     const navigate = useNavigate()
     const { isLoaded: isMapLoaded, loadError: mapLoadError } = useJsApiLoader({
@@ -43,6 +44,13 @@ export default function AddMerchant() {
     const handleChange = (event) => {
         const { name, value } = event.target
         setFormFields({ [name]: value })
+        if (errors[name]) {
+            setErrors((prev) => {
+                const updated = { ...prev }
+                delete updated[name]
+                return updated
+            })
+        }
     }
 
     const handleFileChange = (event) => {
@@ -70,6 +78,12 @@ export default function AddMerchant() {
                 longitude: String(lng),
                 country: countryName || form.country
             })
+            setErrors((prev) => {
+                const updated = { ...prev }
+                delete updated.latitude
+                delete updated.longitude
+                return updated
+            })
             return
         }
 
@@ -82,6 +96,12 @@ export default function AddMerchant() {
                     longitude: String(lng),
                     address: placeName || form.address,
                     country: countryName || form.country
+                })
+                setErrors((prev) => {
+                    const updated = { ...prev }
+                    delete updated.latitude
+                    delete updated.longitude
+                    return updated
                 })
                 return
             }
@@ -109,6 +129,14 @@ export default function AddMerchant() {
                 zipcode,
                 latitude: String(lat),
                 longitude: String(lng)
+            })
+            setErrors((prev) => {
+                const updated = { ...prev }
+                if (city) delete updated.city
+                if (state) delete updated.state
+                delete updated.latitude
+                delete updated.longitude
+                return updated
             })
         })
     }
@@ -151,6 +179,14 @@ export default function AddMerchant() {
         const lng = place.geometry.location.lng()
 
         updateLocationDetails(lat, lng, place.formatted_address || '', country)
+        setErrors((prev) => {
+            const updated = { ...prev }
+            if (city) delete updated.city
+            if (state) delete updated.state
+            delete updated.latitude
+            delete updated.longitude
+            return updated
+        })
     }
 
     const handleMarkerDragEnd = (event) => {
@@ -162,6 +198,8 @@ export default function AddMerchant() {
 
     const handleSubmit = async (event) => {
         event.preventDefault()
+
+
 
         if (!form.kycDocument) {
             toast.error('Supporting Document is required')
@@ -707,6 +745,7 @@ export default function AddMerchant() {
                             center={center}
                             mapContainerStyle={mapContainerStyle}
                             isMerchant={true}
+                            errors={errors}
                         />
 
                         <div

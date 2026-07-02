@@ -1344,6 +1344,16 @@ exports.change_status_br = async (req, res) => {
                     title: "🔴 Branch Deactivated",
                     body: "Your branch has been deactivated.",
                 };
+        const receptionistNotification =
+            status === 1
+                ? {
+                    title: "🟢 Branch Activated",
+                    body: "Your Branch account has been activated successfully. 🎉",
+                }
+                : {
+                    title: "🔴 Branch Deactivated",
+                    body: "Your Branch account has been deactivated. Please contact your merchant for assistance.",
+                };
 
 
         const notificationToken = await UserNotificationToken.findOne({
@@ -1352,14 +1362,29 @@ exports.change_status_br = async (req, res) => {
                 user_type: "merchant"
             }
         });
+        const receptionist = await Receptionist.findOne({
+            where:{
+                branch_id: branch.id,
+            }
+        });
 
-
+        const receptionToken = await UserNotificationToken.findOne({
+            where: {
+                user_id: receptionist.id,
+                user_type: "receptionist"
+            }
+        });
 
         try {
-            const result = await sendPushNotification({
+            await sendPushNotification({
                 token: notificationToken?.token,
                 title: notification_text.title,
                 body: notification_text.body,
+            });
+            await sendPushNotification({
+                token: receptionToken.token,
+                title: receptionistNotification.title,
+                body: receptionistNotification.body,
             });
 
 
@@ -1409,17 +1434,27 @@ exports.change_status_res = async (req, res) => {
         );
 
 
-        const notification_text =
+        const merchantNotification =
             status === 1
                 ? {
                     title: "🟢 Receptionist Activated",
-                    body: "Your Receptionist has been activated successfully. 🎉",
+                    body: "Your receptionist has been activated successfully. 🎉",
                 }
                 : {
                     title: "🔴 Receptionist Deactivated",
-                    body: "Your Receptionist has been deactivated.",
+                    body: "Your receptionist has been deactivated.",
                 };
 
+        const receptionistNotification =
+            status === 1
+                ? {
+                    title: "🟢 Account Activated",
+                    body: "Your receptionist account has been activated successfully. 🎉",
+                }
+                : {
+                    title: "🔴 Account Deactivated",
+                    body: "Your receptionist account has been deactivated. Please contact your merchant for assistance.",
+                };
 
         const notificationToken = await UserNotificationToken.findOne({
             where: {
@@ -1427,16 +1462,28 @@ exports.change_status_res = async (req, res) => {
                 user_type: "merchant"
             }
         });
+        const receptionToken = await UserNotificationToken.findOne({
+            where: {
+                user_id: receptionist.id,
+                user_type: "receptionist"
+            }
+        });
 
 
 
         try {
-            const result = await sendPushNotification({
-                token: notificationToken?.token,
-                title: notification_text.title,
-                body: notification_text.body,
+            await sendPushNotification({
+                token: notificationToken.token,
+                title: merchantNotification.title,
+                body: merchantNotification.body,
             });
 
+            // Receptionist
+            await sendPushNotification({
+                token: receptionToken.token,
+                title: receptionistNotification.title,
+                body: receptionistNotification.body,
+            });
 
         } catch (error) {
             console.error("Push Notification Error:", error);

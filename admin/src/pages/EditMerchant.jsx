@@ -53,6 +53,7 @@ export default function EditMerchant() {
     const [autocomplete, setAutocomplete] = useState(null)
     const [categories, setCategories] = useState([])
     const [loading, setLoading] = useState(true)
+    const [errors, setErrors] = useState({})
 
     const navigate = useNavigate()
     const { isLoaded: isMapLoaded, loadError: mapLoadError } = useJsApiLoader({
@@ -75,6 +76,13 @@ export default function EditMerchant() {
             ...prev,
             [name]: value
         }))
+        if (errors[name]) {
+            setErrors((prev) => {
+                const updated = { ...prev }
+                delete updated[name]
+                return updated
+            })
+        }
     }
 
     const handleFileChange = (event) => {
@@ -106,6 +114,12 @@ export default function EditMerchant() {
                 longitude: String(lng),
                 country: countryName || prev.country
             }))
+            setErrors((prev) => {
+                const updated = { ...prev }
+                delete updated.latitude
+                delete updated.longitude
+                return updated
+            })
             return
         }
 
@@ -120,6 +134,12 @@ export default function EditMerchant() {
                     address: placeName || prev.address,
                     country: countryName || prev.country
                 }))
+                setErrors((prev) => {
+                    const updated = { ...prev }
+                    delete updated.latitude
+                    delete updated.longitude
+                    return updated
+                })
                 return
             }
 
@@ -148,6 +168,14 @@ export default function EditMerchant() {
                 latitude: String(lat),
                 longitude: String(lng)
             }))
+            setErrors((prev) => {
+                const updated = { ...prev }
+                if (city) delete updated.city
+                if (state) delete updated.state
+                delete updated.latitude
+                delete updated.longitude
+                return updated
+            })
         })
     }
 
@@ -189,6 +217,14 @@ export default function EditMerchant() {
         const lng = place.geometry.location.lng()
 
         updateLocationDetails(lat, lng, place.formatted_address || '', country)
+        setErrors((prev) => {
+            const updated = { ...prev }
+            if (city) delete updated.city
+            if (state) delete updated.state
+            delete updated.latitude
+            delete updated.longitude
+            return updated
+        })
     }
 
     const handleMarkerDragEnd = (event) => {
@@ -250,6 +286,8 @@ export default function EditMerchant() {
 
     const handleSubmit = async (event) => {
         event.preventDefault()
+
+
 
         try {
             const formData = new FormData()
@@ -743,6 +781,7 @@ export default function EditMerchant() {
                             center={center}
                             mapContainerStyle={mapContainerStyle}
                             isMerchant={true}
+                            errors={errors}
                         />
 
                         <div
