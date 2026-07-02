@@ -1,7 +1,7 @@
 const { Coupon, Merchant, Branch, CouponApplied, Customer, CouponCat } = require('../../models');
 const { Op, Sequelize, where } = require('sequelize');
 const baseUrl = process.env.APP_URL;
-
+const { sendPushNotification, getNotificationTemplate } = require("../../helpers/notificationHelper");
 exports.fetch_coupon_categories = async (req, res) => {
     try {
         const categories = await CouponCat.findAll({
@@ -308,7 +308,26 @@ exports.create_coupon = async (req, res) => {
             del_status: 0
 
         });
+        const notificationToken = await UserNotificationToken.findOne({
+            where: {
+                user_id: merchant_id,
+                user_type: "merchant"
+            }
+        });
 
+
+
+        try {
+            const result = await sendPushNotification({
+                token: notificationToken?.token,
+                title: "🎉 Coupon Created!",
+                body: `Your coupon "${code}" has been created successfully.`
+            });
+
+
+        } catch (error) {
+            console.error("Push Notification Error:", error);
+        }
         return res.json({
 
             status: 1,
@@ -565,7 +584,26 @@ exports.update_coupon = async (req, res) => {
             banner_image
 
         });
+        const notificationToken = await UserNotificationToken.findOne({
+            where: {
+                user_id: merchant_id,
+                user_type: "merchant"
+            }
+        });
 
+
+
+        try {
+            const result = await sendPushNotification({
+                token: notificationToken?.token,
+                title: "🎉 Coupon updated!",
+                body: `Your coupon "${code}" has been updated successfully.`
+            });
+
+
+        } catch (error) {
+            console.error("Push Notification Error:", error);
+        }
         return res.json({
             status: 1,
             message: "Coupon updated successfully",
@@ -1010,6 +1048,7 @@ exports.claim_coupon = async (req, res) => {
             status: status
 
         };
+        let notification = null;
 
         if (Number(status) === 1) {
 
@@ -1021,6 +1060,7 @@ exports.claim_coupon = async (req, res) => {
             updateData.cancel_by = null;
 
             updateData.cancel_reason = null;
+            notification = "approved";
 
         }
 
@@ -1032,6 +1072,7 @@ exports.claim_coupon = async (req, res) => {
             updateData.approved_by = null;
             updateData.approved_by_id = null;
             updateData.used_at = null;
+            notification = "cancelled";
 
         }
 
@@ -1055,6 +1096,89 @@ exports.claim_coupon = async (req, res) => {
 
         });
 
+        // ================= Notifications =================
+
+        const customerNotification = getNotificationTemplate(
+            "coupon_redeem",
+            "b2c",
+            notification
+        );
+
+        const merchantNotification = getNotificationTemplate(
+            "coupon_redeem",
+            "b2b",
+            notification
+        );
+
+        const receptionistNotification = getNotificationTemplate(
+            "coupon_redeem",
+            "b2b",
+            notification
+        );
+
+        const notificationData = {
+            type: "coupon_redeem",
+            coupon_id: coupon.id,
+            coupon_applied_id: coupon.id,
+        };
+
+        if (notification === "cancelled") {
+            notificationData.cancel_by = userType;
+            notificationData.cancel_reason = cancel_reason || "";
+        }
+
+        // ================= Customer =================
+        try {
+
+            const customerToken = await UserNotificationToken.findOne({
+                where: {
+                    user_id: coupon.cus_id,
+                    user_type: "customer",
+                },
+            });
+
+            if (customerToken?.token) {
+                await sendPushNotification({
+                    token: customerToken.token,
+                    ...customerNotification,
+                    data: notificationData,
+                });
+            } else {
+                console.log("Customer token not found.");
+            }
+
+        } catch (err) {
+            console.error("Customer Notification Error:", err);
+        }
+
+        // ================= Logged-in Merchant / Receptionist =================
+        try {
+
+            const userToken = await UserNotificationToken.findOne({
+                where: {
+                    user_id: user.id,
+                    user_type: userType,
+                },
+            });
+
+            const notificationTemplate =
+                userType === "merchant"
+                    ? merchantNotification
+                    : receptionistNotification;
+
+            if (userToken?.token) {
+                await sendPushNotification({
+                    token: userToken.token,
+                    ...notificationTemplate,
+                    data: notificationData,
+                });
+            } else {
+                console.log(`${userType} token not found.`);
+            }
+
+        } catch (err) {
+            console.error(`${userType} Notification Error:`, err);
+        }
         return res.json({
 
             status: 1,
