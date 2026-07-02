@@ -618,12 +618,12 @@ exports.update_receptionist = async (req, res) => {
                 }
             });
 
-            if (emailExists) {
-                return res.json({
-                    status: 0,
-                    message: "Email already exists"
-                });
-            }
+            // if (emailExists) {
+            //     return res.json({
+            //         status: 0,
+            //         message: "Email already exists"
+            //     });
+            // }
         }
 
         // Check if phone already exists for other receptionist

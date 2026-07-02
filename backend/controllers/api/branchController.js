@@ -1954,6 +1954,11 @@ exports.update_appointment_status = async (req, res) => {
 
         if (branch) {
 
+            console.log("========== Appointment Notification ==========");
+            console.log("Notification Status:", notification);
+            console.log("Appointment ID:", appointment.id);
+            console.log("Branch ID:", appointment.br_id);
+
             // Notification template based on status
             const customerNotification = getNotificationTemplate(
                 "appointment",
@@ -1986,8 +1991,12 @@ exports.update_appointment_status = async (req, res) => {
                 notificationData.cancel_reason = cancel_reason || "";
             }
 
+            console.log("Notification Data:", notificationData);
+
             // ================= Customer =================
             try {
+                console.log("Searching customer token for:", appointment.customer_id);
+
                 const customerToken = await UserNotificationToken.findOne({
                     where: {
                         user_id: appointment.customer_id,
@@ -1995,12 +2004,20 @@ exports.update_appointment_status = async (req, res) => {
                     },
                 });
 
+                console.log("Customer Token:", customerToken?.token || "Not Found");
+
                 if (customerToken?.token) {
-                    await sendPushNotification({
+                    console.log("Sending notification to customer...");
+
+                    const response = await sendPushNotification({
                         token: customerToken.token,
                         ...customerNotification,
                         data: notificationData,
                     });
+
+                    console.log("Customer Notification Response:", response);
+                } else {
+                    console.log("Customer notification skipped. No token.");
                 }
             } catch (err) {
                 console.error("Customer Notification Error:", err);
@@ -2008,6 +2025,8 @@ exports.update_appointment_status = async (req, res) => {
 
             // ================= Merchant =================
             try {
+                console.log("Searching merchant token for:", branch.merchant_id);
+
                 const merchantToken = await UserNotificationToken.findOne({
                     where: {
                         user_id: branch.merchant_id,
@@ -2015,12 +2034,20 @@ exports.update_appointment_status = async (req, res) => {
                     },
                 });
 
+                console.log("Merchant Token:", merchantToken?.token || "Not Found");
+
                 if (merchantToken?.token) {
-                    await sendPushNotification({
+                    console.log("Sending notification to merchant...");
+
+                    const response = await sendPushNotification({
                         token: merchantToken.token,
                         ...merchantNotification,
                         data: notificationData,
                     });
+
+                    console.log("Merchant Notification Response:", response);
+                } else {
+                    console.log("Merchant notification skipped. No token.");
                 }
             } catch (err) {
                 console.error("Merchant Notification Error:", err);
@@ -2036,7 +2063,13 @@ exports.update_appointment_status = async (req, res) => {
                     },
                 });
 
+                console.log("Receptionists Found:", receptionists.length);
+
                 for (const receptionist of receptionists) {
+
+                    console.log("--------------------------------");
+                    console.log("Receptionist ID:", receptionist.id);
+                    console.log("Receptionist Name:", receptionist.name);
 
                     const receptionToken = await UserNotificationToken.findOne({
                         where: {
@@ -2045,17 +2078,35 @@ exports.update_appointment_status = async (req, res) => {
                         },
                     });
 
+                    console.log(
+                        "Receptionist Token:",
+                        receptionToken?.token || "Not Found"
+                    );
+
                     if (receptionToken?.token) {
-                        await sendPushNotification({
+                        console.log("Sending notification to receptionist...");
+
+                        const response = await sendPushNotification({
                             token: receptionToken.token,
                             ...receptionistNotification,
                             data: notificationData,
                         });
+
+                        console.log(
+                            "Receptionist Notification Response:",
+                            response
+                        );
+                    } else {
+                        console.log(
+                            `Receptionist ${receptionist.id} notification skipped. No token.`
+                        );
                     }
                 }
             } catch (err) {
                 console.error("Receptionist Notification Error:", err);
             }
+
+            console.log("========== Notification Process Completed ==========");
         }
 
 
