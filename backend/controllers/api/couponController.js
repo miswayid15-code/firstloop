@@ -1,4 +1,4 @@
-const { Coupon, Merchant, Branch, CouponApplied, Customer, CouponCat } = require('../../models');
+const { Coupon, Merchant, Branch, CouponApplied, Customer, CouponCat,UserNotificationToken  } = require('../../models');
 const { Op, Sequelize, where } = require('sequelize');
 const baseUrl = process.env.APP_URL;
 const { sendPushNotification, getNotificationTemplate } = require("../../helpers/notificationHelper");
