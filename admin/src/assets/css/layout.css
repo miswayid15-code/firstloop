@@ -30,7 +30,7 @@
 [data-component="navbar"] {
     height: var(--navbar-height);
     position: sticky;
-    top: 0;
+    top: -60px;
     z-index: 99;
 }
 

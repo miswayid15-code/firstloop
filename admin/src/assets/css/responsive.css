@@ -10,6 +10,7 @@
     /* Collapse double-row navbar back to single row on mobile/tablet */
     [data-component="navbar"] {
         height: 70px !important;
+        top: 0 !important;
     }
     
     .navbar {

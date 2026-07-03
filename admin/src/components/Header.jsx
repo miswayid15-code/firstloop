@@ -41,7 +41,7 @@ function Header() {
 
       {/* Dealora Shared Navbar Component */}
 
-      <div className="navbar">
+      <div className="navbar" data-component="navbar">
 
         {/* Top Row: Branding, Global Search, and Quick Actions */}
 
