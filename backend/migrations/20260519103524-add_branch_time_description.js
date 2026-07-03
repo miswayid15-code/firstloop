@@ -33,23 +33,20 @@ module.exports = {
 
     },
 
-    async down(queryInterface, Sequelize) {
+async down(queryInterface, Sequelize) {
+    const table = await queryInterface.describeTable('branches');
 
-        await queryInterface.removeColumn(
-            'branches',
-            'open_time'
-        );
-
-        await queryInterface.removeColumn(
-            'branches',
-            'close_time'
-        );
-
-        await queryInterface.removeColumn(
-            'branches',
-            'description'
-        );
-
+    if (table.open_time) {
+        await queryInterface.removeColumn('branches', 'open_time');
     }
+
+    if (table.close_time) {
+        await queryInterface.removeColumn('branches', 'close_time');
+    }
+
+    if (table.description) {
+        await queryInterface.removeColumn('branches', 'description');
+    }
+}
 
 };
