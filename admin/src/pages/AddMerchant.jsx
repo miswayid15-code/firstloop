@@ -260,11 +260,7 @@ export default function AddMerchant() {
             return
         }
 
-        if (!form.kycDocument) {
-            toast.error('Supporting Document is required')
-            highlightFieldError('input[name="kycDocument"]')
-            return
-        }
+
 
         try {
             setIsSubmitting(true)
@@ -724,9 +720,9 @@ export default function AddMerchant() {
                                 </div>
 
                                 <div className="upload-card-body">
-                                    <h4 className="upload-card-title">
-                                        Upload Supporting Documents <span style={{ color: '#ef4444' }}>*</span>
-                                    </h4>
+                                     <h4 className="upload-card-title">
+                                         Upload Supporting Documents
+                                     </h4>
 
                                     <p className="upload-card-text">
                                         Upload GST certificate, business license, ID proof, or verification documents.

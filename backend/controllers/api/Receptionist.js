@@ -11,7 +11,7 @@ exports.register = async (req, res) => {
     try {
 
         const { name, email, rep_id, phone, password, branch_id, country_code } = req.body;
-        console.log("Body", req.body)
+        // console.log("Body", req.body)
 
         // merchant check
         const merchant = await Merchant.findByPk(req.user.id);
@@ -152,7 +152,7 @@ exports.register = async (req, res) => {
         if (req.files && req.files.length > 0) {
 
             const profileFile = req.files.find(
-                file => file.fieldname === 'profile_image'
+                file => file.fieldname === 'profile_img'
             );
 
             if (profileFile) {
