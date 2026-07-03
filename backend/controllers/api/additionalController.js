@@ -1,4 +1,4 @@
-const { Banner, Receptionist, Merchant, OtpVerify, CustomerOtpVerify ,Customer,AppSetting} = require('../../models');
+const { Banner, Receptionist, Merchant, OtpVerify, CustomerOtpVerify, Customer, AppSetting } = require('../../models');
 const { sendOtp } = require('../../helpers/sendOtp');
 const sendMail = require('../../helpers/sendMail');
 exports.banner_list = async (req, res) => {
@@ -8,7 +8,7 @@ exports.banner_list = async (req, res) => {
         const baseUrl = process.env.APP_URL;
 
         const { country_code } = req.body;
-        console.log("country_code",country_code)
+        console.log("country_code", country_code)
 
         const whereClause = {
             status: 1,
@@ -210,7 +210,7 @@ exports.verify_otp = async (req, res) => {
 exports.customer_verify_mail = async (req, res) => {
     try {
         const { email } = req.body;
-        type="customer";
+        type = "customer";
 
 
         if (!email) {
@@ -337,15 +337,15 @@ exports.checkVersion = async (req, res) => {
     return res.json(
         version >= 1
             ? {
-                  status: 1,
-                  result: "success",
-                  text: "Request successfully completed!"
-              }
+                status: 1,
+                result: "success",
+                text: "Request successfully completed!"
+            }
             : {
-                  status: 0,
-                  result: "fail",
-                  text: "Site under construction"
-              }
+                status: 2,
+                result: "fail",
+                text: "Site under construction"
+            }
     );
 };
 
@@ -354,10 +354,23 @@ exports.check_MerchantVersion = async (req, res) => {
         const mv = req.body.cur_version || req.query.cur_version;
         const platform = (req.body.platform || req.query.platform || "unknown").toLowerCase();
 
+        const appstatus = await AppSetting.findOne({
+            where: { id: 1 },
+            attributes: ['app_status']
+        });
+        if (!appstatus || appstatus.app_status === false) {
+            return res.json({
+               status: 2,
+                result: "fail",
+                text: "Site under construction",
+                web_url: process.env.Web_URL + "/under-construction"
+            });
+        }
+
         const minVersions = {
             ios: 0,
-            android: 14,
-            unknown: 10,
+            android: 0,
+            unknown: 0,
         };
 
         const minRequired = minVersions[platform] ?? minVersions.unknown;
@@ -398,5 +411,64 @@ exports.check_MerchantVersion = async (req, res) => {
 };
 
 
+exports.check_CustomerVersion = async (req, res) => {
+    try {
+        const mv = req.body.cur_version || req.query.cur_version;
+        const platform = (req.body.platform || req.query.platform || "unknown").toLowerCase();
 
+        const appstatus = await AppSetting.findOne({
+            where: { id: 1 },
+            attributes: ['app_status']
+        });
+        if (!appstatus || appstatus.app_status === false) {
+            return res.json({
+                status: 2,
+                result: "fail",
+                text: "Site under construction",
+                web_url: process.env.Web_URL + "/under-construction"
+            });
+        }
+
+        const minVersions = {
+            ios: 0,
+            android: 0,
+            unknown: 0,
+        };
+
+        const minRequired = minVersions[platform] ?? minVersions.unknown;
+        const isValid = !isNaN(mv) && Number(mv) >= minRequired;
+
+        if (isValid) {
+            return res.json({
+                status: 1,
+                result: "Success",
+                text: "Request Successfully Completed!",
+                current_version: Number(mv),
+                min_required_version: minRequired,
+                update_required: false,
+            });
+        }
+
+        return res.json({
+            status: 0,
+            result: "fail",
+            text: `Update Required - Version ${mv} is outdated. Minimum required: ${minRequired}`,
+            current_version: Number(mv) || 0,
+            min_required_version: minRequired,
+            update_required: true,
+            store_url:
+                platform === "ios"
+                    ? "https://apps.apple.com/your-app"
+                    : "https://play.google.com/store/apps/details?id=your.package",
+        });
+    } catch (error) {
+        console.error("Version Check Error:", error);
+
+        return res.status(500).json({
+            status: 0,
+            result: "fail",
+            text: "Internal Server Error",
+        });
+    }
+};
 

@@ -28,6 +28,7 @@ import Settings from './pages/Settings'
 import NotFound from './pages/NotFound'
 
 import ComingSoon from './frontend/ComingSoon'
+import UnderConstruction from './frontend/UnderConstruction'
 import TermsAndConditions from './frontend/TermsAndConditions'
 import PrivacyPolicy from './frontend/PrivacyPolicy'
 import About from './frontend/About'
@@ -44,6 +45,7 @@ function App() {
                 {/* Public / Frontend routes */}
                 <Route path="/" element={isAdmin ? <Login /> : <ComingSoon />} />
                 <Route path="/coming-soon" element={<ComingSoon />} />
+                <Route path="/under-construction" element={<UnderConstruction />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/contact" element={<ContactUs />} />
                 <Route path="/terms" element={<TermsAndConditions />} />
