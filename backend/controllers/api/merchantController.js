@@ -785,8 +785,8 @@ exports.dashboard = async (req, res) => {
 
                 redeemed_users: data.Coupons.filter(item => item.status != 2).length,
 
-                branch_list: merchant.Branches,
-                receptionist_list: merchant.Receptionists
+                branch_list: data.Branches,
+                receptionist_list: data.Receptionists
 
             }
         });
