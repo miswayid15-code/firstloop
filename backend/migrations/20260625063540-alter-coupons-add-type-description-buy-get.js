@@ -26,9 +26,22 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.removeColumn('coupons', 'get_item');
-    await queryInterface.removeColumn('coupons', 'buy_item');
-    await queryInterface.removeColumn('coupons', 'type');
-    await queryInterface.removeColumn('coupons', 'description');
+    const table = await queryInterface.describeTable('coupons');
+
+    if (table.get_item) {
+      await queryInterface.removeColumn('coupons', 'get_item');
+    }
+
+    if (table.buy_item) {
+      await queryInterface.removeColumn('coupons', 'buy_item');
+    }
+
+    if (table.type) {
+      await queryInterface.removeColumn('coupons', 'type');
+    }
+
+    if (table.description) {
+      await queryInterface.removeColumn('coupons', 'description');
+    }
   }
 };
