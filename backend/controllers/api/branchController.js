@@ -95,31 +95,26 @@ exports.register = async (req, res) => {
         let nationalNumber;
         let callingCode;
         let phoneNumber;
-
         try {
 
-            // console.log("ORIGINAL PHONE:", phone);
-            // console.log("COUNTRY CODE:", country_code);
+            console.log("ORIGINAL PHONE:", phone);
+            console.log("COUNTRY CODE:", country_code);
 
-            const cleanPhone =
-                phone.replace(/\s+/g, '');
+            if (phone && phone.trim() !== "") {
 
-            // console.log("CLEAN PHONE:", cleanPhone);
+                const cleanPhone = phone.replace(/\s+/g, '');
 
-            const fullPhone =
-                cleanPhone.startsWith('+')
+                console.log("CLEAN PHONE:", cleanPhone);
+
+                const fullPhone = cleanPhone.startsWith('+')
                     ? cleanPhone
                     : country_code + cleanPhone;
 
-            // console.log("FULL PHONE:", fullPhone);
+                console.log("FULL PHONE:", fullPhone);
 
-            const num =
-                parsePhoneNumber(fullPhone);
+                const num = parsePhoneNumber(fullPhone);
 
-            // console.log("PARSED PHONE:", num);
-
-            if (cleanPhone && cleanPhone.trim() !== "") {
-                const num = parsePhoneNumber(cleanPhone);
+                console.log("PARSED PHONE:", num);
 
                 if (!num.isValid()) {
                     return res.json({
@@ -127,24 +122,19 @@ exports.register = async (req, res) => {
                         message: "Invalid phone number"
                     });
                 }
+
+                callingCode = `+${num.countryCallingCode}`;
+                nationalNumber = num.nationalNumber;
+                phoneNumber = num.number;
+
+            } else {
+                // Phone is empty
+                callingCode = country_code;
+                nationalNumber = null;
+                phoneNumber = null;
             }
 
-            callingCode =
-                `+${num.countryCallingCode}`;
-
-            nationalNumber =
-                num.nationalNumber;
-
-            phoneNumber =
-                num.number;
-
-            // console.log("CALLING CODE:", callingCode);
-            // console.log("NATIONAL NUMBER:", nationalNumber);
-            // console.log("INTERNATIONAL NUMBER:", phoneNumber);
-
         } catch (err) {
-
-            // console.log("PHONE ERROR:", err);
 
             return res.json({
                 status: 0,
@@ -264,11 +254,11 @@ exports.register = async (req, res) => {
 
                 name,
 
-              email: email?.trim() ? email : null,
+                email: email?.trim() ? email : null,
 
                 country_code: callingCode,
 
-               phone: nationalNumber?.trim() ? nationalNumber : null,
+                phone: nationalNumber?.trim() ? nationalNumber : null,
 
                 profile_image,
 

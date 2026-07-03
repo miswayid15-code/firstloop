@@ -1,4 +1,4 @@
-const { Banner, Receptionist, Merchant, OtpVerify, CustomerOtpVerify ,Customer} = require('../../models');
+const { Banner, Receptionist, Merchant, OtpVerify, CustomerOtpVerify ,Customer,AppSetting} = require('../../models');
 const { sendOtp } = require('../../helpers/sendOtp');
 const sendMail = require('../../helpers/sendMail');
 exports.banner_list = async (req, res) => {
