@@ -754,28 +754,21 @@ exports.dashboard = async (req, res) => {
 
         }
 
-        if (data.branch_list.profile_image) {
+        // Branch images
+        data.Branches = data.Branches.map(branch => ({
+            ...branch,
+            profile_image: branch.profile_image
+                ? `${baseUrl}/${branch.profile_image.replace(/\\/g, "/")}`
+                : null
+        }));
 
-            data.branch_list.profile_image =
-                baseUrl + '/' +
-                data.branch_list.profile_image.replace(/\\/g, '/');
-
-        } else {
-
-            data.branch_list.profile_image = null;
-
-        }
-        if (data.receptionist_list.profile_image) {
-
-            data.receptionist_list.profile_image =
-                baseUrl + '/' +
-                data.receptionist_list.profile_image.replace(/\\/g, '/');
-
-        } else {
-
-            data.receptionist_list.profile_image = null;
-
-        }
+        // Receptionist images
+        data.Receptionists = data.Receptionists.map(receptionist => ({
+            ...receptionist,
+            profile_image: receptionist.profile_image
+                ? `${baseUrl}/${receptionist.profile_image.replace(/\\/g, "/")}`
+                : null
+        }));
 
         return res.json({
             status: 1,
