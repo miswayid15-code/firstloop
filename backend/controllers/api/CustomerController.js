@@ -2842,6 +2842,7 @@ exports.fetch_appointment = async (req, res) => {
                 'cancel_by',
                 'cancel_reason',
                 'ref_id',
+                'remarks'
 
             ],
 
@@ -2987,6 +2988,8 @@ exports.fetch_appointment_details = async (req, res) => {
                 'status',
                 'cancel_by',
                 'cancel_reason',
+                'remarks',
+                'ref_id'
             ],
 
             include: [

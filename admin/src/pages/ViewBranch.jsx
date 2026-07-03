@@ -294,7 +294,7 @@ export default function ViewBranch() {
     if (!loading && !branchData) {
         return (
             <>
-                
+
                 <div className="card" style={{ marginBottom: 18 }}>
                     <div className="flex-between" style={{ gap: 16, flexWrap: 'wrap' }}>
                         <div>
@@ -470,7 +470,7 @@ export default function ViewBranch() {
 
     return (
         <>
-            
+
             <div style={{ marginBottom: 24 }}>
                 {loading ? (
                     <>
@@ -631,36 +631,36 @@ export default function ViewBranch() {
                                     </div>
 
                                     <div style={{ gridColumn: '1 / -1', marginTop: 12 }}>
-                                         <small className="merchant-sub-label">Operating Hours</small>
-                                         <div className="branch-timings-view-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12, marginTop: 8 }}>
-                                             {Array.from({ length: 7 }, (_, i) => {
-                                                 const dayNum = i + 1;
-                                                 const timing = (branchData?.BranchTimings || []).find(t => Number(t.day) === dayNum);
-                                                 const dayName = dayNamesMap[dayNum]?.full || '';
-                                                 
-                                                 return (
-                                                     <div key={dayNum} className="timing-day-card" style={{
-                                                         border: '1px solid #e2e8f0',
-                                                         borderRadius: 8,
-                                                         padding: '10px 12px',
-                                                         backgroundColor: timing?.is_closed ? '#f8fafc' : '#ffffff',
-                                                         boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-                                                     }}>
-                                                         <div style={{ fontWeight: 600, fontSize: '0.85rem', color: '#475569' }}>{dayName}</div>
-                                                         <div style={{ fontSize: '0.8rem', marginTop: 4 }}>
-                                                             {timing?.is_closed ? (
-                                                                 <span style={{ color: '#ef4444', fontWeight: 500 }}>Closed</span>
-                                                             ) : (
-                                                                 <span style={{ color: '#10b981', fontWeight: 500 }}>
-                                                                     {formatTime(timing?.open_time)} - {formatTime(timing?.close_time)}
-                                                                 </span>
-                                                             )}
-                                                         </div>
-                                                     </div>
-                                                 );
-                                             })}
-                                         </div>
-                                     </div>
+                                        <small className="merchant-sub-label">Operating Hours</small>
+                                        <div className="branch-timings-view-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12, marginTop: 8 }}>
+                                            {Array.from({ length: 7 }, (_, i) => {
+                                                const dayNum = i + 1;
+                                                const timing = (branchData?.BranchTimings || []).find(t => Number(t.day) === dayNum);
+                                                const dayName = dayNamesMap[dayNum]?.full || '';
+
+                                                return (
+                                                    <div key={dayNum} className="timing-day-card" style={{
+                                                        border: '1px solid #e2e8f0',
+                                                        borderRadius: 8,
+                                                        padding: '10px 12px',
+                                                        backgroundColor: timing?.is_closed ? '#f8fafc' : '#ffffff',
+                                                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                                                    }}>
+                                                        <div style={{ fontWeight: 600, fontSize: '0.85rem', color: '#475569' }}>{dayName}</div>
+                                                        <div style={{ fontSize: '0.8rem', marginTop: 4 }}>
+                                                            {timing?.is_closed ? (
+                                                                <span style={{ color: '#ef4444', fontWeight: 500 }}>Closed</span>
+                                                            ) : (
+                                                                <span style={{ color: '#10b981', fontWeight: 500 }}>
+                                                                    {formatTime(timing?.open_time)} - {formatTime(timing?.close_time)}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
 
                                     <div>
                                         <small className="merchant-sub-label">City</small>
@@ -944,11 +944,13 @@ export default function ViewBranch() {
                         <thead>
                             <tr>
                                 <th>ID</th>
+                                <th>Reference Id</th>
                                 <th>Customer ID</th>
                                 <th>Branch ID</th>
                                 <th>Branch Name</th>
                                 <th>Date</th>
                                 <th>Time Slot</th>
+                                <th>Remarks</th>
                                 <th>Status</th>
                                 <th>Approved By</th>
                                 {/* <th>Approved By ID</th> */}
@@ -975,16 +977,19 @@ export default function ViewBranch() {
                                     return (
                                         <tr key={appointment.id}>
                                             <td><strong>#{appointment.id}</strong></td>
+                                            <td><strong>#{appointment.ref_id}</strong></td>
                                             <td>{appointment.cus_id ?? '-'}</td>
                                             <td>{appointment.br_id ?? '-'}</td>
                                             <td>{appointment.br_name || branchData?.name || '-'}</td>
                                             <td>{formatDate(appointment.appointment_date)}</td>
                                             <td>{formatTime(appointment.slot)}</td>
+                                            <td>{appointment.remarks || '-'}</td>
                                             <td>
                                                 <span className={`badge ${statusInfo.badge}`}>
                                                     {statusInfo.label}
                                                 </span>
                                             </td>
+                                            
                                             <td>{appointment.approved_by || '-'}</td>
                                             {/* <td>{appointment.approved_by_id ?? '-'}</td> */}
                                             <td>{appointment.cancel_by || '-'}</td>

@@ -2195,7 +2195,9 @@ exports.fetch_appointment_details = async (req, res) => {
                 'cancel_by',
                 'cancel_reason',
                 'approved_by',
-                'approved_by_id'
+                'approved_by_id',
+                'remarks',
+                'ref_id'
             ],
 
             include: [
@@ -2325,7 +2327,9 @@ exports.merchant_appointment_list = async (req, res) => {
                 'cancel_by',
                 'cancel_reason',
                 'approved_by',
-                'approved_by_id'
+                'approved_by_id',
+                'remarks',
+                'ref_id'
             ],
 
             order: [['id', 'DESC']]

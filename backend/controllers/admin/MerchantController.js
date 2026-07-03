@@ -2023,7 +2023,9 @@ exports.fetch_branch_id = async (req, res) => {
                             'cancel_by',
                             'cancel_reason',
                             'approved_by',
-                            'approved_by_id'
+                            'approved_by_id',
+                            'remarks',
+                            'ref_id'
                         ],
                         required: false
                     },

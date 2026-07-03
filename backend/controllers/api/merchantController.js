@@ -741,7 +741,7 @@ exports.dashboard = async (req, res) => {
 
         const data = merchant.toJSON();
 
-
+    console.log("DASHBOARD DATA:", data);
         if (data.profile_image) {
 
             data.profile_image =
