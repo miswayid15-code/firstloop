@@ -206,3 +206,10 @@ input:checked + .slider:before {
     0% { background-position: 200% 0; }
     100% { background-position: -200% 0; }
 }
+
+.error-highlight {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25) !important;
+    outline: none !important;
+    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}

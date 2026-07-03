@@ -2523,7 +2523,7 @@ exports.appointment = async (req, res) => {
 
         const {
             appointment_date,
-            slot
+            slot,remarks
         } = req.body;
 
 
@@ -2708,7 +2708,8 @@ exports.appointment = async (req, res) => {
 
             cancel_by: null,
 
-            cancel_reason: null
+            cancel_reason: null,
+            remarks: remarks || null    
 
         });
 

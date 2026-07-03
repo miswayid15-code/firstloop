@@ -8,6 +8,7 @@ export default function Categories() {
     const [couponCategoryData, setCouponCategoryData] = useState([])
     const [loading, setLoading] = useState(true)
     const [couponLoading, setCouponLoading] = useState(true)
+    const [submitting, setSubmitting] = useState(false)
     const [activeTab, setActiveTab] = useState('merchant')
     const [showAddModal, setShowAddModal] = useState(false)
     const [showEditModal, setShowEditModal] = useState(false)
@@ -27,6 +28,17 @@ export default function Categories() {
         status: 1,
         image: null
     })
+
+    const highlightFieldError = (selector) => {
+        const element = document.querySelector(selector);
+        if (element) {
+            element.focus();
+            element.classList.add('error-highlight');
+            setTimeout(() => {
+                element.classList.remove('error-highlight');
+            }, 3000);
+        }
+    }
 
     // Helper function to check if response is successful
     const isSuccessResponse = (data) => {
@@ -102,9 +114,14 @@ export default function Categories() {
 
     const handleAddCategory = async (e) => {
         e.preventDefault()
-        
-        if (activeTab === 'coupon') {
-            try {
+        if (!newCategory.name || newCategory.name.trim().length < 2) {
+            toast.error("Category segment name must be at least 2 characters long")
+            highlightFieldError('#add-category-name')
+            return
+        }
+        setSubmitting(true)
+        try {
+            if (activeTab === 'coupon') {
                 const response = await API.post('admin/create-coupon-category', {
                     name: newCategory.name
                 })
@@ -116,46 +133,46 @@ export default function Categories() {
                 } else {
                     toast.error(response.data.message || "Failed to create coupon category")
                 }
-            } catch (err) {
-                const apiMessage = err.response?.data?.message || err.message
-                toast.error(apiMessage)
-                console.log("Error adding coupon category:", apiMessage)
-            }
-            return
-        }
-        
-        const formData = new FormData()
-        formData.append('name', newCategory.name)
-        if (newCategory.image) {
-            formData.append('image', newCategory.image)
-        } else {
-            formData.append('image', '')
-        }
-        
-        try {
-            const response = await API.post('admin/create-category', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            })
-            if (isSuccessResponse(response.data)) {
-                toast.success(response.data.message || "Category created successfully")
-                await fetchCat()
-                setShowAddModal(false)
-                setNewCategory({ name: '', image: null })
             } else {
-                toast.error(response.data.message || "Failed to create category")
+                const formData = new FormData()
+                formData.append('name', newCategory.name)
+                if (newCategory.image) {
+                    formData.append('image', newCategory.image)
+                } else {
+                    formData.append('image', '')
+                }
+                
+                const response = await API.post('admin/create-category', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                })
+                if (isSuccessResponse(response.data)) {
+                    toast.success(response.data.message || "Category created successfully")
+                    await fetchCat()
+                    setShowAddModal(false)
+                    setNewCategory({ name: '', image: null })
+                } else {
+                    toast.error(response.data.message || "Failed to create category")
+                }
             }
         } catch (err) {
             const apiMessage = err.response?.data?.message || err.message
             toast.error(apiMessage)
             console.log("Error adding category:", apiMessage)
+        } finally {
+            setSubmitting(false)
         }
     }
 
     const handleUpdateCategory = async (e) => {
         e.preventDefault()
-        
-        if (activeTab === 'coupon') {
-            try {
+        if (!editCategory.name || editCategory.name.trim().length < 2) {
+            toast.error("Category segment name must be at least 2 characters long")
+            highlightFieldError('#edit-category-name')
+            return
+        }
+        setSubmitting(true)
+        try {
+            if (activeTab === 'coupon') {
                 const response = await API.put('admin/update-coupon-category', {
                     id: editCategory.id,
                     name: editCategory.name,
@@ -169,40 +186,35 @@ export default function Categories() {
                 } else {
                     toast.error(response.data.message || "Failed to update coupon category")
                 }
-            } catch (err) {
-                const apiMessage = err.response?.data?.message || err.message
-                toast.error(apiMessage)
-                console.log("Error updating coupon category:", apiMessage)
-            }
-            return
-        }
-
-        const formData = new FormData()
-        formData.append('id', editCategory.id)
-        formData.append('name', editCategory.name)
-        formData.append('status', editCategory.status)
-        if (editCategory.image) {
-            formData.append('image', editCategory.image)
-        } else {
-            formData.append('image', '')
-        }
-        
-        try {
-            const response = await API.post('admin/update-category', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            })
-            if (isSuccessResponse(response.data)) {
-                toast.success(response.data.message || "Category updated successfully")
-                await fetchCat()
-                setShowEditModal(false)
-                setSelectedCategory(null)
             } else {
-                toast.error(response.data.message || "Failed to update category")
+                const formData = new FormData()
+                formData.append('id', editCategory.id)
+                formData.append('name', editCategory.name)
+                formData.append('status', editCategory.status)
+                if (editCategory.image) {
+                    formData.append('image', editCategory.image)
+                } else {
+                    formData.append('image', '')
+                }
+                
+                const response = await API.post('admin/update-category', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                })
+                if (isSuccessResponse(response.data)) {
+                    toast.success(response.data.message || "Category updated successfully")
+                    await fetchCat()
+                    setShowEditModal(false)
+                    setSelectedCategory(null)
+                } else {
+                    toast.error(response.data.message || "Failed to update category")
+                }
             }
         } catch (err) {
             const apiMessage = err.response?.data?.message || err.message
             toast.error(apiMessage)
             console.log("Error updating category:", apiMessage)
+        } finally {
+            setSubmitting(false)
         }
     }
 
@@ -596,6 +608,7 @@ export default function Categories() {
                                     </label>
                                     <input
                                         type="text"
+                                        id="add-category-name"
                                         className="form-control"
                                         placeholder="e.g. Goods"
                                         value={newCategory.name}
@@ -626,8 +639,8 @@ export default function Categories() {
                                 >
                                     Cancel
                                 </button>
-                                <button type="submit" className="btn btn-primary">
-                                    Save Category
+                                <button type="submit" className="btn btn-primary" disabled={submitting}>
+                                    {submitting ? 'Saving...' : 'Save Category'}
                                 </button>
                             </div>
                         </form>
@@ -660,6 +673,7 @@ export default function Categories() {
                                     </label>
                                     <input
                                         type="text"
+                                        id="edit-category-name"
                                         className="form-control"
                                         value={editCategory.name}
                                         onChange={(e) => setEditCategory({ ...editCategory, name: e.target.value })}
@@ -713,8 +727,8 @@ export default function Categories() {
                                 >
                                     Cancel
                                 </button>
-                                <button type="submit" className="btn btn-primary">
-                                    Update Category
+                                <button type="submit" className="btn btn-primary" disabled={submitting}>
+                                    {submitting ? 'Saving...' : 'Update Category'}
                                 </button>
                             </div>
                         </form>

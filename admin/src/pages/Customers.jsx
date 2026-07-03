@@ -100,7 +100,20 @@ export default function Customers() {
 
     const [showCustomerAdd, setShowCustomerAdd] = useState(false)
     const [addingCustomer, setAddingCustomer] = useState(false)
+    const [updatingCustomer, setUpdatingCustomer] = useState(false)
     const [detailsLoading, setDetailsLoading] = useState(false)
+
+    const highlightFieldError = (selector) => {
+        const element = document.querySelector(selector);
+        if (element) {
+            element.focus();
+            element.classList.add('error-highlight');
+            setTimeout(() => {
+                element.classList.remove('error-highlight');
+            }, 3000);
+        }
+    }
+
     const [addCustomerForm, setAddCustomerForm] = useState({
         name: '',
         email: '',
@@ -565,8 +578,24 @@ export default function Customers() {
     }
 
     const handleCreateCustomer = async () => {
-        if (!addCustomerForm.name || !addCustomerForm.email || !addCustomerForm.phone || !addCustomerForm.password) {
-            toast.error("Name, Email, Phone, and Password are required");
+        if (!addCustomerForm.name || addCustomerForm.name.trim().length < 3) {
+            toast.error("Full Name must be at least 3 characters long");
+            highlightFieldError('#add-cust-name');
+            return;
+        }
+        if (!addCustomerForm.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(addCustomerForm.email)) {
+            toast.error("Please enter a valid email address");
+            highlightFieldError('#add-cust-email');
+            return;
+        }
+        if (!addCustomerForm.phone || addCustomerForm.phone.trim().length < 9) {
+            toast.error("Please enter a valid phone number (minimum 9 digits)");
+            highlightFieldError('.modal.active input[name="phone"]');
+            return;
+        }
+        if (!addCustomerForm.password || addCustomerForm.password.length < 6) {
+            toast.error("Password must be at least 6 characters long");
+            highlightFieldError('#add-cust-password');
             return;
         }
 
@@ -621,7 +650,27 @@ export default function Customers() {
     };
 
     const handleUpdateCustomer = async () => {
-
+        if (!editCustomerForm.name || editCustomerForm.name.trim().length < 3) {
+            toast.error("Full Name must be at least 3 characters long");
+            highlightFieldError('#edit-cust-name');
+            return;
+        }
+        if (!editCustomerForm.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editCustomerForm.email)) {
+            toast.error("Please enter a valid email address");
+            highlightFieldError('#edit-cust-email');
+            return;
+        }
+        if (!editCustomerForm.phone || editCustomerForm.phone.trim().length < 9) {
+            toast.error("Please enter a valid phone number (minimum 9 digits)");
+            highlightFieldError('.modal.active input[name="phone"]');
+            return;
+        }
+        if (editCustomerForm.password && editCustomerForm.password.length < 6) {
+            toast.error("Password must be at least 6 characters long");
+            highlightFieldError('#edit-cust-password');
+            return;
+        }
+        setUpdatingCustomer(true);
         try {
 
             const formData = new FormData();
@@ -679,6 +728,8 @@ export default function Customers() {
 
             toast.error("Failed to update customer");
 
+        } finally {
+            setUpdatingCustomer(false);
         }
 
     };
@@ -1319,6 +1370,7 @@ export default function Customers() {
                                         <div className="form-group">
                                             <input
                                                 type="password"
+                                                id="edit-cust-password"
                                                 name="password"
                                                 className="form-control"
                                                 placeholder=" "
@@ -1394,9 +1446,9 @@ export default function Customers() {
                                     className="btn btn-primary"
                                     type="button"
                                     onClick={handleUpdateCustomer}
-                                    disabled={detailsLoading}
+                                    disabled={detailsLoading || updatingCustomer}
                                 >
-                                    Update Details
+                                    {updatingCustomer ? 'Updating...' : 'Update Details'}
                                 </button>
 
                             </div>
@@ -1549,6 +1601,7 @@ export default function Customers() {
                                         <div className="form-group">
                                             <input
                                                 type="password"
+                                                id="add-cust-password"
                                                 name="password"
                                                 className="form-control"
                                                 placeholder=" "

@@ -54,6 +54,37 @@ export default function EditMerchant() {
     const [categories, setCategories] = useState([])
     const [loading, setLoading] = useState(true)
     const [errors, setErrors] = useState({})
+    const [isSubmitting, setIsSubmitting] = useState(false)
+
+    const highlightFieldError = (selector) => {
+        const element = document.querySelector(selector);
+        if (element) {
+            element.focus();
+            element.classList.add('error-highlight');
+            setTimeout(() => {
+                element.classList.remove('error-highlight');
+            }, 3000);
+        }
+    }
+
+    const focusFieldByErrorMessage = (message) => {
+        if (!message) return;
+        const msg = message.toLowerCase();
+        
+        if (msg.includes('phone') || msg.includes('mobile')) {
+            highlightFieldError('input[name="phone"]');
+        } else if (msg.includes('email')) {
+            highlightFieldError('input[name="email"]');
+        } else if (msg.includes('owner') || msg.includes('name')) {
+            highlightFieldError('input[name="ownerName"]');
+        } else if (msg.includes('business') || msg.includes('bus_name')) {
+            highlightFieldError('input[name="businessName"]');
+        } else if (msg.includes('gst') || msg.includes('tax')) {
+            highlightFieldError('input[name="taxNumber"]');
+        } else if (msg.includes('password')) {
+            highlightFieldError('input[name="password"]');
+        }
+    }
 
     const navigate = useNavigate()
     const { isLoaded: isMapLoaded, loadError: mapLoadError } = useJsApiLoader({
@@ -287,9 +318,38 @@ export default function EditMerchant() {
     const handleSubmit = async (event) => {
         event.preventDefault()
 
+        if (!form.ownerName || form.ownerName.trim().length < 3) {
+            toast.error('Business Owner Name must be at least 3 characters long')
+            highlightFieldError('input[name="ownerName"]')
+            return
+        }
 
+        if (!form.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+            toast.error('Please enter a valid email address')
+            highlightFieldError('input[name="email"]')
+            return
+        }
+
+        if (!form.phone || form.phone.trim().length < 9) {
+            toast.error('Please enter a valid phone number (minimum 9 digits)')
+            highlightFieldError('input[name="phone"]')
+            return
+        }
+
+        if (form.password && form.password.length < 6) {
+            toast.error('Password must be at least 6 characters long')
+            highlightFieldError('input[name="password"]')
+            return
+        }
+
+        if (!form.businessName || form.businessName.trim().length < 2) {
+            toast.error('Business Name is required')
+            highlightFieldError('input[name="businessName"]')
+            return
+        }
 
         try {
+            setIsSubmitting(true)
             const formData = new FormData()
 
             formData.append('mer_id', id)
@@ -341,13 +401,18 @@ export default function EditMerchant() {
                 toast.success(data.message || 'Merchant updated successfully')
                 setTimeout(() => navigate('/merchants'), 800)
             } else {
-                toast.error(data.message || 'Merchant update failed')
+                const errMsg = data.message || 'Merchant update failed'
+                toast.error(errMsg)
+                focusFieldByErrorMessage(errMsg)
             }    
   
         } catch (error) {
             const apiMessage = error?.response?.data?.message || 'Merchant update failed'
             console.log('Merchant Update Error:', error.response?.data || error)
             toast.error(apiMessage)
+            focusFieldByErrorMessage(apiMessage)
+        } finally {
+            setIsSubmitting(false)
         }
     }
 
@@ -805,8 +870,9 @@ export default function EditMerchant() {
                             <button
                                 type="submit"
                                 className="btn btn-primary"
+                                disabled={isSubmitting}
                             >
-                                Update Merchant
+                                {isSubmitting ? 'Saving...' : 'Update Merchant'}
                             </button>
                         </div>
                     </form>

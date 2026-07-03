@@ -4,16 +4,33 @@ import logo from '../assets/img/FirePass1.png'
 export default function UnderConstruction() {
     const [email, setEmail] = useState('')
     const [submitted, setSubmitted] = useState(false)
+    const [submitting, setSubmitting] = useState(false)
     const [error, setError] = useState('')
+
+    const highlightFieldError = (selector) => {
+        const element = document.querySelector(selector);
+        if (element) {
+            element.focus();
+            element.classList.add('error-highlight');
+            setTimeout(() => {
+                element.classList.remove('error-highlight');
+            }, 3000);
+        }
+    }
 
     function handleSubmit(e) {
         e.preventDefault()
         if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
             setError('Please enter a valid email address.')
+            highlightFieldError('.email-input')
             return
         }
         setError('')
-        setSubmitted(true)
+        setSubmitting(true)
+        setTimeout(() => {
+            setSubmitting(false)
+            setSubmitted(true)
+        }, 1000)
     }
 
     return (
@@ -173,9 +190,14 @@ export default function UnderConstruction() {
                     padding: 14px 20px;
                     border-radius: 12px;
                     color: #FFFFFF !important;
+                    transition: border-color 0.3s, box-shadow 0.3s;
                     font-size: 0.95rem;
                     outline: none;
-                    transition: border-color 0.3s, box-shadow 0.3s;
+                }
+
+                .email-input.error-highlight {
+                    border-color: var(--primary) !important;
+                    box-shadow: 0 0 10px rgba(211, 0, 0, 0.5) !important;
                 }
 
                 .email-input:focus {
@@ -277,8 +299,8 @@ export default function UnderConstruction() {
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
                             />
-                            <button type="submit" className="submit-btn">
-                                Notify Me
+                            <button type="submit" className="submit-btn" disabled={submitting}>
+                                {submitting ? 'Please Wait...' : 'Notify Me'}
                             </button>
                         </div>
                         {error && <p className="error-msg">{error}</p>}

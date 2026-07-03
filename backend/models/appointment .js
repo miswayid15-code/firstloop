@@ -51,6 +51,10 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING,
             allowNull: true
         },
+        remarks: {
+            type: DataTypes.TEXT,
+            allowNull: true
+        },
 
         cancel_reason: {
             type: DataTypes.TEXT,
