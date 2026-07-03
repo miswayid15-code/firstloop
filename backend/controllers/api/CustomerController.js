@@ -39,7 +39,7 @@ exports.register = async (req, res) => {
     // console.log("========== CUSTOMER REGISTER START ==========");
 
     try {
-
+// console.log("REQ BODY:", req.body);
         const {
             name,
             email,
@@ -52,41 +52,42 @@ exports.register = async (req, res) => {
             lon
         } = req.body;
 
-        // console.log("REQ BODY:", req.body);
-        let phoneNumber = null;
-        let nationalNumber = null;
-        let callingCode = country_code || null;
+        
+        let phoneNumber;
+        let nationalNumber;
+        let callingCode;
 
-        if (phone && phone.trim() !== '') {
-            try {
+        try {
 
-                const cleanPhone = phone.replace(/\s+/g, '');
+            const cleanPhone = phone.replace(/\s+/g, '');
 
-                const fullPhone = cleanPhone.startsWith('+')
-                    ? cleanPhone
-                    : (country_code || '') + cleanPhone;
+            const fullPhone = cleanPhone.startsWith('+')
+                ? cleanPhone
+                : (country_code || '') + cleanPhone;
 
-                const num = parsePhoneNumber(fullPhone);
+            const num = parsePhoneNumber(fullPhone);
 
-                if (!num.isValid()) {
-                    return res.json({
-                        status: 0,
-                        message: "Invalid phone"
-                    });
-                }
-
-                callingCode = `+${num.countryCallingCode}`;
-                nationalNumber = num.nationalNumber;
-                phoneNumber = num.number;
-
-            } catch (phoneErr) {
+            if (!num.isValid()) {
 
                 return res.json({
                     status: 0,
-                    message: "Invalid phone format"
+                    message: "Invalid phone"
                 });
 
             }
+
+            callingCode = `+${num.countryCallingCode}`;
+            nationalNumber = num.nationalNumber;
+
+            phoneNumber = num.number;
+
+        } catch (phoneErr) {
+
+            return res.json({
+                status: 0,
+                message: "Invalid phone format"
+            });
+
         }
 
         // check phone exists
@@ -170,7 +171,7 @@ exports.register = async (req, res) => {
             name,
             email,
             country_code: callingCode,
-            phone: nationalNumber? nationalNumber : null,
+            phone: nationalNumber,
             password: hashedPassword,
             dob,
             gender,
@@ -2522,7 +2523,7 @@ exports.appointment = async (req, res) => {
 
         const {
             appointment_date,
-            slot, remarks
+            slot,remarks
         } = req.body;
 
 
@@ -2708,7 +2709,7 @@ exports.appointment = async (req, res) => {
             cancel_by: null,
 
             cancel_reason: null,
-            remarks: remarks || null
+            remarks: remarks || null    
 
         });
 

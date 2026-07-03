@@ -609,11 +609,11 @@ export default function Customers() {
             highlightFieldError('#add-cust-email');
             return;
         }
-        if (!addCustomerForm.phone || addCustomerForm.phone.trim().length < 9) {
-            toast.error("Please enter a valid phone number (minimum 9 digits)");
-            highlightFieldError('.modal.active input[name="phone"]');
-            return;
-        }
+        // if (!addCustomerForm.phone || addCustomerForm.phone.trim().length < 9) {
+        //     toast.error("Please enter a valid phone number (minimum 9 digits)");
+        //     highlightFieldError('.modal.active input[name="phone"]');
+        //     return;
+        // }
         if (!addCustomerForm.password || addCustomerForm.password.length < 6) {
             toast.error("Password must be at least 6 characters long");
             highlightFieldError('#add-cust-password');
@@ -695,16 +695,16 @@ export default function Customers() {
             highlightFieldError('#edit-cust-email');
             return;
         }
-        if (!editCustomerForm.phone || editCustomerForm.phone.trim().length < 9) {
-            toast.error("Please enter a valid phone number (minimum 9 digits)");
-            highlightFieldError('.modal.active input[name="phone"]');
-            return;
-        }
-        if (editCustomerForm.password && editCustomerForm.password.length < 6) {
-            toast.error("Password must be at least 6 characters long");
-            highlightFieldError('#edit-cust-password');
-            return;
-        }
+        // if (!editCustomerForm.phone || editCustomerForm.phone.trim().length < 9) {
+        //     toast.error("Please enter a valid phone number (minimum 9 digits)");
+        //     highlightFieldError('.modal.active input[name="phone"]');
+        //     return;
+        // }
+        // if (!editCustomerForm.password || editCustomerForm.password.length < 6) {
+        //     toast.error("Password must be at least 6 characters long");
+        //     highlightFieldError('#edit-cust-password');
+        //     return;
+        // }
         if (!editCustomerForm.address || !editCustomerForm.address.trim()) {
             toast.error("Address is required");
             highlightFieldError('.modal.active input[name="address"]');
@@ -1359,7 +1359,7 @@ export default function Customers() {
                                                 required
                                             />
                                             <label htmlFor="edit-cust-name" className="form-label">
-                                                Full Name
+                                                Full Name <span style={{ color: '#ef4444' }}>*</span>
                                             </label>
                                         </div>
 
@@ -1375,7 +1375,7 @@ export default function Customers() {
                                                 required
                                             />
                                             <label htmlFor="edit-cust-email" className="form-label">
-                                                Email Address
+                                                Email Address <span style={{ color: '#ef4444' }}>*</span>
                                             </label>
                                         </div>
                                     </div>
@@ -1413,8 +1413,9 @@ export default function Customers() {
                                                 placeholder=" "
                                                 value={editCustomerForm.password}
                                                 onChange={handleEditCustomerChange}
+                                                required
                                             />
-                                            <label className="form-label">Password</label>
+                                            <label className="form-label">Password <span style={{ color: '#ef4444' }}>*</span></label>
                                         </div>
 
                                         <div className="form-group-classic">
@@ -1461,6 +1462,7 @@ export default function Customers() {
                                             onMarkerDragEnd={handleCustomerMarkerDragEnd}
                                             center={customerMapCenter}
                                             mapContainerStyle={{ width: '100%', height: '320px' }}
+                                            required={true}
                                         />
                                     )}
 
@@ -1587,7 +1589,7 @@ export default function Customers() {
                                                 required
                                             />
                                             <label htmlFor="add-cust-name" className="form-label">
-                                                Full Name
+                                                Full Name <span style={{ color: '#ef4444' }}>*</span>
                                             </label>
                                         </div>
 
@@ -1604,7 +1606,7 @@ export default function Customers() {
                                                 required
                                             />
                                             <label htmlFor="add-cust-email" className="form-label">
-                                                Email Address
+                                                Email Address <span style={{ color: '#ef4444' }}>*</span>
                                             </label>
                                         </div>
                                     </div>
@@ -1647,7 +1649,7 @@ export default function Customers() {
                                                 disabled={addingCustomer}
                                                 required
                                             />
-                                            <label className="form-label">Password</label>
+                                            <label className="form-label">Password <span style={{ color: '#ef4444' }}>*</span></label>
                                         </div>
 
                                         <div className="form-group-classic">
@@ -1695,6 +1697,7 @@ export default function Customers() {
                                             onMarkerDragEnd={handleAddCustomerMarkerDragEnd}
                                             center={addCustomerMapCenter}
                                             mapContainerStyle={{ width: '100%', height: '320px' }}
+                                            required={true}
                                         />
                                     )}
 

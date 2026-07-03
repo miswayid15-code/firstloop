@@ -107,51 +107,44 @@ exports.register = async (req, res) => {
 
         const zip_code = req.body.zip_code || req.body.zipcode;
 
-        let nationalNumber;
-        let callingCode;
-
         // =========================
         // PHONE VALIDATION
         // =========================
 
-        try {
+        let phoneNumber = null;
+        let nationalNumber = null;
+        let callingCode = country_code || null;
 
-            const cleanPhone = (phone || '').replace(/\s+/g, '');
+        if (phone && phone.trim() !== '') {
+            try {
 
-            const normalizedCountryCode = country_code 
-                ? (String(country_code).startsWith('+') ? String(country_code) : `+${country_code}`)
-                : '';
+                const cleanPhone = phone.replace(/\s+/g, '');
 
-            const fullPhone = cleanPhone.startsWith('+')
-                ? cleanPhone
-                : `${normalizedCountryCode}${cleanPhone}`;
+                const fullPhone = cleanPhone.startsWith('+')
+                    ? cleanPhone
+                    : (country_code || '') + cleanPhone;
 
-            const num = parsePhoneNumber(fullPhone);
+                const num = parsePhoneNumber(fullPhone);
 
-            if (!num || !num.isValid()) {
+                if (!num.isValid()) {
+                    return res.json({
+                        status: 0,
+                        message: "Invalid phone"
+                    });
+                }
+
+                callingCode = `+${num.countryCallingCode}`;
+                nationalNumber = num.nationalNumber;
+                phoneNumber = num.number;
+
+            } catch (phoneErr) {
 
                 return res.json({
                     status: 0,
-                    message: "Invalid phone number"
+                    message: "Invalid phone format"
                 });
 
             }
-
-            callingCode = `+${num.countryCallingCode}`;
-            nationalNumber = num.nationalNumber;
-
-            // console.log("COUNTRY CODE:", callingCode);
-            // console.log("PHONE:", nationalNumber);
-
-        } catch (err) {
-
-            console.log("PHONE ERROR:", err);
-
-            return res.json({
-                status: 0,
-                message: "Invalid phone format"
-            });
-
         }
 
         // =========================
@@ -243,25 +236,25 @@ exports.register = async (req, res) => {
 
             country_code: callingCode,
 
-            phone: nationalNumber,
+            phone: nationalNumber || null,
 
             password: hashedPassword,
 
-            dob,
+            dob: dob || null,
 
-            gender,
+            gender: gender || null,
 
             address,
 
-            lat,
+            lat: lat || null,
 
-            lon,
+            lon: lon || null,
 
-            city,
+            city: city || null,
 
-            state,
+            state: state || null,
             country,
-            zip_code,
+            zip_code: zip_code || null,
 
             profile_image: profileImage,
 
@@ -280,7 +273,7 @@ exports.register = async (req, res) => {
             await sendMail(
                 customer.email,
                 'Customer Registration Successful',
-                RegisterTemplate('customer', customer.name,'active')
+                RegisterTemplate('customer', customer.name, 'active')
             );
 
         } catch (mailErr) {
@@ -332,20 +325,20 @@ exports.update = async (req, res) => {
             gender,
             address,
             lat,
-            lon,city,state,country
+            lon, city, state, country
         } = req.body || {};
 
         const zip_code = req.body.zip_code || req.body.zipcode;
         // console.log("bodu", req.body) 
         // console.log("code",req.body.country_code)
         // Log all uploaded files in the request
-console.log("Uploaded Files:", req.files);
+        console.log("Uploaded Files:", req.files);
 
-// Find the specific profile image file
-const profileFiless = req.files && req.files.find(file => file.fieldname === 'profile_image');
-console.log("Profile Image File Details:", profileFiless);
+        // Find the specific profile image file
+        const profileFiless = req.files && req.files.find(file => file.fieldname === 'profile_image');
+        console.log("Profile Image File Details:", profileFiless);
 
-        
+
 
         if (!id) {
 
@@ -614,7 +607,7 @@ exports.fetch_list = async (req, res) => {
                 'country',
                 'zip_code',
                 'createdAt',
-               
+
 
             ],
 

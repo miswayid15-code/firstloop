@@ -11,9 +11,10 @@ export default function CorporateAddressField({
     mapContainerStyle,
     isBranch = false,
     isMerchant = false,
+    required = false,
     errors = {}
 }) {
-    const showRequired = isBranch || isMerchant;
+    const showRequired = isBranch || isMerchant || required;
 
     return (
         <>

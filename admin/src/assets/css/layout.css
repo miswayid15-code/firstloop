@@ -23,7 +23,7 @@
     flex-direction: column;
     margin-left: 0 !important;
     transition: var(--transition-smooth);
-    overflow-x: hidden;
+    overflow-x: clip;
 }
 
 /* Header Navbar occupies top of main workspace */
