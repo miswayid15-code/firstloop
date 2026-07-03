@@ -30,7 +30,7 @@ exports.register = async (req, res) => {
             country_code,
             timings,
             visibility,
-            age_group
+            age_group,city,state,country
         } = req.body;
 
         const merchant_id = req.user.id;
@@ -267,6 +267,9 @@ exports.register = async (req, res) => {
                 lon,
 
                 address,
+                country,
+                state:state?.trim() || null,
+                city: city?.trim() || null,
 
                 description,
                 visibility,
@@ -645,7 +648,8 @@ exports.update_branch = async (req, res) => {
             country_code,
             timings,
             visibility,
-            age_group
+            age_group,
+            city,state,country
         } = req.body;
 
         const merchant_id = req.user.id;

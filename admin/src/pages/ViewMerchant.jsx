@@ -124,6 +124,40 @@ export default function ViewMerchant() {
 
     const [search, setSearch] = useState('')
 
+    const highlightFieldError = (selector) => {
+        setTimeout(() => {
+            const element = document.querySelector(selector);
+            if (element) {
+                element.focus();
+                element.classList.add('error-highlight');
+                setTimeout(() => {
+                    element.classList.remove('error-highlight');
+                }, 3000);
+            }
+        }, 50);
+    }
+
+    const focusFieldByErrorMessage = (message) => {
+        if (!message) return;
+        const msg = message.toLowerCase();
+        
+        if (msg.includes('phone') || msg.includes('mobile')) {
+            highlightFieldError('.modal.active input[name="phone"]');
+        } else if (msg.includes('email')) {
+            highlightFieldError('.modal.active input[name="email"], .modal.active #add-rep-email, .modal.active #edit-rep-email');
+        } else if (msg.includes('id') || msg.includes('rep_id')) {
+            highlightFieldError('.modal.active #add-rep-id, .modal.active #edit-rep-id');
+        } else if (msg.includes('name')) {
+            highlightFieldError('.modal.active input[name="name"], .modal.active #add-rep-name, .modal.active #edit-rep-name');
+        } else if (msg.includes('password')) {
+            highlightFieldError('.modal.active input[type="password"], .modal.active #add-rep-password, .modal.active #edit-rep-password');
+        } else if (msg.includes('address')) {
+            highlightFieldError('.modal.active input[name="address"]');
+        } else if (msg.includes('country')) {
+            highlightFieldError('.modal.active input[name="country"]');
+        }
+    }
+
     const [branchPage, setBranchPage] = useState(1)
 
     const [merchantData, setMerchantData] = useState(null)
@@ -1603,26 +1637,27 @@ export default function ViewMerchant() {
 
         if (!addBranchForm.name.trim()) {
             toast.error('Branch name is required')
+            highlightFieldError('.modal.active input[name="name"]')
             return
         }
 
-        if (!addBranchForm.email.trim()) {
-            toast.error('Email is required')
-            return
-        }
+
 
         if (!addBranchForm.phone.trim()) {
             toast.error('Phone is required')
+            highlightFieldError('.modal.active input[name="phone"]')
             return
         }
 
         if (!addBranchForm.address.trim()) {
             toast.error('Business Address is required')
+            highlightFieldError('.modal.active input[name="address"]')
             return
         }
 
         if (!addBranchForm.country || !addBranchForm.country.trim()) {
             toast.error('Country is required')
+            highlightFieldError('.modal.active input[name="country"]')
             return
         }
 
@@ -1676,12 +1711,15 @@ export default function ViewMerchant() {
                 fetchMerchant()
                 fetchReceptionists()
             } else {
-                toast.error(data.message || 'Failed to register branch')
+                const errMsg = data.message || 'Failed to register branch'
+                toast.error(errMsg)
+                focusFieldByErrorMessage(errMsg)
             }
         } catch (error) {
             const apiMessage = error?.response?.data?.message || 'Failed to register branch'
 
             toast.error(apiMessage)
+            focusFieldByErrorMessage(apiMessage)
 
             console.error('Error registering branch:', error)
         } finally {
@@ -1810,26 +1848,27 @@ export default function ViewMerchant() {
 
         if (!editBranchForm.name.trim()) {
             toast.error('Branch name is required')
+            highlightFieldError('.modal.active input[name="name"]')
             return
         }
 
-        if (!editBranchForm.email.trim()) {
-            toast.error('Email is required')
-            return
-        }
+
 
         if (!editBranchForm.phone.trim()) {
             toast.error('Phone is required')
+            highlightFieldError('.modal.active input[name="phone"]')
             return
         }
 
         if (!editBranchForm.address || !editBranchForm.address.trim()) {
             toast.error('Business Address is required')
+            highlightFieldError('.modal.active input[name="address"]')
             return
         }
 
         if (!editBranchForm.country || !editBranchForm.country.trim()) {
             toast.error('Country is required')
+            highlightFieldError('.modal.active input[name="country"]')
             return
         }
 
@@ -1914,9 +1953,9 @@ export default function ViewMerchant() {
                 fetchReceptionists()
 
             } else {
-
-                toast.error(data.message || 'Failed to update branch')
-
+                const errMsg = data.message || 'Failed to update branch'
+                toast.error(errMsg)
+                focusFieldByErrorMessage(errMsg)
             }
 
         } catch (error) {
@@ -1924,6 +1963,7 @@ export default function ViewMerchant() {
             const apiMessage = error?.response?.data?.message || 'Failed to update branch'
 
             toast.error(apiMessage)
+            focusFieldByErrorMessage(apiMessage)
 
             console.error('Error updating branch:', error)
 
@@ -2028,22 +2068,22 @@ export default function ViewMerchant() {
 
     const handleSaveReceptionist = async () => {
 
-        if (!receptionistForm.name.trim()) {
-
-            toast.error('Name is required')
-
+        if (!receptionistForm.name.trim() || receptionistForm.name.trim().length < 3) {
+            toast.error('Full Name must be at least 3 characters long')
+            highlightFieldError('#edit-rep-name')
             return
-
         }
 
-
-
-        if (!receptionistForm.phone.trim()) {
-
-            toast.error('Phone number is required')
-
+        if (!receptionistForm.phone.trim() || receptionistForm.phone.trim().length < 9) {
+            toast.error('Please enter a valid phone number (minimum 9 digits)')
+            highlightFieldError('.modal.active input[name="phone"]')
             return
+        }
 
+        if (!receptionistForm.password.trim() || receptionistForm.password.trim().length < 6) {
+            toast.error('Password must be at least 6 characters long')
+            highlightFieldError('#edit-rep-password')
+            return
         }
 
         try {
@@ -2177,9 +2217,9 @@ export default function ViewMerchant() {
 
             } else {
                 console.log(data.message)
-
-                toast.error(data.message || 'Failed to update receptionist')
-
+                const errMsg = data.message || 'Failed to update receptionist'
+                toast.error(errMsg)
+                focusFieldByErrorMessage(errMsg, 'edit-')
             }
 
         } catch (error) {
@@ -2187,6 +2227,7 @@ export default function ViewMerchant() {
             const apiMessage = error?.response?.data?.message || 'Failed to update receptionist'
 
             toast.error(apiMessage)
+            focusFieldByErrorMessage(apiMessage, 'edit-')
 
             console.error('Error updating receptionist:', error)
 
@@ -2277,37 +2318,27 @@ export default function ViewMerchant() {
     const handleAddReceptionist = async () => {
 
         if (!addReceptionistForm.rep_id.trim()) {
-
             toast.error('Receptionist ID is required')
-
+            highlightFieldError('#add-rep-id')
             return
-
         }
 
-        if (!addReceptionistForm.name.trim()) {
-
-            toast.error('Name is required')
-
+        if (!addReceptionistForm.name.trim() || addReceptionistForm.name.trim().length < 3) {
+            toast.error('Full Name must be at least 3 characters long')
+            highlightFieldError('#add-rep-name')
             return
-
         }
 
-
-
-        if (!addReceptionistForm.phone.trim()) {
-
-            toast.error('Phone number is required')
-
+        if (!addReceptionistForm.phone.trim() || addReceptionistForm.phone.trim().length < 9) {
+            toast.error('Please enter a valid phone number (minimum 9 digits)')
+            highlightFieldError('.modal.active input[name="phone"]')
             return
-
         }
 
-        if (!addReceptionistForm.password.trim()) {
-
-            toast.error('Password is required')
-
+        if (!addReceptionistForm.password.trim() || addReceptionistForm.password.trim().length < 6) {
+            toast.error('Password must be at least 6 characters long')
+            highlightFieldError('#add-rep-password')
             return
-
         }
 
         try {
@@ -2406,9 +2437,9 @@ export default function ViewMerchant() {
                 closeAddReceptionistModal()
 
             } else {
-
-                toast.error(data.message || 'Failed to register receptionist')
-
+                const errMsg = data.message || 'Failed to register receptionist'
+                toast.error(errMsg)
+                focusFieldByErrorMessage(errMsg, 'add-')
             }
 
         } catch (error) {
@@ -2416,6 +2447,7 @@ export default function ViewMerchant() {
             const apiMessage = error?.response?.data?.message || 'Failed to register receptionist'
 
             toast.error(apiMessage)
+            focusFieldByErrorMessage(apiMessage, 'add-')
 
             console.error('Error registering receptionist:', error)
 
@@ -3845,6 +3877,7 @@ export default function ViewMerchant() {
                                     <div className="form-group">
                                         <input
                                             type="text"
+                                            id="edit-rep-id"
                                             className="form-control"
                                             value={receptionistForm.rep_id || ''}
                                             readOnly
@@ -3858,6 +3891,7 @@ export default function ViewMerchant() {
                                     <div className="form-group">
                                         <input
                                             type="text"
+                                            id="edit-rep-name"
                                             className="form-control"
                                             value={receptionistForm.name}
                                             onChange={(e) => setReceptionistForm({ ...receptionistForm, name: e.target.value })}
@@ -3865,12 +3899,13 @@ export default function ViewMerchant() {
                                             required
                                             autoComplete="off"
                                         />
-                                        <label className="form-label">Full Name</label>
+                                        <label className="form-label">Full Name <span style={{ color: '#ef4444' }}>*</span></label>
                                     </div>
 
                                     <div className="form-group">
                                         <input
                                             type="email"
+                                            id="edit-rep-email"
                                             className="form-control"
                                             value={receptionistForm.email}
                                             onChange={(e) => setReceptionistForm({ ...receptionistForm, email: e.target.value })}
@@ -3896,16 +3931,14 @@ export default function ViewMerchant() {
                                     <div className="form-group">
                                         <input
                                             type="password"
+                                            id="edit-rep-password"
                                             className="form-control"
                                             value={receptionistForm.password}
                                             onChange={(e) => setReceptionistForm({ ...receptionistForm, password: e.target.value })}
                                             placeholder=" "
                                             autoComplete="new-password"
                                         />
-                                        <label className="form-label">Password</label>
-                                        <small style={{ color: 'var(--text-muted)', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>
-                                            Leave blank to keep the current password.
-                                        </small>
+                                        <label className="form-label">Password <span style={{ color: '#ef4444' }}>*</span></label>
                                     </div>
                                 </form>
                             ) : (
@@ -4100,6 +4133,7 @@ export default function ViewMerchant() {
                                     <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
                                         <input
                                             type="text"
+                                            id="add-rep-id"
                                             className="form-control"
                                             value={addReceptionistForm.rep_id}
                                             onChange={(e) => setAddReceptionistForm({ ...addReceptionistForm, rep_id: e.target.value })}
@@ -4107,7 +4141,7 @@ export default function ViewMerchant() {
                                             required
                                             autoComplete="off"
                                         />
-                                        <label className="form-label">Receptionist ID</label>
+                                        <label className="form-label">Receptionist ID <span style={{ color: '#ef4444' }}>*</span></label>
                                     </div>
                                     <button
                                         type="button"
@@ -4127,6 +4161,7 @@ export default function ViewMerchant() {
                                 <div className="form-group">
                                     <input
                                         type="text"
+                                        id="add-rep-name"
                                         className="form-control"
                                         value={addReceptionistForm.name}
                                         onChange={(e) => setAddReceptionistForm({ ...addReceptionistForm, name: e.target.value })}
@@ -4134,12 +4169,13 @@ export default function ViewMerchant() {
                                         required
                                         autoComplete="off"
                                     />
-                                    <label className="form-label">Full Name</label>
+                                    <label className="form-label">Full Name <span style={{ color: '#ef4444' }}>*</span></label>
                                 </div>
 
                                 <div className="form-group">
                                     <input
                                         type="email"
+                                        id="add-rep-email"
                                         className="form-control"
                                         value={addReceptionistForm.email}
                                         onChange={(e) => setAddReceptionistForm({ ...addReceptionistForm, email: e.target.value })}
@@ -4165,6 +4201,7 @@ export default function ViewMerchant() {
                                 <div className="form-group">
                                     <input
                                         type="password"
+                                        id="add-rep-password"
                                         className="form-control"
                                         value={addReceptionistForm.password}
                                         onChange={(e) => setAddReceptionistForm({ ...addReceptionistForm, password: e.target.value })}
@@ -4172,7 +4209,7 @@ export default function ViewMerchant() {
                                         required
                                         autoComplete="new-password"
                                     />
-                                    <label className="form-label">Password</label>
+                                    <label className="form-label">Password <span style={{ color: '#ef4444' }}>*</span></label>
                                 </div>
                             </form>
                         </div>
@@ -5383,10 +5420,9 @@ export default function ViewMerchant() {
                                             value={addBranchForm.email}
                                             onChange={handleAddBranchChange}
                                             disabled={addingBranch}
-                                            required
                                             autoComplete="off"
                                         />
-                                        <label className="form-label">Email <span style={{ color: '#ef4444' }}>*</span></label>
+                                        <label className="form-label">Email</label>
                                     </div>
                                 </div>
 
@@ -6052,9 +6088,8 @@ export default function ViewMerchant() {
                                                 value={editBranchForm.email}
                                                 onChange={handleEditBranchChange}
                                                 disabled={savingBranch}
-                                                required
                                             />
-                                            <label className="form-label">Email <span style={{ color: '#ef4444' }}>*</span></label>
+                                            <label className="form-label">Email</label>
                                         </div>
                                     </div>
 

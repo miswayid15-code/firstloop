@@ -1073,7 +1073,7 @@ exports.branchRegister = async (req, res) => {
 
         if (
             !name ||
-            !email ||
+        
             !phone ||
             !mer_id
         ) {
