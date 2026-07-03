@@ -1,4 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
+import { toast } from 'react-hot-toast'
+import API from '../api.js'
 
 const targetGroups = [
     {
@@ -21,85 +23,6 @@ const targetGroups = [
     }
 ]
 
-const categories = [
-    'Beverages & Cafe',
-    'Beauty & Wellness',
-    'Fashion',
-    'Electronics'
-]
-
-const branches = [
-    'Downtown Branch',
-    'City Mall Branch',
-    'Airport Branch'
-]
-
-const genders = [
-    'Male',
-    'Female',
-    'Other'
-]
-
-const ageRanges = [
-    'Under 18',
-    '18-25',
-    '26-35',
-    '36-45',
-    '46+'
-]
-
-const dynamicFields = {
-    merchant: {
-        TargetCategory: categories,
-        TargetGender: genders
-    },
-    receptionist: {
-        TargetBranch: branches,
-        TargetCategory: categories,
-        TargetGender: genders
-    },
-    customer: {
-        TargetCategory: categories,
-        TargetGender: genders,
-        TargetAge: ageRanges
-    }
-}
-
-const customers = [
-    {
-        id: 1,
-        name: 'Ayesha Khan',
-        category: 'Beverages & Cafe',
-        branch: 'Downtown Branch',
-        gender: 'Female',
-        ageRange: '26-35'
-    },
-    {
-        id: 2,
-        name: 'Ravi Patel',
-        category: 'Beauty & Wellness',
-        branch: 'City Mall Branch',
-        gender: 'Male',
-        ageRange: '36-45'
-    },
-    {
-        id: 3,
-        name: 'Sara Ali',
-        category: 'Fashion',
-        branch: 'Airport Branch',
-        gender: 'Female',
-        ageRange: '18-25'
-    },
-    {
-        id: 4,
-        name: 'Mohan Kumar',
-        category: 'Electronics',
-        branch: 'Downtown Branch',
-        gender: 'Male',
-        ageRange: '46+'
-    }
-]
-
 export default function Notifications() {
     const [activeTarget, setActiveTarget] = useState('merchant')
     const [statusMessage, setStatusMessage] = useState('')
@@ -119,59 +42,151 @@ export default function Notifications() {
     const [dateFrom, setDateFrom] = useState('')
     const [dateTo, setDateTo] = useState('')
 
-    const sendLogs = [
-        {
-            id: 1,
-            title: 'Summer Promo Alert',
-            recipient: 'All Customers',
-            detail: 'Sent to customers with active accounts.',
-            date: '2026-05-13',
-            time: '10:45 AM'
-        },
-        {
-            id: 2,
-            title: 'Merchant Update',
-            recipient: 'All Merchants',
-            detail: 'Important policy update sent to merchant partners.',
-            date: '2026-05-10',
-            time: '02:20 PM'
-        },
-        {
-            id: 3,
-            title: 'Receptionist Alert',
-            recipient: 'Reception Staff',
-            detail: 'Shift reminders sent to all receptionists.',
-            date: '2026-05-08',
-            time: '08:15 AM'
-        }
-    ]
+    const [categoriesList, setCategoriesList] = useState([])
+    const [rawRecipients, setRawRecipients] = useState([])
+    const [loadingRecipients, setLoadingRecipients] = useState(false)
+    const [loadingCategories, setLoadingCategories] = useState(false)
+    const [isDispatching, setIsDispatching] = useState(false)
 
-    const filteredSendLogs = useMemo(() => {
-        return sendLogs.filter((item) => {
-            if (dateFrom && item.date < dateFrom) return false
-            if (dateTo && item.date > dateTo) return false
-            return true
-        })
-    }, [dateFrom, dateTo])
+    const fetchCategories = async () => {
+        setLoadingCategories(true)
+        try {
+            const response = await API.get('api/category-list')
+            if (response.data.status === 1) {
+                setCategoriesList(response.data.data || [])
+            } else {
+                setCategoriesList([])
+            }
+        } catch (error) {
+            console.error('Error fetching categories:', error)
+            toast.error('Failed to load categories')
+            setCategoriesList([])
+        } finally {
+            setLoadingCategories(false)
+        }
+    }
+
+    const fetchRecipientsData = async (target) => {
+        setLoadingRecipients(true)
+        try {
+            let endpoint = ''
+            if (target === 'customer') {
+                endpoint = 'admin/customer-list'
+            } else if (target === 'merchant') {
+                endpoint = 'admin/merchant-lists'
+            } else if (target === 'receptionist') {
+                endpoint = 'admin/receptionist-list'
+            }
+
+            if (!endpoint) return
+
+            const response = await API.get(endpoint)
+            if (response.data.status === 1) {
+                if (target === 'customer') {
+                    setRawRecipients(response.data.customers || [])
+                } else if (target === 'merchant') {
+                    setRawRecipients(response.data.merchants || [])
+                } else if (target === 'receptionist') {
+                    setRawRecipients(response.data.receptionists || [])
+                }
+            } else {
+                setRawRecipients([])
+            }
+        } catch (error) {
+            console.error('Error fetching recipients:', error)
+            toast.error('Failed to load recipients')
+            setRawRecipients([])
+        } finally {
+            setLoadingRecipients(false)
+        }
+    }
+
+    useEffect(() => {
+        fetchCategories()
+    }, [])
+
+    useEffect(() => {
+        fetchRecipientsData(activeTarget)
+        setFilters([])
+        setSelectedRecipients([])
+        setFormValues((prev) => ({
+            ...prev,
+            filterType: '',
+            filterValue: ''
+        }))
+    }, [activeTarget])
+
+    const getAvailableFiltersForTarget = () => {
+        if (activeTarget === 'merchant') {
+            return {
+                category: {
+                    label: 'Category',
+                    options: categoriesList.map((cat) => ({
+                        label: cat.name,
+                        value: String(cat.id)
+                    }))
+                }
+            }
+        } else if (activeTarget === 'customer') {
+            return {
+                gender: {
+                    label: 'Gender',
+                    options: [
+                        { label: 'Male', value: '1' },
+                        { label: 'Female', value: '2' },
+                        { label: 'Others', value: '3' }
+                    ]
+                },
+                age: {
+                    label: 'Age',
+                    options: [
+                        { label: 'Under 18', value: 'Under 18' },
+                        { label: '18-25', value: '18-25' },
+                        { label: '26-35', value: '26-35' },
+                        { label: '36-45', value: '36-45' },
+                        { label: '46+', value: '46+' }
+                    ]
+                }
+            }
+        } else {
+            return {}
+        }
+    }
 
     const availableRecipients = useMemo(() => {
-        return customers.filter((customer) => {
+        return rawRecipients.filter((item) => {
             return filters.every((filter) => {
-                switch (filter.type) {
-                    case 'TargetCategory':
-                        return customer.category === filter.value
-                    case 'TargetGender':
-                        return customer.gender === filter.value
-                    case 'TargetBranch':
-                        return customer.branch === filter.value
-                    case 'TargetAge':
-                        return customer.ageRange === filter.value
-                    default:
-                        return true
+                if (activeTarget === 'merchant') {
+                    if (filter.type === 'category') {
+                        return String(item.cat_id) === String(filter.value)
+                    }
+                } else if (activeTarget === 'customer') {
+                    if (filter.type === 'gender') {
+                        return String(item.gender) === String(filter.value)
+                    }
+                    if (filter.type === 'age') {
+                        if (item.age === null || item.age === undefined) return false
+                        const ageNum = Number(item.age)
+                        switch (filter.value) {
+                            case 'Under 18':
+                                return ageNum < 18
+                            case '18-25':
+                                return ageNum >= 18 && ageNum <= 25
+                            case '26-35':
+                                return ageNum >= 26 && ageNum <= 35
+                            case '36-45':
+                                return ageNum >= 36 && ageNum <= 45
+                            case '46+':
+                                return ageNum >= 46
+                            default:
+                                return true
+                        }
+                    }
                 }
+                return true
             })
         })
-    }, [filters])
+    }, [rawRecipients, filters, activeTarget])
 
     const handleInputChange = (e) => {
         const { name, value } = e.target
@@ -183,13 +198,6 @@ export default function Notifications() {
 
     const handleTargetSelect = (target) => {
         setActiveTarget(target)
-        setFilters([])
-        setSelectedRecipients([])
-        setFormValues((prev) => ({
-            ...prev,
-            filterType: '',
-            filterValue: ''
-        }))
     }
 
     const handleFilterValue = (value) => {
@@ -204,13 +212,16 @@ export default function Notifications() {
             return
         }
 
-        if (
-            filters.some(
-                (filter) =>
-                    filter.type === formValues.filterType &&
-                    filter.value === formValues.filterValue
-            )
-        ) {
+        const availableFilters = getAvailableFiltersForTarget()
+        const currentFilterInfo = availableFilters[formValues.filterType]
+        if (!currentFilterInfo) return
+
+        const selectedOption = currentFilterInfo.options.find(
+            (opt) => String(opt.value) === String(formValues.filterValue)
+        )
+        if (!selectedOption) return
+
+        if (filters.some((filter) => filter.type === formValues.filterType)) {
             return
         }
 
@@ -218,8 +229,9 @@ export default function Notifications() {
             ...prev,
             {
                 type: formValues.filterType,
-                label: formValues.filterType.replace(/([A-Z])/g, ' $1'),
-                value: formValues.filterValue
+                label: currentFilterInfo.label,
+                value: formValues.filterValue,
+                valueLabel: selectedOption.label
             }
         ])
 
@@ -239,14 +251,16 @@ export default function Notifications() {
         setStatusMessage(`${availableRecipients.length} recipients selected.`)
     }
 
-    const handleDispatch = () => {
+    const handleDispatch = async () => {
         if (!formValues.title || !formValues.message) {
             setStatusMessage('Please enter title and message.')
+            toast.error('Please enter title and message.')
             return
         }
 
         if (formValues.sendMode === 'Schedule' && (!formValues.scheduleDate || !formValues.scheduleTime)) {
             setStatusMessage('Please select a schedule date and time.')
+            toast.error('Please select a schedule date and time.')
             return
         }
 
@@ -254,10 +268,51 @@ export default function Notifications() {
 
         if (recipients.length === 0) {
             setStatusMessage('No recipients found.')
+            toast.error('No recipients found.')
             return
         }
 
-        setStatusMessage(`${recipients.length} notifications queued successfully.`)
+        setIsDispatching(true)
+        setStatusMessage('Sending notifications...')
+        try {
+            const usersPayload = recipients.map((r) => ({
+                user_id: Number(r.id),
+                user_type: activeTarget
+            }))
+
+            const payload = {
+                users: usersPayload,
+                title: formValues.title,
+                body: formValues.message,
+                data: {
+                    screen: 'offers',
+                    offer_id: 101
+                }
+            }
+
+            const response = await API.post('admin/send-notification', payload)
+
+            if (response.data.success === 1 || response.data.status === 1) {
+                toast.success(response.data.message || 'Notifications sent successfully!')
+                setStatusMessage(response.data.message || 'Notifications sent successfully!')
+                setFormValues((prev) => ({
+                    ...prev,
+                    title: '',
+                    message: ''
+                }))
+                setSelectedRecipients([])
+            } else {
+                toast.error(response.data.message || 'Failed to send notifications.')
+                setStatusMessage(response.data.message || 'Failed to send notifications.')
+            }
+        } catch (error) {
+            console.error('Dispatch Error:', error)
+            const errMsg = error.response?.data?.message || 'Failed to send notifications.'
+            toast.error(errMsg)
+            setStatusMessage(errMsg)
+        } finally {
+            setIsDispatching(false)
+        }
     }
 
     return (
@@ -318,64 +373,70 @@ export default function Notifications() {
                                 <h3 className="card-title">Smart Targeting</h3>
                                 <p className="card-subtitle">Add more filters to refine your audience and focus the campaign.</p>
                             </div>
-                            <button className="btn btn-light-pink" type="button" onClick={handleFetchRecipients}>
+                            <button className="btn btn-light-pink" type="button" onClick={handleFetchRecipients} disabled={loadingRecipients}>
                                 <i className="fas fa-search" /> Fetch Recipients
                             </button>
                         </div>
 
-                        <div className="filter-grid">
-                            <div className="form-group-classic">
-                                <label className="form-label-classic">Filter Type</label>
-                                <select
-                                    className="form-select"
-                                    value={formValues.filterType}
-                                    onChange={(e) =>
-                                        setFormValues((prev) => ({
-                                            ...prev,
-                                            filterType: e.target.value,
-                                            filterValue: ''
-                                        }))
-                                    }
-                                >
-                                    <option value="">Choose a filter</option>
-                                    {Object.keys(dynamicFields[activeTarget]).map((item) => (
-                                        <option key={item} value={item}>
-                                            {item.replace(/([A-Z])/g, ' $1')}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div className="form-group-classic">
-                                <label className="form-label-classic">Filter Value</label>
-                                <select
-                                    className="form-select"
-                                    value={formValues.filterValue}
-                                    onChange={(e) => handleFilterValue(e.target.value)}
-                                    disabled={!formValues.filterType}
-                                >
-                                    <option value="">Pick a value</option>
-                                    {formValues.filterType &&
-                                        dynamicFields[activeTarget][formValues.filterType].map((option) => (
-                                            <option key={option} value={option}>
-                                                {option}
+                        {Object.keys(getAvailableFiltersForTarget()).length === 0 ? (
+                            <p className="card-subtitle" style={{ padding: '10px 0', margin: 0 }}>
+                                No targeting filters available for {activeTarget.replace(/([A-Z])/g, ' $1')}s.
+                            </p>
+                        ) : (
+                            <div className="filter-grid">
+                                <div className="form-group-classic">
+                                    <label className="form-label-classic">Filter Type</label>
+                                    <select
+                                        className="form-select"
+                                        value={formValues.filterType}
+                                        onChange={(e) =>
+                                            setFormValues((prev) => ({
+                                                ...prev,
+                                                filterType: e.target.value,
+                                                filterValue: ''
+                                            }))
+                                        }
+                                    >
+                                        <option value="">Choose a filter</option>
+                                        {Object.entries(getAvailableFiltersForTarget()).map(([key, info]) => (
+                                            <option key={key} value={key}>
+                                                {info.label}
                                             </option>
                                         ))}
-                                </select>
-                            </div>
+                                    </select>
+                                </div>
 
-                            <div className="form-group-classic" style={{ alignSelf: 'end' }}>
-                                <button className="btn btn-primary" type="button" onClick={handleAddFilter}>
-                                    <i className="fas fa-plus" /> Add Filter
-                                </button>
+                                <div className="form-group-classic">
+                                    <label className="form-label-classic">Filter Value</label>
+                                    <select
+                                        className="form-select"
+                                        value={formValues.filterValue}
+                                        onChange={(e) => handleFilterValue(e.target.value)}
+                                        disabled={!formValues.filterType}
+                                    >
+                                        <option value="">Pick a value</option>
+                                        {formValues.filterType &&
+                                            getAvailableFiltersForTarget()[formValues.filterType]?.options.map((option) => (
+                                                <option key={option.value} value={option.value}>
+                                                    {option.label}
+                                                </option>
+                                            ))}
+                                    </select>
+                                </div>
+
+                                <div className="form-group-classic" style={{ alignSelf: 'end' }}>
+                                    <button className="btn btn-primary" type="button" onClick={handleAddFilter}>
+                                        <i className="fas fa-plus" /> Add Filter
+                                    </button>
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         {filters.length > 0 && (
                             <div style={{ marginTop: 18, display: 'flex', flexWrap: 'wrap', gap: 10 }}>
                                 {filters.map((filter) => (
                                     <span key={filter.type} className="filter-chip">
-                                        <strong>{filter.label}:</strong> {filter.value}
+                                        <strong>{filter.label}:</strong> {filter.valueLabel}
                                         <i
                                             className="fas fa-times"
                                             style={{ cursor: 'pointer' }}
@@ -515,9 +576,9 @@ export default function Notifications() {
                                 className="btn btn-primary"
                                 type="button"
                                 onClick={handleDispatch}
-                                disabled={((selectedRecipients.length === 0 && availableRecipients.length === 0) || !formValues.title || !formValues.message)}
+                                disabled={isDispatching || ((selectedRecipients.length === 0 && availableRecipients.length === 0) || !formValues.title || !formValues.message)}
                             >
-                                <i className="fas fa-paper-plane" /> Dispatch Notification
+                                <i className="fas fa-paper-plane" /> {isDispatching ? 'Dispatching...' : 'Dispatch Notification'}
                             </button>
                             <button className="btn btn-secondary" type="button">
                                 <i className="fas fa-save" /> Save Draft
