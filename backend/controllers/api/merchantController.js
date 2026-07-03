@@ -741,7 +741,7 @@ exports.dashboard = async (req, res) => {
 
         const data = merchant.toJSON();
 
-    // console.log("DASHBOARD DATA:", data);
+        // console.log("DASHBOARD DATA:", data);
         if (data.profile_image) {
 
             data.profile_image =
@@ -754,6 +754,28 @@ exports.dashboard = async (req, res) => {
 
         }
 
+        if (data.branch_list.profile_image) {
+
+            data.branch_list.profile_image =
+                baseUrl + '/' +
+                data.branch_list.profile_image.replace(/\\/g, '/');
+
+        } else {
+
+            data.branch_list.profile_image = null;
+
+        }
+        if (data.receptionist_list.profile_image) {
+
+            data.receptionist_list.profile_image =
+                baseUrl + '/' +
+                data.receptionist_list.profile_image.replace(/\\/g, '/');
+
+        } else {
+
+            data.receptionist_list.profile_image = null;
+
+        }
 
         return res.json({
             status: 1,
@@ -1363,7 +1385,7 @@ exports.change_status_br = async (req, res) => {
             }
         });
         const receptionist = await Receptionist.findOne({
-            where:{
+            where: {
                 branch_id: branch.id,
             }
         });
