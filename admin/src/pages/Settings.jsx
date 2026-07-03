@@ -79,6 +79,14 @@ export default function Settings() {
         status: 1
     })
 
+    // ==========================================
+    // APP STATUS STATE
+    // ==========================================
+    const [appStatusId, setAppStatusId] = useState(1)
+    const [appStatus, setAppStatus] = useState(true)
+    const [appStatusLoading, setAppStatusLoading] = useState(false)
+    const [appStatusSubmitting, setAppStatusSubmitting] = useState(false)
+
     // Confirmation Dialog State
     const [confirmDialog, setConfirmDialog] = useState({
         open: false,
@@ -146,6 +154,44 @@ export default function Settings() {
         }
     }
 
+    const fetchAppStatus = async () => {
+        setAppStatusLoading(true)
+        try {
+            const response = await API.get('admin/app-status')
+            if (isSuccessResponse(response.data) && response.data.data) {
+                setAppStatusId(response.data.data.id)
+                setAppStatus(!!response.data.data.app_status)
+            }
+        } catch (err) {
+            console.error("Error fetching app status:", err)
+            toast.error("Failed to fetch app status")
+        } finally {
+            setAppStatusLoading(false)
+        }
+    }
+
+    const handleAppStatusToggle = async () => {
+        setAppStatusSubmitting(true)
+        const nextStatus = !appStatus
+        try {
+            const response = await API.post('admin/update-app-status', {
+                id: appStatusId,
+                app_status: nextStatus
+            })
+            if (isSuccessResponse(response.data)) {
+                setAppStatus(nextStatus)
+                toast.success(response.data.message || "App status updated successfully")
+            } else {
+                toast.error(response.data.message || "Failed to update app status")
+            }
+        } catch (err) {
+            console.error("Error updating app status:", err)
+            toast.error(err.response?.data?.message || "Failed to update app status")
+        } finally {
+            setAppStatusSubmitting(false)
+        }
+    }
+
     const getCountryName = (countryCode) => {
         if (!countryCode) return 'N/A'
         const cleanCode = String(countryCode).replace('+', '')
@@ -167,6 +213,7 @@ export default function Settings() {
     useEffect(() => {
         fetchBanners()
         fetchPages()
+        fetchAppStatus()
         GetCountries().then((data) => {
             setCountriesList(data || [])
         })
@@ -645,9 +692,23 @@ export default function Settings() {
                 >
                     Pages Management
                 </button>
+                <button
+                    onClick={() => setActiveTab('app_status')}
+                    style={{
+                        padding: '12px 20px',
+                        border: 'none',
+                        background: 'none',
+                        borderBottom: activeTab === 'app_status' ? '2px solid var(--primary)' : 'none',
+                        color: activeTab === 'app_status' ? 'var(--primary)' : 'var(--text-muted)',
+                        fontWeight: 600,
+                        cursor: 'pointer'
+                    }}
+                >
+                    App Status
+                </button>
             </div>
 
-            {activeTab === 'banners' ? (
+            {activeTab === 'banners' && (
                 // ==========================================
                 // BANNERS VIEW
                 // ==========================================
@@ -868,7 +929,9 @@ export default function Settings() {
                         )}
                     </div>
                 </>
-            ) : (
+            )}
+
+            {activeTab === 'pages' && (
                 // ==========================================
                 // PAGES VIEW
                 // ==========================================
@@ -1060,6 +1123,79 @@ export default function Settings() {
                                     >
                                         <i className="fas fa-chevron-right"></i>
                                     </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </>
+            )}
+
+            {activeTab === 'app_status' && (
+                <>
+                    <div className="card" style={{ marginBottom: 18 }}>
+                        <div>
+                            <h3 className="card-title">App Status Control</h3>
+                            <p className="card-subtitle">Control the availability and status of the consumer application.</p>
+                        </div>
+                    </div>
+
+                    <div className="card" style={{ padding: 24, borderRadius: 16 }}>
+                        {appStatusLoading ? (
+                            <div style={{ textAlign: 'center', padding: '40px' }}>
+                                <i className="fas fa-spinner fa-spin" style={{ fontSize: '2rem', color: 'var(--primary)', marginBottom: 12 }}></i>
+                                <p>Loading app status...</p>
+                            </div>
+                        ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+                                    <div>
+                                        <h4 style={{ margin: '0 0 6px 0', fontSize: '1.1rem', fontWeight: 600 }}>Consumer App Visibility</h4>
+                                        <p className="card-subtitle" style={{ margin: 0 }}>
+                                            {appStatus 
+                                                ? 'The application is currently ON and fully accessible by users.' 
+                                                : 'The application is currently OFF (Maintenance or suspended mode).'}
+                                        </p>
+                                    </div>
+
+                                    <div className="merchant-status-cell">
+                                        <label
+                                            className={`merchant-status-toggle ${appStatus ? 'is-active' : 'is-inactive'}`}
+                                            style={{ cursor: appStatusSubmitting ? 'not-allowed' : 'pointer' }}
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={appStatus}
+                                                disabled={appStatusSubmitting}
+                                                onChange={handleAppStatusToggle}
+                                            />
+                                            <span className="merchant-status-track" aria-hidden="true">
+                                                <span className="merchant-status-knob" />
+                                            </span>
+                                            <span className="merchant-status-label">
+                                                {appStatus ? 'App is ON' : 'App is OFF'}
+                                            </span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div style={{ 
+                                    background: appStatus ? 'rgba(74, 222, 128, 0.08)' : 'rgba(239, 68, 68, 0.08)',
+                                    border: appStatus ? '1px solid rgba(74, 222, 128, 0.2)' : '1px solid rgba(239, 68, 68, 0.2)',
+                                    borderRadius: 12,
+                                    padding: '16px 20px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 12
+                                }}>
+                                    <i 
+                                        className={`fas ${appStatus ? 'fa-check-circle' : 'fa-exclamation-triangle'}`} 
+                                        style={{ color: appStatus ? '#22c55e' : '#ef4444', fontSize: '1.25rem' }}
+                                    />
+                                    <span style={{ fontSize: '0.9rem', color: appStatus ? '#15803d' : '#b91c1c', fontWeight: 500 }}>
+                                        {appStatus 
+                                            ? 'Everything is running normally. Users can browse merchants, claim coupons, and book appointments.' 
+                                            : 'Warning: Toggling the app OFF disables essential mobile functions for end users. Please proceed with caution.'}
+                                    </span>
                                 </div>
                             </div>
                         )}

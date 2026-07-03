@@ -39,9 +39,7 @@ exports.register = async (req, res) => {
 
         // ✅ Required Fields
         if (
-            !name ||
-            !email ||
-            !phone
+            !name 
         ) {
 
             // console.log("VALIDATION FAILED: Required fields missing");

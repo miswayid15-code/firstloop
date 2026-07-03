@@ -58,6 +58,8 @@ router.get('/page-details/:id',  auth('admin'), checkAdmin,controller.page_detai
 router.get("/customer-list", auth('admin'),checkAdmin,controller.customer_list);
 router.get("/merchant-lists",auth('admin'),checkAdmin, controller.merchant_list);
 router.get("/receptionist-list",auth('admin'),checkAdmin, controller.reception_list);
+router.get("/app-status",auth('admin'),checkAdmin, controller.get_app_status);
+router.post("/update-app-status",auth('admin'),checkAdmin, controller.update_app_status);
 
 
 

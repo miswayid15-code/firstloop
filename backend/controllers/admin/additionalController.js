@@ -1,4 +1,4 @@
-const { Banner, Page,Receptionist,Merchant,Customer } = require('../../models');
+const { Banner, Page, Receptionist, Merchant, Customer, AppSetting } = require('../../models');
 
 const { deleteFile } = require('../../helpers/fileHelper');
 const { bool } = require('sharp');
@@ -363,8 +363,71 @@ exports.page_details = async (req, res) => {
 
 
 
+exports.get_app_status = async (req, res) => {
+    try {
+        const appSetting = await AppSetting.findOne({
+            where: { id: 1 },
+            attributes: ['id', 'app_status']
+        });
 
+        return res.json({
+            status: 1,
+            data: appSetting
+        });
+    } catch (err) {
+        console.log("Error:", err);
+        return res.status(500).json({
+            status: 0,
+            message: "An error occurred while fetching the app status"
+        });
+    }
+};
 
+exports.update_app_status = async (req, res) => {
+    try {
+        const { id, app_status } = req.body;
+
+        if (!id) {
+            return res.status(400).json({
+                status: 0,
+                message: "id is required"
+            });
+        }
+
+        if (typeof app_status !== "boolean") {
+            return res.status(400).json({
+                status: 0,
+                message: "app_status must be a boolean value"
+            });
+        }
+
+        const appSetting = await AppSetting.findByPk(id);
+
+        if (!appSetting) {
+            return res.status(404).json({
+                status: 0,
+                message: "App setting not found"
+            });
+        }
+
+        await appSetting.update({
+            app_status
+        });
+
+        return res.json({
+            status: 1,
+            message: "App status updated successfully",
+            // data: appSetting
+        });
+
+    } catch (err) {
+        console.log("Error:", err);
+        return res.status(500).json({
+            status: 0,
+            message: "An error occurred while updating the app status"
+        });
+    }
+};
 
 
 
@@ -420,12 +483,12 @@ exports.customer_list = async (req, res) => {
     }
 };
 exports.merchant_list = async (req, res) => {
-    try{
+    try {
         const merchants = await Merchant.findAll({
             where: {
                 del_status: 0
             },
-            attributes: ['id', 'name','cat_id'],
+            attributes: ['id', 'name', 'cat_id'],
             order: [['id', 'DESC']]
         });
         return res.json({
@@ -433,7 +496,7 @@ exports.merchant_list = async (req, res) => {
             merchants: merchants
         });
     }
-    catch(err){
+    catch (err) {
         console.log("Error:", err);
 
         return res.status(500).json({
@@ -443,7 +506,7 @@ exports.merchant_list = async (req, res) => {
     }
 }
 exports.reception_list = async (req, res) => {
-    try{
+    try {
         const receptionists = await Receptionist.findAll({
             where: {
                 del_status: 0
@@ -456,7 +519,7 @@ exports.reception_list = async (req, res) => {
             receptionists: receptionists
         });
     }
-    catch(err){
+    catch (err) {
         console.log("Error:", err);
 
         return res.status(500).json({
@@ -465,3 +528,4 @@ exports.reception_list = async (req, res) => {
         });
     }
 }
+
