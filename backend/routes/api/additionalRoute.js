@@ -27,4 +27,5 @@ router.post(
 
 router.post("/check-version", controller.checkVersion);
 router.post("/check-merchant-version", controller.check_MerchantVersion);
+
 module.exports = router;

@@ -310,44 +310,7 @@ export default function Notifications() {
                         </div>
                     </div>
 
-                    <div className="dashboard-stats-grid">
-                        <div className="card stat-card">
-                            <div className="stat-header">
-                                <div>
-                                    <span className="stat-title">Matched Recipients</span>
-                                    <p className="card-subtitle">Live count based on active filters</p>
-                                </div>
-                                <div className="stat-icon green">
-                                    <i className="fas fa-users" />
-                                </div>
-                            </div>
-                            <div className="stat-value">{availableRecipients.length}</div>
-                        </div>
-                        <div className="card stat-card">
-                            <div className="stat-header">
-                                <div>
-                                    <span className="stat-title">Selected to Send</span>
-                                    <p className="card-subtitle">Recipients locked for this campaign</p>
-                                </div>
-                                <div className="stat-icon purple">
-                                    <i className="fas fa-check-circle" />
-                                </div>
-                            </div>
-                            <div className="stat-value">{selectedRecipients.length}</div>
-                        </div>
-                        <div className="card stat-card">
-                            <div className="stat-header">
-                                <div>
-                                    <span className="stat-title">Active Filters</span>
-                                    <p className="card-subtitle">Applied targeting rules</p>
-                                </div>
-                                <div className="stat-icon blue">
-                                    <i className="fas fa-filter" />
-                                </div>
-                            </div>
-                            <div className="stat-value">{filters.length}</div>
-                        </div>
-                    </div>
+
 
                     <div className="card filter-panel">
                         <div className="card-header">
@@ -423,7 +386,44 @@ export default function Notifications() {
                             </div>
                         )}
                     </div>
-
+                    <div className="dashboard-stats-grid">
+                        <div className="card stat-card">
+                            <div className="stat-header">
+                                <div>
+                                    <span className="stat-title">Matched Recipients</span>
+                                    <p className="card-subtitle">Live count based on active filters</p>
+                                </div>
+                                <div className="stat-icon green">
+                                    <i className="fas fa-users" />
+                                </div>
+                            </div>
+                            <div className="stat-value">{availableRecipients.length}</div>
+                        </div>
+                        <div className="card stat-card">
+                            <div className="stat-header">
+                                <div>
+                                    <span className="stat-title">Selected to Send</span>
+                                    <p className="card-subtitle">Recipients locked for this campaign</p>
+                                </div>
+                                <div className="stat-icon purple">
+                                    <i className="fas fa-check-circle" />
+                                </div>
+                            </div>
+                            <div className="stat-value">{selectedRecipients.length}</div>
+                        </div>
+                        <div className="card stat-card">
+                            <div className="stat-header">
+                                <div>
+                                    <span className="stat-title">Active Filters</span>
+                                    <p className="card-subtitle">Applied targeting rules</p>
+                                </div>
+                                <div className="stat-icon blue">
+                                    <i className="fas fa-filter" />
+                                </div>
+                            </div>
+                            <div className="stat-value">{filters.length}</div>
+                        </div>
+                    </div>
                     <div className="card">
                         <div className="card-header">
                             <div>
@@ -531,99 +531,9 @@ export default function Notifications() {
                         )}
                     </div>
 
-                    <div className="card">
-                        <div className="card-header">
-                            <div>
-                                <h3 className="card-title">Recipients Preview</h3>
-                                <p className="card-subtitle">Review who will receive the notification before dispatch.</p>
-                            </div>
-                        </div>
 
-                        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 12 }}>
-                            {selectedRecipients.length === 0 ? (
-                                <li className="card" style={{ padding: 20, textAlign: 'center', background: 'rgba(111, 63, 255, 0.04)' }}>
-                                    <p className="card-subtitle" style={{ margin: 0 }}>
-                                        No recipients selected yet — click Fetch Recipients to load the audience.
-                                    </p>
-                                </li>
-                            ) : (
-                                selectedRecipients.map((recipient) => (
-                                    <li key={recipient.id} className="recipient-card" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                                        <div className="recipient-avatar">{recipient.name.charAt(0)}</div>
-                                        <div style={{ flex: 1 }}>
-                                            <h4 className="merchant-mini-name" style={{ margin: 0 }}>{recipient.name}</h4>
-                                            <p className="merchant-mini-category" style={{ margin: 0 }}>{recipient.category} • {recipient.branch}</p>
-                                        </div>
-                                        <button
-                                            className="btn btn-secondary"
-                                            type="button"
-                                            onClick={() => setSelectedRecipients((prev) => prev.filter((r) => r.id !== recipient.id))}
-                                        >
-                                            Remove
-                                        </button>
-                                    </li>
-                                ))
-                            )}
-                        </ul>
-                    </div>
 
-                    <div className="card" style={{ marginTop: 20 }}>
-                        <div className="card-header">
-                            <div>
-                                <h3 className="card-title">Sent Notification List</h3>
-                                <p className="card-subtitle">Filter sends by date range and view recipients.</p>
-                            </div>
-                        </div>
 
-                        <div className="form-row" style={{ gap: 16, flexWrap: 'wrap', marginBottom: 18 }}>
-                            <div className="form-group-classic" style={{ minWidth: 180, flex: 1 }}>
-                                <label className="form-label-classic">From</label>
-                                <input
-                                    type="date"
-                                    value={dateFrom}
-                                    onChange={(e) => setDateFrom(e.target.value)}
-                                    className="form-control"
-                                />
-                            </div>
-                            <div className="form-group-classic" style={{ minWidth: 180, flex: 1 }}>
-                                <label className="form-label-classic">To</label>
-                                <input
-                                    type="date"
-                                    value={dateTo}
-                                    onChange={(e) => setDateTo(e.target.value)}
-                                    className="form-control"
-                                />
-                            </div>
-                        </div>
-
-                        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 14 }}>
-                            {filteredSendLogs.length === 0 ? (
-                                <li className="card" style={{ padding: 18, textAlign: 'center', background: 'rgba(111, 63, 255, 0.04)' }}>
-                                    <p className="card-subtitle" style={{ margin: 0 }}>
-                                        No sent notifications match the selected date range.
-                                    </p>
-                                </li>
-                            ) : (
-                                filteredSendLogs.map((log) => (
-                                    <li key={log.id} className="card" style={{ padding: 18 }}>
-                                        <div className="flex-between" style={{ gap: 12, flexWrap: 'wrap' }}>
-                                            <div>
-                                                <h4 style={{ margin: '0 0 6px' }}>{log.title}</h4>
-                                                <p className="card-subtitle" style={{ margin: 0 }}>{log.detail}</p>
-                                            </div>
-                                            <div style={{ minWidth: 140, textAlign: 'right' }}>
-                                                <span className="card-subtitle">{log.date}</span>
-                                                <div style={{ fontWeight: 600 }}>{log.time}</div>
-                                            </div>
-                                        </div>
-                                        <div style={{ marginTop: 14, display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: 12 }}>
-                                            <span className="merchant-mini-category">{log.recipient}</span>
-                                        </div>
-                                    </li>
-                                ))
-                            )}
-                        </ul>
-                    </div>
                 </div>
 
             </div>

@@ -55,7 +55,9 @@ router.get('/page-list',   auth('admin'),checkAdmin,controller.page_list);
 router.get('/page-details/:id',  auth('admin'), checkAdmin,controller.page_details);
 
 
-
+router.get("/customer-list", auth('admin'),checkAdmin,controller.customer_list);
+router.get("/merchant-lists",auth('admin'),checkAdmin, controller.merchant_list);
+router.get("/receptionist-list",auth('admin'),checkAdmin, controller.reception_list);
 
 
 

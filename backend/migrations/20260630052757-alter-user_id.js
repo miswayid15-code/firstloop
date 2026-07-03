@@ -5,8 +5,10 @@ module.exports = {
     await queryInterface.addColumn('receptionists', 'rep_id', {
       type: Sequelize.STRING(250),
       allowNull: true,
+      after: 'id',
     });
-
+  },
+  async up(queryInterface, Sequelize) {
     await queryInterface.changeColumn('receptionists', 'email', {
       type: Sequelize.STRING,
       allowNull: true,
@@ -14,9 +16,8 @@ module.exports = {
     });
   },
 
-  async down(queryInterface, Sequelize) {
+  async down(queryInterface) {
     await queryInterface.removeColumn('receptionists', 'rep_id');
-
     await queryInterface.changeColumn('receptionists', 'email', {
       type: Sequelize.STRING,
       allowNull: false,

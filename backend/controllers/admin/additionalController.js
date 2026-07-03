@@ -1,4 +1,4 @@
-const { Banner, Page } = require('../../models');
+const { Banner, Page,Receptionist,Merchant,Customer } = require('../../models');
 
 const { deleteFile } = require('../../helpers/fileHelper');
 const { bool } = require('sharp');
@@ -46,7 +46,7 @@ exports.banner_list = async (req, res) => {
 
 exports.create_banner = async (req, res) => {
     try {
-console.log("Body",req.body)
+        console.log("Body", req.body)
         const { title, country_code } = req.body;
 
         if (!title) {
@@ -322,12 +322,12 @@ exports.page_list = async (req, res) => {
         });
 
     }
-catch (error) {
-    return res.json({
-        status: 0,
-        message: "Something went wrongq"
-    });
-}
+    catch (error) {
+        return res.json({
+            status: 0,
+            message: "Something went wrongq"
+        });
+    }
 };
 
 exports.page_details = async (req, res) => {
@@ -357,3 +357,111 @@ exports.page_details = async (req, res) => {
         });
     }
 };
+
+
+
+
+
+
+
+
+
+
+
+exports.customer_list = async (req, res) => {
+    try {
+        const customers = await Customer.findAll({
+            where: {
+                del_status: 0
+            },
+            attributes: ['id', 'name', 'dob', 'gender'],
+            order: [['id', 'DESC']]
+        });
+
+        const customerList = customers.map(customer => {
+            const data = customer.toJSON();
+
+            let age = null;
+            if (data.dob) {
+                const dob = new Date(data.dob);
+                const today = new Date();
+
+                age = today.getFullYear() - dob.getFullYear();
+
+                const monthDiff = today.getMonth() - dob.getMonth();
+                if (
+                    monthDiff < 0 ||
+                    (monthDiff === 0 && today.getDate() < dob.getDate())
+                ) {
+                    age--;
+                }
+            }
+
+            return {
+                id: data.id,
+                name: data.name,
+                age,
+                gender: data.gender
+            };
+        });
+
+        return res.json({
+            status: 1,
+            customers: customerList
+        });
+
+    } catch (err) {
+        console.log("Error:", err);
+
+        return res.status(500).json({
+            status: 0,
+            message: "An error occurred while fetching the customer list"
+        });
+    }
+};
+exports.merchant_list = async (req, res) => {
+    try{
+        const merchants = await Merchant.findAll({
+            where: {
+                del_status: 0
+            },
+            attributes: ['id', 'name','cat_id'],
+            order: [['id', 'DESC']]
+        });
+        return res.json({
+            status: 1,
+            merchants: merchants
+        });
+    }
+    catch(err){
+        console.log("Error:", err);
+
+        return res.status(500).json({
+            status: 0,
+            message: "An error occurred while fetching the customer list"
+        });
+    }
+}
+exports.reception_list = async (req, res) => {
+    try{
+        const receptionists = await Receptionist.findAll({
+            where: {
+                del_status: 0
+            },
+            attributes: ['id', 'name'],
+            order: [['id', 'DESC']]
+        });
+        return res.json({
+            status: 1,
+            receptionists: receptionists
+        });
+    }
+    catch(err){
+        console.log("Error:", err);
+
+        return res.status(500).json({
+            status: 0,
+            message: "An error occurred while fetching the customer list"
+        });
+    }
+}

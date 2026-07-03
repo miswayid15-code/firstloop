@@ -11,10 +11,10 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static('uploads'));
 
 app.get('/', (req, res) => {
-    res.send('Dealora API Running 🚀');
+    res.send('FirstPass API Running 🚀');
 });
 app.get('/backend', (req, res) => {
-    res.send('Dealora API Running 🚀');
+    res.send('FirstPass API Running 🚀');
 });
 
 app.use('/admin', require('./routes/admin/adminAuthRoutes'));
@@ -25,6 +25,7 @@ app.use('/admin', require('./routes/admin/categoryRoutes'));
 app.use('/admin', require('./routes/admin/chatRoutes'));              
 app.use('/admin', require('./routes/admin/additionalRoute'));              
 app.use('/admin', require('./routes/admin/reportRoutes'));              
+app.use('/admin', require('./routes/admin/notificationRoute'));              
         
 
 
