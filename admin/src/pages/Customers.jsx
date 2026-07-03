@@ -104,13 +104,34 @@ export default function Customers() {
     const [detailsLoading, setDetailsLoading] = useState(false)
 
     const highlightFieldError = (selector) => {
-        const element = document.querySelector(selector);
-        if (element) {
-            element.focus();
-            element.classList.add('error-highlight');
-            setTimeout(() => {
-                element.classList.remove('error-highlight');
-            }, 3000);
+        setTimeout(() => {
+            const element = document.querySelector(selector);
+            if (element) {
+                element.focus();
+                element.classList.add('error-highlight');
+                setTimeout(() => {
+                    element.classList.remove('error-highlight');
+                }, 3000);
+            }
+        }, 50);
+    }
+
+    const focusFieldByErrorMessage = (message) => {
+        if (!message) return;
+        const msg = message.toLowerCase();
+        
+        if (msg.includes('phone') || msg.includes('mobile')) {
+            highlightFieldError('.modal.active input[name="phone"]');
+        } else if (msg.includes('email')) {
+            highlightFieldError('.modal.active input[name="email"], .modal.active #add-cust-email, .modal.active #edit-cust-email');
+        } else if (msg.includes('name')) {
+            highlightFieldError('.modal.active input[name="name"], .modal.active #add-cust-name, .modal.active #edit-cust-name');
+        } else if (msg.includes('password')) {
+            highlightFieldError('.modal.active input[type="password"], .modal.active #add-cust-password, .modal.active #edit-cust-password');
+        } else if (msg.includes('address')) {
+            highlightFieldError('.modal.active input[name="address"]');
+        } else if (msg.includes('country')) {
+            highlightFieldError('.modal.active input[name="country"]');
         }
     }
 
@@ -598,6 +619,16 @@ export default function Customers() {
             highlightFieldError('#add-cust-password');
             return;
         }
+        if (!addCustomerForm.address || !addCustomerForm.address.trim()) {
+            toast.error("Address is required");
+            highlightFieldError('.modal.active input[name="address"]');
+            return;
+        }
+        if (!addCustomerForm.country || !addCustomerForm.country.trim()) {
+            toast.error("Country is required");
+            highlightFieldError('.modal.active input[name="country"]');
+            return;
+        }
 
         setAddingCustomer(true);
         try {
@@ -639,11 +670,15 @@ export default function Customers() {
                 fetchCustomers();
                 setShowCustomerAdd(false);
             } else {
-                toast.error(response.data.message || "Failed to register customer");
+                const errMsg = response.data.message || "Failed to register customer";
+                toast.error(errMsg);
+                focusFieldByErrorMessage(errMsg);
             }
         } catch (error) {
+            const apiMessage = error?.response?.data?.message || "Failed to register customer";
             console.log(error);
-            toast.error("Failed to register customer");
+            toast.error(apiMessage);
+            focusFieldByErrorMessage(apiMessage);
         } finally {
             setAddingCustomer(false);
         }
@@ -670,11 +705,20 @@ export default function Customers() {
             highlightFieldError('#edit-cust-password');
             return;
         }
+        if (!editCustomerForm.address || !editCustomerForm.address.trim()) {
+            toast.error("Address is required");
+            highlightFieldError('.modal.active input[name="address"]');
+            return;
+        }
+        if (!editCustomerForm.country || !editCustomerForm.country.trim()) {
+            toast.error("Country is required");
+            highlightFieldError('.modal.active input[name="country"]');
+            return;
+        }
+
         setUpdatingCustomer(true);
         try {
-
             const formData = new FormData();
-
             formData.append("id", selectedCustomer.id);
             formData.append("name", editCustomerForm.name);
             formData.append("email", editCustomerForm.email);
@@ -709,29 +753,22 @@ export default function Customers() {
             );
 
             if (response.data.status === 1) {
-
                 toast.success(response.data.message);
-
                 fetchCustomers();
-
                 setShowCustomerEdit(false);
-
             } else {
-
-                toast.error(response.data.message);
-
+                const errMsg = response.data.message || "Failed to update customer";
+                toast.error(errMsg);
+                focusFieldByErrorMessage(errMsg);
             }
-
         } catch (error) {
-
+            const apiMessage = error?.response?.data?.message || "Failed to update customer";
             console.log(error);
-
-            toast.error("Failed to update customer");
-
+            toast.error(apiMessage);
+            focusFieldByErrorMessage(apiMessage);
         } finally {
             setUpdatingCustomer(false);
         }
-
     };
 
     const filteredCustomers = customers.filter((customer) => {

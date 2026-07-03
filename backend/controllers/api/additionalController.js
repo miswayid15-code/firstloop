@@ -369,7 +369,7 @@ exports.check_MerchantVersion = async (req, res) => {
 
         const minVersions = {
             ios: 0,
-            android: 2,
+            android: 0,
             unknown: 0,
         };
 
@@ -381,7 +381,7 @@ exports.check_MerchantVersion = async (req, res) => {
                 status: 1,
                 result: "Success",
                 text: "Request Successfully Completed!",
-                current_version: Number(mv),
+                // current_version: Number(mv),
                 min_required_version: minRequired,
                 update_required: false,
             });
@@ -391,7 +391,7 @@ exports.check_MerchantVersion = async (req, res) => {
             status: 0,
             result: "fail",
             text: `Update Required - Version ${mv} is outdated. Minimum required: ${minRequired}`,
-            current_version: Number(mv) || 0,
+            // current_version: Number(mv) || 0,
             min_required_version: minRequired,
             update_required: true,
             store_url:
@@ -443,8 +443,8 @@ exports.check_CustomerVersion = async (req, res) => {
                 status: 1,
                 result: "Success",
                 text: "Request Successfully Completed!",
-                current_version: Number(mv),
-                min_required_version: minRequired,
+                // current_version: Number(mv),
+                // min_required_version: minRequired,
                 update_required: false,
             });
         }
@@ -453,8 +453,8 @@ exports.check_CustomerVersion = async (req, res) => {
             status: 0,
             result: "fail",
             text: `Update Required - Version ${mv} is outdated. Minimum required: ${minRequired}`,
-            current_version: Number(mv) || 0,
-            min_required_version: minRequired,
+            // current_version: Number(mv) || 0,
+            // min_required_version: minRequired,
             update_required: true,
             store_url:
                 platform === "ios"
