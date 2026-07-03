@@ -39,7 +39,7 @@ exports.register = async (req, res) => {
 
         // ✅ Required Fields
         if (
-            !name 
+            !name
         ) {
 
             // console.log("VALIDATION FAILED: Required fields missing");
@@ -118,15 +118,15 @@ exports.register = async (req, res) => {
 
             // console.log("PARSED PHONE:", num);
 
-            if (!num.isValid()) {
+            if (cleanPhone && cleanPhone.trim() !== "") {
+                const num = parsePhoneNumber(cleanPhone);
 
-                // console.log("PHONE VALIDATION FAILED");
-
-                return res.json({
-                    status: 0,
-                    message: "Invalid phone number"
-                });
-
+                if (!num.isValid()) {
+                    return res.json({
+                        status: 0,
+                        message: "Invalid phone number"
+                    });
+                }
             }
 
             callingCode =
@@ -264,11 +264,11 @@ exports.register = async (req, res) => {
 
                 name,
 
-                email,
+              email: email?.trim() ? email : null,
 
                 country_code: callingCode,
 
-                phone: nationalNumber,
+               phone: nationalNumber?.trim() ? nationalNumber : null,
 
                 profile_image,
 
