@@ -1274,7 +1274,7 @@ exports.redeem_customer = async (req, res) => {
             include: [
                 {
                     model: Coupon,
-                    attributes: ['id', 'branch_ids', 'type'],
+                    attributes: ['id', 'branch_ids', 'type', 'but_item', 'get_item'],
                     required: true,
                     where: {
                         ...couponWhere,
@@ -1366,6 +1366,12 @@ exports.redeem_customer = async (req, res) => {
             row.branch_name = branchMap[row.branch_id] || null;
             row.type = row.Coupon
                 ? row.Coupon.type
+                : null;
+            row.but_item = row.Coupon
+                ? row.Coupon.but_item
+                : null;
+            row.get_item = row.Coupon
+                ? row.Coupon.get_item
                 : null;
 
             delete row.Customer;
