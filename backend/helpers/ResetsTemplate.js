@@ -65,8 +65,8 @@ const ResetsTemplate = (type = 'merchant', name = 'User') => {
                     src="${logoUrl}"
                     alt="FirstPass"
                     style="
-                        max-width:130px;
-                        max-height:130px;
+                        max-width:110px;
+                        max-height:110px;
                         display:block;
                         object-fit: contain;
                         ">
@@ -172,7 +172,7 @@ const ResetsTemplate = (type = 'merchant', name = 'User') => {
                 </h3>
 
                 <p style="margin:0;color:#4a5568;line-height:1.7;font-size:14.5px;">
-                    If you did not request this password modification, please contact our support team immediately and secure your account.
+                    If you did not request this password modification, please contact our dedicated support team immediately to secure your account.
                 </p>
 
             </div>
