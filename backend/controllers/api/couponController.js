@@ -1142,11 +1142,17 @@ exports.claim_coupon = async (req, res) => {
             });
 
             if (customerToken?.token) {
-                await sendPushNotification({
-                    token: customerToken.token,
-                    ...customerNotification,
-                    data: notificationData,
-                });
+                try {
+                    await sendPushNotification({
+                        token: customerToken.token,
+                        ...customerNotification,
+                        data: notificationData,
+                    });
+                }
+                catch (err) {
+                    console.error("Error sending customer notification:", err);
+                }
+
             } else {
                 console.log("Customer token not found.");
             }
@@ -1171,11 +1177,16 @@ exports.claim_coupon = async (req, res) => {
                     : receptionistNotification;
 
             if (userToken?.token) {
-                await sendPushNotification({
-                    token: userToken.token,
-                    ...notificationTemplate,
-                    data: notificationData,
-                });
+                try {
+                    await sendPushNotification({
+                        token: userToken.token,
+                        ...notificationTemplate,
+                        data: notificationData,
+                    });
+                } catch (err) {
+                    console.log("Error sending notification to logged-in user:", err);
+                }
+
             } else {
                 console.log(`${userType} token not found.`);
             }

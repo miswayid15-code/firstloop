@@ -39,7 +39,7 @@ exports.register = async (req, res) => {
     // console.log("========== CUSTOMER REGISTER START ==========");
 
     try {
-// console.log("REQ BODY:", req.body);
+        // console.log("REQ BODY:", req.body);
         const {
             name,
             email,
@@ -52,7 +52,7 @@ exports.register = async (req, res) => {
             lon
         } = req.body;
 
-        
+
         let phoneNumber;
         let nationalNumber;
         let callingCode;
@@ -1880,15 +1880,21 @@ exports.coupon_apply = async (req, res) => {
             });
 
             if (customerToken?.token) {
-                await sendPushNotification({
-                    token: customerToken.token,
-                    ...customerNotification,
-                    data: {
-                        type: "coupon_redeem",
-                        coupon_id: coupon.id,
-                        coupon_applied_id: couponApplied.id
-                    }
-                });
+                try {
+                    await sendPushNotification({
+                        token: customerToken.token,
+                        ...customerNotification,
+                        data: {
+                            type: "coupon_redeem",
+                            coupon_id: coupon.id,
+                            coupon_applied_id: couponApplied.id
+                        }
+                    });
+                } catch (error) {
+                    console.log("Push Notification Error:", error);
+
+                }
+
             }
 
             // Get merchant notification token
@@ -1906,16 +1912,22 @@ exports.coupon_apply = async (req, res) => {
             );
 
             if (merchantToken?.token) {
-                await sendPushNotification({
-                    token: merchantToken.token,
-                    ...merchantNotification,
-                    data: {
-                        type: "coupon_redeem",
-                        coupon_id: coupon.id,
-                        coupon_applied_id: couponApplied.id,
-                        branch_id: branch.id
-                    }
-                });
+                try {
+                    await sendPushNotification({
+                        token: merchantToken.token,
+                        ...merchantNotification,
+                        data: {
+                            type: "coupon_redeem",
+                            coupon_id: coupon.id,
+                            coupon_applied_id: couponApplied.id,
+                            branch_id: branch.id
+                        }
+                    });
+                }
+                catch (err) {
+                    console.log("Push Notification Error:", err);
+                }
+
             }
 
             const receptionToken = await UserNotificationToken.findOne({
@@ -1932,16 +1944,20 @@ exports.coupon_apply = async (req, res) => {
             );
 
             if (receptionToken?.token) {
-                await sendPushNotification({
-                    token: receptionToken.token,
-                    ...receptionistNotification,
-                    data: {
-                        type: "coupon_redeem",
-                        coupon_id: coupon.id,
-                        coupon_applied_id: couponApplied.id,
-                        branch_id: branch.id
-                    }
-                });
+                try {
+                    await sendPushNotification({
+                        token: receptionToken.token,
+                        ...receptionistNotification,
+                        data: {
+                            type: "coupon_redeem",
+                            coupon_id: coupon.id,
+                            coupon_applied_id: couponApplied.id,
+                            branch_id: branch.id
+                        }
+                    });
+                } catch (err) {
+                    console.log("Push Notification Error:", err);
+                }
             }
         }
 
@@ -2523,7 +2539,7 @@ exports.appointment = async (req, res) => {
 
         const {
             appointment_date,
-            slot,remarks
+            slot, remarks
         } = req.body;
 
 
@@ -2709,7 +2725,7 @@ exports.appointment = async (req, res) => {
             cancel_by: null,
 
             cancel_reason: null,
-            remarks: remarks || null    
+            remarks: remarks || null
 
         });
 
@@ -2728,15 +2744,20 @@ exports.appointment = async (req, res) => {
             });
 
             if (customerToken?.token) {
-                await sendPushNotification({
-                    token: customerToken.token,
-                    ...customerNotification,
-                    data: {
-                        type: "appointment",
-                        branch_id: branch.id,
-                        appointment_id: appointment.id
-                    }
-                });
+                try {
+                    await sendPushNotification({
+                        token: customerToken.token,
+                        ...customerNotification,
+                        data: {
+                            type: "appointment",
+                            branch_id: branch.id,
+                            appointment_id: appointment.id
+                        }
+                    });
+                } catch (err) {
+                    console.error("Error sending push notification to customer:", err);
+                }
+
             }
 
             // Get merchant notification token
@@ -2754,15 +2775,20 @@ exports.appointment = async (req, res) => {
             );
 
             if (merchantToken?.token) {
-                await sendPushNotification({
-                    token: merchantToken.token,
-                    ...merchantNotification,
-                    data: {
-                        type: "appointment",
-                        branch_id: branch.id,
-                        appointment_id: appointment.id
-                    }
-                });
+                try {
+                    await sendPushNotification({
+                        token: merchantToken.token,
+                        ...merchantNotification,
+                        data: {
+                            type: "appointment",
+                            branch_id: branch.id,
+                            appointment_id: appointment.id
+                        }
+                    });
+                } catch (err) {
+                    console.error("Error sending push notification to merchant:", err);
+                }
+
             }
             const receptionist = await Receptionist.findOne({
                 where: {
@@ -2785,15 +2811,19 @@ exports.appointment = async (req, res) => {
             );
 
             if (receptionToken?.token) {
-                await sendPushNotification({
-                    token: receptionToken.token,
-                    ...receptionistNotification,
-                    data: {
-                        type: "appointment",
-                        appointment_id: appointment.id,
-                        branch_id: branch.id
-                    }
-                });
+                try {
+                    await sendPushNotification({
+                        token: receptionToken.token,
+                        ...receptionistNotification,
+                        data: {
+                            type: "appointment",
+                            appointment_id: appointment.id,
+                            branch_id: branch.id
+                        }
+                    });
+                } catch (err) {
+                    console.error("Error sending push notification to receptionist:", err);
+                }
             }
         }
 
@@ -3526,15 +3556,21 @@ exports.cancel_appointment = async (req, res) => {
             });
 
             if (customerToken?.token) {
-                await sendPushNotification({
-                    token: customerToken.token,
-                    ...customerNotification,
-                    data: {
-                        type: "appointment",
-                        branch_id: branch.id,
-                        appointment_id: appointment.id
-                    }
-                });
+                try {
+                    await sendPushNotification({
+                        token: customerToken.token,
+                        ...customerNotification,
+                        data: {
+                            type: "appointment",
+                            branch_id: branch.id,
+                            appointment_id: appointment.id
+                        }
+                    });
+                }
+                catch (error) {
+                    console.error("Push Notification Error:", error);
+                }
+
             }
 
             // =========================
@@ -3556,15 +3592,19 @@ exports.cancel_appointment = async (req, res) => {
             });
 
             if (merchantToken?.token) {
-                await sendPushNotification({
-                    token: merchantToken.token,
-                    ...merchantNotification,
-                    data: {
-                        type: "appointment",
-                        branch_id: branch.id,
-                        appointment_id: appointment.id
-                    }
-                });
+                try {
+                    await sendPushNotification({
+                        token: merchantToken.token,
+                        ...merchantNotification,
+                        data: {
+                            type: "appointment",
+                            branch_id: branch.id,
+                            appointment_id: appointment.id
+                        }
+                    });
+                } catch (error) {
+                    console.error("Merchant notification failed:", error);
+                }
             }
 
             const receptionist = await Receptionist.findOne({
@@ -3590,15 +3630,19 @@ exports.cancel_appointment = async (req, res) => {
             );
 
             if (receptionToken?.token) {
-                await sendPushNotification({
-                    token: receptionToken.token,
-                    ...receptionistNotification,
-                    data: {
-                        type: "appointment",
-                        branch_id: branch.id,
-                        appointment_id: appointment.id
-                    }
-                });
+                try {
+                    await sendPushNotification({
+                        token: receptionToken.token,
+                        ...receptionistNotification,
+                        data: {
+                            type: "appointment",
+                            branch_id: branch.id,
+                            appointment_id: appointment.id
+                        }
+                    });
+                } catch (error) {
+                    console.error("Receptionist notification failed:", error);
+                }
             }
         }
 
