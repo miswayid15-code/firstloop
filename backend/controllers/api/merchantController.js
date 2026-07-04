@@ -1009,7 +1009,7 @@ exports.forget_password = async (req, res) => {
         );
 
         // const otp = Math.floor(100000 + Math.random() * 900000);
-        const otp = 11111;
+        const otp = 111111;
         // create new otp
         await MerchantFp.create({
             mer_id: merchant.id,
