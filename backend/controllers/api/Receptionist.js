@@ -919,9 +919,6 @@ exports.dashboard = async (req, res) => {
             // redeemed users count
             const redeemed_users =
                 await CouponApplied.count({
-                    where:{
-                        status: 1,
-                    },
 
                     include: [
 

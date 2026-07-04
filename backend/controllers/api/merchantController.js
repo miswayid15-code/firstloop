@@ -1,4 +1,4 @@
-const { Merchant, Coupon, RefreshToken, Branch, Receptionist, MerchantFp, BranchTiming, UserNotificationToken } = require('../../models');
+const { Merchant, Coupon, RefreshToken, Branch, Receptionist, MerchantFp, BranchTiming, UserNotificationToken, CouponApplied } = require('../../models');
 const bcrypt = require('bcryptjs');
 const { parsePhoneNumber } = require('libphonenumber-js');
 const jwt = require('jsonwebtoken');
@@ -707,7 +707,16 @@ exports.dashboard = async (req, res) => {
                     },
                     required: false
                 },
+                {
+                    model: Coupon,
+                    where: {
+                        del_status: 0,
+                        status: 1
 
+                    },
+                    required: false
+
+                },
                 {
                     model: Branch,
                     where: {
@@ -769,7 +778,21 @@ exports.dashboard = async (req, res) => {
                 ? `${baseUrl}/${receptionist.profile_image.replace(/\\/g, "/")}`
                 : null
         }));
-
+        const redeemedUsers = await CouponApplied.count({
+            where: {
+                status: 1
+            },
+            include: [
+                {
+                    model: Coupon,
+                    required: true,
+                    attributes: [],
+                    where: {
+                        merchant_id: merchant.id
+                    }
+                }
+            ]
+        });
         return res.json({
             status: 1,
             message: "Dashboard data fetched successfully",
@@ -783,7 +806,7 @@ exports.dashboard = async (req, res) => {
                 count_branch: merchant.Branches.length,
                 count_receptionist: merchant.Receptionists.length,
 
-                redeemed_users: data.Coupons.filter(item => item.status != 2).length,
+               redeemed_users: redeemedUsers,
 
                 branch_list: data.Branches,
                 receptionist_list: data.Receptionists
