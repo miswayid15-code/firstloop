@@ -1274,7 +1274,7 @@ exports.redeem_customer = async (req, res) => {
             include: [
                 {
                     model: Coupon,
-                    attributes: ['id', 'branch_ids'],
+                    attributes: ['id', 'branch_ids', 'type'],
                     required: true,
                     where: {
                         ...couponWhere,
