@@ -274,7 +274,7 @@ exports.login = async (req, res) => {
         }
         const match = await bcrypt.compare(password, receptionist.password);
         if (!match) {
-            return res.json({ status: 0, message: "Invalid email or password" });
+            return res.json({ status: 0, message: "Invalid Receptionist ID or password" });
         }
         const refreshToken = jwt.sign(
             {

@@ -1364,6 +1364,9 @@ exports.redeem_customer = async (req, res) => {
 
             // Branch name from CouponApplied.branch_id
             row.branch_name = branchMap[row.branch_id] || null;
+            row.type = row.Coupon
+                ? row.Coupon.type
+                : null;
 
             delete row.Customer;
             delete row.Coupon;
