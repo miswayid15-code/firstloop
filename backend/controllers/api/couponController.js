@@ -1369,7 +1369,7 @@ exports.redeem_customer = async (req, res) => {
                 : null;
             row.buy_item = row.Coupon
                 ? row.Coupon.buy_item
-                : null;
+                : null; 
             row.get_item = row.Coupon
                 ? row.Coupon.get_item
                 : null;
