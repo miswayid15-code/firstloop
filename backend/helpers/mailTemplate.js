@@ -1,18 +1,38 @@
-const otpTemplate = (otp, type) => {
+const otpTemplate = (otp, type, name = 'User') => {
 
-    const config = type === 'merchant'
-        ? {
-            title: 'Merchant Password Reset',
-            topBg: 'linear-gradient(135deg, #ff4f8b 0%, #ff7eb3 100%)',
-            primary: '#ff4f8b',
-            light: '#fff4f8'
-        }
-        : {
-            title: 'Customer Password Reset',
-            topBg: 'linear-gradient(135deg, #ff5fa2 0%, #ff9ac2 100%)',
-            primary: '#ff5fa2',
-            light: '#fff4f8'
-        };
+    const config =
+        type === 'merchant'
+            ? {
+                title: 'Merchant Password Reset',
+                topBg: 'linear-gradient(135deg, #ff4d4d 0%, #c1121f 100%)',
+                primary: '#c1121f',
+                dark: '#780000',
+                light: '#fff5f5',
+                border: '#fce8e8',
+                pageBg: '#fdecec',
+                shadowColor: 'rgba(193, 18, 31, 0.12)'
+            }
+            : type === 'customer'
+                ? {
+                    title: 'Customer Password Reset',
+                    topBg: 'linear-gradient(135deg, #667eea 0%, #4f46e5 100%)',
+                    primary: '#4f46e5',
+                    dark: '#3730a3',
+                    light: '#f5f5ff',
+                    border: '#e8e8ff',
+                    pageBg: '#eef0fd',
+                    shadowColor: 'rgba(79, 70, 229, 0.12)'
+                }
+                : {
+                    title: 'Receptionist Password Reset',
+                    topBg: 'linear-gradient(135deg, #ff5fa2 0%, #ff9ac2 100%)',
+                    primary: '#ff4f8b',
+                    dark: '#c2185b',
+                    light: '#fff4f8',
+                    border: '#ffd6e5',
+                    pageBg: '#fceef3',
+                    shadowColor: 'rgba(255, 79, 139, 0.12)'
+                };
 
     return `
     <!DOCTYPE html>
@@ -25,12 +45,12 @@ const otpTemplate = (otp, type) => {
     <body style="
         margin:0;
         padding:0;
-        background:#fceef3;
+        background:${config.pageBg};
         font-family:Arial, Helvetica, sans-serif;
     ">
 
     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="
-        background:#fceef3;
+        background:${config.pageBg};
         padding:40px 15px;
     ">
 
@@ -44,7 +64,7 @@ const otpTemplate = (otp, type) => {
                         background:#ffffff;
                         border-radius:28px;
                         overflow:hidden;
-                        box-shadow:0 10px 40px rgba(255, 79, 139, 0.12);
+                        box-shadow:0 10px 40px ${config.shadowColor};
                     ">
 
                     <!-- Top Section -->
@@ -106,7 +126,7 @@ const otpTemplate = (otp, type) => {
                                 font-size:34px;
                                 font-weight:700;
                             ">
-                                Hello,
+                                Hello, ${name}
                             </h2>
 
                             <p style="
@@ -128,7 +148,7 @@ const otpTemplate = (otp, type) => {
                                     width:100%;
                                     max-width:460px;
                                     background:${config.light};
-                                    border:2px dashed #ffc1d6;
+                                    border:2px dashed ${config.border};
                                     border-radius:22px;
                                 ">
 
@@ -147,7 +167,7 @@ const otpTemplate = (otp, type) => {
                                         </div>
 
                                         <div style="
-                                            color:#c2185b;
+                                            color:${config.dark};
                                             font-size:60px;
                                             font-weight:800;
                                             letter-spacing:16px;
@@ -180,9 +200,9 @@ const otpTemplate = (otp, type) => {
                             <table width="100%" cellpadding="0" cellspacing="0" border="0"
                                 style="
                                     margin-top:40px;
-                                    background:#fff7fa;
+                                    background:${config.light};
                                     border-radius:18px;
-                                    border:1px solid #ffd6e5;
+                                    border:1px solid ${config.border};
                                 ">
 
                                 <tr>
@@ -260,7 +280,7 @@ const otpTemplate = (otp, type) => {
                                             font-size:15px;
                                             line-height:28px;
                                         ">
-                                            If you didn’t request a password reset,
+                                            If you didn't request a password reset,
                                             you can safely ignore this email.
                                             Your account remains secure.
                                         </div>
@@ -277,7 +297,7 @@ const otpTemplate = (otp, type) => {
                     <!-- Footer -->
                     <tr>
                         <td align="center" style="
-                            background:#fff7fa;
+                            background:${config.light};
                             padding:35px 20px;
                         ">
 
