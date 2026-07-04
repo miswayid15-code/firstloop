@@ -1,336 +1,307 @@
 const otpTemplate = (otp, type, name = 'User') => {
 
+    const currentYear = new Date().getFullYear();
+    const appUrl = (process.env.APP_URL || '').replace(/\/$/, '');
+    const logoUrl = `${appUrl}/uploads/public/firstpass.png`;
+
     const config =
         type === 'merchant'
             ? {
                 title: 'Merchant Password Reset',
-                topBg: 'linear-gradient(135deg, #ff4d4d 0%, #c1121f 100%)',
+                subtitle: 'Use the code below to reset your merchant account password.',
+                headerBg: 'radial-gradient(circle at top right, #fff5f5 0%, #ffffff 70%)',
+                gradientBar: 'linear-gradient(90deg, #ff4d4d 0%, #c1121f 50%, #780000 100%)',
+                iconGradient: 'linear-gradient(135deg, #c1121f, #780000)',
                 primary: '#c1121f',
                 dark: '#780000',
-                light: '#fff5f5',
+                light: '#fffcfc',
                 border: '#fce8e8',
-                pageBg: '#fdecec',
-                shadowColor: 'rgba(193, 18, 31, 0.12)'
+                cardBorder: '#ffebeb',
+                shadowColor: 'rgba(193, 18, 31, 0.2)',
+                tagline: 'Manage Offers • Track Performance • Grow Your Brand • Real-Time Analytics',
             }
             : type === 'customer'
                 ? {
                     title: 'Customer Password Reset',
-                    topBg: 'linear-gradient(135deg, #667eea 0%, #4f46e5 100%)',
+                    subtitle: 'Use the code below to reset your account password.',
+                    headerBg: 'radial-gradient(circle at top right, #f5f5ff 0%, #ffffff 70%)',
+                    gradientBar: 'linear-gradient(90deg, #667eea 0%, #4f46e5 50%, #3730a3 100%)',
+                    iconGradient: 'linear-gradient(135deg, #4f46e5, #3730a3)',
                     primary: '#4f46e5',
                     dark: '#3730a3',
-                    light: '#f5f5ff',
+                    light: '#fafaff',
                     border: '#e8e8ff',
-                    pageBg: '#eef0fd',
-                    shadowColor: 'rgba(79, 70, 229, 0.12)'
+                    cardBorder: '#e8e8ff',
+                    shadowColor: 'rgba(79, 70, 229, 0.2)',
+                    tagline: 'Exclusive Deals • Smart Coupons • Trusted Offers • Global Experience',
                 }
                 : {
                     title: 'Receptionist Password Reset',
-                    topBg: 'linear-gradient(135deg, #ff5fa2 0%, #ff9ac2 100%)',
+                    subtitle: 'Use the code below to reset your receptionist account password.',
+                    headerBg: 'radial-gradient(circle at top right, #fff5fa 0%, #ffffff 70%)',
+                    gradientBar: 'linear-gradient(90deg, #ff5fa2 0%, #ff4f8b 50%, #c2185b 100%)',
+                    iconGradient: 'linear-gradient(135deg, #ff4f8b, #c2185b)',
                     primary: '#ff4f8b',
                     dark: '#c2185b',
                     light: '#fff4f8',
                     border: '#ffd6e5',
-                    pageBg: '#fceef3',
-                    shadowColor: 'rgba(255, 79, 139, 0.12)'
+                    cardBorder: '#ffd6e5',
+                    shadowColor: 'rgba(255, 79, 139, 0.2)',
+                    tagline: 'Smooth Check-Ins • Appointment Management • Seamless Coordination',
                 };
 
     return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    </head>
+<div style="margin:0;padding:0;background:#f6f8fb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
 
-    <body style="
-        margin:0;
-        padding:0;
-        background:${config.pageBg};
-        font-family:Arial, Helvetica, sans-serif;
-    ">
+    <div style="max-width:600px;margin:40px auto;background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 25px 70px rgba(0,0,0,0.07);border:1px solid #eef2f5;">
 
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="
-        background:${config.pageBg};
-        padding:40px 15px;
-    ">
+        <!-- Top Accent Bar -->
+        <div style="height:6px;background:${config.gradientBar};"></div>
 
-        <tr>
-            <td align="center">
+        <!-- Header -->
+        <div style="
+                padding:60px 40px 45px;
+                text-align:center;
+                background:${config.headerBg};
+                border-bottom:1px solid #f0f4f8;
+                ">
 
-                <!-- Main Container -->
-                <table width="100%" cellpadding="0" cellspacing="0" border="0"
-                    style="
-                        max-width:620px;
-                        background:#ffffff;
-                        border-radius:28px;
-                        overflow:hidden;
-                        box-shadow:0 10px 40px ${config.shadowColor};
+            <div style="
+                    width:130px;
+                    height:130px;
+                    margin:0 auto 28px;
+                    background:#ffffff;
+                    border-radius:32px;
+                    box-shadow:0 20px 40px ${config.shadowColor};
+                    display:flex;
+                    align-items:center;
+                    justify-content:center;
+                    border:1px solid ${config.cardBorder};
                     ">
 
-                    <!-- Top Section -->
-                    <tr>
-                        <td align="center" style="
-                            background:${config.topBg};
-                            padding:55px 40px 70px;
+                <img
+                    src="${logoUrl}"
+                    alt="FirstPass"
+                    style="
+                        max-width:130px;
+                        max-height:130px;
+                        display:block;
+                        object-fit: contain;
                         ">
+            </div>
 
-                            <!-- Lock Icon -->
-                            <div style="
-                                width:95px;
-                                height:95px;
-                                background:rgba(255,255,255,0.2);
-                                border-radius:50%;
-                                text-align:center;
-                                line-height:95px;
-                                font-size:44px;
-                                margin:auto;
-                                border:3px solid rgba(255,255,255,0.25);
-                            ">
-                                🔐
-                            </div>
+            <h1 style="
+                    margin:0;
+                    color:#1a1a1a;
+                    font-size:32px;
+                    font-weight:800;
+                    letter-spacing:-0.8px;
+                    line-height: 1.2;
+                    ">
+                ${config.title}
+            </h1>
 
-                            <!-- Title -->
-                            <h1 style="
-                                color:#ffffff;
-                                font-size:38px;
-                                margin:30px 0 14px;
-                                font-weight:700;
-                                letter-spacing:-0.5px;
-                            ">
-                                ${config.title}
-                            </h1>
+            <p style="
+                    margin:12px 0 0;
+                    color:#626d7a;
+                    font-size:16px;
+                    line-height:1.6;
+                    font-weight: 500;
+                    ">
+                ${config.subtitle}
+            </p>
 
-                            <!-- Subtitle -->
-                            <p style="
-                                color:rgba(255,255,255,0.92);
-                                font-size:17px;
-                                line-height:30px;
-                                margin:0;
-                            ">
-                                Secure verification code for your account
-                            </p>
+        </div>
 
-                        </td>
-                    </tr>
+        <!-- Body -->
+        <div style="padding:45px 50px;color:#333333;background:#ffffff;">
 
-                    <!-- White Body -->
+            <p style="
+                    margin:0;
+                    color:#1a1a1a;
+                    font-size:16px;
+                    font-weight:600;
+                    ">
+                Hello <strong>${name}</strong>,
+            </p>
+
+            <p style="
+                    margin:16px 0 32px;
+                    color:#4a5568;
+                    font-size:15.5px;
+                    line-height:1.8;
+                    ">
+                We received a request to reset your <strong>FirstPass</strong> account password. Please use the One-Time Password below to continue.
+            </p>
+
+            <!-- OTP Card -->
+            <div style="
+                background:linear-gradient(135deg, #ffffff 0%, #fffbfb 100%);
+                border:1px solid ${config.border};
+                border-radius:20px;
+                padding:35px 24px;
+                text-align:center;
+                box-shadow:0 15px 35px rgba(0,0,0,0.03);
+                margin-bottom:35px;
+                ">
+
+                <div style="
+                    width:56px;
+                    height:56px;
+                    margin:0 auto 20px;
+                    border-radius:18px;
+                    background:${config.iconGradient};
+                    color:#ffffff;
+                    font-size:24px;
+                    line-height:56px;
+                    box-shadow:0 10px 22px ${config.shadowColor};
+                    ">
+                    🔐
+                </div>
+
+                <div style="
+                    color:${config.primary};
+                    font-size:12px;
+                    font-weight:800;
+                    letter-spacing:2px;
+                    text-transform:uppercase;
+                    margin-bottom:16px;
+                    ">
+                    Verification Code
+                </div>
+
+                <!-- OTP Code Display -->
+                <table cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;">
                     <tr>
                         <td style="
-                            padding:50px 45px 45px;
-                            text-align:center;
-                        ">
-
-                            <h2 style="
-                                margin:0 0 20px;
-                                color:#333333;
-                                font-size:34px;
-                                font-weight:700;
+                            background: #fafbfc;
+                            border: 2px dashed #e2e8f0;
+                            border-radius: 16px;
+                            padding: 14px 24px;
                             ">
-                                Hello, ${name}
-                            </h2>
-
-                            <p style="
-                                margin:0;
-                                color:#666666;
-                                font-size:18px;
-                                line-height:34px;
-                            ">
-                                We received a request to reset your password.
-                                <br>
-                                Please use the verification code below to continue.
-                            </p>
-
-                            <!-- OTP Box -->
-                            <table cellpadding="0" cellspacing="0" border="0"
-                                align="center"
-                                style="
-                                    margin:45px auto 30px;
-                                    width:100%;
-                                    max-width:460px;
-                                    background:${config.light};
-                                    border:2px dashed ${config.border};
-                                    border-radius:22px;
-                                ">
-
-                                <tr>
-                                    <td align="center" style="
-                                        padding:28px 20px 18px;
-                                    ">
-
-                                        <div style="
-                                            color:${config.primary};
-                                            font-size:22px;
-                                            font-weight:700;
-                                            margin-bottom:18px;
-                                        ">
-                                            Your Verification Code
-                                        </div>
-
-                                        <div style="
-                                            color:${config.dark};
-                                            font-size:60px;
-                                            font-weight:800;
-                                            letter-spacing:16px;
-                                            font-family:'Courier New', monospace;
-                                            line-height:70px;
-                                        ">
-                                            ${otp}
-                                        </div>
-
-                                    </td>
-                                </tr>
-
-                            </table>
-
-                            <!-- Expiry -->
-                            <p style="
-                                color:#666666;
-                                font-size:16px;
-                                margin:0;
-                                line-height:28px;
-                            ">
-                                ⏰ This code is valid for
-                                <strong style="color:${config.primary};">
-                                    10 minutes
-                                </strong>
-                                only.
-                            </p>
-
-                            <!-- Security Reminder -->
-                            <table width="100%" cellpadding="0" cellspacing="0" border="0"
-                                style="
-                                    margin-top:40px;
-                                    background:${config.light};
-                                    border-radius:18px;
-                                    border:1px solid ${config.border};
-                                ">
-
+                            <table cellpadding="0" cellspacing="0" border="0">
                                 <tr>
                                     <td style="
-                                        padding:24px;
-                                        text-align:left;
-                                    ">
-
-                                        <div style="
-                                            color:#222222;
-                                            font-size:20px;
-                                            font-weight:700;
-                                            margin-bottom:12px;
+                                        font-family: 'Courier New', Courier, monospace;
+                                        font-size: 36px;
+                                        font-weight: 800;
+                                        letter-spacing: 8px;
+                                        color: #1a1a1a;
+                                        white-space: nowrap;
                                         ">
-                                            🛡️ Security Reminder
-                                        </div>
-
-                                        <div style="
-                                            color:#666666;
-                                            font-size:15px;
-                                            line-height:28px;
+                                        ${otp}
+                                    </td>
+                                    <td style="
+                                        font-size: 22px;
+                                        color: ${config.primary};
+                                        padding-left: 16px;
                                         ">
-                                            Never share this verification code with anyone.
-                                            Our support team will never ask for your OTP.
-                                        </div>
-
+                                        📋
                                     </td>
                                 </tr>
-
                             </table>
-
-                            <!-- Divider -->
-                            <div style="
-                                height:1px;
-                                background:#eeeeee;
-                                margin:45px 0 35px;
-                            "></div>
-
-                            <!-- Ignore Section -->
-                            <table width="100%" cellpadding="0" cellspacing="0" border="0">
-
-                                <tr>
-
-                                    <td width="60" valign="top">
-
-                                        <div style="
-                                            width:50px;
-                                            height:50px;
-                                            background:${config.primary};
-                                            border-radius:50%;
-                                            color:#ffffff;
-                                            text-align:center;
-                                            line-height:50px;
-                                            font-size:26px;
-                                            font-weight:bold;
-                                        ">
-                                            ?
-                                        </div>
-
-                                    </td>
-
-                                    <td valign="top" align="left">
-
-                                        <div style="
-                                            color:#333333;
-                                            font-size:20px;
-                                            font-weight:700;
-                                            margin-bottom:10px;
-                                        ">
-                                            Didn't request this?
-                                        </div>
-
-                                        <div style="
-                                            color:#666666;
-                                            font-size:15px;
-                                            line-height:28px;
-                                        ">
-                                            If you didn't request a password reset,
-                                            you can safely ignore this email.
-                                            Your account remains secure.
-                                        </div>
-
-                                    </td>
-
-                                </tr>
-
-                            </table>
-
                         </td>
                     </tr>
-
-                    <!-- Footer -->
-                    <tr>
-                        <td align="center" style="
-                            background:${config.light};
-                            padding:35px 20px;
-                        ">
-
-                            <div style="
-                                font-size:34px;
-                                margin-bottom:10px;
-                            ">
-                                🛡️
-                            </div>
-
-                            <p style="
-                                margin:0;
-                                color:#777777;
-                                font-size:14px;
-                                line-height:28px;
-                            ">
-                                This is an automated message, please do not reply.
-                                <br>
-                                © ${new Date().getFullYear()} FirstPass. All rights reserved.
-                            </p>
-
-                        </td>
-                    </tr>
-
                 </table>
 
-            </td>
-        </tr>
+                <p style="
+                    margin:14px 0 0;
+                    color:#a0aec0;
+                    font-size:11px;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    ">
+                    ✨ Copy this code to reset your password
+                </p>
 
-    </table>
+                <p style="
+                    margin:20px 0 0;
+                    color:#718096;
+                    font-size:14px;
+                    font-weight: 500;
+                    ">
+                    This verification code expires in <strong style="color:${config.primary}; font-weight:700;">10 minutes</strong>.
+                </p>
 
-    </body>
-    </html>
+            </div>
+
+            <!-- Info Cards -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:30px; border-collapse: separate; border-spacing: 0;">
+                <tr>
+                    <td width="48%" valign="top" style="
+                            background:#fafbfc;
+                            border:1px solid #e2e8f0;
+                            border-radius:16px;
+                            padding:22px;
+                            ">
+                        <div style="font-size:20px; margin-bottom:12px;">🛡️</div>
+                        <div style="font-size:15px; font-weight:700; color:#1a1a1a; margin-bottom:8px;">
+                            Security Notice
+                        </div>
+                        <div style="color:#64748b; line-height:1.6; font-size:13.5px;">
+                            Never share your OTP. FirstPass will never reach out directly to ask for your verification credentials.
+                        </div>
+                    </td>
+
+                    <td width="4%"></td>
+
+                    <td width="48%" valign="top" style="
+                            background:#fafbfc;
+                            border:1px solid #e2e8f0;
+                            border-radius:16px;
+                            padding:22px;
+                            ">
+                        <div style="font-size:20px; margin-bottom:12px;">ℹ️</div>
+                        <div style="font-size:15px; font-weight:700; color:#1a1a1a; margin-bottom:8px;">
+                            Didn't Request This?
+                        </div>
+                        <div style="color:#64748b; line-height:1.6; font-size:13.5px;">
+                            If you did not request a password reset, you can safely disregard and delete this email. Your account remains secure.
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+            <div style="height:1px; background:#f0f4f8; margin:32px 0;"></div>
+
+            <p style="
+                    margin:0;
+                    text-align:center;
+                    color:#718096;
+                    font-size:14px;
+                    line-height:1.8;
+                    font-weight: 500;
+                    ">
+                FirstPass helps protect your account while giving you access to exclusive offers, premium deals, and everyday savings.
+            </p>
+
+        </div>
+
+        <!-- Tagline Strip -->
+        <div style="background:linear-gradient(135deg, #0f1115 0%, #1a1d24 100%);padding:22px 30px;text-align:center;border-bottom: 1px solid #242933;">
+            <p style="margin:0;color:#f7fafc;font-size:13px;line-height:1.6;letter-spacing: 0.5px;font-weight: 500;">
+                ${config.tagline}
+            </p>
+        </div>
+
+        <!-- Footer -->
+        <div style="background:#fafbfc;padding:35px 40px;text-align:center;">
+            <p style="margin:0 0 12px;color:#4a5568;font-size:14px;font-weight: 500;">
+                Thank you for choosing FirstPass.
+            </p>
+            <p style="margin:0;color:#a0aec0;font-size:12px;line-height:1.7;">
+                This is an automated email to help you reset your password. Please do not reply directly to this inbox.
+            </p>
+            <div style="margin:20px auto 0; width:40px; height:2px; background:#e2e8f0; border-radius:2px;"></div>
+            <p style="margin:20px 0 0;color:#a0aec0;font-size:12px;letter-spacing: 0.2px;">
+                © ${currentYear} FirstPass. All Rights Reserved.
+            </p>
+        </div>
+
+    </div>
+
+</div>
     `;
 };
 
