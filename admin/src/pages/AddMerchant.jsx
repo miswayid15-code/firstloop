@@ -248,11 +248,11 @@ export default function AddMerchant() {
         //     return
         // }
 
-        if (!form.password || form.password.length < 6) {
-            toast.error('Password must be at least 6 characters long')
-            highlightFieldError('input[name="password"]')
-            return
-        }
+        // if (!form.password || form.password.length < 6) {
+        //     toast.error('Password must be at least 6 characters long')
+        //     highlightFieldError('input[name="password"]')
+        //     return
+        // }
 
         if (!form.businessName || form.businessName.trim().length < 2) {
             toast.error('Business Name is required')

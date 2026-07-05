@@ -2080,11 +2080,11 @@ export default function ViewMerchant() {
         //     return
         // }
 
-        if (!receptionistForm.password.trim() || receptionistForm.password.trim().length < 6) {
-            toast.error('Password must be at least 6 characters long')
-            highlightFieldError('#edit-rep-password')
-            return
-        }
+        // if (!receptionistForm.password.trim() || receptionistForm.password.trim().length < 6) {
+        //     toast.error('Password must be at least 6 characters long')
+        //     highlightFieldError('#edit-rep-password')
+        //     return
+        // }
 
         try {
 
