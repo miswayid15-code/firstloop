@@ -2329,11 +2329,11 @@ export default function ViewMerchant() {
             return
         }
 
-        if (!addReceptionistForm.phone.trim() || addReceptionistForm.phone.trim().length < 9) {
-            toast.error('Please enter a valid phone number (minimum 9 digits)')
-            highlightFieldError('.modal.active input[name="phone"]')
-            return
-        }
+        // if (!addReceptionistForm.phone.trim() || addReceptionistForm.phone.trim().length < 9) {
+        //     toast.error('Please enter a valid phone number (minimum 9 digits)')
+        //     highlightFieldError('.modal.active input[name="phone"]')
+        //     return
+        // }
 
         if (!addReceptionistForm.password.trim() || addReceptionistForm.password.trim().length < 6) {
             toast.error('Password must be at least 6 characters long')
