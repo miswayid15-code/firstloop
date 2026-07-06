@@ -381,7 +381,7 @@ exports.update_status = async (req, res) => {
         );
 try {
     console.log("=== MAIL PROCESS START ===");
-    console.log("Merchant Email:", merchant.mail);
+    console.log("Merchant Email:", merchant.email);
     console.log("Merchant Name:", merchant.name);
     console.log("Status:", status);
 
@@ -398,7 +398,7 @@ try {
     console.log("Sending email...");
 
     await sendMail(
-        merchant.mail,
+        merchant.email,
         'Merchant Status Update',
         emailTemplate
     );
