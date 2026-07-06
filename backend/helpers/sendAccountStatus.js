@@ -47,8 +47,14 @@ const sendAccountStatus = (status, type, name = 'User') => {
             };
 
     const statusColor = isActive ? '#16a34a' : '#c1121f';
-    const statusIcon = isActive ? '✅' : '⛔';
     const statusLabel = isActive ? 'Active' : 'Inactive';
+    const statusIcon = isActive
+        ? `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+             <path d="M5 13L9.5 17.5L19 7" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+           </svg>`
+        : `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+             <path d="M6 6L18 18M18 6L6 18" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+           </svg>`;
 
     return `
 <div style="margin:0;padding:0;background:#f6f8fb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
@@ -148,19 +154,20 @@ const sendAccountStatus = (status, type, name = 'User') => {
                 margin-bottom:35px;
                 ">
 
-                <div style="
-                    width:56px;
-                    height:56px;
-                    margin:0 auto 20px;
-                    border-radius:18px;
-                    background:${config.iconGradient};
-                    color:#ffffff;
-                    font-size:24px;
-                    line-height:56px;
-                    box-shadow:0 10px 22px ${config.shadowColor};
-                    ">
-                    ${statusIcon}
-                </div>
+                <table cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto 20px;">
+                    <tr>
+                        <td width="56" height="56" align="center" valign="middle" style="
+                            width:56px;
+                            height:56px;
+                            border-radius:18px;
+                            background:${config.iconGradient};
+                            box-shadow:0 10px 22px ${config.shadowColor};
+                            text-align:center;
+                            ">
+                            ${statusIcon}
+                        </td>
+                    </tr>
+                </table>
 
                 <div style="
                     color:${config.primary};
