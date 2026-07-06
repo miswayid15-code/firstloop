@@ -7,6 +7,7 @@ const admin = require('../../config/firebase');
 const crypto = require('crypto');
 const sendMail = require('../../helpers/sendMail');
 const { otpTemplate } = require('../../helpers/mailTemplate');
+const { sendAccountStatus } = require('../../helpers/sendAccountStatus');
 const ResetsTemplate = require('../../helpers/ResetsTemplate');
 const RegisterTemplate = require('../../helpers/RegisterTemplate');
 // const mapFiles = require('../../helpers/merchantFileMapper');
@@ -366,6 +367,8 @@ exports.update_status = async (req, res) => {
             });
         }
 
+
+
         await Merchant.update(
             {
                 status: status
@@ -376,7 +379,29 @@ exports.update_status = async (req, res) => {
                 }
             }
         );
+        try {
 
+            await sendMail(
+
+                merchant.mail,
+
+                'Merchant Status Update',
+
+                sendAccountStatus(
+                    status,
+                    'merchant',
+                    merchant.name
+                )
+
+            );
+
+            // console.log("Registration mail sent");
+
+        } catch (mailErr) {
+
+            console.log("MAIL ERROR:", mailErr);
+
+        }
         return res.json({
             status: 1,
             message: "Merchant status updated successfully"

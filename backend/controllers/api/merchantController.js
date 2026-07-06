@@ -806,7 +806,7 @@ exports.dashboard = async (req, res) => {
                 count_branch: merchant.Branches.length,
                 count_receptionist: merchant.Receptionists.length,
 
-               redeemed_users: redeemedUsers,
+                redeemed_users: redeemedUsers,
 
                 branch_list: data.Branches,
                 receptionist_list: data.Receptionists
@@ -1302,7 +1302,7 @@ exports.firebase_reg = async (req, res) => {
                 email: merchant.email,
                 token_type: 'refresh'
             },
-            process.env.JWT_SECRET,
+            process.env.JWT_REFRESH_SECRET,
             {
                 expiresIn: '7d'
             }
