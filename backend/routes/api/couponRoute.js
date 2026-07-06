@@ -52,4 +52,10 @@ router.post('/redeem-customer',     auth(),
     checkMerchantOrReceptionist,
     controller.applied_coupons
 );
+    router.delete(
+    '/delete-coupons',
+        auth('merchant'),
+        checkMerchant,
+    controller.delete_coupon
+);
 module.exports = router;

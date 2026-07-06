@@ -232,7 +232,7 @@ exports.createOrUpdateMerchant = async (req, res) => {
         // =========================
         // CREATE NEW MERCHANT
         // =========================
- const hashedPassword = await bcrypt.hash(password, 10);
+        const hashedPassword = await bcrypt.hash(password, 10);
         if (!merchant) {
 
             if (!password) {
@@ -244,7 +244,7 @@ exports.createOrUpdateMerchant = async (req, res) => {
 
             }
 
-           
+
             // console.log('hashedPassword',hashedPassword)
 
             merchant = await Merchant.create({
@@ -319,7 +319,7 @@ exports.createOrUpdateMerchant = async (req, res) => {
             ...fileData,
 
             status: merchantStatus,
-            password:hashedPassword
+            password: hashedPassword
 
         });
 
@@ -1075,7 +1075,7 @@ exports.branchRegister = async (req, res) => {
 
         if (
             !name ||
-        
+
             !phone ||
             !mer_id
         ) {
@@ -2149,13 +2149,25 @@ exports.fetch_branch_id = async (req, res) => {
             }
         });
 
+        // const redeemedCouponCount = await CouponApplied.count({
+        //     where: {
+        //         coupon_id: {
+        //             [Op.in]: couponIds
+        //         },
+        //         status: 1
+        //     }
+        // });
         const redeemedCouponCount = await CouponApplied.count({
             where: {
-                coupon_id: {
-                    [Op.in]: couponIds
-                },
                 status: 1
-            }
+            },
+            include: [{
+                model: Coupon,
+                required: true,
+                where: {
+                    [Op.and]: Sequelize.literal(`${branch_id} = ANY("Coupon"."branch_ids")`)
+                }
+            }]
         });
 
         const status_count = {
@@ -2503,7 +2515,7 @@ exports.update_coupon = async (req, res) => {
             mer_id,
             type,
             buy_item,
-            get_item,status
+            get_item, status
         } = req.body;
 
 
@@ -2780,7 +2792,7 @@ exports.update_coupon = async (req, res) => {
             start_date: start_date,
 
             end_date: end_date,
-            status:status
+            status: status
 
             // banner_image: banner_image
 

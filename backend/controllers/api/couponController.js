@@ -1710,3 +1710,82 @@ exports.fetch_coupon_details_by_id = async (req, res) => {
     }
 
 };
+
+exports.delete_coupon = async (req, res) => {
+
+    try {
+
+        const { coupon_id } = req.body;
+
+        if (!coupon_id) {
+
+            return res.json({
+                status: 0,
+                message: "Coupon ID required"
+            });
+
+        }
+
+        const coupon = await Coupon.findOne({
+
+            where: {
+                id: coupon_id,
+                del_status: 0
+            }
+
+        });
+
+        if (!coupon) {
+
+            return res.json({
+                status: 0,
+                message: "Coupon not found"
+            });
+
+        }
+
+        // Delete banner image from uploads
+        if (coupon.banner_image) {
+
+            const imagePath = path.join(
+                process.cwd(),
+                coupon.banner_image
+            );
+
+            if (fs.existsSync(imagePath)) {
+
+                fs.unlinkSync(imagePath);
+
+            }
+
+        }
+
+        await coupon.update({
+
+            del_status: 1
+
+        });
+
+        return res.json({
+
+            status: 1,
+            message: "Coupon deleted successfully"
+
+        });
+
+    }
+
+    catch (err) {
+
+        console.log("DELETE ERROR:", err);
+
+        return res.json({
+
+            status: 0,
+            message: err.message
+
+        });
+
+    }
+
+};
