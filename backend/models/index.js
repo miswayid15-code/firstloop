@@ -36,7 +36,17 @@ Object.keys(db).forEach(modelName => {
     db[modelName].associate(db);
   }
 });
+(async () => {
+  try {
+    const [result] = await sequelize.query("SHOW TIMEZONE;");
+    console.log("DB Session Timezone:", result);
 
+    const [now] = await sequelize.query("SELECT NOW() AS now;");
+    console.log("DB NOW:", now);
+  } catch (err) {
+    console.error(err);
+  }
+})();
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;
 
