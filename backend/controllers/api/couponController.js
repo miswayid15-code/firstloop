@@ -971,7 +971,7 @@ exports.claim_coupon = async (req, res) => {
             return res.json({
 
                 status: 0,
-                message: "Coupon not found"
+                message: "Coupon not found or delete"
 
             });
 

@@ -793,6 +793,22 @@ exports.dashboard = async (req, res) => {
                 }
             ]
         });
+           const redeemedUsersss = await CouponApplied.findAll({
+            where: {
+                status: 1
+            },
+            include: [
+                {
+                    model: Coupon,
+                    required: true,
+                    attributes: [],
+                    where: {
+                        merchant_id: merchant.id
+                    }
+                }
+            ]
+        });
+        console.log("redeemedUsersss",redeemedUsersss)
         return res.json({
             status: 1,
             message: "Dashboard data fetched successfully",
