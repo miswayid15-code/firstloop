@@ -258,7 +258,7 @@ export default function DeletedMerchants() {
                                         >
                                             <button
                                                 className="btn-icon view"
-                                                onClick={() => navigate(`/view-merchant/${row.id}`)}
+                                                onClick={() => navigate(`/view-deleted-merchant/${row.id}`)}
                                                 title="View Merchant Details"
                                             >
                                                 <i className="fas fa-eye" />
