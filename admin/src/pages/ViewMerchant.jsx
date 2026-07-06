@@ -274,7 +274,8 @@ export default function ViewMerchant() {
         start_date: '',
         end_date: '',
         branch_ids: [],
-        cat_id: ''
+        cat_id: '',
+        status: 1
     }
 
     const [showCreateCouponModal, setShowCreateCouponModal] = useState(false)
@@ -1493,7 +1494,8 @@ export default function ViewMerchant() {
             start_date: formatDateForInput(coupon.start_date),
             end_date: formatDateForInput(coupon.end_date),
             branch_ids: Array.isArray(coupon.branch_ids) ? coupon.branch_ids.map(Number) : [],
-            cat_id: coupon.cat_id?.toString() || coupon.category_id?.toString() || ''
+            cat_id: coupon.cat_id?.toString() || coupon.category_id?.toString() || '',
+            status: coupon.status !== undefined ? Number(coupon.status) : 1
         })
         setEditingCoupon(false)
         setShowEditCouponModal(true)
@@ -1591,6 +1593,7 @@ export default function ViewMerchant() {
             formData.append('code', editCouponForm.code.trim())
             formData.append('type', editCouponForm.type)
             formData.append('description', editCouponForm.description || '')
+            formData.append('status', editCouponForm.status !== undefined ? editCouponForm.status : 1)
 
             if (Number(editCouponForm.type) === 3) {
                 formData.append('percentage', '0')
@@ -5012,6 +5015,29 @@ export default function ViewMerchant() {
                                     </div>
                                 </div>
 
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid var(--border)', marginBottom: 8 }}>
+                                    <span style={{ fontSize: '0.94rem', fontWeight: 600, color: 'var(--text-primary)' }}>Coupon Status</span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                        <span style={{ fontSize: '0.86rem', color: editCouponForm.status === 1 ? '#22c55e' : 'var(--text-muted)', fontWeight: 600 }}>
+                                            {editCouponForm.status === 1 ? 'Active' : 'Inactive'}
+                                        </span>
+                                        <label className="switch">
+                                            <input
+                                                type="checkbox"
+                                                checked={editCouponForm.status === 1}
+                                                onChange={(e) => {
+                                                    setEditCouponForm(prev => ({
+                                                        ...prev,
+                                                        status: e.target.checked ? 1 : 0
+                                                    }))
+                                                }}
+                                                disabled={editingCoupon}
+                                            />
+                                            <span className="slider round"></span>
+                                        </label>
+                                    </div>
+                                </div>
+
                                 <div className="form-group-classic">
                                     <label className="form-label-classic">Term and Condtions</label>
                                     <textarea
@@ -5202,7 +5228,7 @@ export default function ViewMerchant() {
                                                 <th>Code</th>
                                                 <th>Type / Deal</th>
                                                 <th>Min Amount</th>
-                                                <th>Usage Limit</th>
+                                                {/* <th>Usage Limit</th> */}
                                                 <th>Start Date</th>
                                                 <th>End Date</th>
                                                 <th>Status</th>

@@ -2501,7 +2501,7 @@ exports.update_coupon = async (req, res) => {
             mer_id,
             type,
             buy_item,
-            get_item
+            get_item,status
         } = req.body;
 
 
@@ -2778,6 +2778,7 @@ exports.update_coupon = async (req, res) => {
             start_date: start_date,
 
             end_date: end_date,
+            status:status
 
             // banner_image: banner_image
 

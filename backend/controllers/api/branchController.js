@@ -12,8 +12,8 @@ exports.register = async (req, res) => {
     if (req.body.lon === '') req.body.lon = null;
 
     // console.log("========== CREATE BRANCH API ==========");
-    console.log("BODY:", req.body);
-    console.log("USER:", req.user);
+    // console.log("BODY:", req.body);
+    // console.log("USER:", req.user);
 
     try {
 
