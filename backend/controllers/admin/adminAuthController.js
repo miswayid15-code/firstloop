@@ -320,7 +320,14 @@ exports.merchant_list = async (req, res) => {
             });
 
         }
+        const [dbInfo] = await Merchant.sequelize.query(`
+            SELECT
+                current_database() AS database,
+                current_setting('TimeZone') AS timezone,
+                NOW() AS now
+        `);
 
+        console.log("DB INFO:", dbInfo);
         const merchants = await Merchant.findAll({
 
             where: {
