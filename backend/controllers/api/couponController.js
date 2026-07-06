@@ -1238,7 +1238,7 @@ exports.redeem_customer = async (req, res) => {
             : 'receptionist';
 
         const couponWhere = {
-            del_status: 0
+            // del_status: 0
         };
 
         if (userType === 'merchant') {
@@ -1277,7 +1277,7 @@ exports.redeem_customer = async (req, res) => {
                     attributes: ['id', 'branch_ids', 'type','buy_item', 'get_item'],
                     required: true,
                     where: {
-                        // ...couponWhere,
+                        ...couponWhere,
 
                       
                         ...(userType === 'receptionist' && {
