@@ -609,11 +609,16 @@ export default function Customers() {
             highlightFieldError('#add-cust-email');
             return;
         }
-        // if (!addCustomerForm.phone || addCustomerForm.phone.trim().length < 9) {
-        //     toast.error("Please enter a valid phone number (minimum 9 digits)");
-        //     highlightFieldError('.modal.active input[name="phone"]');
-        //     return;
-        // }
+        if (!addCustomerForm.phone || !addCustomerForm.phone.trim()) {
+            toast.error("Phone number is required");
+            highlightFieldError('.modal.active input[name="phone"]');
+            return;
+        }
+        if (addCustomerForm.phone.trim().length < 4) {
+            toast.error("Please enter a valid phone number");
+            highlightFieldError('.modal.active input[name="phone"]');
+            return;
+        }
         if (!addCustomerForm.password || addCustomerForm.password.length < 6) {
             toast.error("Password must be at least 6 characters long");
             highlightFieldError('#add-cust-password');
@@ -695,11 +700,16 @@ export default function Customers() {
             highlightFieldError('#edit-cust-email');
             return;
         }
-        // if (!editCustomerForm.phone || editCustomerForm.phone.trim().length < 9) {
-        //     toast.error("Please enter a valid phone number (minimum 9 digits)");
-        //     highlightFieldError('.modal.active input[name="phone"]');
-        //     return;
-        // }
+        if (!editCustomerForm.phone || !editCustomerForm.phone.trim()) {
+            toast.error("Phone number is required");
+            highlightFieldError('.modal.active input[name="phone"]');
+            return;
+        }
+        if (editCustomerForm.phone.trim().length < 4) {
+            toast.error("Please enter a valid phone number");
+            highlightFieldError('.modal.active input[name="phone"]');
+            return;
+        }
         // if (!editCustomerForm.password || editCustomerForm.password.length < 6) {
         //     toast.error("Password must be at least 6 characters long");
         //     highlightFieldError('#edit-cust-password');

@@ -330,11 +330,17 @@ export default function EditMerchant() {
             return
         }
 
-        // if (!form.phone || form.phone.trim().length < 9) {
-        //     toast.error('Please enter a valid phone number (minimum 9 digits)')
-        //     highlightFieldError('input[name="phone"]')
-        //     return
-        // }
+        if (!form.phone || !form.phone.trim()) {
+            toast.error('Phone number is required')
+            highlightFieldError('input[name="phone"]')
+            return
+        }
+
+        if (form.phone.trim().length < 4) {
+            toast.error('Please enter a valid phone number')
+            highlightFieldError('input[name="phone"]')
+            return
+        }
 
         // if (form.password && form.password.length < 6) {
         //     toast.error('Password must be at least 6 characters long')

@@ -285,7 +285,7 @@ exports.registerStep1 = async (req, res) => {
 
 exports.registerStep2 = async (req, res) => {
     try {
-        // console.log("Body",req.body)
+     
         const merchant = await Merchant.findByPk(req.user.id);
 
         if (!merchant) {
