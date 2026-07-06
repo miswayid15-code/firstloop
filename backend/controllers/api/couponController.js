@@ -669,7 +669,9 @@ exports.fetch_coupon = async (req, res) => {
                 'get_item'
 
             ],
-            where: whereCondition,
+            where: {
+                merchant_id: merchant_id
+            },
             order: [['id', 'DESC']]
         });
 
@@ -1274,12 +1276,12 @@ exports.redeem_customer = async (req, res) => {
             include: [
                 {
                     model: Coupon,
-                    attributes: ['id', 'branch_ids', 'type','buy_item', 'get_item'],
+                    attributes: ['id', 'branch_ids', 'type', 'buy_item', 'get_item'],
                     required: true,
                     where: {
                         ...couponWhere,
 
-                      
+
                         ...(userType === 'receptionist' && {
                             branch_ids: {
                                 [Op.contains]: [Number(user.branch_id)]
@@ -1369,7 +1371,7 @@ exports.redeem_customer = async (req, res) => {
                 : null;
             row.buy_item = row.Coupon
                 ? row.Coupon.buy_item
-                : null; 
+                : null;
             row.get_item = row.Coupon
                 ? row.Coupon.get_item
                 : null;

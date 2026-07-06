@@ -1210,3 +1210,97 @@ exports.fetch_appointment = async (req, res) => {
     }
 
 };
+exports.delete_receptionist = async (req, res) => {
+
+    try {
+
+        const { receptionist_id } = req.body;
+
+        if (!receptionist_id) {
+
+            return res.json({
+                status: 0,
+                message: "Receptionist ID is required"
+            });
+
+        }
+
+        const receptionist = await Receptionist.findOne({
+
+            where: {
+                id: receptionist_id,
+                del_status: 0
+            }
+
+        });
+
+        if (!receptionist) {
+
+            return res.json({
+                status: 0,
+                message: "Receptionist not found"
+            });
+
+        }
+
+        // Delete profile image
+        if (receptionist.profile_image) {
+
+            const profilePath = path.join(
+                __dirname,
+                '../../',
+                receptionist.profile_image
+            );
+
+            if (fs.existsSync(profilePath)) {
+
+                try {
+
+                    fs.unlinkSync(profilePath);
+
+                } catch (err) {
+
+                    console.log(
+                        "Profile delete error:",
+                        err.message
+                    );
+
+                }
+
+            }
+
+        }
+
+        // Soft delete receptionist
+        await receptionist.update({
+
+            del_status: 1
+
+        });
+
+        return res.json({
+
+            status: 1,
+            message: "Receptionist deleted successfully"
+
+        });
+
+    }
+
+    catch (err) {
+
+        console.log(
+            "RECEPTIONIST DELETE ERROR:",
+            err
+        );
+
+        return res.json({
+
+            status: 0,
+            message: err.message
+
+        });
+
+    }
+
+};

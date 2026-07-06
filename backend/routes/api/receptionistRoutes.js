@@ -1,7 +1,7 @@
 //\routes\api\receptionistRoutes.js
 const express = require('express');
 const router = express.Router();
-
+const checkMerchant = require('../../middleware/checkMerchant');
 const controller = require('../../controllers/api/Receptionist');
 const upload = require('../../middleware/upload');
 const auth = require('../../middleware/auth');
@@ -37,4 +37,5 @@ router.get(
     auth('receptionist'),
     controller.fetch_appointment
 );
+router.delete('/receptionist/delete', auth('merchant'),checkMerchant, controller.delete_receptionist);
 module.exports = router;
