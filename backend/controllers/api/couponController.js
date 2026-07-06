@@ -1277,7 +1277,7 @@ exports.redeem_customer = async (req, res) => {
                     attributes: ['id', 'branch_ids', 'type','buy_item', 'get_item'],
                     required: true,
                     where: {
-                        ...couponWhere,
+                        // ...couponWhere,
 
                       
                         ...(userType === 'receptionist' && {
