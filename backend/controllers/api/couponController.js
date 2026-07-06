@@ -369,7 +369,7 @@ exports.update_coupon = async (req, res) => {
             end_date,
             type,
             buy_item,
-            get_item
+            get_item,status
         } = req.body;
 
         const merchant_id = req.user.id;
@@ -581,7 +581,8 @@ exports.update_coupon = async (req, res) => {
 
             end_date,
 
-            banner_image
+            banner_image,
+            status
 
         });
         const notificationToken = await UserNotificationToken.findOne({

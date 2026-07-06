@@ -815,6 +815,406 @@ exports.fetchmerchant = async (req, res) => {
 
 };
 
+exports.fetch_delete_merchant = async (req, res) => {
+
+    try {
+
+        const admin = await admins.findByPk(req.user.id);
+
+        if (!admin) {
+
+            return res.json({
+                status: 0,
+                message: "Admin not found"
+            });
+
+        }
+
+        const id = req.body.id;
+
+        if (!id) {
+
+            return res.json({
+                status: 0,
+                message: "Merchant id is required"
+            });
+
+        }
+
+        const merchant = await Merchant.findOne({
+
+            where: {
+                id: id,
+                // del_status: 0
+            },
+
+            include: [
+
+                {
+
+                    model: Branch,
+
+                    where: {
+                        // del_status: 0
+                    },
+                    attributes: [
+                        'id',
+                        'name',
+                        'address',
+                        'email',
+                        'phone',
+                        'profile_image',
+                        'country_code',
+                        'status',
+                        'visibility',
+                        'age_group'
+                    ],
+
+                    required: false,
+
+                    include: [
+
+                        {
+
+                            model: Receptionist,
+
+                            where: {
+                                // del_status: 0
+                            },
+
+                            required: false,
+
+                            attributes: [
+                                'id',
+                                'rep_id',
+                                'name',
+                                'country_code',
+                                'profile_image',
+                            ]
+
+                        }
+
+                    ]
+
+                },
+                {
+                    model: Category,
+                    required: false,
+                    where: {
+                        del_status: 0,
+                        status: 1
+                    },
+                    attributes: [
+                        'id',
+                        'name',
+
+                    ]
+
+
+
+                }
+
+
+            ]
+
+        });
+
+        if (!merchant) {
+
+            return res.json({
+                status: 0,
+                message: "Merchant not found"
+            });
+
+        }
+
+        const data = merchant.toJSON();
+
+        const baseUrl = process.env.APP_URL;
+
+        ['profile_image', 'brand_image', 'document'].forEach(field => {
+
+            if (data[field]) {
+
+                data[field] =
+                    baseUrl + '/' + data[field].replace(/\\/g, '/');
+
+            } else {
+
+                data[field] = null;
+
+            }
+
+        });
+        const branchMap = {};
+
+
+        if (data.Branches && data.Branches.length > 0) {
+            data.Branches.forEach(branch => {
+                branchMap[branch.id] = branch.name;
+            });
+            for (const branch of data.Branches) {
+
+                // Branch Image
+                if (branch.profile_image) {
+
+                    branch.profile_image =
+                        baseUrl + '/' +
+                        branch.profile_image.replace(/\\/g, '/');
+
+                } else {
+
+                    branch.profile_image = null;
+
+                }
+
+                // Receptionist Images
+                if (branch.Receptionists &&
+                    branch.Receptionists.length > 0) {
+
+                    branch.Receptionists =
+                        branch.Receptionists.map(receptionist => {
+
+                            if (receptionist.profile_image) {
+
+                                receptionist.profile_image =
+                                    baseUrl + '/' +
+                                    receptionist.profile_image.replace(/\\/g, '/');
+
+                            } else {
+
+                                receptionist.profile_image = null;
+
+                            }
+
+                            return receptionist;
+
+                        });
+
+                }
+
+                // Fetch Coupons manually
+                const coupons = await Coupon.findAll({
+
+                    where: {
+                        del_status: 0
+                    },
+
+                    attributes: ['id', 'branch_ids']
+
+                });
+
+                branch.coupon_count = coupons.filter(coupon => {
+
+                    return (
+                        Array.isArray(coupon.branch_ids) &&
+                        coupon.branch_ids.includes(branch.id)
+                    );
+
+                }).length;
+
+            }
+
+        }
+        const branchIds = data.Branches
+            ? data.Branches.map(branch => branch.id)
+            : [];
+
+        const merchantCoupons = await Coupon.findAll({
+
+            where: {
+                merchant_id: id,
+                del_status: 0
+            },
+
+            order: [['id', 'DESC']]
+
+        });
+
+        const couponList = merchantCoupons.map(coupon => {
+
+            const item = coupon.toJSON();
+
+            item.banner_image = item.banner_image
+                ? baseUrl + '/' + item.banner_image.replace(/\\/g, '/')
+                : null;
+
+            item.branch_names = (item.branch_ids || []).map(id => ({
+                id,
+                name: branchMap[id] || null
+            }));
+
+            return item;
+
+        });
+
+        const totalCoupons = await Coupon.count({
+            where: {
+                del_status: 0,
+                status: 1,
+                branch_ids: {
+                    [Op.overlap]: branchIds
+                }
+            }
+        });
+
+        const couponIds = merchantCoupons.map(coupon => coupon.id);
+
+        const redeemedCoupons = await CouponApplied.count({
+            where: {
+                del_status: 0,
+                status: 2,
+                coupon_id: {
+                    [Op.in]: couponIds
+                }
+            }
+        });
+        const total_branch = data.Branches ? data.Branches.length : 0;
+
+        const total_receptionists = data.Branches
+            ? data.Branches.reduce((total, branch) => {
+                return total + (branch.Receptionists ? branch.Receptionists.length : 0);
+            }, 0)
+            : 0;
+
+        const allCoupons = await Coupon.findAll({
+
+            where: {
+                del_status: 0
+            },
+
+            attributes: ['id', 'branch_ids']
+
+        });
+
+        const couponCountMap = {};
+
+        allCoupons.forEach(coupon => {
+
+            (coupon.branch_ids || []).forEach(branchId => {
+
+                couponCountMap[branchId] =
+                    (couponCountMap[branchId] || 0) + 1;
+
+            });
+
+        });
+
+        if (data.Branches && data.Branches.length > 0) {
+
+            for (const branch of data.Branches) {
+
+                // Branch Image
+                if (branch.profile_image) {
+
+                    branch.profile_image =
+                        baseUrl + '/' +
+                        branch.profile_image.replace(/\\/g, '/');
+
+                } else {
+
+                    branch.profile_image = null;
+
+                }
+
+                // Receptionist Images
+                if (
+                    branch.Receptionists &&
+                    branch.Receptionists.length > 0
+                ) {
+
+                    branch.Receptionists =
+                        branch.Receptionists.map(receptionist => {
+
+                            if (receptionist.profile_image) {
+
+                                receptionist.profile_image =
+                                    baseUrl + '/' +
+                                    receptionist.profile_image.replace(/\\/g, '/');
+
+                            } else {
+
+                                receptionist.profile_image = null;
+
+                            }
+
+                            return receptionist;
+
+                        });
+
+                }
+
+                // Coupon Count
+                branch.coupon_count =
+                    couponCountMap[branch.id] || 0;
+
+            }
+
+        }
+        const unassignedReceptionists = await Receptionist.findAll({
+
+            where: {
+                merchant_id: id,
+                del_status: 0,
+                status: 1,
+                branch_id: null
+            },
+
+            attributes: [
+                'id',
+                'rep_id',
+                'name',
+                'email',
+                'phone',
+                'country_code',
+                'profile_image'
+            ]
+
+        });
+
+        const formattedReceptionists = unassignedReceptionists.map(item => {
+
+            const receptionist = item.toJSON();
+
+            receptionist.profile_image = receptionist.profile_image
+                ? baseUrl + '/' + receptionist.profile_image.replace(/\\/g, '/')
+                : null;
+
+            return receptionist;
+
+        });
+
+        data.total_branch = total_branch;
+        data.total_receptionists = total_receptionists;
+        data.total_coupon_count = totalCoupons;
+        data.total_redeem_coupon = redeemedCoupons;
+        data.unassigned_receptionists = formattedReceptionists;
+        data.unassigned_receptionist_count = formattedReceptionists.length;
+        data.coupon_list = couponList;
+        return res.json({
+
+            status: 1,
+            message: "Merchant fetched successfully",
+            data: data,
+
+
+        });
+
+    } catch (err) {
+
+        console.log(err);
+
+        return res.json({
+
+            status: 0,
+            message: "Error",
+            error: err.message
+
+        });
+
+    }
+
+};
 exports.delete_merchant_list = async (req, res) => {
 
     try {
