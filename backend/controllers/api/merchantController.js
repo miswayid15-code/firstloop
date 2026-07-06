@@ -285,7 +285,7 @@ exports.registerStep1 = async (req, res) => {
 
 exports.registerStep2 = async (req, res) => {
     try {
-     
+        // console.log("Body",req.body)
         const merchant = await Merchant.findByPk(req.user.id);
 
         if (!merchant) {
@@ -793,22 +793,6 @@ exports.dashboard = async (req, res) => {
                 }
             ]
         });
-           const redeemedUsersss = await CouponApplied.findAll({
-            where: {
-                status: 1
-            },
-            include: [
-                {
-                    model: Coupon,
-                    required: true,
-                    attributes: [],
-                    where: {
-                        merchant_id: merchant.id
-                    }
-                }
-            ]
-        });
-        console.log("redeemedUsersss",redeemedUsersss)
         return res.json({
             status: 1,
             message: "Dashboard data fetched successfully",

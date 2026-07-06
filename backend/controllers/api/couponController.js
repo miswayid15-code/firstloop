@@ -971,7 +971,7 @@ exports.claim_coupon = async (req, res) => {
             return res.json({
 
                 status: 0,
-                message: "Coupon not found or delete"
+                message: "Coupon not found"
 
             });
 
@@ -1277,7 +1277,9 @@ exports.redeem_customer = async (req, res) => {
                     attributes: ['id', 'branch_ids', 'type','buy_item', 'get_item'],
                     required: true,
                     where: {
-                        
+                        ...couponWhere,
+
+                      
                         ...(userType === 'receptionist' && {
                             branch_ids: {
                                 [Op.contains]: [Number(user.branch_id)]
