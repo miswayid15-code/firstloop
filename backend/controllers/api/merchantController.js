@@ -216,41 +216,25 @@ exports.registerStep1 = async (req, res) => {
         // =========================
 
         try {
-            console.log("=== MAIL PROCESS START ===");
-            console.log("Merchant Email:", merchant.mail);
-            console.log("Merchant Name:", merchant.name);
-            console.log("Status:", status);
-
-            console.log("Generating email template...");
-
-            const emailTemplate = sendAccountStatus(
-                status,
-                'merchant',
-                merchant.name
-            );
-
-            console.log("Email template generated successfully.");
-
-            console.log("Sending email...");
 
             await sendMail(
-                merchant.mail,
-                'Merchant Status Update',
-                emailTemplate
+
+                email,
+
+                'Merchant Registration Successful',
+
+                RegisterTemplate(
+                    'merchant',
+                    merchant.name
+                )
+
             );
 
-            console.log("Email sent successfully.");
-            console.log("=== MAIL PROCESS END ===");
+            // console.log("Registration mail sent");
 
         } catch (mailErr) {
 
-            console.log("=== MAIL ERROR ===");
-            console.log("Merchant Email:", merchant.mail);
-            console.log("Merchant Name:", merchant.name);
-            console.log("Status:", status);
-            console.log("Error Message:", mailErr.message);
-            console.log("Full Error:", mailErr);
-            console.log("=== END MAIL ERROR ===");
+            console.log("MAIL ERROR:", mailErr);
 
         }
 

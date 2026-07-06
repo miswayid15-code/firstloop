@@ -379,29 +379,44 @@ exports.update_status = async (req, res) => {
                 }
             }
         );
-        try {
+try {
+    console.log("=== MAIL PROCESS START ===");
+    console.log("Merchant Email:", merchant.mail);
+    console.log("Merchant Name:", merchant.name);
+    console.log("Status:", status);
 
-            await sendMail(
+    console.log("Generating email template...");
 
-                merchant.mail,
+    const emailTemplate = sendAccountStatus(
+        status,
+        'merchant',
+        merchant.name
+    );
 
-                'Merchant Status Update',
+    console.log("Email template generated successfully.");
 
-                sendAccountStatus(
-                    status,
-                    'merchant',
-                    merchant.name
-                )
+    console.log("Sending email...");
 
-            );
+    await sendMail(
+        merchant.mail,
+        'Merchant Status Update',
+        emailTemplate
+    );
 
-            console.log("Registration mail sent");
+    console.log("Email sent successfully.");
+    console.log("=== MAIL PROCESS END ===");
 
-        } catch (mailErr) {
+} catch (mailErr) {
 
-            console.log("MAIL ERROR:", mailErr);
+    console.log("=== MAIL ERROR ===");
+    console.log("Merchant Email:", merchant.mail);
+    console.log("Merchant Name:", merchant.name);
+    console.log("Status:", status);
+    console.log("Error Message:", mailErr.message);
+    console.log("Full Error:", mailErr);
+    console.log("=== END MAIL ERROR ===");
 
-        }
+}
         return res.json({
             status: 1,
             message: "Merchant status updated successfully"
