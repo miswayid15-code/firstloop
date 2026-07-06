@@ -433,7 +433,7 @@ exports.fetch_list = async (req, res) => {
                 'merchant_id',
                 'description',
                 'open_time',
-                'close_time'
+                'close_time',
             ],
 
             order: [['id', 'DESC']]
@@ -1106,7 +1106,8 @@ exports.branch_id = async (req, res) => {
                     'description',
                     'country_code',
                     'visibility',
-                    'age_group'
+                    'age_group',
+                    'lat','lon','city','state','country'
                 ]
 
             }),
