@@ -1646,11 +1646,11 @@ export default function ViewMerchant() {
 
 
 
-        if (!addBranchForm.phone.trim()) {
-            toast.error('Phone is required')
-            highlightFieldError('.modal.active input[name="phone"]')
-            return
-        }
+        // if (!addBranchForm.phone.trim()) {
+        //     toast.error('Phone is required')
+        //     highlightFieldError('.modal.active input[name="phone"]')
+        //     return
+        // }
 
         if (!addBranchForm.address.trim()) {
             toast.error('Business Address is required')
@@ -1857,11 +1857,11 @@ export default function ViewMerchant() {
 
 
 
-        if (!editBranchForm.phone.trim()) {
-            toast.error('Phone is required')
-            highlightFieldError('.modal.active input[name="phone"]')
-            return
-        }
+        // if (!editBranchForm.phone.trim()) {
+        //     toast.error('Phone is required')
+        //     highlightFieldError('.modal.active input[name="phone"]')
+        //     return
+        // }
 
         if (!editBranchForm.address || !editBranchForm.address.trim()) {
             toast.error('Business Address is required')
