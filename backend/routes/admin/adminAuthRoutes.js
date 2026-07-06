@@ -16,6 +16,7 @@ router.post('/login', (req, res, next) => {
 }, controller.login);
 router.post('/logout', auth('admin'), controller.logout);
 router.get('/merchant-list', auth('admin'), controller.merchant_list);
+router.get('/delete-merchant-list', auth('admin'), controller.delete_merchant_list);
 router.post('/merchant-fetch-id', auth('admin'), controller.fetchmerchant);
 router.post('/refresh-token', controller.refreshAccessToken);
 

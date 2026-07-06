@@ -2523,7 +2523,7 @@ export default function ViewMerchant() {
                     ? {
                         ...prev,
                         cat_id: data.data?.cat_id?.toString() || selectedCategoryId,
-                        bus_cat: data.data?.bus_cat || data.data?.name || selectedCategory?.name || prev.bus_cat,
+                        // bus_cat: data.data?.bus_cat || data.data?.name || prev.bus_cat,
                         Category: {
                             ...prev.Category,
                             name: selectedCategory?.name || prev.Category?.name
@@ -6141,7 +6141,7 @@ export default function ViewMerchant() {
                                                 country_code: codeVal || ''
                                             }))
                                         }
-                                        required={true}
+                                        // required={true}
                                     />
 
                                     <div className="form-group-classic" style={{ width: '100%' }}>

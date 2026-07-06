@@ -4,6 +4,7 @@ import AppToaster from './components/AppToaster.jsx'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Merchants from './pages/Merchants'
+import DeletedMerchants from './pages/DeletedMerchants'
 import Customers from './pages/Customers'
 import Categories from './pages/Categories'
 import Appointments from './pages/Appointments'
@@ -62,6 +63,7 @@ function App() {
             >
                 <Route path="dashboard" element={<Dashboard />} />
                 <Route path="merchants" element={<Merchants />} />
+                <Route path="deleted-merchants" element={<DeletedMerchants />} />
                 <Route path="customers" element={<Customers />} />
                 <Route path="categories" element={<Categories />} />
                 <Route path="appointments" element={<Appointments />} />

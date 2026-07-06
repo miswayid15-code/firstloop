@@ -814,3 +814,112 @@ exports.fetchmerchant = async (req, res) => {
     }
 
 };
+
+exports.delete_merchant_list = async (req, res) => {
+
+    try {
+
+        const admin = await admins.findByPk(req.user.id);
+
+        if (!admin) {
+
+            return res.json({
+                status: 0,
+                message: "Admin not found"
+            });
+
+        }
+
+        const merchants = await Merchant.findAll({
+
+            where: {
+                del_status: 1
+            },
+
+            attributes: [
+
+                'id',
+                'name',
+                'bus_name',
+                'email',
+                'phone',
+                'country_code',
+                'status',
+
+                [
+                    Sequelize.fn(
+                        'TO_CHAR',
+                        Sequelize.col('Merchant.createdAt'),
+                        'DD-MM-YYYY HH12:MI AM'
+                    ),
+                    'createdAt'
+                ]
+
+            ],
+
+            include: [
+
+                {
+                    model: Branch,
+
+                    where: {
+                        del_status: 0,
+
+                    },
+
+                    attributes: ['id'],
+
+                    required: false
+                }
+
+            ],
+
+            order: [
+
+                ['id', 'DESC']
+
+            ]
+
+        });
+
+        const data = merchants.map(item => {
+
+            const merchant = item.toJSON();
+
+            merchant.branch_count = merchant.Branches
+                ? merchant.Branches.length
+                : 0;
+
+            delete merchant.Branches;
+
+            return merchant;
+
+        });
+
+        return res.json({
+
+            status: 1,
+
+            message: "Merchant List",
+
+            data
+
+        });
+
+    } catch (err) {
+
+        console.log("MERCHANT LIST ERROR:", err);
+
+        return res.json({
+
+            status: 0,
+
+            message: "Error",
+
+            error: err.message
+
+        });
+
+    }
+
+};

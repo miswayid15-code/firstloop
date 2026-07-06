@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom'
 const sidebarItems = [
     { to: '/dashboard', icon: 'fa-chart-pie', label: 'Dashboard' },
     { to: '/merchants', icon: 'fa-store', label: 'Merchants' },
+    { to: '/deleted-merchants', icon: 'fa-trash-alt', label: 'Deleted Merchants' },
     { to: '/customers', icon: 'fa-users', label: 'Customers' },
     { to: '/categories', icon: 'fa-tags', label: 'Categories' },
     { to: '/appointments', icon: 'fa-calendar-check', label: 'Appointments' },
@@ -26,7 +27,7 @@ export default function Sidebar() {
 
             <ul className="sidebar-menu">
                 <span className="menu-label">Main Console</span>
-                {sidebarItems.slice(0, 3).map((item) => (
+                {sidebarItems.slice(0, 4).map((item) => (
                     <li key={item.to}>
                         <NavLink to={item.to} className={({ isActive }) => `sidebar-item${isActive ? ' active' : ''}`}>
                             <i className={`fas ${item.icon}`} />
@@ -36,7 +37,7 @@ export default function Sidebar() {
                 ))}
 
                 <span className="menu-label">Campaigns</span>
-                {sidebarItems.slice(3, 5).map((item) => (
+                {sidebarItems.slice(4, 6).map((item) => (
                     <li key={item.to}>
                         <NavLink to={item.to} className={({ isActive }) => `sidebar-item${isActive ? ' active' : ''}`}>
                             <i className={`fas ${item.icon}`} />
@@ -46,7 +47,7 @@ export default function Sidebar() {
                 ))}
 
                 <span className="menu-label">Analytics & Center</span>
-                {sidebarItems.slice(5).map((item) => (
+                {sidebarItems.slice(6).map((item) => (
                     <li key={item.to}>
                         <NavLink to={item.to} className={({ isActive }) => `sidebar-item${isActive ? ' active' : ''}`}>
                             <i className={`fas ${item.icon}`} />

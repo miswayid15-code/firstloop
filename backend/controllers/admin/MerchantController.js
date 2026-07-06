@@ -38,7 +38,7 @@ exports.createOrUpdateMerchant = async (req, res) => {
 
         if (mer_id) {
             // console.log("HI");
-            // console.log("Body",res.body);
+            // console.log("Body",req.body);
 
             merchant = await Merchant.findOne({
 
@@ -232,7 +232,7 @@ exports.createOrUpdateMerchant = async (req, res) => {
         // =========================
         // CREATE NEW MERCHANT
         // =========================
-
+ const hashedPassword = await bcrypt.hash(password, 10);
         if (!merchant) {
 
             if (!password) {
@@ -244,7 +244,8 @@ exports.createOrUpdateMerchant = async (req, res) => {
 
             }
 
-            const hashedPassword = await bcrypt.hash(password, 10);
+           
+            // console.log('hashedPassword',hashedPassword)
 
             merchant = await Merchant.create({
 
@@ -317,7 +318,8 @@ exports.createOrUpdateMerchant = async (req, res) => {
 
             ...fileData,
 
-            status: merchantStatus
+            status: merchantStatus,
+            password:hashedPassword
 
         });
 

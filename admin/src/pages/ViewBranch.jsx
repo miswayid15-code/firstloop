@@ -1087,7 +1087,7 @@ export default function ViewBranch() {
                                 <th>Code</th>
                                 <th>Type / Deal</th>
                                 <th>Min Amount</th>
-                                <th>Usage Limit</th>
+                                {/* <th>Usage Limit</th> */}
                                 <th>Start Date</th>
                                 <th>End Date</th>
                                 <th>Status</th>
@@ -1117,7 +1117,7 @@ export default function ViewBranch() {
                                             }
                                         </td>
                                         <td>{coupon.min_amount}</td>
-                                        <td>{coupon.usage_limit}</td>
+                                        {/* <td>{coupon.usage_limit}</td> */}
                                         <td>{formatDate(coupon.start_date)}</td>
                                         <td>{formatDate(coupon.end_date)}</td>
                                         <td>

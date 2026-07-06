@@ -2688,7 +2688,10 @@ exports.appointment = async (req, res) => {
                 cus_id: customer_id,
                 br_id: branch_id,
                 appointment_date: dbDate,
-                slot: slot
+                slot: slot,
+                status: {
+                    [Op.in]: [0, 1]
+                }
 
             }
 
