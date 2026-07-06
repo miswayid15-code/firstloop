@@ -347,7 +347,7 @@ exports.refreshAccessToken = async (req, res) => {
         // console.log("authHeader",authHeader)
 
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return res.json({
+            return res.status(401).json({
                 status: 0,
                 message: "Refresh token required"
             });
@@ -360,7 +360,7 @@ exports.refreshAccessToken = async (req, res) => {
         });
 
         if (!stored) {
-            return res.json({
+            return res.status(401).json({
                 status: 0,
                 message: "Invalid refresh token"
             });
@@ -375,7 +375,7 @@ exports.refreshAccessToken = async (req, res) => {
         console.log("receptionist",receptionist )
 
         if (!receptionist) {
-            return res.json({
+            return res.status(401).json({
                 status: 0,
                 message: "Receptionist not found"
             });
@@ -399,7 +399,7 @@ exports.refreshAccessToken = async (req, res) => {
 
     } catch (err) {
 
-        return res.json({
+        return res.status(401).json({
             status: 0,
             message: "Token expired"
         });

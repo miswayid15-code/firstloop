@@ -28,7 +28,7 @@ module.exports = (...roles) => {
             // access token check
             if (decoded.token_type !== 'access') {
 
-                return res.json({
+                return res.status(401).json({
                     status: 0,
                     message: "Access token required"
                 });
@@ -54,7 +54,7 @@ module.exports = (...roles) => {
 
                 console.log("ROLE NOT MATCHED");
 
-                return res.json({
+                return res.status(401).json({
                     status: 0,
                     message: "Unauthorized access"
                 });

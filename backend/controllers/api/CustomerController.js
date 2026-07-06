@@ -507,7 +507,7 @@ exports.refreshAccessToken = async (req, res) => {
 
         // console.log("stored", stored)
         if (!stored) {
-            return res.json({
+            return res.status(401).json({
                 status: 0,
                 message: "Invalid refresh token"
             });
@@ -557,20 +557,20 @@ exports.refreshAccessToken = async (req, res) => {
         console.log(err);
 
         if (err.name === "TokenExpiredError") {
-            return res.json({
+            return res.status(401).json({
                 status: 0,
                 message: "Refresh token expired"
             });
         }
 
         if (err.name === "JsonWebTokenError") {
-            return res.json({
+            return res.status(401).json({
                 status: 0,
                 message: "Invalid refresh token"
             });
         }
 
-        return res.json({
+        return res.status(401).json({
             status: 0,
             message: "Something went wrong"
         });

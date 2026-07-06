@@ -514,7 +514,7 @@ exports.refreshAccessToken = async (req, res) => {
         }
 
         if (!refresh_token) {
-            return res.json({
+            return res.status(401).json({
                 status: 0,
                 message: "Refresh token required"
             });
@@ -529,7 +529,7 @@ exports.refreshAccessToken = async (req, res) => {
         console.log("stored:", stored);
 
         if (!stored) {
-            return res.json({
+            return res.status(401).json({
                 status: 0,
                 message: "Invalid refresh token"
             });
@@ -575,7 +575,7 @@ exports.refreshAccessToken = async (req, res) => {
     } catch (err) {
         console.log("err:", err);
 
-        return res.json({
+        return res.status(401).json({
             status: 0,
             message: "Token expired or invalid"
         });

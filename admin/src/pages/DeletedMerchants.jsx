@@ -162,6 +162,15 @@ export default function DeletedMerchants() {
                                 onChange={(event) => setSearch(event.target.value)}
                             />
                         </div>
+
+                        <button
+                            type="button"
+                            className="btn btn-secondary"
+                            onClick={() => navigate('/merchants')}
+                            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                        >
+                            <i className="fas fa-arrow-left" /> Back to Merchants
+                        </button>
                     </div>
                 </div>
             </div>

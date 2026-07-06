@@ -285,6 +285,15 @@ const handleDeleteAccount = async (id) => {
 
                         <button
                             type="button"
+                            className="btn btn-secondary"
+                            onClick={() => navigate('/deleted-merchants')}
+                            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                        >
+                            <i className="fas fa-trash-alt" /> Deleted Merchants
+                        </button>
+
+                        <button
+                            type="button"
                             className="btn btn-primary"
                             onClick={() => navigate('/add-merchant')}
                         >
