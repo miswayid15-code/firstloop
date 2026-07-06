@@ -284,7 +284,7 @@ export default function Dashboard() {
                 ))}
             </div>
 
-            {/* <div className="dashboard-charts-grid">
+            <div className="dashboard-charts-grid">
                 <div className="card">
                     <div className="flex-between" style={{ marginBottom: 24 }}>
                         <div>
@@ -437,7 +437,7 @@ export default function Dashboard() {
                         </div>
                     </div>
                 </div>
-            </div> */}
+            </div>
         </>
     )
 }
