@@ -395,7 +395,7 @@ exports.update_status = async (req, res) => {
 
             );
 
-            // console.log("Registration mail sent");
+            console.log("Registration mail sent");
 
         } catch (mailErr) {
 
