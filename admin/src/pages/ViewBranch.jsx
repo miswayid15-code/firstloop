@@ -704,7 +704,10 @@ export default function ViewBranch() {
                                         <small className="merchant-sub-label">Longitude</small>
                                         <p className="merchant-subtext">{branchData?.lon || '-'}</p>
                                     </div>
-
+                                    <div>
+                                        <small className="merchant-sub-label">Created AT</small>
+                                        <p className="merchant-subtext">{branchData?.created_at || '-'}</p>
+                                    </div>
                                     <div style={{ gridColumn: '1 / -1' }}>
                                         <small className="merchant-sub-label">Address</small>
                                         <p
@@ -989,7 +992,7 @@ export default function ViewBranch() {
                                                     {statusInfo.label}
                                                 </span>
                                             </td>
-                                            
+
                                             <td>{appointment.approved_by || '-'}</td>
                                             {/* <td>{appointment.approved_by_id ?? '-'}</td> */}
                                             <td>{appointment.cancel_by || '-'}</td>

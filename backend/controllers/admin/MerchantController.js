@@ -10,6 +10,7 @@ const { otpTemplate } = require('../../helpers/mailTemplate');
 const { sendAccountStatus } = require('../../helpers/sendAccountStatus');
 const ResetsTemplate = require('../../helpers/ResetsTemplate');
 const RegisterTemplate = require('../../helpers/RegisterTemplate');
+const { formatIST } = require('../../helpers/dateHelper.js');
 // const mapFiles = require('../../helpers/merchantFileMapper');
 const baseUrl = process.env.APP_URL;
 const { Op, Sequelize } = require('sequelize');
@@ -2038,7 +2039,8 @@ exports.fetch_branch_id = async (req, res) => {
                     'merchant_id',
                     'description',
                     'visibility',
-                    'age_group'
+                    'age_group',
+                    'created_at',
                 ],
 
                 include: [
@@ -2164,6 +2166,7 @@ exports.fetch_branch_id = async (req, res) => {
             }));
         }
 
+        data.created_at = formatIST(data.created_at);
         // Coupons
         const couponData = coupons.map(item => {
 

@@ -6,7 +6,7 @@ const {
     RefreshToken,
     admins, Merchant, Branch, Receptionist, Coupon, CouponApplied, Category
 } = require('../../models');
-
+const { formatIST } = require('../../helpers/dateHelper.js');
 exports.login = async (req, res) => {
 
     try {
@@ -320,14 +320,14 @@ exports.merchant_list = async (req, res) => {
             });
 
         }
-        const [dbInfo] = await Merchant.sequelize.query(`
-            SELECT
-                current_database() AS database,
-                current_setting('TimeZone') AS timezone,
-                NOW() AS now
-        `);
+        // const [dbInfo] = await Merchant.sequelize.query(`
+        //     SELECT
+        //         current_database() AS database,
+        //         current_setting('TimeZone') AS timezone,
+        //         NOW() AS now
+        // `);
 
-        console.log("DB INFO:", dbInfo);
+        // console.log("DB INFO:", dbInfo);
         const merchants = await Merchant.findAll({
 
             where: {
@@ -343,16 +343,7 @@ exports.merchant_list = async (req, res) => {
                 'phone',
                 'country_code',
                 'status',
-
-                [
-                    Sequelize.fn(
-                        'TO_CHAR',
-                        Sequelize.col('Merchant.createdAt'),
-                        'DD-MM-YYYY HH12:MI AM'
-                    ),
-                    'createdAt'
-                ]
-
+                'createdAt'
             ],
 
             include: [
@@ -389,8 +380,13 @@ exports.merchant_list = async (req, res) => {
                 : 0;
 
             delete merchant.Branches;
+            // const moment = require('moment-timezone');
+
+            merchant.createdAt = formatIST(merchant.createdAt);
+
 
             return merchant;
+
 
         });
 
