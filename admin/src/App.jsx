@@ -24,6 +24,7 @@ import ViewDeletedMerchant from './pages/ViewDeletedMerchant'
 import ViewBranch from './pages/ViewBranch'
 import BranchReport from './pages/BranchReport'
 import BranchChat from './pages/BranchChat'
+import BranchPendingImages from './pages/BranchPendingImages'
 import CouponClaim from './pages/CouponClaim'
 import ProtectedRoute from './pages/ProtectedRoute'
 import Settings from './pages/Settings'
@@ -84,6 +85,7 @@ function App() {
                 <Route path="view-branch/:id" element={<ViewBranch />} />
                 <Route path="branch-report/:id" element={<BranchReport />} />
                 <Route path="branch-chat/:id" element={<BranchChat />} />
+                <Route path="branch-pending-images/:id" element={<BranchPendingImages />} />
                 <Route path="branches" element={<Branches />} />
                 <Route path="receptionists" element={<Receptionists />} />
                 <Route path="Settings" element={<Settings />} />

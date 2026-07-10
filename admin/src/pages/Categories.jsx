@@ -62,7 +62,7 @@ export default function Categories() {
         setLoading(true)
         try {
             const response = await API.get('admin/category-list')
-            console.log("Log", response.data)
+            // console.log("Log", response.data)
 
             if (isSuccessResponse(response.data)) {
                 setCategoryData(response.data.data || [])
@@ -81,7 +81,7 @@ export default function Categories() {
         setCouponLoading(true)
         try {
             const response = await API.get('admin/coupon-category-list')
-            console.log("Coupon Log", response.data)
+            // console.log("Coupon Log", response.data)
 
             if (isSuccessResponse(response.data)) {
                 setCouponCategoryData(response.data.data || [])

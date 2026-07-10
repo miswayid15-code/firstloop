@@ -23,40 +23,73 @@ export default function Navbar() {
     const [profileOpen, setProfileOpen] = useState(false)
     const [mobileOpen, setMobileOpen] = useState(false)
     const [notificationsOpen, setNotificationsOpen] = useState(false)
-    const [notifications] = useState([
-        {
-            id: 1,
-            title: 'Subway Approval Pending',
-            desc: 'Subway Eatery has uploaded franchise licenses and is awaiting platform approval.',
-            category: 'info',
-            time: '5 mins ago',
-            unread: true
-        },
-        {
-            id: 2,
-            title: 'Weekly Scan Capacity Warning',
-            desc: 'Zara Summer Campaign has scanned 425 out of 500 max limit coupons. Zara may require a limit increase.',
-            category: 'alert',
-            time: '32 mins ago',
-            unread: true
-        },
-        {
-            id: 3,
-            title: 'System Update Installed',
-            desc: 'Antigravity Design Engine v2.4.1 has successfully deployed. Table scrollbars and floating layouts are fully accelerated.',
-            category: 'success',
-            time: 'Yesterday at 11:22 PM',
-            unread: false
-        },
-        {
-            id: 4,
-            title: 'Auditing Complete',
-            desc: 'Hilton Luxury Hotels audits compiled for corporate exports. File download completed.',
-            category: 'info',
-            time: '2 days ago',
-            unread: false
+    const [incomingNotifications, setIncomingNotifications] = useState([])
+    const [loadingNotifications, setLoadingNotifications] = useState(true)
+
+    const fetchIncomingNotifications = async () => {
+        try {
+            setLoadingNotifications(true)
+            const response = await API.post('admin/new-incoming-list')
+            if (response.data && (response.data.status === 1 || response.data.status === '1')) {
+                setIncomingNotifications(response.data.data || [])
+            }
+        } catch (error) {
+            console.error('Error fetching incoming notifications:', error)
+        } finally {
+            setLoadingNotifications(false)
         }
-    ])
+    }
+
+    useEffect(() => {
+        fetchIncomingNotifications()
+    }, [])
+
+    const getNotificationTypeDetails = (type) => {
+        switch (type) {
+            case 1:
+                return { icon: 'fa-store', bg: 'rgba(59, 130, 246, 0.12)', color: '#3b82f6', route: '/merchants' };
+            case 2:
+                return { icon: 'fa-users', bg: 'rgba(16, 185, 129, 0.12)', color: '#10b981', route: '/customers' };
+            case 3:
+                return { icon: 'fa-store-alt', bg: 'rgba(245, 158, 11, 0.12)', color: '#f59e0b', route: '/merchants' };
+            case 4:
+                return { icon: 'fa-calendar-check', bg: 'rgba(139, 92, 246, 0.12)', color: '#8b5cf6', route: '/appointments' };
+            case 5:
+                return { icon: 'fa-ticket-alt', bg: 'rgba(236, 72, 153, 0.12)', color: '#ec4899', route: '/coupon-claim' };
+            case 6: // Pending Menu Images
+                return { icon: 'fa-utensils', bg: 'rgba(239, 68, 68, 0.12)', color: '#ef4444', route: '/merchants' };
+            case 7: // Pending Branch Images
+                return { icon: 'fa-images', bg: 'rgba(239, 68, 68, 0.12)', color: '#ef4444', route: '/merchants' };
+            case 8: // Pending Branch Profile Images
+                return { icon: 'fa-image', bg: 'rgba(239, 68, 68, 0.12)', color: '#ef4444', route: '/merchants' };
+            default:
+                return { icon: 'fa-info-circle', bg: 'rgba(75, 85, 99, 0.12)', color: '#4b5563', route: '/dashboard' };
+        }
+    }
+
+    const getNotificationDesc = (item) => {
+        const { count } = item;
+        switch (item.type) {
+            case 1:
+                return `${count} new merchant ${count === 1 ? 'registration' : 'registrations'} pending approval.`;
+            case 2:
+                return `${count} new customer ${count === 1 ? 'has' : 'have'} registered today.`;
+            case 3:
+                return `${count} new branch ${count === 1 ? 'outlet is' : 'outlets are'} pending verification.`;
+            case 4:
+                return `${count} new ${count === 1 ? 'appointment' : 'appointments'} scheduled for today.`;
+            case 5:
+                return `${count} new coupon ${count === 1 ? 'redemption' : 'redemptions'} recorded today.`;
+            case 6:
+                return `${count} menu ${count === 1 ? 'image' : 'images'} awaiting verification.`;
+            case 7:
+                return `${count} branch gallery ${count === 1 ? 'image' : 'images'} awaiting verification.`;
+            case 8:
+                return `${count} branch profile ${count === 1 ? 'image' : 'images'} awaiting verification.`;
+            default:
+                return `You have ${count} pending items.`;
+        }
+    }
 
     const notificationRef = useRef(null)
     const profileRef = useRef(null)
@@ -87,7 +120,8 @@ export default function Navbar() {
         return () => document.removeEventListener('mousedown', handleClickOutside)
     }, [])
 
-    const unreadCount = notifications.filter((item) => item.unread).length
+    const activeNotifications = incomingNotifications.filter((item) => item.count > 0)
+    const unreadCount = activeNotifications.reduce((acc, item) => acc + item.count, 0)
 
     return (
         <div className="navbar" data-component="navbar">
@@ -132,39 +166,80 @@ export default function Navbar() {
                                 className="nav-btn nav-notification-bell"
                                 aria-label="Notifications"
                                 onClick={() => {
-                                    setNotificationsOpen((state) => !state)
+                                    const nextState = !notificationsOpen
+                                    setNotificationsOpen(nextState)
                                     setProfileOpen(false)
+                                    if (nextState) {
+                                        fetchIncomingNotifications()
+                                    }
                                 }}
                             >
                                 <i className="far fa-bell" />
                                 {unreadCount > 0 && <span className="nav-badge" />}
                             </button>
-                            <div className={`nav-notification-dropdown${notificationsOpen ? ' active' : ''}`} id="nav-notification-dropdown">
+                            <div className={`nav-notification-dropdown${notificationsOpen ? ' active' : ''}`} id="nav-notification-dropdown" style={{ minWidth: '340px' }}>
                                 <div className="dropdown-header">
                                     <span>Notifications</span>
+                                    {unreadCount > 0 && (
+                                        <span style={{ fontSize: '0.72rem', background: 'var(--primary-light)', color: 'var(--primary)', padding: '2px 8px', borderRadius: '12px', fontWeight: 600 }}>
+                                            {unreadCount} New Action{unreadCount > 1 ? 's' : ''}
+                                        </span>
+                                    )}
                                 </div>
                                 <div className="dropdown-body">
-                                    {notifications.length === 0 ? (
+                                    {loadingNotifications ? (
+                                        <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                                            <i className="fas fa-spinner fa-spin" style={{ marginRight: '8px' }}></i> Loading...
+                                        </div>
+                                    ) : activeNotifications.length === 0 ? (
                                         <div className="dropdown-empty">No new notifications.</div>
                                     ) : (
                                         <ul className="dropdown-notification-list" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-                                            {notifications.map((notification) => (
-                                                <li key={notification.id} className={`dropdown-item${notification.unread ? ' unread' : ''}`}>
-                                                    <div className={`dropdown-item-icon ${notification.category}`}>
-                                                        <i className={`fas ${notification.category === 'success' ? 'fa-check-circle' : notification.category === 'alert' ? 'fa-exclamation-triangle' : 'fa-info-circle'}`} />
-                                                    </div>
-                                                    <div className="dropdown-item-content">
-                                                        <h4 className="dropdown-item-title">{notification.title}</h4>
-                                                        <p className="dropdown-item-desc">{notification.desc}</p>
-                                                        <span className="dropdown-item-time">{notification.time}</span>
-                                                    </div>
-                                                </li>
-                                            ))}
+                                            {activeNotifications.map((item) => {
+                                                const details = getNotificationTypeDetails(item.type);
+                                                return (
+                                                    <li 
+                                                        key={item.type} 
+                                                        className="dropdown-item unread"
+                                                        onClick={() => {
+                                                            setNotificationsOpen(false);
+                                                            navigate(details.route);
+                                                        }}
+                                                        style={{ cursor: 'pointer', display: 'flex', gap: '12px', padding: '12px 16px', borderBottom: '1px solid rgba(0,0,0,0.04)', transition: 'background 0.2s' }}
+                                                    >
+                                                        <div 
+                                                            className="dropdown-item-icon" 
+                                                            style={{ 
+                                                                background: details.bg, 
+                                                                color: details.color,
+                                                                width: '32px',
+                                                                height: '32px',
+                                                                borderRadius: '50%',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                flexShrink: 0
+                                                            }}
+                                                        >
+                                                            <i className={`fas ${details.icon}`} />
+                                                        </div>
+                                                        <div className="dropdown-item-content" style={{ flex: 1 }}>
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                                                                <h4 className="dropdown-item-title" style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>{item.title}</h4>
+                                                                <span style={{ fontSize: '0.72rem', background: details.bg, color: details.color, padding: '1px 6px', borderRadius: '10px', fontWeight: 700 }}>
+                                                                    {item.count}
+                                                                </span>
+                                                            </div>
+                                                            <p className="dropdown-item-desc" style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', margin: '4px 0 0 0', lineHeight: 1.3 }}>{getNotificationDesc(item)}</p>
+                                                        </div>
+                                                    </li>
+                                                );
+                                            })}
                                         </ul>
                                     )}
                                 </div>
                                 <div className="dropdown-footer">
-                                    <NavLink to="/notification-list">Go to notification list</NavLink>
+                                    <NavLink to="/notifications" onClick={() => setNotificationsOpen(false)}>Go to notifications</NavLink>
                                 </div>
                             </div>
                         </div>

@@ -160,6 +160,9 @@ export default function ViewMerchant() {
 
     const [branchPage, setBranchPage] = useState(1)
 
+    const [showAddRepPassword, setShowAddRepPassword] = useState(false)
+    const [showEditRepPassword, setShowEditRepPassword] = useState(false)
+
     const [merchantData, setMerchantData] = useState(null)
     const [verifyingDoc, setVerifyingDoc] = useState(false)
 
@@ -475,7 +478,7 @@ export default function ViewMerchant() {
 
             )
 
-            console.log("merchant data", response.data)
+            // console.log("merchant data", response.data)
 
             if (isSuccessResponse(response.data)) {
 
@@ -3578,6 +3581,18 @@ export default function ViewMerchant() {
                                                 <i className="fas fa-comments"></i>
                                             </button>
                                             <button
+                                                className="btn-icon"
+                                                title="Photo Verification"
+                                                onClick={() => navigate(`/branch-pending-images/${branch.id}`)}
+                                                style={{
+                                                    background: 'linear-gradient(135deg, rgba(16,185,129,0.12) 0%, rgba(16,185,129,0.06) 100%)',
+                                                    color: '#10b981',
+                                                    border: '1.5px solid rgba(16,185,129,0.22)'
+                                                }}
+                                            >
+                                                <i className="fas fa-camera"></i>
+                                            </button>
+                                            <button
                                                 className="btn-icon edit"
                                                 onClick={() => openEditBranchModal(branch.id)}
                                             >
@@ -3943,17 +3958,39 @@ export default function ViewMerchant() {
                                         }}
                                     />
 
-                                    <div className="form-group">
+                                    <div className="form-group" style={{ position: 'relative' }}>
                                         <input
-                                            type="password"
+                                            type={showEditRepPassword ? "text" : "password"}
                                             id="edit-rep-password"
                                             className="form-control"
                                             value={receptionistForm.password}
                                             onChange={(e) => setReceptionistForm({ ...receptionistForm, password: e.target.value })}
                                             placeholder=" "
                                             autoComplete="new-password"
+                                            style={{ paddingRight: '40px' }}
                                         />
                                         <label className="form-label">Password <span style={{ color: '#ef4444' }}>*</span></label>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowEditRepPassword(!showEditRepPassword)}
+                                            style={{
+                                                position: 'absolute',
+                                                right: '12px',
+                                                top: '50%',
+                                                transform: 'translateY(-50%)',
+                                                background: 'none',
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                                color: 'var(--text-secondary)',
+                                                padding: 0,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                zIndex: 10
+                                            }}
+                                        >
+                                            <i className={showEditRepPassword ? "fas fa-eye-slash" : "fas fa-eye"}></i>
+                                        </button>
                                     </div>
                                 </form>
                             ) : (
@@ -4213,9 +4250,9 @@ export default function ViewMerchant() {
                                     }}
                                 />
 
-                                <div className="form-group">
+                                <div className="form-group" style={{ position: 'relative' }}>
                                     <input
-                                        type="password"
+                                        type={showAddRepPassword ? "text" : "password"}
                                         id="add-rep-password"
                                         className="form-control"
                                         value={addReceptionistForm.password}
@@ -4223,8 +4260,30 @@ export default function ViewMerchant() {
                                         placeholder=" "
                                         required
                                         autoComplete="new-password"
+                                        style={{ paddingRight: '40px' }}
                                     />
                                     <label className="form-label">Password <span style={{ color: '#ef4444' }}>*</span></label>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowAddRepPassword(!showAddRepPassword)}
+                                        style={{
+                                            position: 'absolute',
+                                            right: '12px',
+                                            top: '50%',
+                                            transform: 'translateY(-50%)',
+                                            background: 'none',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            color: 'var(--text-secondary)',
+                                            padding: 0,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            zIndex: 10
+                                        }}
+                                    >
+                                        <i className={showAddRepPassword ? "fas fa-eye-slash" : "fas fa-eye"}></i>
+                                    </button>
                                 </div>
                             </form>
                         </div>

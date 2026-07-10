@@ -27,6 +27,7 @@ export default function AddMerchant() {
     const [categories, setCategories] = useState([])
     const [errors, setErrors] = useState({})
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [showPassword, setShowPassword] = useState(false)
 
     const highlightFieldError = (selector) => {
         const element = document.querySelector(selector);
@@ -632,20 +633,43 @@ export default function AddMerchant() {
                                 }
                             />
 
-                            <div className="form-group">
+                            <div className="form-group" style={{ position: 'relative' }}>
                                 <input
                                     name="password"
-                                    type="password"
+                                    type={showPassword ? "text" : "password"}
                                     value={form.password}
                                     onChange={handleChange}
                                     className="form-control"
                                     placeholder=" "
                                     required
+                                    style={{ paddingRight: '40px' }}
                                 />
 
                                 <label className="form-label">
                                     Account Password <span style={{ color: '#ef4444' }}>*</span>
                                 </label>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    style={{
+                                        position: 'absolute',
+                                        right: '12px',
+                                        top: '50%',
+                                        transform: 'translateY(-50%)',
+                                        background: 'none',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        color: 'var(--text-secondary)',
+                                        padding: 0,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        zIndex: 10
+                                    }}
+                                >
+                                    <i className={showPassword ? "fas fa-eye-slash" : "fas fa-eye"}></i>
+                                </button>
                             </div>
                         </div>
 

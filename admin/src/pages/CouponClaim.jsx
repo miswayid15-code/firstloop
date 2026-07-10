@@ -91,7 +91,7 @@ export default function CouponClaim() {
             setLoading(true)
             const response = await API.post('admin/coupon-claim/list')
             const data = response.data || {}
-            console.log("Coupon claim lis", data);
+            // console.log("Coupon claim lis", data);
 
             if (isSuccessResponse(data)) {
                 const items =

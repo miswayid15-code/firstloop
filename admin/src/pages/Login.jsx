@@ -15,6 +15,8 @@ export default function Login() {
 
   const [loading, setLoading] = useState(false);
 
+  const [showPassword, setShowPassword] = useState(false);
+
   const navigate = useNavigate();
   useEffect(() => {
 
@@ -152,28 +154,51 @@ export default function Login() {
 
             </div>
 
-            <div className="form-group">
+             <div className="form-group" style={{ position: 'relative' }}>
 
-              <input
-                type="password"
-                id="password"
-                className="form-control"
-                placeholder=" "
-                value={password}
-                onChange={(event) =>
-                  setPassword(event.target.value)
-                }
-                required
-              />
+               <input
+                 type={showPassword ? "text" : "password"}
+                 id="password"
+                 className="form-control"
+                 placeholder=" "
+                 value={password}
+                 onChange={(event) =>
+                   setPassword(event.target.value)
+                 }
+                 required
+                 style={{ paddingRight: '40px' }}
+               />
 
-              <label
-                htmlFor="password"
-                className="form-label"
-              >
-                Security Password
-              </label>
+               <label
+                 htmlFor="password"
+                 className="form-label"
+               >
+                 Security Password
+               </label>
 
-            </div>
+               <button
+                 type="button"
+                 onClick={() => setShowPassword(!showPassword)}
+                 style={{
+                   position: 'absolute',
+                   right: '12px',
+                   top: '50%',
+                   transform: 'translateY(-50%)',
+                   background: 'none',
+                   border: 'none',
+                   cursor: 'pointer',
+                   color: 'var(--text-secondary)',
+                   padding: 0,
+                   display: 'flex',
+                   alignItems: 'center',
+                   justifyContent: 'center',
+                   zIndex: 10
+                 }}
+               >
+                 <i className={showPassword ? "fas fa-eye-slash" : "fas fa-eye"}></i>
+               </button>
+
+             </div>
 
             <button
               type="submit"

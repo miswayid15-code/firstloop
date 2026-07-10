@@ -102,6 +102,8 @@ export default function Customers() {
     const [addingCustomer, setAddingCustomer] = useState(false)
     const [updatingCustomer, setUpdatingCustomer] = useState(false)
     const [detailsLoading, setDetailsLoading] = useState(false)
+    const [showAddPassword, setShowAddPassword] = useState(false)
+    const [showEditPassword, setShowEditPassword] = useState(false)
 
     const highlightFieldError = (selector) => {
         setTimeout(() => {
@@ -1414,19 +1416,41 @@ export default function Customers() {
                                     </div>
 
                                     <div className="form-row">
-                                        <div className="form-group">
-                                            <input
-                                                type="password"
-                                                id="edit-cust-password"
-                                                name="password"
-                                                className="form-control"
-                                                placeholder=" "
-                                                value={editCustomerForm.password}
-                                                onChange={handleEditCustomerChange}
-                                                required
-                                            />
-                                            <label className="form-label">Password <span style={{ color: '#ef4444' }}>*</span></label>
-                                        </div>
+                                         <div className="form-group" style={{ position: 'relative' }}>
+                                             <input
+                                                 type={showEditPassword ? "text" : "password"}
+                                                 id="edit-cust-password"
+                                                 name="password"
+                                                 className="form-control"
+                                                 placeholder=" "
+                                                 value={editCustomerForm.password}
+                                                 onChange={handleEditCustomerChange}
+                                                 required
+                                                 style={{ paddingRight: '40px' }}
+                                             />
+                                             <label className="form-label">Password <span style={{ color: '#ef4444' }}>*</span></label>
+                                             <button
+                                                 type="button"
+                                                 onClick={() => setShowEditPassword(!showEditPassword)}
+                                                 style={{
+                                                     position: 'absolute',
+                                                     right: '12px',
+                                                     top: '50%',
+                                                     transform: 'translateY(-50%)',
+                                                     background: 'none',
+                                                     border: 'none',
+                                                     cursor: 'pointer',
+                                                     color: 'var(--text-secondary)',
+                                                     padding: 0,
+                                                     display: 'flex',
+                                                     alignItems: 'center',
+                                                     justifyContent: 'center',
+                                                     zIndex: 10
+                                                 }}
+                                             >
+                                                 <i className={showEditPassword ? "fas fa-eye-slash" : "fas fa-eye"}></i>
+                                             </button>
+                                         </div>
 
                                         <div className="form-group-classic">
                                             <label className="form-label-classic">Date of Birth</label>
@@ -1647,9 +1671,9 @@ export default function Customers() {
                                     </div>
 
                                     <div className="form-row">
-                                        <div className="form-group">
+                                        <div className="form-group" style={{ position: 'relative' }}>
                                             <input
-                                                type="password"
+                                                type={showAddPassword ? "text" : "password"}
                                                 id="add-cust-password"
                                                 name="password"
                                                 className="form-control"
@@ -1658,8 +1682,30 @@ export default function Customers() {
                                                 onChange={handleAddCustomerChange}
                                                 disabled={addingCustomer}
                                                 required
+                                                style={{ paddingRight: '40px' }}
                                             />
                                             <label className="form-label">Password <span style={{ color: '#ef4444' }}>*</span></label>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowAddPassword(!showAddPassword)}
+                                                style={{
+                                                    position: 'absolute',
+                                                    right: '12px',
+                                                    top: '50%',
+                                                    transform: 'translateY(-50%)',
+                                                    background: 'none',
+                                                    border: 'none',
+                                                    cursor: 'pointer',
+                                                    color: 'var(--text-secondary)',
+                                                    padding: 0,
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    zIndex: 10
+                                                }}
+                                            >
+                                                <i className={showAddPassword ? "fas fa-eye-slash" : "fas fa-eye"}></i>
+                                            </button>
                                         </div>
 
                                         <div className="form-group-classic">
