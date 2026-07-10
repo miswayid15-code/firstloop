@@ -1115,7 +1115,8 @@ exports.branchRegister = async (req, res) => {
             zip_code,
             timings,
             visibility,
-            age_group,passlock
+            age_group,
+            // passlock
         } = req.body;
 
         // console.log("BODY:", req.body);
@@ -1125,7 +1126,7 @@ exports.branchRegister = async (req, res) => {
             !name ||
 
             !phone ||
-            !mer_id||!passlock
+            !mer_id
         ) {
 
             return res.json({
@@ -1135,16 +1136,16 @@ exports.branchRegister = async (req, res) => {
 
         }
 
-        const existingPasslock = await Branch.findOne({
-            where: { passlock }
-        });
+        // const existingPasslock = await Branch.findOne({
+        //     where: { passlock }
+        // });
 
-        if (existingPasslock) {
-            return res.json({
-                status: 0,
-                message: "Passlock already exists."
-            });
-        } 
+        // if (existingPasslock) {
+        //     return res.json({
+        //         status: 0,
+        //         message: "Passlock already exists."
+        //     });
+        // } 
 
         let nationalNumber;
         let callingCode;

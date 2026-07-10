@@ -13,11 +13,11 @@ module.exports = (sequelize, DataTypes) => {
         email: DataTypes.STRING,
 
         phone: DataTypes.STRING,
-        passlock: {
-            type: DataTypes.STRING(20),
-            allowNull: true,
-            unique: true
-        },
+        // passlock: {
+        //     type: DataTypes.STRING(20),
+        //     allowNull: true,
+        //     unique: true
+        // },
 
         profile_image: DataTypes.STRING,
         pending_profile_image: DataTypes.STRING,
