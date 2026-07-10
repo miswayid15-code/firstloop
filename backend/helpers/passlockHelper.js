@@ -1,22 +1,22 @@
-const Branch = require("../models").Branch;
+// const Branch = require("../models").Branch;
 
-const generateBranchPasslock = async () => {
-    let passlock;
-    let exists = true;
+// const generateBranchPasslock = async () => {
+//     let passlock;
+//     let exists = true;
 
-    while (exists) {
+//     while (exists) {
         
-        passlock = Math.floor(1000 + Math.random() * 9000).toString();
+//         passlock = Math.floor(1000 + Math.random() * 9000).toString();
 
-        exists = await Branch.findOne({
-            where: { passlock },
-            attributes: ["id"]
-        });
-    }
+//         exists = await Branch.findOne({
+//             where: { passlock },
+//             attributes: ["id"]
+//         });
+//     }
 
-    return passlock;
-};
+//     return passlock;
+// };
 
-module.exports = {
-    generateBranchPasslock
-};
+// module.exports = {
+//     generateBranchPasslock
+// };

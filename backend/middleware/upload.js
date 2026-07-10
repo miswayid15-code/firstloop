@@ -58,7 +58,7 @@ const storage = multer.diskStorage({
 // multer config
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 1 * 2048 * 2048 },
+  limits: {  fileSize: 5 * 1024 * 1024  },
   fileFilter: (req, file, cb) => {
 
     const allowed = [
@@ -85,7 +85,7 @@ const uploadWithCompress = async (req, res, next) => {
     if (err instanceof multer.MulterError) {
       return res.json({
         status: 0,
-        message: "Image must be less than 2MB"
+        message: "Image must be less than 5MB"
       });
     }
 

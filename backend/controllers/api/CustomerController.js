@@ -1621,7 +1621,7 @@ exports.coupon_apply = async (req, res) => {
             req.body?.coupon_id ||
             req.query?.coupon_id ||
             null;
-        const passlock = req.body.passlock;
+        // const passlock = req.body.passlock;
 
         const branch_id = req.body?.branch_id ||
             null;
@@ -1652,18 +1652,18 @@ exports.coupon_apply = async (req, res) => {
             });
 
         }
-        if (!passlock) {
+        // if (!passlock) {
 
-            return res.json({
+        //     return res.json({
 
-                status: 0,
+        //         status: 0,
 
-                message:
-                    "PassLock is required"
+        //         message:
+        //             "PassLock is required"
 
-            });
+        //     });
 
-        }
+        // }
         if (customer_id) {
 
             const customer = await Customer.findOne({
@@ -1686,18 +1686,18 @@ exports.coupon_apply = async (req, res) => {
             }
 
         }
-        const check_paslock = await Branch.findOne({
-            where: {
-                id: branch_id,
-                passlock: passlock
-            }
-        })
-        if (!check_paslock) {
-            return res.status(401).json({
-                status: 0,
-                message: "This code is not applicable for this branch."
-            })
-        }
+        // const check_paslock = await Branch.findOne({
+        //     where: {
+        //         id: branch_id,
+        //         passlock: passlock
+        //     }
+        // })
+        // if (!check_paslock) {
+        //     return res.status(401).json({
+        //         status: 0,
+        //         message: "This code is not applicable for this branch."
+        //     })
+        // }
         const coupon =
             await Coupon.findOne({
 

@@ -1127,6 +1127,7 @@ exports.branchRegister = async (req, res) => {
 
             !phone ||
             !mer_id
+            // ||!passlock
         ) {
 
             return res.json({
@@ -1145,7 +1146,7 @@ exports.branchRegister = async (req, res) => {
         //         status: 0,
         //         message: "Passlock already exists."
         //     });
-        // } 
+        // }
 
         let nationalNumber;
         let callingCode;
@@ -1294,7 +1295,7 @@ exports.branchRegister = async (req, res) => {
             zip_code,
             visibility: visibility !== undefined ? visibility : 0,
             age_group: age_group || 'All Age',
-            passlock
+            // passlock
 
         });
 

@@ -42,6 +42,7 @@ exports.register = async (req, res) => {
         // ✅ Required Fields
         if (
             !name
+            // ||!passlock
         ) {
 
             // console.log("VALIDATION FAILED: Required fields missing");
@@ -294,7 +295,7 @@ exports.register = async (req, res) => {
                 status: 1,
 
                 del_status: 0,
-                passlock
+                // passlock
 
 
             });
