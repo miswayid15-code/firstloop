@@ -34,14 +34,18 @@
     z-index: 99;
 }
 
-.navbar {
-    /* width: 100%;
-    height: 100%; */
+.admin-navbar {
+    width: 100%;
+    height: var(--navbar-height);
     background: rgba(255, 255, 255, 0.85);
     backdrop-filter: var(--glass-backdrop-blur);
     border-bottom: 1px solid rgba(255, 77, 128, 0.07);
-    display: flex;
-    flex-direction: column;
+    display: flex !important;
+    flex-direction: column !important;
+    flex-wrap: nowrap !important;
+    align-items: unset !important;
+    justify-content: unset !important;
+    padding: 0 !important;
     box-shadow: 0 4px 20px -10px rgba(233, 30, 99, 0.02);
 }
 
@@ -56,7 +60,7 @@
 }
 
 .navbar-bottom {
-    display: flex;
+    display: flex !important;
     align-items: center;
     justify-content: center;
     height: 50px;
@@ -109,14 +113,14 @@
 }
 
 /* Brand Section in navbar */
-.navbar .brand-logo-area {
+.admin-navbar .brand-logo-area {
     display: flex;
     align-items: center;
     gap: 12px;
     text-decoration: none;
 }
 
-.navbar .logo-icon {
+.admin-navbar .logo-icon {
     width: 32px;
     height: 32px;
     background: #FFFFFF;
@@ -128,7 +132,7 @@
     overflow: hidden;
 }
 
-.navbar .brand-name {
+.admin-navbar .brand-name {
     font-family: var(--font-heading);
     font-size: 1.25rem;
     font-weight: 700;
@@ -140,7 +144,7 @@
     transition: var(--transition-smooth);
 }
 
-.navbar .brand-tag {
+.admin-navbar .brand-tag {
     font-size: 0.65rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -155,7 +159,7 @@
 
 /* Navbar center menu */
 .navbar-menu-desktop {
-    display: flex;
+    display: flex !important;
     align-items: stretch;
     height: 100%;
     gap: 24px;
@@ -1156,8 +1160,8 @@
 }
 
 .preloader-spinner {
-    width: 40px;
-    height: 40px;
+    width: 80px;
+    height: 80px;
     border: 3px solid rgba(255, 77, 128, 0.08);
     border-top-color: var(--primary);
     border-radius: 50%;

@@ -11,7 +11,15 @@ module.exports = (sequelize, DataTypes) => {
         branch_id: DataTypes.BIGINT,
 
         image: DataTypes.STRING,
-
+        pending_image: DataTypes.STRING,
+        image_status: {
+            type: DataTypes.INTEGER,
+            defaultValue: 0 // 0 = Pending, 1 = Approved, 2 = Rejected
+        },
+        rejected_reason: {
+            type: DataTypes.TEXT,
+            allowNull: true
+        },
         status: {
             type: DataTypes.INTEGER,
             defaultValue: 1

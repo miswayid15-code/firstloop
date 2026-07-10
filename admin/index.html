@@ -1,45 +1,98 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta
-      name="description"
-      content="Dealora Enterprise Coupon and Merchant Management Platform."
-    />
-    <title>First Pass - Control Portal</title>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    <!-- ============================================================
+         PATH DETECTION: Set page meta based on /admin vs website
+    ============================================================ -->
     <script>
-      (function() {
-        function updateTitle() {
-          const frontendPaths = ['/', '/coming-soon', '/about', '/terms', '/privacy', '/delete-account'];
-          const path = window.location.pathname;
-          if (path.startsWith('/admin') || !frontendPaths.includes(path)) {
-            document.title = "First Pass - Control Portal";
-          } else {
-           document.title = "First Pass | Discover Exclusive Offers & Rewards";
-          }
-        }
-        updateTitle();
-        window.addEventListener('popstate', updateTitle);
-        const originalPush = history.pushState;
-        history.pushState = function() {
-          originalPush.apply(this, arguments);
-          updateTitle();
-        };
-        const originalReplace = history.replaceState;
-        history.replaceState = function() {
-          originalReplace.apply(this, arguments);
-          updateTitle();
-        };
-      })();
+        (function () {
+            var isAdmin = window.location.pathname.startsWith('/admin');
+
+            if (isAdmin) {
+                /* ---- ADMIN PANEL META ---- */
+                document.write('<title>FirstPass Admin Panel</title>');
+                document.write('<meta name="description" content="FirstPass Admin Panel – Securely manage merchants, customers, appointments, coupons, reports, notifications and all platform settings from one central dashboard.">');
+                document.write('<meta name="author" content="FirstPass">');
+                document.write('<meta name="robots" content="noindex, nofollow">');
+                document.write('<meta name="keywords" content="FirstPass admin, merchant management, customer management, admin dashboard, coupon management, reports">');
+            } else {
+                /* ---- WEBSITE META ---- */
+                document.write('<title>First Pass – Shop Smart, Save More</title>');
+                document.write('<meta name="description" content="First Pass is the all-in-one business management platform that helps you shop smart and save more. Discover local deals, redeem coupons and grow your success with merchants near you.">');
+                document.write('<meta name="author" content="Minsway Solutions Pvt Ltd">');
+                document.write('<meta name="robots" content="index, follow">');
+                document.write('<meta name="keywords" content="FirstPass, shop smart, save more, coupons, local deals, merchant app, business management platform">');
+                /* Open Graph for website pages */
+                document.write('<meta property="og:type" content="website">');
+                document.write('<meta property="og:title" content="First Pass – Shop Smart, Save More">');
+                document.write('<meta property="og:description" content="The all-in-one business management platform. Discover deals, redeem coupons and grow your success.">');
+                document.write('<meta property="og:image" content="/asset/images/img/new-logo.png">');
+                document.write('<meta name="twitter:card" content="summary_large_image">');
+            }
+        })();
     </script>
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-    />
-  </head>
-  <body>
+
+    <!-- Favicon -->
+    <link rel="shortcut icon" href="/asset/images/img/fs.png">
+    <link rel="apple-touch-icon-precomposed" href="/asset/images/img/fs.png">
+
+    <!-- Fonts & Icons (shared) -->
+    <link rel="stylesheet" href="/asset/fonts/fonts.css">
+    <link rel="stylesheet" href="/asset/icon/icomoon/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+    <!-- Bootstrap (shared – admin uses it for modals/tables; website uses it for grid) -->
+    <link rel="stylesheet" href="/asset/css/bootstrap.min.css">
+
+    <!-- Website-only CSS (skipped on admin to avoid conflicts) -->
+    <script>
+        if (!window.location.pathname.startsWith('/admin')) {
+            document.write('<link rel="stylesheet" href="/asset/css/swiper-bundle.min.css">');
+            document.write('<link rel="stylesheet" href="/asset/css/animate.css">');
+            document.write('<link rel="stylesheet" href="/asset/css/slick.css">');
+            document.write('<link rel="stylesheet" href="/asset/css/slick.theme.css">');
+            document.write('<link rel="stylesheet" href="/asset/css/styles.css">');
+        }
+    </script>
+</head>
+
+<body class="counter-scroll">
+
+<script>
+    if (!window.location.pathname.startsWith('/admin')) {
+        document.write('<canvas class="cursor-trail" id="trail" style="display: none;"></canvas>');
+        document.write('<button id="goTop"><span class="border-progress"></span><span class="ic-wrap"><span class="icon icon-long-arrow-alt-up-solid"></span></span></button>');
+    }
+</script>
+
     <div id="root"></div>
+
+    <!-- jQuery (shared) -->
+    <script src="/asset/js/jquery.min.js"></script>
+    <script src="/asset/js/bootstrap.min.js"></script>
+
+    <!-- Website-only JS (skipped on admin to avoid GSAP/Swiper errors on admin pages) -->
+    <script>
+        if (!window.location.pathname.startsWith('/admin')) {
+            document.write('<script src="/asset/js/jquery.nice-select.min.js"><\/script>');
+            document.write('<script src="/asset/js/swiper-bundle.min.js"><\/script>');
+            document.write('<script src="/asset/js/slick.min.js"><\/script>');
+            document.write('<script src="/asset/js/countto.js"><\/script>');
+            document.write('<script src="/asset/js/carousel.js"><\/script>');
+            document.write('<script src="/asset/js/infinityslide.js"><\/script>');
+            document.write('<script src="/asset/js/ScrollSmooth.js"><\/script>');
+            document.write('<script src="/asset/js/gsap.min.js"><\/script>');
+            document.write('<script src="/asset/js/ScrollTrigger.min.js"><\/script>');
+            document.write('<script src="/asset/js/ScrollToPlugin.min.js"><\/script>');
+            document.write('<script src="/asset/js/gsapAnimation.js"><\/script>');
+            document.write('<script src="/asset/js/main.js"><\/script>');
+        }
+    </script>
+
+    <!-- Vite module entry -->
     <script type="module" src="/src/main.jsx"></script>
-  </body>
+</body>
 </html>

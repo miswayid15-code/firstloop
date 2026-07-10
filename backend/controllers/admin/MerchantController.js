@@ -1,4 +1,5 @@
 const { Merchant, Coupon, RefreshToken, Branch, BranchTiming, Receptionist, MerchantFp, Category, BranchImage, MenuImage, Appointment, CouponApplied, Customer, sequelize } = require('../../models');
+
 const bcrypt = require('bcryptjs');
 const { parsePhoneNumber } = require('libphonenumber-js');
 const jwt = require('jsonwebtoken');
@@ -16,7 +17,7 @@ const baseUrl = process.env.APP_URL;
 const { Op, Sequelize } = require('sequelize');
 const fs = require('fs');
 const path = require('path');
-
+const { sendPushNotification } = require("../../helpers/notificationHelper");
 const normalizeMerchantStatus = (status, fallback = 1) => {
     if (status === undefined || status === null || status === '') {
         return fallback;
@@ -39,8 +40,9 @@ exports.createOrUpdateMerchant = async (req, res) => {
         const mer_id = req.body.mer_id;
 
         if (mer_id) {
-            // console.log("HI");
-            // console.log("Body",req.body);
+            console.log("HI");
+            console.log("Body", req.body);
+
 
             merchant = await Merchant.findOne({
 
@@ -234,7 +236,12 @@ exports.createOrUpdateMerchant = async (req, res) => {
         // =========================
         // CREATE NEW MERCHANT
         // =========================
-        const hashedPassword = await bcrypt.hash(password, 10);
+        let hashedPassword = null;
+
+        if (password && password.trim() !== "") {
+            hashedPassword = await bcrypt.hash(password.trim(), 10);
+        }
+
         if (!merchant) {
 
             if (!password) {
@@ -380,44 +387,44 @@ exports.update_status = async (req, res) => {
                 }
             }
         );
-try {
-    console.log("=== MAIL PROCESS START ===");
-    console.log("Merchant Email:", merchant.email);
-    console.log("Merchant Name:", merchant.name);
-    console.log("Status:", status);
+        try {
+            console.log("=== MAIL PROCESS START ===");
+            console.log("Merchant Email:", merchant.email);
+            console.log("Merchant Name:", merchant.name);
+            console.log("Status:", status);
 
-    console.log("Generating email template...");
+            console.log("Generating email template...");
 
-    const emailTemplate = sendAccountStatus(
-        status,
-        'merchant',
-        merchant.name
-    );
+            const emailTemplate = sendAccountStatus(
+                status,
+                'merchant',
+                merchant.name
+            );
 
-    console.log("Email template generated successfully.");
+            console.log("Email template generated successfully.");
 
-    console.log("Sending email...");
+            console.log("Sending email...");
 
-    await sendMail(
-        merchant.email,
-        'Merchant Status Update',
-        emailTemplate
-    );
+            await sendMail(
+                merchant.email,
+                'Merchant Status Update',
+                emailTemplate
+            );
 
-    console.log("Email sent successfully.");
-    console.log("=== MAIL PROCESS END ===");
+            console.log("Email sent successfully.");
+            console.log("=== MAIL PROCESS END ===");
 
-} catch (mailErr) {
+        } catch (mailErr) {
 
-    console.log("=== MAIL ERROR ===");
-    console.log("Merchant Email:", merchant.mail);
-    console.log("Merchant Name:", merchant.name);
-    console.log("Status:", status);
-    console.log("Error Message:", mailErr.message);
-    console.log("Full Error:", mailErr);
-    console.log("=== END MAIL ERROR ===");
+            console.log("=== MAIL ERROR ===");
+            console.log("Merchant Email:", merchant.mail);
+            console.log("Merchant Name:", merchant.name);
+            console.log("Status:", status);
+            console.log("Error Message:", mailErr.message);
+            console.log("Full Error:", mailErr);
+            console.log("=== END MAIL ERROR ===");
 
-}
+        }
         return res.json({
             status: 1,
             message: "Merchant status updated successfully"
@@ -1108,7 +1115,7 @@ exports.branchRegister = async (req, res) => {
             zip_code,
             timings,
             visibility,
-            age_group
+            age_group,passlock
         } = req.body;
 
         // console.log("BODY:", req.body);
@@ -1118,7 +1125,7 @@ exports.branchRegister = async (req, res) => {
             !name ||
 
             !phone ||
-            !mer_id
+            !mer_id||!passlock
         ) {
 
             return res.json({
@@ -1128,7 +1135,16 @@ exports.branchRegister = async (req, res) => {
 
         }
 
+        const existingPasslock = await Branch.findOne({
+            where: { passlock }
+        });
 
+        if (existingPasslock) {
+            return res.json({
+                status: 0,
+                message: "Passlock already exists."
+            });
+        } 
 
         let nationalNumber;
         let callingCode;
@@ -1276,7 +1292,8 @@ exports.branchRegister = async (req, res) => {
             country,
             zip_code,
             visibility: visibility !== undefined ? visibility : 0,
-            age_group: age_group || 'All Age'
+            age_group: age_group || 'All Age',
+            passlock
 
         });
 
@@ -4149,5 +4166,495 @@ exports.branch_report = async (req, res) => {
             message: err.message
         });
     }
+
+
+
+};
+exports.fetch_branch_pending_img = async (req, res) => {
+    try {
+
+        const branch_id = parseInt(req.params.id);
+
+        if (!branch_id) {
+            return res.json({
+                status: 0,
+                message: "Branch ID required"
+            });
+        }
+
+        const branch = await Branch.findOne({
+            where: {
+                id: branch_id,
+                del_status: 0
+            },
+            attributes: [
+                'id',
+                'merchant_id',
+                'name',
+                'profile_image',
+                'pending_profile_image',
+                'profile_image_status',
+                'rejected_reason'
+            ],
+            include: [
+                {
+                    model: BranchImage,
+                    attributes: [
+                        'id',
+                        'image',
+                        'pending_image',
+                        'image_status',
+                        'rejected_reason'
+                    ],
+                    where: {
+                        image_status: {
+                            [Op.in]: [0, 2]
+                        }
+                    },
+                    required: false
+                },
+                {
+                    model: MenuImage,
+                    attributes: [
+                        'id',
+                        'image',
+                        'pending_image',
+                        'image_status',
+                        'rejected_reason'
+                    ],
+                    where: {
+                        image_status: {
+                            [Op.in]: [0, 2]
+                        }
+                    },
+                    required: false
+                }
+            ]
+        });
+
+        if (!branch) {
+            return res.json({
+                status: 0,
+                message: "Branch not found"
+            });
+        }
+
+        const baseUrl = process.env.APP_URL;
+
+        const data = branch.toJSON();
+
+        // Branch Profile Images
+        data.profile_image = data.profile_image
+            ? `${baseUrl}/${data.profile_image.replace(/\\/g, '/')}`
+            : null;
+
+        data.pending_profile_image = data.pending_profile_image
+            ? `${baseUrl}/${data.pending_profile_image.replace(/\\/g, '/')}`
+            : null;
+
+        // Branch Images
+        data.BranchImages = (data.BranchImages || []).map(item => ({
+            ...item,
+            image: item.image
+                ? `${baseUrl}/${item.image.replace(/\\/g, '/')}`
+                : null,
+            pending_image: item.pending_image
+                ? `${baseUrl}/${item.pending_image.replace(/\\/g, '/')}`
+                : null
+        }));
+
+        // Menu Images
+        data.MenuImages = (data.MenuImages || []).map(item => ({
+            ...item,
+            image: item.image
+                ? `${baseUrl}/${item.image.replace(/\\/g, '/')}`
+                : null,
+            pending_image: item.pending_image
+                ? `${baseUrl}/${item.pending_image.replace(/\\/g, '/')}`
+                : null
+        }));
+
+        return res.json({
+            status: 1,
+            data
+        });
+
+    } catch (err) {
+        console.log("FETCH BRANCH PENDING IMAGE ERROR:", err);
+
+        return res.json({
+            status: 0,
+            message: err.message
+        });
+    }
 };
 
+exports.verify_branch_pending_img = async (req, res) => {
+    try {
+        const { branch_id, type, image_id, status, rejected_reason } = req.body;
+
+        if (!branch_id || !type || status === undefined) {
+            return res.json({
+                status: 0,
+                message: "branch_id, type, and status are required"
+            });
+        }
+
+        if (Number(status) === 2 && !rejected_reason) {
+            return res.json({
+                status: 0,
+                message: "rejected_reason is required when rejecting"
+            });
+        }
+
+        const branch = await Branch.findOne({
+            where: {
+                id: branch_id,
+                del_status: 0
+            }
+        });
+        if (!branch) {
+            return res.status(401).json({
+                status: 0,
+                message: "Branch is not available"
+            })
+        }
+        const bId = parseInt(branch_id);
+
+        if (type === 'profile') {
+            const branch = await Branch.findOne({
+                where: { id: bId, del_status: 0 }
+            });
+
+            if (!branch) {
+                return res.json({ status: 0, message: "Branch not found" });
+            }
+
+            if (Number(status) === 1) {
+                // Approve
+                const oldProfile = branch.profile_image;
+                const newProfile = branch.pending_profile_image;
+
+                if (!newProfile) {
+                    return res.json({ status: 0, message: "No pending profile image to approve" });
+                }
+
+                await branch.update({
+                    profile_image: newProfile,
+                    pending_profile_image: null,
+                    profile_image_status: 1,
+                    rejected_reason: null
+                });
+
+                // Delete old profile image file if exists
+                if (oldProfile && oldProfile !== newProfile) {
+                    const filePath = path.join(__dirname, '../../', oldProfile);
+                    if (fs.existsSync(filePath)) {
+                        try {
+                            fs.unlinkSync(filePath);
+                        } catch (err) {
+                            console.log("Delete old profile error:", err.message);
+                        }
+                    }
+                }
+
+                return res.json({ status: 1, message: "Branch profile image approved successfully" });
+            } else if (Number(status) === 2) {
+                // Reject
+                await branch.update({
+                    profile_image_status: 2,
+                    rejected_reason: rejected_reason
+                });
+
+                return res.json({ status: 1, message: "Branch profile image rejected successfully" });
+            }
+        } else if (type === 'branch_image') {
+            if (!image_id) {
+                return res.json({ status: 0, message: "image_id is required" });
+            }
+
+            const imgId = parseInt(image_id);
+            const branchImage = await BranchImage.findOne({
+                where: { id: imgId, branch_id: bId }
+            });
+
+            if (!branchImage) {
+                return res.json({ status: 0, message: "Branch image record not found" });
+            }
+
+            if (Number(status) === 1) {
+                // Approve
+                const oldImg = branchImage.image;
+                const newImg = branchImage.pending_image;
+
+                if (!newImg) {
+                    return res.json({ status: 0, message: "No pending image to approve" });
+                }
+
+                await branchImage.update({
+                    image: newImg,
+                    pending_image: null,
+                    image_status: 1,
+                    rejected_reason: null
+                });
+
+                // Delete old image file if exists
+                if (oldImg && oldImg !== newImg) {
+                    const filePath = path.join(__dirname, '../../', oldImg);
+                    if (fs.existsSync(filePath)) {
+                        try {
+                            fs.unlinkSync(filePath);
+                        } catch (err) {
+                            console.log("Delete old branch image error:", err.message);
+                        }
+                    }
+                }
+
+                return res.json({ status: 1, message: "Branch image approved successfully" });
+            } else if (Number(status) === 2) {
+                // Reject
+                await branchImage.update({
+                    image_status: 2,
+                    rejected_reason: rejected_reason
+                });
+
+                return res.json({ status: 1, message: "Branch image rejected successfully" });
+            }
+        } else if (type === 'menu_image') {
+            if (!image_id) {
+                return res.json({ status: 0, message: "image_id is required" });
+            }
+
+            const imgId = parseInt(image_id);
+            const menuImage = await MenuImage.findOne({
+                where: { id: imgId, branch_id: bId }
+            });
+
+            if (!menuImage) {
+                return res.json({ status: 0, message: "Menu image record not found" });
+            }
+
+            if (Number(status) === 1) {
+                // Approve
+                const oldImg = menuImage.image;
+                const newImg = menuImage.pending_image;
+
+                if (!newImg) {
+                    return res.json({ status: 0, message: "No pending menu image to approve" });
+                }
+
+                await menuImage.update({
+                    image: newImg,
+                    pending_image: null,
+                    image_status: 1,
+                    rejected_reason: null
+                });
+
+                // Delete old image file if exists
+                if (oldImg && oldImg !== newImg) {
+                    const filePath = path.join(__dirname, '../../', oldImg);
+                    if (fs.existsSync(filePath)) {
+                        try {
+                            fs.unlinkSync(filePath);
+                        } catch (err) {
+                            console.log("Delete old menu image error:", err.message);
+                        }
+                    }
+                }
+
+                return res.json({ status: 1, message: "Menu image approved successfully" });
+            } else if (Number(status) === 2) {
+                // Reject
+                await menuImage.update({
+                    image_status: 2,
+                    rejected_reason: rejected_reason
+                });
+
+                return res.json({ status: 1, message: "Menu image rejected successfully" });
+            }
+        } else {
+            return res.json({ status: 0, message: "Invalid verification type" });
+        }
+
+
+        const notificationToken = await UserNotificationToken.findOne({
+            where: {
+                user_id: branch.merchant_id,
+                user_type: "merchant"
+            }
+        });
+
+        try {
+            await sendPushNotification({
+                token: notificationToken?.token,
+                title: Number(status) === 1 ? "Profile Image Approved" : "Profile Image Rejected",
+                body: Number(status) === 1
+                    ? "Your branch profile image has been approved successfully."
+                    : `Your branch profile image has been rejected.${rejected_reason ? ` Reason: ${rejected_reason}` : ""}`
+            });
+        } catch (error) {
+            console.error("Push Notification Error:", error);
+        }
+    } catch (err) {
+        console.log("VERIFY BRANCH PENDING IMAGE ERROR:", err);
+        return res.json({ status: 0, message: err.message });
+    }
+};
+
+exports.notification_list = async (req, res) => {
+    try {
+
+        // console.time("notification_list");
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const tomorrow = new Date(today);
+        tomorrow.setDate(today.getDate() + 1);
+
+        const [
+            newMerchant,
+            newCustomer,
+            newBranch,
+            todayAppointment,
+            todayCouponRedeem,
+            pendingMenuImage,
+            pendingBranchImage,
+            pendingProfileImage
+        ] = await Promise.all([
+
+            Merchant.count({
+                raw: true,
+                where: {
+                    createdAt: {
+                        [Op.gte]: today,
+                        [Op.lt]: tomorrow
+                    },
+                    del_status: 0
+                }
+            }),
+
+            Customer.count({
+                raw: true,
+                where: {
+                    createdAt: {
+                        [Op.gte]: today,
+                        [Op.lt]: tomorrow
+                    },
+                    del_status: 0
+                }
+            }),
+
+            Branch.count({
+                raw: true,
+                where: {
+                    created_at: {
+                        [Op.gte]: today,
+                        [Op.lt]: tomorrow
+                    },
+                    del_status: 0
+                }
+            }),
+
+            Appointment.count({
+                raw: true,
+                where: {
+                    created_at: {
+                        [Op.gte]: today,
+                        [Op.lt]: tomorrow
+                    }
+                }
+            }),
+
+            CouponApplied.count({
+                raw: true,
+                where: {
+                    created_at: {
+                        [Op.gte]: today,
+                        [Op.lt]: tomorrow
+                    }
+                }
+            }),
+
+            MenuImage.count({
+                raw: true,
+                where: {
+                    image_status: 0
+                }
+            }),
+
+            BranchImage.count({
+                raw: true,
+                where: {
+                    image_status: 0
+                }
+            }),
+
+            Branch.count({
+                raw: true,
+                where: {
+                    profile_image_status: 0,
+                    del_status: 0
+                }
+            })
+
+        ]);
+
+
+        return res.status(200).json({
+            status: 1,
+            message: "Notification list fetched successfully",
+            data: [
+                {
+                    type: 1,
+                    title: "New Merchant",
+                    count: newMerchant
+                },
+                {
+                    type: 2,
+                    title: "New Customer",
+                    count: newCustomer
+                },
+                {
+                    type: 3,
+                    title: "New Branch",
+                    count: newBranch
+                },
+                {
+                    type: 4,
+                    title: "Today's Appointments",
+                    count: todayAppointment
+                },
+                {
+                    type: 5,
+                    title: "Today's Coupon Redeem",
+                    count: todayCouponRedeem
+                },
+                {
+                    type: 6,
+                    title: "Pending Menu Images",
+                    count: pendingMenuImage
+                },
+                {
+                    type: 7,
+                    title: "Pending Branch Images",
+                    count: pendingBranchImage
+                },
+                {
+                    type: 8,
+                    title: "Pending Branch Profile Images",
+                    count: pendingProfileImage
+                }
+            ]
+        });
+
+    } catch (err) {
+        console.error("notification_list:", err);
+
+        return res.status(500).json({
+            status: 0,
+            message: "Network Issue",
+            error: err.message
+        });
+    }
+};

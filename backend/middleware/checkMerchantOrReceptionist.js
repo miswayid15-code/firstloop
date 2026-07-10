@@ -61,7 +61,7 @@ module.exports = async (req, res, next) => {
 
         return res.json({
             status: 0,
-            message: "Something went wrong"
+            message: "Something went wronga"
         });
     }
 };

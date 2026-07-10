@@ -124,7 +124,7 @@ export default function Navbar() {
     const unreadCount = activeNotifications.reduce((acc, item) => acc + item.count, 0)
 
     return (
-        <div className="navbar" data-component="navbar">
+        <div className="admin-navbar" data-component="navbar">
             <div className="navbar-top">
                 <div className="navbar-left">
                     <NavLink to="/dashboard" className="brand-logo-area">

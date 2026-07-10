@@ -12,7 +12,7 @@
         height: 70px !important;
     }
     
-    .navbar {
+    .admin-navbar {
         height: 70px !important;
     }
     
@@ -66,7 +66,7 @@
         display: block !important;
     }
 
-    .navbar {
+    .admin-navbar {
         padding: 0;
     }
     

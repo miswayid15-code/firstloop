@@ -7,6 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const { json } = require('sequelize');
 const { sendPushNotification, getNotificationTemplate } = require("../../helpers/notificationHelper");
+const { generateBranchPasslock } = require("../../helpers/passlockHelper");
 exports.register = async (req, res) => {
     if (req.body.lat === '') req.body.lat = null;
     if (req.body.lon === '') req.body.lon = null;
@@ -30,7 +31,7 @@ exports.register = async (req, res) => {
             country_code,
             timings,
             visibility,
-            age_group,city,state,country
+            age_group, city, state, country, passlock
         } = req.body;
 
         const merchant_id = req.user.id;
@@ -39,7 +40,7 @@ exports.register = async (req, res) => {
 
         // ✅ Required Fields
         if (
-            !name
+            !name||!passlock
         ) {
 
             // console.log("VALIDATION FAILED: Required fields missing");
@@ -50,7 +51,16 @@ exports.register = async (req, res) => {
             });
 
         }
+        const existingPasslock = await Branch.findOne({
+            where: { passlock }
+        });
 
+        if (existingPasslock) {
+            return res.json({
+                status: 0,
+                message: "Passlock already exists."
+            });
+        }
 
         let timingData = [];
 
@@ -110,11 +120,11 @@ exports.register = async (req, res) => {
                     ? cleanPhone
                     : country_code + cleanPhone;
 
-                console.log("FULL PHONE:", fullPhone);
+                // console.log("FULL PHONE:", fullPhone);
 
                 const num = parsePhoneNumber(fullPhone);
 
-                console.log("PARSED PHONE:", num);
+                // console.log("PARSED PHONE:", num);
 
                 if (!num.isValid()) {
                     return res.json({
@@ -239,7 +249,7 @@ exports.register = async (req, res) => {
         // console.log("FILES COUNT:", files.length);
 
         // ✅ First image as profile image
-        const profile_image =
+        const pending_profile_image =
             files.length > 0
                 ? files[0].path.replace(/\\/g, '/')
                 : null;
@@ -260,7 +270,9 @@ exports.register = async (req, res) => {
 
                 phone: nationalNumber?.trim() ? nationalNumber : null,
 
-                profile_image,
+                profile_image: null,
+                pending_profile_image,
+                profile_image_status: 0,
 
                 lat,
 
@@ -268,7 +280,7 @@ exports.register = async (req, res) => {
 
                 address,
                 country,
-                state:state?.trim() || null,
+                state: state?.trim() || null,
                 city: city?.trim() || null,
 
                 description,
@@ -281,6 +293,7 @@ exports.register = async (req, res) => {
                 status: 1,
 
                 del_status: 0,
+                passlock
 
 
             });
@@ -317,7 +330,7 @@ exports.register = async (req, res) => {
 
                     branch_id: branch.id,
 
-                    image:
+                    pending_image:
                         file.path.replace(/\\/g, '/')
 
                 }));
@@ -649,7 +662,7 @@ exports.update_branch = async (req, res) => {
             timings,
             visibility,
             age_group,
-            city,state,country
+            city, state, country
         } = req.body;
 
         const merchant_id = req.user.id;
@@ -835,83 +848,58 @@ exports.update_branch = async (req, res) => {
         // ✅ Files
         const files = req.files || [];
 
-        let profile_image =
-            branch.profile_image;
-
-        // ✅ Update Profile Image
+        let pending_profile_image = branch.pending_profile_image;
         if (files.length > 0) {
 
-            // delete old profile image
-            if (branch.profile_image) {
+            if (branch.pending_profile_image) {
 
-                const oldProfile =
-                    path.join(
-                        __dirname,
-                        '../../',
-                        branch.profile_image
-                    );
+                const oldProfile = path.join(
+                    __dirname,
+                    '../../',
+                    branch.pending_profile_image
+                );
 
                 if (fs.existsSync(oldProfile)) {
-
                     try {
-
                         fs.unlinkSync(oldProfile);
-
                     } catch (err) {
-
-                        console.log(
-                            "Profile delete error:",
-                            err.message
-                        );
-
+                        console.log("Profile delete error:", err.message);
                     }
-
                 }
-
             }
 
-            profile_image =
-                files[0].path.replace(/\\/g, '/');
-
+            pending_profile_image = files[0].path.replace(/\\/g, '/');
         }
 
         // ✅ Update Branch
-        await branch.update({
+        const updateData = {
 
-            name:
-                name || branch.name,
+            name: name || branch.name,
+            email: email || branch.email,
+            country_code: callingCode,
+            phone: nationalNumber,
 
-            email:
-                email || branch.email,
+            lat: lat || branch.lat,
+            lon: lon || branch.lon,
 
-            country_code:
-                callingCode,
+            address: address || branch.address,
+            city: city || branch.city,
+            state: state || branch.state,
+            country: country || branch.country,
 
-            phone:
-                nationalNumber,
+            description: description || branch.description,
 
-            profile_image,
+            visibility: visibility || branch.visibility,
+            age_group: age_group || branch.age_group
+        };
 
-            lat:
-                lat || branch.lat,
+        if (files.length > 0) {
+            updateData.pending_profile_image = pending_profile_image;
+            updateData.profile_image_status = 0; // Pending
+            updateData.rejected_reason = null;
+        }
 
-            lon:
-                lon || branch.lon,
-
-            address:
-                address || branch.address,
-
-            description:
-                description || branch.description,
-
-            visibility:
-                visibility || branch.visibility,
-            age_group:
-                age_group || branch.age_group,
-
-
-        });
-
+        await branch.update(updateData);
         // ✅ Replace Branch Timings
         if (timingData.length > 0) {
 
@@ -948,64 +936,52 @@ exports.update_branch = async (req, res) => {
         // ✅ Replace Branch Images
         if (files.length > 0) {
 
-            const oldImages =
-                await BranchImage.findAll({
+            const oldPendingImages = await BranchImage.findAll({
+                where: {
+                    branch_id,
+                    image_status: 0
+                }
+            });
 
-                    where: { branch_id }
+            // Delete old pending images only
+            for (const img of oldPendingImages) {
 
-                });
+                if (img.pending_image) {
 
-            // delete old images
-            oldImages.forEach(img => {
-
-                const filePath =
-                    path.join(
+                    const filePath = path.join(
                         __dirname,
                         '../../',
-                        img.image
+                        img.pending_image
                     );
 
-                if (fs.existsSync(filePath)) {
-
-                    try {
-
-                        fs.unlinkSync(filePath);
-
-                    } catch (err) {
-
-                        console.log(
-                            "Delete error:",
-                            err.message
-                        );
-
+                    if (fs.existsSync(filePath)) {
+                        try {
+                            fs.unlinkSync(filePath);
+                        } catch (err) {
+                            console.log(err.message);
+                        }
                     }
-
                 }
+            }
 
-            });
-
-            // remove old db records
+            // Remove old pending DB records only
             await BranchImage.destroy({
-
-                where: { branch_id }
-
+                where: {
+                    branch_id,
+                    image_status: 0
+                }
             });
 
-            // insert new images
-            const imageData =
-                files.map(f => ({
+            // Insert new pending images
+            const imageData = files.map(file => ({
+                branch_id,
+                image: null,
+                pending_image: file.path.replace(/\\/g, '/'),
+                image_status: 0,
+                rejected_reason: null
+            }));
 
-                    branch_id,
-
-                    image:
-                        f.path.replace(/\\/g, '/')
-
-                }));
-
-            await BranchImage.bulkCreate(
-                imageData
-            );
-
+            await BranchImage.bulkCreate(imageData);
         }
 
         const notificationToken = await UserNotificationToken.findOne({
@@ -1083,7 +1059,11 @@ exports.branch_id = async (req, res) => {
                 include: [
                     {
                         model: BranchImage,
-                        attributes: ['id', 'image']
+                        attributes: ['id', 'image', 'status', 'pending_image', 'image_status', 'rejected_reason']
+                    },
+                    {
+                        model: MenuImage,
+                        attributes: ['id', 'image', 'status', 'pending_image', 'image_status', 'rejected_reason']
                     },
                     {
                         model: Receptionist,
@@ -1099,6 +1079,8 @@ exports.branch_id = async (req, res) => {
                     'email',
                     'phone',
                     'profile_image',
+                    'pending_profile_image',
+                    'profile_image_status',
                     'lat',
                     'lon',
                     'address',
@@ -1107,7 +1089,7 @@ exports.branch_id = async (req, res) => {
                     'country_code',
                     'visibility',
                     'age_group',
-                    'lat','lon','city','state','country'
+                    'lat', 'lon', 'city', 'state', 'country'
                 ]
 
             }),
@@ -1152,29 +1134,51 @@ exports.branch_id = async (req, res) => {
         const baseUrl = process.env.APP_URL;
         const data = branch.toJSON();
 
-        // Profile image URL
-        data.profile_image = data.profile_image
-            ? `${baseUrl}/${data.profile_image.replace(/\\/g, '/')}`
-            : null;
+        const profileImagePath =
+            data.profile_image_status === 1
+                ? data.profile_image
+                : data.pending_profile_image;
 
-        // Branch images URL
+        data.profile_image = profileImagePath
+            ? `${baseUrl}/${profileImagePath.replace(/\\/g, '/')}`
+            : null;
         if (data.BranchImages) {
-            data.BranchImages = data.BranchImages.map(img => ({
-                ...img,
-                image: img.image
-                    ? `${baseUrl}/${img.image.replace(/\\/g, '/')}`
-                    : null
-            }));
+            data.BranchImages = data.BranchImages.map(img => {
+                const imagePath = img.image_status === 1 ? img.image : img.pending_image;
+
+                return {
+                    id: img.id,
+                    image: imagePath
+                        ? `${baseUrl}/${imagePath.replace(/\\/g, '/')}`
+                        : null,
+                    image_status: img.image_status,
+                    rejected_reason: img.rejected_reason
+                };
+            });
         }
 
+        // Menu images URL
+        if (data.MenuImages) {
+            data.MenuImages = data.MenuImages.map(img => {
+                const imagePath = img.image_status === 1 ? img.image : img.pending_image;
 
+                return {
+                    id: img.id,
+                    image: imagePath
+                        ? `${baseUrl}/${imagePath.replace(/\\/g, '/')}`
+                        : null,
+                    image_status: img.image_status,
+                    rejected_reason: img.rejected_reason
+                };
+            });
+        }
 
         // Counts
         data.active_coupon = active_coupon;
         data.redeemed_coupon = redeemed_coupon;
         data.appointment_count = appointment;
         data.chat_count = snapshot.size;
-
+        delete data.pending_profile_image;
         return res.json({
             status: 1,
             data
@@ -1244,9 +1248,13 @@ exports.register_menu_image = async (req, res) => {
 
             branch_id,
 
-            image: file.path.replace(/\\/g, '/'),
+            image: null, // No approved image yet
 
-            status: 1
+            pending_image: file.path.replace(/\\/g, '/'),
+
+            image_status: 0, // 0 = Pending
+
+            rejected_reason: null
 
         }));
 
@@ -1342,7 +1350,10 @@ exports.fetch_menu_images = async (req, res) => {
                 'id',
                 'branch_id',
                 'image',
-                'status'
+                'status',
+                'pending_image',
+                'image_status',
+                'rejected_reason'
             ],
 
             order: [['id', 'DESC']]
@@ -1358,6 +1369,13 @@ exports.fetch_menu_images = async (req, res) => {
             image: item.image
                 ? baseUrl + '/' + item.image.replace(/\\/g, '/')
                 : null,
+            pending_image: item.pending_image
+                ? `${baseUrl}/${item.pending_image.replace(/\\/g, '/')}`
+                : null,
+
+            image_status: item.image_status,
+
+            rejected_reason: item.rejected_reason,
 
             status: item.status
 
@@ -1464,35 +1482,32 @@ exports.update_menu_image = async (req, res) => {
                 continue;
             }
 
-            // delete old image
-            if (menuImage.image) {
+
+            if (menuImage.pending_image) {
 
                 const oldPath = path.join(
                     __dirname,
                     '../../',
-                    menuImage.image
+                    menuImage.pending_image
                 );
 
                 if (fs.existsSync(oldPath)) {
 
                     try {
-
                         fs.unlinkSync(oldPath);
-
                     } catch (err) {
-
                         console.log(err.message);
-
                     }
-
                 }
-
             }
 
-            // update image
             await menuImage.update({
 
-                image: file.path.replace(/\\/g, '/')
+                pending_image: file.path.replace(/\\/g, '/'),
+
+                image_status: 0,
+
+                rejected_reason: null
 
             });
 
@@ -1507,9 +1522,13 @@ exports.update_menu_image = async (req, res) => {
 
                 branch_id,
 
-                image: file.path.replace(/\\/g, '/'),
 
-                status: 1
+
+                pending_image: file.path.replace(/\\/g, '/'),
+
+                image_status: 0,
+
+                rejected_reason: null
 
             }));
 
@@ -2680,4 +2699,26 @@ exports.update_appointment_status_by_mer = async (req, res) => {
 
     }
 
+};
+
+
+exports.generate_branch_passlock = async (req, res) => {
+    try {
+        const passlock = await generateBranchPasslock();
+
+        return res.json({
+            status: 1,
+            message: "Passlock generated successfully.",
+            passlock
+        });
+
+    } catch (error) {
+        console.error("Generate Branch Passlock API Error:", error);
+
+        return res.json({
+            status: 0,
+            message: "Failed to generate passlock.",
+            error: error.message
+        });
+    }
 };

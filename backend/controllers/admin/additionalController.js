@@ -325,7 +325,7 @@ exports.page_list = async (req, res) => {
     catch (error) {
         return res.json({
             status: 0,
-            message: "Something went wrongq"
+            message: "Something went wrong"
         });
     }
 };

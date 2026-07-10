@@ -148,5 +148,5 @@ router.post(
     controller.update_appointment_status_by_mer
 );
 
-
+router.get("/generate-branch-passlock", controller.generate_branch_passlock);
 module.exports = router;

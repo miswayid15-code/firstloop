@@ -1621,9 +1621,11 @@ exports.coupon_apply = async (req, res) => {
             req.body?.coupon_id ||
             req.query?.coupon_id ||
             null;
+        const passlock = req.body.passlock;
 
         const branch_id = req.body?.branch_id ||
             null;
+
         // console.log("COUPON ID:", coupon_id);
 
         if (!coupon_id) {
@@ -1650,7 +1652,18 @@ exports.coupon_apply = async (req, res) => {
             });
 
         }
+        if (!passlock) {
 
+            return res.json({
+
+                status: 0,
+
+                message:
+                    "PassLock is required"
+
+            });
+
+        }
         if (customer_id) {
 
             const customer = await Customer.findOne({
@@ -1673,8 +1686,18 @@ exports.coupon_apply = async (req, res) => {
             }
 
         }
-
-
+        const check_paslock = await Branch.findOne({
+            where: {
+                id: branch_id,
+                passlock: passlock
+            }
+        })
+        if (!check_paslock) {
+            return res.status(401).json({
+                status: 0,
+                message: "This code is not applicable for this branch."
+            })
+        }
         const coupon =
             await Coupon.findOne({
 
@@ -3776,15 +3799,15 @@ exports.send_test = async (req, res) => {
     }
 };
 exports.send_tests = async (req, res) => {
-try {
-    console.log("Current Date:", new Date());
-    console.log("ISO (UTC):", new Date().toISOString());
-    console.log("Local:", new Date().toLocaleString());
-    console.log("IST:", new Date().toLocaleString("en-IN", {
-        timeZone: "Asia/Kolkata"
-    }));
-} catch (err) {
-    console.error("Error:", err);
-}
+    try {
+        console.log("Current Date:", new Date());
+        console.log("ISO (UTC):", new Date().toISOString());
+        console.log("Local:", new Date().toLocaleString());
+        console.log("IST:", new Date().toLocaleString("en-IN", {
+            timeZone: "Asia/Kolkata"
+        }));
+    } catch (err) {
+        console.error("Error:", err);
+    }
 };
 

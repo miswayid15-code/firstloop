@@ -24,7 +24,7 @@ const storage = multer.diskStorage({
       folder += 'documents/';
     }
     else if (file.fieldname === 'image' ||
-  file.fieldname === 'images') {
+      file.fieldname === 'images') {
       folder += '';
     }
     else if (
@@ -58,7 +58,7 @@ const storage = multer.diskStorage({
 // multer config
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 1 * 1024 * 1024 },
+  limits: { fileSize: 1 * 2048 * 2048 },
   fileFilter: (req, file, cb) => {
 
     const allowed = [
@@ -85,7 +85,7 @@ const uploadWithCompress = async (req, res, next) => {
     if (err instanceof multer.MulterError) {
       return res.json({
         status: 0,
-        message: "Image must be less than 1MB"
+        message: "Image must be less than 2MB"
       });
     }
 
@@ -103,17 +103,28 @@ const uploadWithCompress = async (req, res, next) => {
         if (file.mimetype.startsWith('image')) {
 
           try {
-            const compressedPath = file.path + '_compressed.jpg';
+            const webpPath = file.path.replace(path.extname(file.path), '.webp');
 
             await sharp(file.path)
-              .jpeg({ quality: 70 })
-              .toFile(compressedPath);
+              .webp({
+                quality: 80,
+                effort: 4 // compression level (0-6)
+              })
+              .toFile(webpPath);
 
-            // ✅ wait for file release (fix EBUSY)
+            // wait until file is released
             await new Promise(resolve => setTimeout(resolve, 100));
 
+            // remove original file
             fs.unlinkSync(file.path);
-            fs.renameSync(compressedPath, file.path);
+
+            // update multer file object
+            file.filename = file.filename.replace(path.extname(file.filename), '.webp');
+            file.path = webpPath;
+            file.destination = path.dirname(webpPath);
+
+            // if you use file.originalname later
+            file.originalname = file.originalname.replace(path.extname(file.originalname), '.webp');
 
           } catch (e) {
             console.log("Compression error:", e.message);

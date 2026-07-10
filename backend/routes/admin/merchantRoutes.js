@@ -102,4 +102,19 @@ router.get('/branch/details/:id', auth('admin'),checkAdmin, controller.branch_id
 router.post('/coupon-generate', auth('admin'),checkAdmin,controller.generate_coupon);
 router.post('/receptionists-id-generate', auth('admin'),checkAdmin,controller.generate_rep_id);
 router.get('/branch/reports/:id', auth('admin'),checkAdmin, controller.branch_report);
+router.post('/new-incoming-list', auth('admin'),checkAdmin, controller.notification_list);
+router.get(
+    '/branch-pending-images/:id',
+    auth('admin'),
+    checkAdmin,
+    controller.fetch_branch_pending_img
+);
+
+router.post(
+    '/branch-pending-images/verify',
+    auth('admin'),
+    checkAdmin,
+    controller.verify_branch_pending_img
+);
+
 module.exports = router;

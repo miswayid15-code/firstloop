@@ -1,34 +1,35 @@
 {
-    "name": "dealora-react",
-    "private": true,
-    "version": "0.0.0",
-    "type": "module",
-    "scripts": {
-        "dev": "vite",
-        "build": "vite build",
-        "preview": "vite preview"
-    },
-    "dependencies": {
-        "@react-google-maps/api": "^2.20.8",
-        "axios": "^1.16.1",
-        "datatables.net": "^2.3.8",
-        "datatables.net-dt": "^2.3.8",
-        "firebase": "^12.14.0",
-        "jquery": "^4.0.0",
-        "react": "^19.0.0",
-        "react-country-state-city": "^1.1.13",
-        "react-dom": "^19.0.0",
-        "react-hot-toast": "^2.6.0",
-        "react-icons": "^5.6.0",
-        "react-phone-input-2": "^2.15.1",
-        "react-phone-number-input": "^3.4.16",
-        "react-quill-new": "^3.8.3",
-        "react-router-dom": "^6.16.0",
-        "react-toastify": "^11.1.0",
-        "zustand": "^5.0.14"
-    },
-    "devDependencies": {
-        "@vitejs/plugin-react": "^4.3.1",
-        "vite": "^5.4.0"
-    }
+  "name": "dealora-react",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@react-google-maps/api": "^2.20.8",
+    "axios": "^1.16.1",
+    "bootstrap": "^5.3.8",
+    "datatables.net": "^2.3.8",
+    "datatables.net-dt": "^2.3.8",
+    "firebase": "^12.14.0",
+    "jquery": "^4.0.0",
+    "react": "^19.0.0",
+    "react-country-state-city": "^1.1.13",
+    "react-dom": "^19.0.0",
+    "react-hot-toast": "^2.6.0",
+    "react-icons": "^5.6.0",
+    "react-phone-input-2": "^2.15.1",
+    "react-phone-number-input": "^3.4.16",
+    "react-quill-new": "^3.8.3",
+    "react-router-dom": "^6.16.0",
+    "react-toastify": "^11.1.0",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.4.0"
+  }
 }

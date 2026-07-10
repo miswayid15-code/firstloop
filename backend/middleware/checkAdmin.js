@@ -17,7 +17,7 @@ module.exports = async (req, res, next) => {
         next();
 
     } catch (error) {
-
+  console.error("Admin middleware error:", error);
         return res.json({
             status: 0,
             message: "Something went wrong"
