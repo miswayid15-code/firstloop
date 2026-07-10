@@ -244,18 +244,22 @@ exports.register = async (req, res) => {
         // console.log("MERCHANT VALIDATION PASSED");
 
         // ✅ Files
-        const files =
-            req.files || [];
+        const files = req.files || [];
 
-        // console.log("FILES:", files);
-        // console.log("FILES COUNT:", files.length);
+        // Profile image
+        const profileFile = files.find(
+            file => file.fieldname === "profile_image"
+        );
 
-        // ✅ First image as profile image
-        const pending_profile_image =
-            files.length > 0
-                ? files[0].path.replace(/\\/g, '/')
-                : null;
+        // Branch gallery images
+        const branchImages = files.filter(
+            file => file.fieldname === "image" || file.fieldname === "images"
+        );
 
+        // Profile image path
+        const pending_profile_image = profileFile
+            ? profileFile.path.replace(/\\/g, '/')
+            : null;
         // console.log("PROFILE IMAGE:", profile_image);
 
         // ✅ Create Branch
@@ -323,32 +327,17 @@ exports.register = async (req, res) => {
         // console.log("BRANCH CREATED:", branch);
 
         // ✅ Save Multiple Images
-        if (files.length > 0) {
+        if (branchImages.length > 0) {
 
-            // console.log("SAVING BRANCH IMAGES");
+            const imageData = branchImages.map(file => ({
+                branch_id: branch.id,
+                image: null,
+                pending_image: file.path.replace(/\\/g, '/'),
+                image_status: 0,
+                rejected_reason: null
+            }));
 
-            const imageData =
-                files.map(file => ({
-
-                    branch_id: branch.id,
-
-                    pending_image:
-                        file.path.replace(/\\/g, '/')
-
-                }));
-
-            // console.log("IMAGE DATA:", imageData);
-
-            const imageInsert =
-                await BranchImage.bulkCreate(
-                    imageData
-                );
-
-            // console.log(
-            //     "BRANCH IMAGES INSERTED:",
-            //     imageInsert
-            // );
-
+            await BranchImage.bulkCreate(imageData);
         }
 
         // console.log("BRANCH CREATED SUCCESSFULLY");
@@ -847,17 +836,25 @@ exports.update_branch = async (req, res) => {
         // ✅ Time Validation
 
 
-        // ✅ Files
         const files = req.files || [];
 
+        const profileFile = files.find(
+            file => file.fieldname === "profile_image"
+        );
+
+        const branchImages = files.filter(
+            file => file.fieldname === "images" || file.fieldname === "image"
+        );
+
         let pending_profile_image = branch.pending_profile_image;
-        if (files.length > 0) {
+
+        if (profileFile) {
 
             if (branch.pending_profile_image) {
 
                 const oldProfile = path.join(
                     __dirname,
-                    '../../',
+                    "../../",
                     branch.pending_profile_image
                 );
 
@@ -870,7 +867,7 @@ exports.update_branch = async (req, res) => {
                 }
             }
 
-            pending_profile_image = files[0].path.replace(/\\/g, '/');
+            pending_profile_image = profileFile.path.replace(/\\/g, "/");
         }
 
         // ✅ Update Branch
@@ -895,9 +892,9 @@ exports.update_branch = async (req, res) => {
             age_group: age_group || branch.age_group
         };
 
-        if (files.length > 0) {
+        if (profileFile) {
             updateData.pending_profile_image = pending_profile_image;
-            updateData.profile_image_status = 0; // Pending
+            updateData.profile_image_status = 0;
             updateData.rejected_reason = null;
         }
 
@@ -936,7 +933,7 @@ exports.update_branch = async (req, res) => {
         }
 
         // ✅ Replace Branch Images
-        if (files.length > 0) {
+        if (branchImages.length > 0) {
 
             const oldPendingImages = await BranchImage.findAll({
                 where: {
@@ -945,14 +942,13 @@ exports.update_branch = async (req, res) => {
                 }
             });
 
-            // Delete old pending images only
             for (const img of oldPendingImages) {
 
                 if (img.pending_image) {
 
                     const filePath = path.join(
                         __dirname,
-                        '../../',
+                        "../../",
                         img.pending_image
                     );
 
@@ -966,7 +962,6 @@ exports.update_branch = async (req, res) => {
                 }
             }
 
-            // Remove old pending DB records only
             await BranchImage.destroy({
                 where: {
                     branch_id,
@@ -974,11 +969,10 @@ exports.update_branch = async (req, res) => {
                 }
             });
 
-            // Insert new pending images
-            const imageData = files.map(file => ({
+            const imageData = branchImages.map(file => ({
                 branch_id,
                 image: null,
-                pending_image: file.path.replace(/\\/g, '/'),
+                pending_image: file.path.replace(/\\/g, "/"),
                 image_status: 0,
                 rejected_reason: null
             }));
