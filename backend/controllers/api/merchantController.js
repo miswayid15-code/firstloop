@@ -433,7 +433,7 @@ exports.registerStep2 = async (req, res) => {
                 token: notificationToken?.token,
                 title: "Update Successful",
                 body: "Your details were updated successfully.",
-               
+
             });
 
 
@@ -859,8 +859,11 @@ exports.branch_list = async (req, res) => {
             const data = item.toJSON();
 
             data.profile_image = data.profile_image
-                ? baseUrl + '/' + data.profile_image.replace(/\\/g, '/')
-                : null;
+                ? `${baseUrl}/${data.profile_image.replace(/\\/g, '/')}`
+                : data.pending_profile_image
+                    ? `${baseUrl}/${data.pending_profile_image.replace(/\\/g, '/')}`
+                    : null;
+
 
             return data;
 
