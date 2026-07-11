@@ -92,8 +92,8 @@ exports.verify_mail = async (req, res) => {
             });
         }
 
-        const randomOtp = 111111;
-        // const randomOtp = Math.floor(100000 + Math.random() * 900000).toString();
+        // const randomOtp = 111111;
+        const randomOtp = Math.floor(100000 + Math.random() * 900000).toString();
 
         let existingUser = null;
 
@@ -220,8 +220,8 @@ exports.customer_verify_mail = async (req, res) => {
             });
         }
 
-        const randomOtp = 111111;
-        // const randomOtp = Math.floor(100000 + Math.random() * 900000).toString();
+        // const randomOtp = 111111;
+        const randomOtp = Math.floor(100000 + Math.random() * 900000).toString();
 
         existingUser = await Customer.findOne({
             where: { email }

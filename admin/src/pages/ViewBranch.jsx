@@ -9,6 +9,12 @@ const isSuccessResponse = (data) => {
     return data?.status === 1 || data?.status === '1' || data?.success === true || data?.success === 'true'
 }
 
+
+const ageGroupLabels = {
+    1: "All Age",
+    2: "Below 18",
+    3: "Above 18",
+};
 const formatTime = (value) => {
     if (!value) {
         return '-'
@@ -594,17 +600,38 @@ export default function ViewBranch() {
                 ) : (
                     <>
                         <div className="merchant-profile-info">
-                            <div className="cell-avatar merchant-avatar">
-                                {branchData?.profile_image ? (
-                                    <img
-                                        src={branchData.profile_image}
-                                        alt={branchData?.name || 'Branch'}
-                                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' }}
-                                    />
-                                ) : (
-                                    branchData?.name?.charAt(0) || 'B'
-                                )}
+                            <div style={{ position: 'relative', flexShrink: 0 }}>
+                                <div className="cell-avatar merchant-avatar">
+                                    {branchData?.profile_image ? (
+                                        <img
+                                            src={branchData.profile_image}
+                                            alt={branchData?.name || 'Branch'}
+                                            style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' }}
+                                        />
+                                    ) : (
+                                        branchData?.name?.charAt(0) || 'B'
+                                    )}
+                                </div>
+                                {/* Profile image status badge */}
+                                {(() => {
+                                    const st = Number(branchData?.profile_image_status);
+                                    if (st === 0) return <span style={{ position: 'absolute', bottom: 4, right: 4, background: '#f59e0b', color: '#fff', fontSize: '0.6rem', fontWeight: 700, padding: '2px 6px', borderRadius: 20, whiteSpace: 'nowrap' }}>Pending</span>;
+                                    if (st === 2) return <span style={{ position: 'absolute', bottom: 4, right: 4, background: '#ef4444', color: '#fff', fontSize: '0.6rem', fontWeight: 700, padding: '2px 6px', borderRadius: 20, whiteSpace: 'nowrap' }}>Rejected</span>;
+                                    return null;
+                                })()}
                             </div>
+                            {/* Pending profile image preview */}
+                            {branchData?.pending_profile_image && (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
+                                    <small style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>Pending Image</small>
+                                    <div style={{ position: 'relative', width: 60, height: 60, borderRadius: 10, overflow: 'hidden', border: '2px dashed #f59e0b' }}>
+                                        <img src={branchData.pending_profile_image} alt="Pending profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    </div>
+                                    {Number(branchData?.profile_image_status) === 2 && (
+                                        <small style={{ fontSize: '0.7rem', color: '#ef4444', maxWidth: 120 }}>Profile image was rejected</small>
+                                    )}
+                                </div>
+                            )}
 
                             <div className="cell-info" style={{ flex: 1 }}>
                                 <div className="merchant-title-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
@@ -685,14 +712,18 @@ export default function ViewBranch() {
                                         <small className="merchant-sub-label">Visibility</small>
                                         <p className="merchant-subtext">
                                             {branchData?.visibility !== undefined && branchData?.visibility !== null
-                                                ? (visibilityLabels[Number(branchData.visibility)] || 'All')
-                                                : 'All'}
+                                                ? (visibilityLabels[Number(branchData.visibility)] || "All")
+                                                : "All"}
                                         </p>
                                     </div>
 
                                     <div>
                                         <small className="merchant-sub-label">Target Age Group</small>
-                                        <p className="merchant-subtext">{branchData?.age_group || 'All Age'}</p>
+                                        <p className="merchant-subtext">
+                                            {branchData?.age_group !== undefined && branchData?.age_group !== null
+                                                ? (ageGroupLabels[Number(branchData.age_group)] || "All Age")
+                                                : "All Age"}
+                                        </p>
                                     </div>
 
                                     <div>
@@ -819,26 +850,59 @@ export default function ViewBranch() {
                         </p>
                     </div>
 
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-                        {galleryImages.map((item) => (
-                            <div
-                                key={item.id}
-                                style={{
-                                    width: 120,
-                                    height: 120,
-                                    borderRadius: 12,
-                                    overflow: 'hidden',
-                                    border: '1px solid var(--border)',
-                                    flexShrink: 0
-                                }}
-                            >
-                                <img
-                                    src={item.image}
-                                    alt="Branch gallery"
-                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                />
-                            </div>
-                        ))}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
+                        {galleryImages.map((item) => {
+                            const st = Number(item.image_status);
+                            const statusLabel = st === 0 ? 'Pending' : st === 1 ? 'Approved' : st === 2 ? 'Rejected' : null;
+                            const statusColor = st === 0 ? '#f59e0b' : st === 1 ? '#10b981' : '#ef4444';
+                            return (
+                                <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center', flexShrink: 0 }}>
+                                    {/* Current approved image */}
+                                    <div style={{ position: 'relative' }}>
+                                        <div style={{
+                                            width: 120,
+                                            height: 120,
+                                            borderRadius: 12,
+                                            overflow: 'hidden',
+                                            border: `2px solid ${statusColor}`,
+                                            flexShrink: 0
+                                        }}>
+                                            <img
+                                                src={item.image}
+                                                alt="Branch gallery"
+                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                            />
+                                        </div>
+                                        {statusLabel && (
+                                            <span style={{
+                                                position: 'absolute', top: 6, left: 6,
+                                                background: statusColor, color: '#fff',
+                                                fontSize: '0.6rem', fontWeight: 700,
+                                                padding: '2px 7px', borderRadius: 20
+                                            }}>{statusLabel}</span>
+                                        )}
+                                    </div>
+                                    {/* Pending update image (shown when status=0 or status=2) */}
+                                    {item.pending_image && (
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                                            <small style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 600 }}>Pending Update</small>
+                                            <div style={{
+                                                width: 100, height: 100, borderRadius: 10,
+                                                overflow: 'hidden', border: '2px dashed #f59e0b'
+                                            }}>
+                                                <img src={item.pending_image} alt="Pending gallery" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                            </div>
+                                        </div>
+                                    )}
+                                    {/* Rejected reason */}
+                                    {st === 2 && item.rejected_reason && (
+                                        <p style={{ fontSize: '0.68rem', color: '#ef4444', maxWidth: 120, textAlign: 'center', margin: 0, wordBreak: 'break-word' }}>
+                                            ✕ {item.rejected_reason}
+                                        </p>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             ) : null}
@@ -861,26 +925,59 @@ export default function ViewBranch() {
                         </p>
                     </div>
 
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-                        {menuImages.map((item) => (
-                            <div
-                                key={item.id}
-                                style={{
-                                    width: 120,
-                                    height: 120,
-                                    borderRadius: 12,
-                                    overflow: 'hidden',
-                                    border: '1px solid var(--border)',
-                                    flexShrink: 0
-                                }}
-                            >
-                                <img
-                                    src={item.image}
-                                    alt="Menu item"
-                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                />
-                            </div>
-                        ))}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
+                        {menuImages.map((item) => {
+                            const st = Number(item.image_status);
+                            const statusLabel = st === 0 ? 'Pending' : st === 1 ? 'Approved' : st === 2 ? 'Rejected' : null;
+                            const statusColor = st === 0 ? '#f59e0b' : st === 1 ? '#10b981' : '#ef4444';
+                            return (
+                                <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center', flexShrink: 0 }}>
+                                    {/* Current image */}
+                                    <div style={{ position: 'relative' }}>
+                                        <div style={{
+                                            width: 120,
+                                            height: 120,
+                                            borderRadius: 12,
+                                            overflow: 'hidden',
+                                            border: `2px solid ${statusColor}`,
+                                            flexShrink: 0
+                                        }}>
+                                            <img
+                                                src={item.image}
+                                                alt="Menu item"
+                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                            />
+                                        </div>
+                                        {statusLabel && (
+                                            <span style={{
+                                                position: 'absolute', top: 6, left: 6,
+                                                background: statusColor, color: '#fff',
+                                                fontSize: '0.6rem', fontWeight: 700,
+                                                padding: '2px 7px', borderRadius: 20
+                                            }}>{statusLabel}</span>
+                                        )}
+                                    </div>
+                                    {/* Pending update image */}
+                                    {item.pending_image && (
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                                            <small style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 600 }}>Pending Update</small>
+                                            <div style={{
+                                                width: 100, height: 100, borderRadius: 10,
+                                                overflow: 'hidden', border: '2px dashed #f59e0b'
+                                            }}>
+                                                <img src={item.pending_image} alt="Pending menu" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                            </div>
+                                        </div>
+                                    )}
+                                    {/* Rejected reason */}
+                                    {st === 2 && item.rejected_reason && (
+                                        <p style={{ fontSize: '0.68rem', color: '#ef4444', maxWidth: 120, textAlign: 'center', margin: 0, wordBreak: 'break-word' }}>
+                                            ✕ {item.rejected_reason}
+                                        </p>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             ) : null}

@@ -1658,12 +1658,11 @@ exports.branchUpdate = async (req, res) => {
 
             name: name || branch.name,
 
-            email: email || branch.email,
+            email: email || null,
 
             country_code: callingCode,
 
-            phone: nationalNumber,
-
+            phone: phone ? nationalNumber : null,
             profile_image,
 
             lat: lat || branch.lat,
@@ -2048,6 +2047,8 @@ exports.fetch_branch_id = async (req, res) => {
                     'phone',
                     'country_code',
                     'profile_image',
+                    'pending_profile_image',
+                    'profile_image_status',
                     'lat',
                     'lon',
                     'city',
@@ -2065,12 +2066,12 @@ exports.fetch_branch_id = async (req, res) => {
                 include: [
                     {
                         model: BranchImage,
-                        attributes: ['id', 'image'],
+                        attributes: ['id', 'image', 'pending_image', 'image_status', 'rejected_reason'],
                         required: false
                     },
                     {
                         model: MenuImage,
-                        attributes: ['id', 'image'],
+                        attributes: ['id', 'image', 'pending_image', 'image_status', 'rejected_reason'],
                         required: false
                     },
                     {
@@ -2165,13 +2166,19 @@ exports.fetch_branch_id = async (req, res) => {
             ? `${baseUrl}/${data.profile_image.replace(/\\/g, '/')}`
             : null;
 
+        data.pending_profile_image = data.pending_profile_image
+            ? `${baseUrl}/${data.pending_profile_image.replace(/\\/g, '/')}`
+            : null;
         // Branch Images
         if (data.BranchImages) {
             data.BranchImages = data.BranchImages.map(img => ({
                 ...img,
                 image: img.image
                     ? `${baseUrl}/${img.image.replace(/\\/g, '/')}`
-                    : null
+                    : null,
+                pending_image: img.pending_image
+                    ? `${baseUrl}/${img.pending_image.replace(/\\/g, '/')}`
+                    : null,
             }));
         }
 
@@ -2181,7 +2188,10 @@ exports.fetch_branch_id = async (req, res) => {
                 ...img,
                 image: img.image
                     ? `${baseUrl}/${img.image.replace(/\\/g, '/')}`
-                    : null
+                    : null,
+                pending_image: img.pending_image
+                    ? `${baseUrl}/${img.pending_image.replace(/\\/g, '/')}`
+                    : null,
             }));
         }
 
