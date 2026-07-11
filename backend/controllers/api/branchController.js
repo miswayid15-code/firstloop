@@ -422,7 +422,7 @@ exports.fetch_list = async (req, res) => {
 
             include: [{
                 model: BranchImage,
-                attributes: ['id', 'image']
+                attributes: ['id', 'image','pending_image','image_status']
             }],
 
             attributes: [
@@ -470,13 +470,17 @@ exports.fetch_list = async (req, res) => {
 
                 branchData.BranchImages = branchData.BranchImages.map(img => ({
                     ...img,
-                    image: img.image
-                        ? baseUrl + '/' + img.image.replace(/\\/g, '/')
-                        : null
+                    image: img.image_status === 1
+                        ? (img.image
+                            ? `${baseUrl}/${img.image.replace(/\\/g, '/')}`
+                            : null)
+                        : (img.pending_image
+                            ? `${baseUrl}/${img.pending_image.replace(/\\/g, '/')}`
+                            : null)
                 }));
 
             }
-
+           
             return branchData;
 
         });
