@@ -1135,8 +1135,8 @@ exports.branch_id = async (req, res) => {
                 ? data.profile_image
                 : data.pending_profile_image;
 
-        data.profile_image = data.profile_image_status
-            ? `${baseUrl}/${data.profile_image_status.replace(/\\/g, '/')}`
+        data.profile_image = data.profileImagePath
+            ? `${baseUrl}/${data.profileImagePath.replace(/\\/g, '/')}`
             : null;
         if (data.BranchImages) {
             data.BranchImages = data.BranchImages.map(img => {
@@ -1144,8 +1144,8 @@ exports.branch_id = async (req, res) => {
 
                 return {
                     id: img.id,
-                    image: img.pending_image
-                        ? `${baseUrl}/${img.pending_image.replace(/\\/g, '/')}`
+                    image: img.imagePath
+                        ? `${baseUrl}/${img.imagePath.replace(/\\/g, '/')}`
                         : null,
                     image_status: img.image_status,
                     rejected_reason: img.rejected_reason
