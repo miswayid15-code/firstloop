@@ -209,7 +209,7 @@ exports.register = async (req, res) => {
                 token_type: 'access'
             },
             process.env.JWT_SECRET,
-            { expiresIn: '1d' }
+            { expiresIn: '5d' }
         );
 
         // refresh token
@@ -220,7 +220,7 @@ exports.register = async (req, res) => {
                 token_type: 'refresh'
             },
             process.env.JWT_REFRESH_SECRET,
-            { expiresIn: '7d' }
+            { expiresIn: '15d' }
         );
         // save refresh token
         await RefreshToken.create({
@@ -230,7 +230,7 @@ exports.register = async (req, res) => {
             token: refreshToken,
 
             expires_at: new Date(
-                Date.now() + 7 * 24 * 60 * 60 * 1000
+                Date.now() + 15 * 24 * 60 * 60 * 1000
             )
 
         });
@@ -283,14 +283,14 @@ exports.login = async (req, res) => {
                 token_type: 'refresh'
             },
             process.env.JWT_REFRESH_SECRET,
-            { expiresIn: '7d' }
+            { expiresIn: '15d' }
         );
         await RefreshToken.create({
             user_id: receptionist.id,
             user_type: 'receptionist',
 
             token: refreshToken,
-            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+            expires_at: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000)
         });
         const accessToken = jwt.sign(
             {
@@ -300,7 +300,7 @@ exports.login = async (req, res) => {
                 token_type: 'access'
             },
             process.env.JWT_SECRET,
-            { expiresIn: '1d' }
+            { expiresIn: '5d' }
         );
         return res.json({
             status: 1,
@@ -372,7 +372,7 @@ exports.refreshAccessToken = async (req, res) => {
         );
 
         const receptionist = await Receptionist.findByPk(decoded.id);
-        console.log("receptionist",receptionist )
+        console.log("receptionist", receptionist)
 
         if (!receptionist) {
             return res.status(401).json({
@@ -389,7 +389,7 @@ exports.refreshAccessToken = async (req, res) => {
                 token_type: 'access'
             },
             process.env.JWT_SECRET,
-            { expiresIn: '1d' }
+            { expiresIn: '5d' }
         );
 
         return res.json({
@@ -669,7 +669,30 @@ exports.update_receptionist = async (req, res) => {
                 });
             }
         }
+// Remove branch from another receptionist if assigning a new branch
+if (
+    branch_id !== undefined &&
+    branch_id !== null &&
+    branch_id !== "" &&
+    branch_id != receptionist.branch_id
+) {
+    const existingReceptionist = await Receptionist.findOne({
+        where: {
+            branch_id,
+            merchant_id,
+            del_status: 0,
+            id: {
+                [Op.ne]: receptionist_id
+            }
+        }
+    });
 
+    if (existingReceptionist) {
+        await existingReceptionist.update({
+            branch_id: null
+        });
+    }
+}
         // Handle profile image upload
         let profileImage = receptionist.profile_image;
 
@@ -919,7 +942,7 @@ exports.dashboard = async (req, res) => {
             // redeemed users count
             const redeemed_users =
                 await CouponApplied.count({
-                    where:{
+                    where: {
                         status: 1,
                     },
 
@@ -1304,3 +1327,5 @@ exports.delete_receptionist = async (req, res) => {
     }
 
 };
+
+

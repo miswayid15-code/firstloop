@@ -2718,3 +2718,16 @@ exports.update_appointment_status_by_mer = async (req, res) => {
 //         });
 //     }
 // };
+
+exports.reception_book_appointment =async(req,res)=>{
+    try{
+
+    }
+    catch(err){
+        console.log("Err",err);
+        return res.status(401).json({
+            status:0,
+            message:"Network Issues"
+        })
+    }
+}

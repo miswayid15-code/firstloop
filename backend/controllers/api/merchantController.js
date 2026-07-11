@@ -173,7 +173,7 @@ exports.registerStep1 = async (req, res) => {
             },
             process.env.JWT_SECRET,
             {
-                expiresIn: '1d'
+                expiresIn: '5d'
             }
         );
 
@@ -189,7 +189,7 @@ exports.registerStep1 = async (req, res) => {
             },
             process.env.JWT_REFRESH_SECRET,
             {
-                expiresIn: '7d'
+                expiresIn: '15d'
             }
         );
 
@@ -206,7 +206,7 @@ exports.registerStep1 = async (req, res) => {
             token: refreshToken,
 
             expires_at: new Date(
-                Date.now() + 7 * 24 * 60 * 60 * 1000
+                Date.now() + 15 * 24 * 60 * 60 * 1000
             )
 
         });
@@ -433,6 +433,7 @@ exports.registerStep2 = async (req, res) => {
                 token: notificationToken?.token,
                 title: "Update Successful",
                 body: "Your details were updated successfully.",
+               
             });
 
 
@@ -607,7 +608,7 @@ exports.login = async (req, res) => {
             },
             process.env.JWT_REFRESH_SECRET,
             {
-                expiresIn: '7d'
+                expiresIn: '15d'
             }
         );
 
@@ -616,7 +617,7 @@ exports.login = async (req, res) => {
             user_type: 'merchant',
             token: refreshToken,
             expires_at: new Date(
-                Date.now() + 7 * 24 * 60 * 60 * 1000
+                Date.now() + 15 * 24 * 60 * 60 * 1000
             )
         });
 
@@ -633,7 +634,7 @@ exports.login = async (req, res) => {
             },
             process.env.JWT_SECRET,
             {
-                expiresIn: '1d'
+                expiresIn: '5d'
             }
         );
 
@@ -1290,7 +1291,7 @@ exports.firebase_reg = async (req, res) => {
                 token_type: 'access'
             },
             process.env.JWT_SECRET,
-            { expiresIn: '1d' }
+            { expiresIn: '5d' }
         );
 
         console.log("\nGENERATING REFRESH TOKEN...");
@@ -1304,7 +1305,7 @@ exports.firebase_reg = async (req, res) => {
             },
             process.env.JWT_REFRESH_SECRET,
             {
-                expiresIn: '7d'
+                expiresIn: '15d'
             }
         );
 
@@ -1316,7 +1317,7 @@ exports.firebase_reg = async (req, res) => {
             user_type: 'merchant',
             token: refreshToken,
             expires_at: new Date(
-                Date.now() + 7 * 24 * 60 * 60 * 1000
+                Date.now() + 15 * 24 * 60 * 60 * 1000
             )
         });
 

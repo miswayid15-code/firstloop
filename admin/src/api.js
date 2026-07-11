@@ -14,7 +14,9 @@ const API = axios.create({
 const logoutAndRedirect = (message) => {
     localStorage.clear();
     toast.error(message || "Session expired. Please login again.");
-    window.location.href = "/";
+    setTimeout(() => {
+        window.location.href = "/admin";
+    }, 1500);
 };
 
 // Request Interceptor

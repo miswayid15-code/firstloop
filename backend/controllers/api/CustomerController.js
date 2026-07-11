@@ -198,7 +198,7 @@ exports.register = async (req, res) => {
             },
             process.env.JWT_SECRET,
             {
-                expiresIn: '1d'
+                expiresIn: '5d'
             }
         );
 
@@ -212,7 +212,7 @@ exports.register = async (req, res) => {
             },
             process.env.JWT_REFRESH_SECRET,
             {
-                expiresIn: '7d'
+                expiresIn: '15d'
             }
         );
 
@@ -225,7 +225,7 @@ exports.register = async (req, res) => {
             user_type: 'customer',
             token: refreshToken,
             expires_at: new Date(
-                Date.now() + 7 * 24 * 60 * 60 * 1000
+                Date.now() + 15 * 24 * 60 * 60 * 1000
             )
 
         });
@@ -370,7 +370,7 @@ exports.login = async (req, res) => {
             },
             process.env.JWT_REFRESH_SECRET,
             {
-                expiresIn: '7d'
+                expiresIn: '15d'
             }
         );
 
@@ -380,7 +380,7 @@ exports.login = async (req, res) => {
             user_type: 'customer',
             token: refreshToken,
             expires_at: new Date(
-                Date.now() + 7 * 24 * 60 * 60 * 1000
+                Date.now() + 15 * 24 * 60 * 60 * 1000
             )
 
         });
@@ -394,7 +394,7 @@ exports.login = async (req, res) => {
             },
             process.env.JWT_SECRET,
             {
-                expiresIn: '1d'
+                expiresIn: '5d'
             }
         );
 

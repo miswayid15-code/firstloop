@@ -239,7 +239,7 @@ export default function Navbar() {
                                     )}
                                 </div>
                                 <div className="dropdown-footer">
-                                    <NavLink to="/notifications" onClick={() => setNotificationsOpen(false)}>Go to notifications</NavLink>
+                                    {/* <NavLink to="/notifications" onClick={() => setNotificationsOpen(false)}>Go to notifications</NavLink> */}
                                 </div>
                             </div>
                         </div>

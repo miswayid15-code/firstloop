@@ -85,7 +85,7 @@ exports.login = async (req, res) => {
 
             {
 
-                expiresIn: '7d'
+                expiresIn: '15d'
 
             }
 
@@ -102,8 +102,7 @@ exports.login = async (req, res) => {
 
             expires_at: new Date(
 
-                Date.now() +
-                7 * 24 * 60 * 60 * 1000
+                Date.now() + 15 * 24 * 60 * 60 * 1000
 
             )
 
@@ -125,7 +124,7 @@ exports.login = async (req, res) => {
 
             {
 
-                expiresIn: '1d'
+                expiresIn: '5d'
 
             }
 
@@ -266,7 +265,7 @@ exports.refreshAccessToken = async (req, res) => {
                 token_type: "access"
             },
             process.env.JWT_SECRET,
-            { expiresIn: '1d' }
+            { expiresIn: '5d' }
         );
 
         return res.json({
