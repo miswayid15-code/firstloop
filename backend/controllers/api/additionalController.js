@@ -354,13 +354,24 @@ exports.check_MerchantVersion = async (req, res) => {
         const mv = req.body.cur_version || req.query.cur_version;
         const platform = (req.body.platform || req.query.platform || "unknown").toLowerCase();
 
+        console.log("========== Merchant Version Check ==========");
+        console.log("Request Body:", req.body);
+        console.log("Request Query:", req.query);
+        console.log("Current Version:", mv);
+        console.log("Platform:", platform);
+
         const appstatus = await AppSetting.findOne({
             where: { id: 1 },
             attributes: ['app_status']
         });
+
+        console.log("App Status:", appstatus?.app_status);
+
         if (!appstatus || appstatus.app_status === false) {
+            console.log("Response: Site under construction");
+
             return res.json({
-               status: 2,
+                status: 2,
                 result: "fail",
                 text: "Site under construction",
                 web_url: process.env.Web_URL + "/under-construction"
@@ -376,22 +387,33 @@ exports.check_MerchantVersion = async (req, res) => {
         const minRequired = minVersions[platform] ?? minVersions.unknown;
         const isValid = !isNaN(mv) && Number(mv) >= minRequired;
 
+        console.log("Minimum Required Version:", minRequired);
+        console.log("Version Valid:", isValid);
+
         if (isValid) {
+            console.log("Response:", {
+                status: 1,
+                update_required: false
+            });
+
             return res.json({
                 status: 1,
                 result: "Success",
                 text: "Request Successfully Completed!",
-                // current_version: Number(mv),
                 min_required_version: minRequired,
                 update_required: false,
             });
         }
 
+        console.log("Response:", {
+            status: 0,
+            update_required: true
+        });
+
         return res.json({
             status: 0,
             result: "fail",
             text: `Update Required - Version ${mv} is outdated. Minimum required: ${minRequired}`,
-            // current_version: Number(mv) || 0,
             min_required_version: minRequired,
             update_required: true,
             store_url:
@@ -399,8 +421,10 @@ exports.check_MerchantVersion = async (req, res) => {
                     ? "https://apps.apple.com/your-app"
                     : "https://play.google.com/store/apps/details?id=your.package",
         });
+
     } catch (error) {
-        console.error("Version Check Error:", error);
+        console.error("========== Merchant Version Check Error ==========");
+        console.error(error);
 
         return res.status(500).json({
             status: 0,
@@ -409,7 +433,6 @@ exports.check_MerchantVersion = async (req, res) => {
         });
     }
 };
-
 
 exports.check_CustomerVersion = async (req, res) => {
     try {
