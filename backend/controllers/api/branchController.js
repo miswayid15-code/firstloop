@@ -431,6 +431,7 @@ exports.fetch_list = async (req, res) => {
                 'email',
                 'phone',
                 'profile_image',
+                'pending_profile_image',
                 'lat',
                 'lon',
                 'address',
@@ -459,8 +460,10 @@ exports.fetch_list = async (req, res) => {
 
             // ✅ profile image url
             branchData.profile_image = branchData.profile_image
-                ? baseUrl + '/' + branchData.profile_image.replace(/\\/g, '/')
-                : null;
+                ? `${baseUrl}/${branchData.profile_image.replace(/\\/g, '/')}`
+                : branchData.pending_profile_image
+                    ? `${baseUrl}/${branchData.pending_profile_image.replace(/\\/g, '/')}`
+                    : null;
 
             // ✅ branch images
             if (branchData.BranchImages && branchData.BranchImages.length > 0) {
@@ -2719,15 +2722,15 @@ exports.update_appointment_status_by_mer = async (req, res) => {
 //     }
 // };
 
-exports.reception_book_appointment =async(req,res)=>{
-    try{
+exports.reception_book_appointment = async (req, res) => {
+    try {
 
     }
-    catch(err){
-        console.log("Err",err);
+    catch (err) {
+        console.log("Err", err);
         return res.status(401).json({
-            status:0,
-            message:"Network Issues"
+            status: 0,
+            message: "Network Issues"
         })
     }
 }
