@@ -379,8 +379,8 @@ exports.check_MerchantVersion = async (req, res) => {
         }
 
         const minVersions = {
-            ios: 0,
-            android: 0,
+            ios: 5,
+            android: 5,
             unknown: 0,
         };
 
