@@ -198,7 +198,7 @@ exports.register = async (req, res) => {
             },
             process.env.JWT_SECRET,
             {
-                expiresIn: '5d'
+                expiresIn: '10d'
             }
         );
 
@@ -212,7 +212,7 @@ exports.register = async (req, res) => {
             },
             process.env.JWT_REFRESH_SECRET,
             {
-                expiresIn: '15d'
+                expiresIn: '30d'
             }
         );
 
@@ -225,7 +225,7 @@ exports.register = async (req, res) => {
             user_type: 'customer',
             token: refreshToken,
             expires_at: new Date(
-                Date.now() + 15 * 24 * 60 * 60 * 1000
+                Date.now() + 30 * 24 * 60 * 60 * 1000
             )
 
         });
@@ -370,7 +370,7 @@ exports.login = async (req, res) => {
             },
             process.env.JWT_REFRESH_SECRET,
             {
-                expiresIn: '15d'
+                expiresIn: '30d'
             }
         );
 
@@ -380,7 +380,7 @@ exports.login = async (req, res) => {
             user_type: 'customer',
             token: refreshToken,
             expires_at: new Date(
-                Date.now() + 15 * 24 * 60 * 60 * 1000
+                Date.now() + 30 * 24 * 60 * 60 * 1000
             )
 
         });
@@ -394,7 +394,7 @@ exports.login = async (req, res) => {
             },
             process.env.JWT_SECRET,
             {
-                expiresIn: '5d'
+                expiresIn: '10d'
             }
         );
 
@@ -2823,34 +2823,36 @@ exports.appointment = async (req, res) => {
                     del_status: 0
                 }
             });
+            if (receptionist) {
+                const receptionToken = await UserNotificationToken.findOne({
+                    where: {
+                        user_id: receptionist.id,
+                        user_type: "receptionist"
+                    }
+                });
+                const receptionistNotification = getNotificationTemplate(
+                    "appointment",
+                    "b2b",
+                    "pending"
+                );
 
-            const receptionToken = await UserNotificationToken.findOne({
-                where: {
-                    user_id: receptionist.id,
-                    user_type: "receptionist"
-                }
-            });
-            const receptionistNotification = getNotificationTemplate(
-                "appointment",
-                "b2b",
-                "pending"
-            );
-
-            if (receptionToken?.token) {
-                try {
-                    await sendPushNotification({
-                        token: receptionToken.token,
-                        ...receptionistNotification,
-                        data: {
-                            type: "appointment",
-                            appointment_id: appointment.id,
-                            branch_id: branch.id
-                        }
-                    });
-                } catch (err) {
-                    console.error("Error sending push notification to receptionist:", err);
+                if (receptionToken?.token) {
+                    try {
+                        await sendPushNotification({
+                            token: receptionToken.token,
+                            ...receptionistNotification,
+                            data: {
+                                type: "appointment",
+                                appointment_id: appointment.id,
+                                branch_id: branch.id
+                            }
+                        });
+                    } catch (err) {
+                        console.error("Error sending push notification to receptionist:", err);
+                    }
                 }
             }
+
         }
 
         return res.json({

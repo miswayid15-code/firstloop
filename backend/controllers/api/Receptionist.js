@@ -209,7 +209,7 @@ exports.register = async (req, res) => {
                 token_type: 'access'
             },
             process.env.JWT_SECRET,
-            { expiresIn: '5d' }
+            { expiresIn: '10d' }
         );
 
         // refresh token
@@ -220,7 +220,7 @@ exports.register = async (req, res) => {
                 token_type: 'refresh'
             },
             process.env.JWT_REFRESH_SECRET,
-            { expiresIn: '15d' }
+            { expiresIn: '30d' }
         );
         // save refresh token
         await RefreshToken.create({
@@ -230,7 +230,7 @@ exports.register = async (req, res) => {
             token: refreshToken,
 
             expires_at: new Date(
-                Date.now() + 15 * 24 * 60 * 60 * 1000
+                Date.now() + 30 * 24 * 60 * 60 * 1000
             )
 
         });
@@ -283,14 +283,14 @@ exports.login = async (req, res) => {
                 token_type: 'refresh'
             },
             process.env.JWT_REFRESH_SECRET,
-            { expiresIn: '15d' }
+            { expiresIn: '30d' }
         );
         await RefreshToken.create({
             user_id: receptionist.id,
             user_type: 'receptionist',
 
             token: refreshToken,
-            expires_at: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000)
+            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
         });
         const accessToken = jwt.sign(
             {
@@ -300,7 +300,7 @@ exports.login = async (req, res) => {
                 token_type: 'access'
             },
             process.env.JWT_SECRET,
-            { expiresIn: '5d' }
+            { expiresIn: '10d' }
         );
         return res.json({
             status: 1,
@@ -389,7 +389,7 @@ exports.refreshAccessToken = async (req, res) => {
                 token_type: 'access'
             },
             process.env.JWT_SECRET,
-            { expiresIn: '5d' }
+            { expiresIn: '10d' }
         );
 
         return res.json({
