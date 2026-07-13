@@ -674,12 +674,51 @@ exports.login = async (req, res) => {
 exports.logout = async (req, res) => {
     try {
 
-        await RefreshToken.destroy({
+        // console.log("========== MERCHANT LOGOUT ==========");
+        // console.log("Merchant ID:", req.user.id);
+
+        // Refresh Tokens
+        // const refreshTokens = await RefreshToken.findAll({
+        //     where: {
+        //         user_id: req.user.id,
+        //         user_type: "merchant"
+        //     },
+        //     raw: true
+        // });
+
+        // console.log("Refresh Tokens Found:", refreshTokens);
+
+        const refreshDeleted = await RefreshToken.destroy({
             where: {
                 user_id: req.user.id,
-                user_type: 'merchant'
+                user_type: "merchant"
             }
         });
+
+        // console.log("Refresh Tokens Deleted:", refreshDeleted);
+
+        // // Notification Tokens
+        // const notificationTokens = await UserNotificationToken.findAll({
+        //     where: {
+        //         user_id: req.user.id,
+        //         user_type: "merchant"
+        //     },
+        //     raw: true
+        // });
+
+        // console.log("Notification Tokens Found:", notificationTokens);
+        // console.log("Notification Token Count:", notificationTokens.length);
+
+        const notificationDeleted = await UserNotificationToken.destroy({
+            where: {
+                user_id: req.user.id,
+                user_type: "merchant"
+            }
+        });
+
+        // console.log("Notification Tokens Deleted:", notificationDeleted);
+
+        // console.log("========== LOGOUT SUCCESS ==========");
 
         return res.json({
             status: 1,
@@ -687,10 +726,17 @@ exports.logout = async (req, res) => {
         });
 
     } catch (err) {
-        return res.json({ status: 0, message: "Error" });
+
+        console.log("========== LOGOUT ERROR ==========");
+        console.error(err);
+
+        return res.json({
+            status: 0,
+            message: err.message || "Logout failed"
+        });
+
     }
 };
-
 exports.dashboard = async (req, res) => {
 
     try {
@@ -1400,7 +1446,7 @@ exports.change_status_br = async (req, res) => {
 
         const notificationToken = await UserNotificationToken.findOne({
             where: {
-                user_id: merchant.id,
+                user_id: branch.merchant_id,
                 user_type: "merchant"
             }
         });
@@ -1409,13 +1455,15 @@ exports.change_status_br = async (req, res) => {
                 branch_id: branch.id,
             }
         });
-
-        const receptionToken = await UserNotificationToken.findOne({
-            where: {
-                user_id: receptionist.id,
-                user_type: "receptionist"
-            }
-        });
+        let receptionToken = null;
+        if (receptionist) {
+            receptionToken = await UserNotificationToken.findOne({
+                where: {
+                    user_id: receptionist.id,
+                    user_type: "receptionist"
+                }
+            });
+        }
 
         try {
             await sendPushNotification({
@@ -1423,11 +1471,14 @@ exports.change_status_br = async (req, res) => {
                 title: notification_text.title,
                 body: notification_text.body,
             });
-            await sendPushNotification({
-                token: receptionToken.token,
-                title: receptionistNotification.title,
-                body: receptionistNotification.body,
-            });
+
+            if (receptionist && receptionToken?.token) {
+                await sendPushNotification({
+                    token: receptionToken.token,
+                    title: receptionistNotification.title,
+                    body: receptionistNotification.body,
+                });
+            }
 
 
         } catch (error) {
@@ -1500,7 +1551,7 @@ exports.change_status_res = async (req, res) => {
 
         const notificationToken = await UserNotificationToken.findOne({
             where: {
-                user_id: merchant.id,
+                user_id: receptionist.merchant_id,
                 user_type: "merchant"
             }
         });
@@ -1544,3 +1595,5 @@ exports.change_status_res = async (req, res) => {
         });
     }
 };
+
+

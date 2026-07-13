@@ -28,5 +28,7 @@ router.post(
 router.post("/check-version", controller.checkVersion);
 router.post("/check-merchant-version", controller.check_MerchantVersion);
 router.post("/check-customer-version", controller.check_CustomerVersion);
-
+router.post("/get-notification-list", controller.get_notification_list);
+router.post("/update-notification-list", controller.update_notification);
+router.post("/create_support", controller.create_support);
 module.exports = router;

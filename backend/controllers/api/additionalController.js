@@ -1,6 +1,7 @@
-const { Banner, Receptionist, Merchant, OtpVerify, CustomerOtpVerify, Customer, AppSetting } = require('../../models');
+const { Banner, Receptionist, Merchant, OtpVerify, CustomerOtpVerify, Customer, AppSetting, Notification, Support } = require('../../models');
 const { sendOtp } = require('../../helpers/sendOtp');
 const sendMail = require('../../helpers/sendMail');
+const { where } = require('sequelize');
 exports.banner_list = async (req, res) => {
 
     try {
@@ -354,22 +355,11 @@ exports.check_MerchantVersion = async (req, res) => {
         const mv = req.body.cur_version || req.query.cur_version;
         const platform = (req.body.platform || req.query.platform || "unknown").toLowerCase();
 
-        console.log("========== Merchant Version Check ==========");
-        console.log("Request Body:", req.body);
-        console.log("Request Query:", req.query);
-        console.log("Current Version:", mv);
-        console.log("Platform:", platform);
-
         const appstatus = await AppSetting.findOne({
             where: { id: 1 },
             attributes: ['app_status']
         });
-
-        console.log("App Status:", appstatus?.app_status);
-
         if (!appstatus || appstatus.app_status === false) {
-            console.log("Response: Site under construction");
-
             return res.json({
                 status: 2,
                 result: "fail",
@@ -387,33 +377,22 @@ exports.check_MerchantVersion = async (req, res) => {
         const minRequired = minVersions[platform] ?? minVersions.unknown;
         const isValid = !isNaN(mv) && Number(mv) >= minRequired;
 
-        console.log("Minimum Required Version:", minRequired);
-        console.log("Version Valid:", isValid);
-
         if (isValid) {
-            console.log("Response:", {
-                status: 1,
-                update_required: false
-            });
-
             return res.json({
                 status: 1,
                 result: "Success",
                 text: "Request Successfully Completed!",
+                // current_version: Number(mv),
                 min_required_version: minRequired,
                 update_required: false,
             });
         }
 
-        console.log("Response:", {
-            status: 0,
-            update_required: true
-        });
-
         return res.json({
             status: 0,
             result: "fail",
             text: `Update Required - Version ${mv} is outdated. Minimum required: ${minRequired}`,
+            // current_version: Number(mv) || 0,
             min_required_version: minRequired,
             update_required: true,
             store_url:
@@ -421,10 +400,8 @@ exports.check_MerchantVersion = async (req, res) => {
                     ? "https://apps.apple.com/your-app"
                     : "https://play.google.com/store/apps/details?id=your.package",
         });
-
     } catch (error) {
-        console.error("========== Merchant Version Check Error ==========");
-        console.error(error);
+        console.error("Version Check Error:", error);
 
         return res.status(500).json({
             status: 0,
@@ -434,13 +411,14 @@ exports.check_MerchantVersion = async (req, res) => {
     }
 };
 
+
 exports.check_CustomerVersion = async (req, res) => {
     try {
         const mv = req.body.cur_version || req.query.cur_version;
         const platform = (req.body.platform || req.query.platform || "unknown").toLowerCase();
 
         const appstatus = await AppSetting.findOne({
-            where: { id: 1 },
+            where: { id: 2 },
             attributes: ['app_status']
         });
         if (!appstatus || appstatus.app_status === false) {
@@ -495,3 +473,210 @@ exports.check_CustomerVersion = async (req, res) => {
     }
 };
 
+
+
+exports.get_notification_list = async (req, res) => {
+    try {
+
+        const { user_id, user_type } = req.body;
+
+        if (!user_id) {
+            return res.status(400).json({
+                status: 0,
+                message: "User ID is required."
+            });
+        }
+
+        if (!["merchant", "receptionist", "customer"].includes(user_type)) {
+            return res.status(400).json({
+                status: 0,
+                message: "Invalid user type."
+            });
+        }
+
+        const notification = await Notification.findAll({
+            where: {
+                user_id,
+                user_type,
+                is_read: false
+            }
+        })
+        if (!notification) {
+            return res.json({
+                status: 1,
+                message: "No notifications found.",
+                data: []
+            });
+        }
+        if (notification.length === 0) {
+            return res.json({
+                status: 1,
+                message: "No notifications found.",
+                data: []
+            });
+        }
+
+        return res.json({
+            status: 1,
+            message: "Success",
+            data: notification
+        });
+
+    } catch (err) {
+
+        console.error(err);
+
+        return res.status(500).json({
+            status: 0,
+            message: "Network issue."
+        });
+
+    }
+};
+
+
+exports.update_notification = async (req, res) => {
+    try {
+        const { user_id, user_type } = req.body;
+
+        if (!user_id) {
+            return res.status(400).json({
+                status: 0,
+                message: "User ID is required."
+            });
+        }
+
+        if (!["merchant", "receptionist", "customer"].includes(user_type)) {
+            return res.status(400).json({
+                status: 0,
+                message: "Invalid user type."
+            });
+        }
+
+        const [updatedCount] = await Notification.update(
+            {
+                is_read: true
+            },
+            {
+                where: {
+                    user_id,
+                    user_type
+                }
+            }
+        );
+
+        return res.json({
+            status: 1,
+            message: updatedCount > 0
+                ? "Notifications marked as read."
+                : "No notifications found.",
+        });
+
+    } catch (err) {
+        console.log(err);
+
+        return res.status(500).json({
+            status: 0,
+            message: "Network issue."
+        });
+    }
+};
+
+exports.create_support = async (req, res) => {
+    try {
+
+        const {
+            name,
+            phone,
+            email,
+            description, type, submit_type
+        } = req.body;
+
+        // Validation
+        if (!name) {
+            return res.json({
+                status: 0,
+                message: "Name is required."
+            });
+        }
+
+        if (!phone) {
+            return res.json({
+                status: 0,
+                message: "Phone number is required."
+            });
+        }
+
+        if (!email) {
+            return res.json({
+                status: 0,
+                message: "Email is required."
+            });
+        }
+
+        if (!description) {
+            return res.json({
+                status: 0,
+                message: "Description is required."
+            });
+        }
+
+        // Create Support
+        const support = await Support.create({
+            name,
+            phone,
+            email,
+            description,
+            status: 0, type, submit_type
+        });
+
+        return res.json({
+            status: 1,
+            message: "Support request submitted successfully.",
+            data: support
+        });
+
+    } catch (err) {
+
+        console.error("CREATE SUPPORT ERROR:", err);
+
+        return res.status(500).json({
+            status: 0,
+            message: "Something went wrong.",
+            error: err.message
+        });
+
+    }
+};
+
+
+exports.check_delete_account = async (req, res) => {
+    try {
+        const { user_type, id } = req.body;
+        if (!user_type && !id) {
+            return res.status(401).json({
+                status: 0,
+                message: "User_type and id are required",
+
+            })
+        }
+        if (user_type in ![1, 2, 3]){
+            return res.status(401).json({
+                status: 0,
+                message: "User_type is wrong",
+
+            })}
+       
+
+    }
+    catch (err) {
+        console.error("CREATE SUPPORT ERROR:", err);
+        return res.status(401).json({
+
+            status: 0,
+            message: "Something went wrong.",
+            error: err.message
+
+        })
+    }
+}

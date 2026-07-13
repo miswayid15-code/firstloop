@@ -1,4 +1,4 @@
-const { Banner, Page, Receptionist, Merchant, Customer, AppSetting } = require('../../models');
+const { Banner, Page, Receptionist, Merchant, Customer, AppSetting, Support } = require('../../models');
 
 const { deleteFile } = require('../../helpers/fileHelper');
 const { bool } = require('sharp');
@@ -429,6 +429,51 @@ exports.update_app_status = async (req, res) => {
     }
 };
 
+exports.merchant_app_status = async (req, res) => {
+    try {
+        const { id, app_status } = req.body;
+
+        if (!id) {
+            return res.status(400).json({
+                status: 0,
+                message: "id is required"
+            });
+        }
+
+        if (typeof app_status !== "boolean") {
+            return res.status(400).json({
+                status: 0,
+                message: "app_status must be a boolean value"
+            });
+        }
+
+        const appSetting = await AppSetting.findByPk(id);
+
+        if (!appSetting) {
+            return res.status(404).json({
+                status: 0,
+                message: "App setting not found"
+            });
+        }
+
+        await appSetting.update({
+            app_status
+        });
+
+        return res.json({
+            status: 1,
+            message: "App status updated successfully",
+            // data: appSetting
+        });
+
+    } catch (err) {
+        console.log("Error:", err);
+        return res.status(500).json({
+            status: 0,
+            message: "An error occurred while updating the app status"
+        });
+    }
+};
 
 
 exports.customer_list = async (req, res) => {
@@ -529,3 +574,71 @@ exports.reception_list = async (req, res) => {
     }
 }
 
+
+
+exports.support_list = async (req, res) => {
+    try {
+        const support = await Support.findAll({
+            order: [
+                ['status', 'ASC'],      // 0 (Pending) first, 1 (Approved) next
+                ['created_at', 'DESC']  // Latest records first within each status
+            ]
+        });
+
+        return res.json({
+            status: 1,
+            message: "Support list fetched successfully.",
+            data: support
+        });
+    } catch (err) {
+        console.log("Err", err);
+
+        return res.status(500).json({
+            status: 0,
+            message: "Something went wrong.",
+            error: err.message
+        });
+    }
+};
+
+exports.update_status = async (req, res) => {
+    try {
+        console.log("Body",req.body)
+        const { support_id, status } = req.body;
+
+        if (!support_id || status === undefined) {
+            return res.json({
+                status: 0,
+                message: "Support ID and status are required."
+            });
+        }
+
+        const support = await Support.findByPk(support_id);
+
+        if (!support) {
+            return res.json({
+                status: 0,
+                message: "Support not found."
+            });
+        }
+
+        await support.update({
+            status
+        });
+
+        return res.json({
+            status: 1,
+            message: "Support status updated successfully.",
+            data: support
+        });
+
+    } catch (err) {
+        console.log("UPDATE SUPPORT STATUS ERROR:", err);
+
+        return res.json({
+            status: 0,
+            message: "Something went wrong.",
+            error: err.message
+        });
+    }
+};

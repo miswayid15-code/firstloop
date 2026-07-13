@@ -471,6 +471,12 @@ exports.logout = async (req, res) => {
                 user_type: 'Customer'
             }
         });
+        const notificationDeleted = await UserNotificationToken.destroy({
+            where: {
+                user_id: req.user.id,
+                user_type: "customer"
+            }
+        });
 
         return res.json({
             status: 1,
@@ -1952,34 +1958,35 @@ exports.coupon_apply = async (req, res) => {
                 }
 
             }
+            if (receptionist) {
+                const receptionToken = await UserNotificationToken.findOne({
+                    where: {
+                        user_id: receptionist.id,
+                        user_type: "receptionist"
+                    }
+                });
 
-            const receptionToken = await UserNotificationToken.findOne({
-                where: {
-                    user_id: receptionist.id,
-                    user_type: "receptionist"
-                }
-            });
+                const receptionistNotification = getNotificationTemplate(
+                    "coupon_redeem",
+                    "b2b",
+                    "pending"
+                );
 
-            const receptionistNotification = getNotificationTemplate(
-                "coupon_redeem",
-                "b2b",
-                "pending"
-            );
-
-            if (receptionToken?.token) {
-                try {
-                    await sendPushNotification({
-                        token: receptionToken.token,
-                        ...receptionistNotification,
-                        data: {
-                            type: "coupon_redeem",
-                            coupon_id: coupon.id,
-                            coupon_applied_id: couponApplied.id,
-                            branch_id: branch.id
-                        }
-                    });
-                } catch (err) {
-                    console.log("Push Notification Error:", err);
+                if (receptionToken?.token) {
+                    try {
+                        await sendPushNotification({
+                            token: receptionToken.token,
+                            ...receptionistNotification,
+                            data: {
+                                type: "coupon_redeem",
+                                coupon_id: coupon.id,
+                                coupon_applied_id: couponApplied.id,
+                                branch_id: branch.id
+                            }
+                        });
+                    } catch (err) {
+                        console.log("Push Notification Error:", err);
+                    }
                 }
             }
         }
@@ -3642,36 +3649,38 @@ exports.cancel_appointment = async (req, res) => {
                     del_status: 0
                 }
             });
+            if (receptionist) {
+                const receptionToken = await UserNotificationToken.findOne({
+                    where: {
+                        user_id: receptionist.id,
+                        user_type: "receptionist"
+                    }
+                });
+                const receptionistNotification = getNotificationTemplate(
+                    "appointment",
+                    "b2b",
+                    "cancelled",
+                    "the customer",
+                    appointment.cancel_reason
+                );
 
-            const receptionToken = await UserNotificationToken.findOne({
-                where: {
-                    user_id: receptionist.id,
-                    user_type: "receptionist"
-                }
-            });
-            const receptionistNotification = getNotificationTemplate(
-                "appointment",
-                "b2b",
-                "cancelled",
-                "the customer",
-                appointment.cancel_reason
-            );
-
-            if (receptionToken?.token) {
-                try {
-                    await sendPushNotification({
-                        token: receptionToken.token,
-                        ...receptionistNotification,
-                        data: {
-                            type: "appointment",
-                            branch_id: branch.id,
-                            appointment_id: appointment.id
-                        }
-                    });
-                } catch (error) {
-                    console.error("Receptionist notification failed:", error);
+                if (receptionToken?.token) {
+                    try {
+                        await sendPushNotification({
+                            token: receptionToken.token,
+                            ...receptionistNotification,
+                            data: {
+                                type: "appointment",
+                                branch_id: branch.id,
+                                appointment_id: appointment.id
+                            }
+                        });
+                    } catch (error) {
+                        console.error("Receptionist notification failed:", error);
+                    }
                 }
             }
+
         }
 
         return res.json({

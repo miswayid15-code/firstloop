@@ -64,6 +64,8 @@ router.post("/update-app-status",auth('admin'),checkAdmin, controller.update_app
 
 
 
+router.get("/support/list",auth('admin'),checkAdmin, controller.support_list);
+router.post("/support/update-status",auth('admin'),checkAdmin, controller.update_status);
 
 
 module.exports = router;

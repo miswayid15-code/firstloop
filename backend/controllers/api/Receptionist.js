@@ -1,5 +1,5 @@
 // controllers\api\Receptionist.js
-const { Receptionist, RefreshToken, Branch, Merchant, Appointment, Coupon, CouponApplied } = require('../../models');
+const { Receptionist, RefreshToken, Branch, Merchant, Appointment, Coupon, CouponApplied ,UserNotificationToken} = require('../../models');
 const bcrypt = require('bcryptjs');
 const { parsePhoneNumber } = require('libphonenumber-js');
 const jwt = require('jsonwebtoken');
@@ -327,6 +327,12 @@ exports.logout = async (req, res) => {
             where: {
                 user_id: req.user.id,
                 user_type: 'receptionist'
+            }
+        });
+        const notificationDeleted = await UserNotificationToken.destroy({
+            where: {
+                user_id: req.user.id,
+                user_type: "receptionist"
             }
         });
 
@@ -669,30 +675,30 @@ exports.update_receptionist = async (req, res) => {
                 });
             }
         }
-// Remove branch from another receptionist if assigning a new branch
-if (
-    branch_id !== undefined &&
-    branch_id !== null &&
-    branch_id !== "" &&
-    branch_id != receptionist.branch_id
-) {
-    const existingReceptionist = await Receptionist.findOne({
-        where: {
-            branch_id,
-            merchant_id,
-            del_status: 0,
-            id: {
-                [Op.ne]: receptionist_id
+        // Remove branch from another receptionist if assigning a new branch
+        if (
+            branch_id !== undefined &&
+            branch_id !== null &&
+            branch_id !== "" &&
+            branch_id != receptionist.branch_id
+        ) {
+            const existingReceptionist = await Receptionist.findOne({
+                where: {
+                    branch_id,
+                    merchant_id,
+                    del_status: 0,
+                    id: {
+                        [Op.ne]: receptionist_id
+                    }
+                }
+            });
+
+            if (existingReceptionist) {
+                await existingReceptionist.update({
+                    branch_id: null
+                });
             }
         }
-    });
-
-    if (existingReceptionist) {
-        await existingReceptionist.update({
-            branch_id: null
-        });
-    }
-}
         // Handle profile image upload
         let profileImage = receptionist.profile_image;
 

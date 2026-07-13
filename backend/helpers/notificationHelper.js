@@ -1,5 +1,5 @@
 const axios = require("axios");
-
+const { Notification,UserNotificationToken } = require("../models");
 const sendPushNotification = async ({
     token,
     title,
@@ -7,8 +7,14 @@ const sendPushNotification = async ({
     data = {},
     sound = "default",
     badge = 1,
+    user_type = null,
+    user_id = null,
+    type = null,
+    reference_id = null,
 }) => {
     try {
+
+
         if (!token) {
             return {
                 success: 0,
@@ -16,6 +22,35 @@ const sendPushNotification = async ({
             };
         }
 
+        const tokenRecord = await UserNotificationToken.findOne({
+            where: {
+                token
+            }
+        });
+
+        if (tokenRecord) {
+            user_id = tokenRecord.user_id;
+            user_type = tokenRecord.user_type;
+        }
+        if (user_type && user_id) {
+            try {
+                await Notification.create({
+                    user_type,
+                    user_id,
+                    title,
+                    body,
+                     type: data.type||null,
+                    reference_id:data.appointment_id||data.coupon_applied_id||null,
+                    data,
+                    is_read: false
+                });
+            } catch (err) {
+                console.log("Notification DB Error:");
+                console.log(err);
+                console.log(err.message);
+                console.log(err.errors);
+            }
+        }
         const message = {
             to: token,
             title,
