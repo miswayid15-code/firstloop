@@ -12,7 +12,7 @@ const {
     Banner,
     BranchImage,
     MenuImage,
-    CouponApplied,
+    CouponApplied, 
     Wishlist,
     Appointment, UserNotificationToken
 } = require('../../models');
