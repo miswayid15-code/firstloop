@@ -499,7 +499,7 @@ exports.get_notification_list = async (req, res) => {
             where: {
                 user_id,
                 user_type,
-                is_read: false
+                // is_read: false
             },
              order: [['createdAt', 'DESC']]
         })
