@@ -34,7 +34,7 @@ exports.register = async (req, res) => {
             timings,
             visibility,
             age_group, city, state, country,
-            passlock
+            // passlock
         } = req.body;
 
         const merchant_id = req.user.id;

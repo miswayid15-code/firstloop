@@ -1063,7 +1063,7 @@ exports.home = async (req, res) => {
             choose_country = '+' + choose_country.trim();
 
         }
-        console.log("choose_country", choose_country)
+        // console.log("choose_country", choose_country)
 
         const customer_id =
             req.user?.id ||
