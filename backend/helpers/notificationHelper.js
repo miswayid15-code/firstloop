@@ -27,8 +27,8 @@ const sendPushNotification = async ({
                 token
             }
         });
-        console.log("DATA:", data);
-        console.log("TYPE:", data?.type);
+        // console.log("DATA:", data);
+        // console.log("TYPE:", data?.type);
         if (tokenRecord) {
             user_id = tokenRecord.user_id;
             user_type = tokenRecord.user_type;

@@ -1,3 +1,5 @@
+const { UserNotificationToken, Receptionist, Branch } = require('../../models');
+const { sendPushNotification } = require("../../helpers/notificationHelper");
 const { db, admin } = require('../../config/firebase');
 const {
     Merchant,
@@ -147,6 +149,82 @@ exports.sendMessage = async (req, res) => {
                     admin.firestore.FieldValue.serverTimestamp()
 
             });
+
+        const chatDoc = await db.collection("chats").doc(chatId).get();
+
+        if (!chatDoc.exists) {
+            return res.json({
+                status: 0,
+                message: "Chat not found."
+            });
+        }
+
+        const chatData = chatDoc.data();
+        const branchId = chatData.branchId;
+
+        const branch = await Branch.findOne({
+            where: {
+                id: branchId,
+                del_status: 0
+            }
+        });
+
+        if (branch) {
+
+            const notificationToken = await UserNotificationToken.findOne({
+                where: {
+                    user_id: branch.merchant_id,
+                    user_type: "merchant"
+                }
+            });
+
+            let reception_notificationToken = null;
+
+            const receptionist = await Receptionist.findOne({
+                where: {
+                    branch_id: branchId,
+                    del_status: 0
+                }
+            });
+
+            if (receptionist) {
+                reception_notificationToken = await UserNotificationToken.findOne({
+                    where: {
+                        user_id: receptionist.id,
+                        user_type: "receptionist"
+                    }
+                });
+            }
+
+            try {
+
+                // Merchant notification
+                await sendPushNotification({
+                    token: reception_notificationToken.token,
+                    title: customer?.name || "Customer",
+                    body: content,
+                    data: {
+                        type: "message",
+                    }
+                });
+
+
+                if (reception_notificationToken?.token) {
+                    await sendPushNotification({
+                        token: reception_notificationToken.token,
+                        title: customer?.name || "Customer",
+                        body: content,
+                        data: {
+                            type: "message",
+                        }
+                    });
+                }
+
+            } catch (error) {
+                console.error("Push Notification Error:", error);
+            }
+        }
+
         // console.log("Sender",);
         return res.json({
 

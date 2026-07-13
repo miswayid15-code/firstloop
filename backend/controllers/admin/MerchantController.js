@@ -4502,7 +4502,10 @@ exports.verify_branch_pending_img = async (req, res) => {
                 title: Number(status) === 1 ? "Profile Image Approved" : "Profile Image Rejected",
                 body: Number(status) === 1
                     ? "Your branch profile image has been approved successfully."
-                    : `Your branch profile image has been rejected.${rejected_reason ? ` Reason: ${rejected_reason}` : ""}`
+                    : `Your branch profile image has been rejected.${rejected_reason ? ` Reason: ${rejected_reason}` : ""}`,
+                     data:{
+                     type: "branch_list",
+                }
             });
         } catch (error) {
             console.error("Push Notification Error:", error);

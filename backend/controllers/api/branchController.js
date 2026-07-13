@@ -1281,7 +1281,10 @@ exports.register_menu_image = async (req, res) => {
                 token: notificationToken?.token,
                 title: "✅ Menu Image Uploaded",
                 body: `Your menu image has been uploaded successfully for ${branch.name}. 📸`,
-                
+                data: {
+                    type: "branch_list",
+                }
+
             });
 
 
@@ -1556,7 +1559,10 @@ exports.update_menu_image = async (req, res) => {
             const result = await sendPushNotification({
                 token: notificationToken?.token,
                 title: "✅ Menu Image Updated",
-                body: `Your menu image has been updated successfully for ${branch.name}. 📸`
+                body: `Your menu image has been updated successfully for ${branch.name}. 📸`,
+                data:{
+                     type: "branch_list",
+                }
             });
 
 
@@ -1689,7 +1695,10 @@ exports.delete_menu_image = async (req, res) => {
             const result = await sendPushNotification({
                 token: notificationToken?.token,
                 title: "✅ Menu Image Removed",
-                body: `The menu image has been removed successfully from ${branch.name}.`
+                body: `The menu image has been removed successfully from ${branch.name}.`,
+                data:{
+                     type: "branch_list",
+                }
             });
 
 

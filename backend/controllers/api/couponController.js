@@ -321,7 +321,10 @@ exports.create_coupon = async (req, res) => {
             const result = await sendPushNotification({
                 token: notificationToken?.token,
                 title: "🎉 Coupon Created!",
-                body: `Your coupon "${code}" has been created successfully.`
+                body: `Your coupon "${code}" has been created successfully.`,
+                data:{
+                     type: "coupon_list",
+                }
             });
 
 
@@ -598,7 +601,10 @@ exports.update_coupon = async (req, res) => {
             const result = await sendPushNotification({
                 token: notificationToken?.token,
                 title: "🎉 Coupon updated!",
-                body: `Your coupon "${code}" has been updated successfully.`
+                body: `Your coupon "${code}" has been updated successfully.`,
+                 data:{
+                     type: "coupon_list",
+                }
             });
 
 

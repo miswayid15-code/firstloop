@@ -2453,7 +2453,10 @@ exports.wishlist = async (req, res) => {
                 const result = await sendPushNotification({
                     token: notificationToken?.token,
                     title: "Wishlist Updated!",
-                    body: `The branch "${branch.name}" has been removed from your wishlist.`
+                    body: `The branch "${branch.name}" has been removed from your wishlist.`,
+                     data:{
+                     type: "wishlist",
+                }
                 });
 
 
@@ -2506,7 +2509,10 @@ exports.wishlist = async (req, res) => {
             const result = await sendPushNotification({
                 token: notificationToken?.token,
                 title: "🎉 Wishlist Updated!",
-                body: `The branch "${branch.name}" has been added to your wishlist. ❤️`
+                body: `The branch "${branch.name}" has been added to your wishlist. ❤️`,
+                 data:{
+                     type: "wishlist",
+                }
             });
 
 
