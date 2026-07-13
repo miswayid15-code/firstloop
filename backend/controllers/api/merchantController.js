@@ -845,6 +845,7 @@ exports.dashboard = async (req, res) => {
             message: "Dashboard data fetched successfully",
             data: {
                 merchant_name: merchant.bus_name || merchant.name,
+                merchant_del_status: merchant.del_status,
                 merchant_status: merchant.status,
                 merchant_id: merchant.id,
                 merchant_profile_image: data.profile_image,
