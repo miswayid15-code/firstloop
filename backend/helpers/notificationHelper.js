@@ -1,5 +1,5 @@
 const axios = require("axios");
-const { Notification,UserNotificationToken } = require("../models");
+const { Notification, UserNotificationToken } = require("../models");
 const sendPushNotification = async ({
     token,
     title,
@@ -27,7 +27,8 @@ const sendPushNotification = async ({
                 token
             }
         });
-
+        console.log("DATA:", data);
+        console.log("TYPE:", data?.type);
         if (tokenRecord) {
             user_id = tokenRecord.user_id;
             user_type = tokenRecord.user_type;
@@ -39,8 +40,8 @@ const sendPushNotification = async ({
                     user_id,
                     title,
                     body,
-                     type: data.type||null,
-                    reference_id:data.appointment_id||data.coupon_applied_id||null,
+                    type: data.type || null,
+                    reference_id: data.appointment_id || data.coupon_applied_id || null,
                     data,
                     is_read: false
                 });
