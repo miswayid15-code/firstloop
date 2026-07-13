@@ -3,29 +3,29 @@ const router = express.Router();
 
 const upload = require('../../middleware/upload');
 const controller = require('../../controllers/api/branchController');
-const auth = require('../../middleware/auth'); 
-const checkMerchant = require('../../middleware/checkMerchant'); 
-const checkMerchantOrReceptionist = require('../../middleware/checkMerchantOrReceptionist'); 
+const auth = require('../../middleware/auth');
+const checkMerchant = require('../../middleware/checkMerchant');
+const checkMerchantOrReceptionist = require('../../middleware/checkMerchantOrReceptionist');
 
 
 // ================= CREATE BRANCH =================
 router.post(
-'/branch/create-branch',
-(req, res, next) => {
-// console.log("STEP 1 ROUTE HIT");
-next();
-},
- auth('merchant'),
-(req, res, next) => {
-// console.log("STEP 2 AUTH OK");
-next();
-},
-upload,
-(req, res, next) => {
-console.log("STEP 3 MULTER OK");
-next();
-},
-controller.register
+    '/branch/create-branch',
+    (req, res, next) => {
+        // console.log("STEP 1 ROUTE HIT");
+        next();
+    },
+    auth('merchant'),
+    (req, res, next) => {
+        // console.log("STEP 2 AUTH OK");
+        next();
+    },
+    upload,
+    (req, res, next) => {
+        console.log("STEP 3 MULTER OK");
+        next();
+    },
+    controller.register
 );
 
 
@@ -33,7 +33,7 @@ controller.register
 // ================= UPDATE BRANCH =================
 router.post(
     '/branch/update',
-     auth('merchant'),
+    auth('merchant'),
     (req, res, next) => {
         req.uploadFolder = 'branch';
         next();
@@ -46,7 +46,7 @@ router.post(
 // ================= FETCH BRANCH LIST =================
 router.get(
     '/branch/fetch-branch',
-     auth('merchant'),
+    auth('merchant'),
     controller.fetch_list
 );
 
@@ -56,19 +56,19 @@ router.get(
 
 router.get(
     '/branch/fetch-appointment',
-     auth('receptionist'),
+    auth('receptionist'),
     controller.appointment_list
 );
 
-router.post('/branch/update-appointment', auth('receptionist'),(req,res,next)=>{
-       
-        next();
-    },controller.update_appointment_status
+router.post('/branch/update-appointment', auth('receptionist'), (req, res, next) => {
+
+    next();
+}, controller.update_appointment_status
 );
 
 router.post(
     '/branch/appointment-details',
-     auth('receptionist'),
+    auth('receptionist'),
     controller.fetch_appointment_details
 );
 
@@ -76,7 +76,7 @@ router.post(
 // ================= DELETE BRANCH =================
 router.post(
     '/branch/delete',
-     auth('merchant'),
+    auth('merchant'),
     controller.delete_branch
 );
 
@@ -84,7 +84,7 @@ router.post(
 // ================= CREATE MENU IMAGE =================
 router.post(
     '/branch/create_menu_image',
-     auth('merchant'),
+    auth('merchant'),
     (req, res, next) => {
         req.uploadFolder = 'branch/menu';
         next();
@@ -97,7 +97,7 @@ router.post(
 // ================= FETCH MENU IMAGES =================
 router.get(
     '/branch/fetch_menu_images/:branch_id',
-     auth('merchant'),
+    auth('merchant'),
     controller.fetch_menu_images
 );
 
@@ -105,7 +105,7 @@ router.get(
 // ================= UPDATE MENU IMAGE =================
 router.post(
     '/branch/update_menu_image',
-     auth('merchant'),
+    auth('merchant'),
     (req, res, next) => {
         req.uploadFolder = 'branch/menu';
         next();
@@ -118,12 +118,12 @@ router.post(
 // ================= DELETE MENU IMAGE =================
 router.delete(
     '/branch/delete_menu_image',
-     auth('merchant'),
+    auth('merchant'),
     controller.delete_menu_image
 );
 
 
-router.get('/branch/details/:id',      auth(),
+router.get('/branch/details/:id', auth(),
     checkMerchantOrReceptionist, controller.branch_id);
 
 // ================= merchant appointment =================
@@ -149,4 +149,5 @@ router.post(
 );
 
 // router.get("/generate-branch-passlock", controller.generate_branch_passlock);
+router.post("/create-appointment", auth(), checkMerchantOrReceptionist, controller.create_appointment);
 module.exports = router;

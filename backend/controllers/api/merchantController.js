@@ -1,4 +1,4 @@
-const { Merchant, Coupon, RefreshToken, Branch, Receptionist, MerchantFp, BranchTiming, UserNotificationToken, CouponApplied } = require('../../models');
+const { Merchant, Coupon, RefreshToken, Branch, Receptionist, MerchantFp, BranchTiming, UserNotificationToken, CouponApplied, Notification } = require('../../models');
 const bcrypt = require('bcryptjs');
 const { parsePhoneNumber } = require('libphonenumber-js');
 const jwt = require('jsonwebtoken');
@@ -9,6 +9,7 @@ const sendMail = require('../../helpers/sendMail');
 const { otpTemplate } = require('../../helpers/mailTemplate');
 const ResetsTemplate = require('../../helpers/ResetsTemplate');
 const RegisterTemplate = require('../../helpers/RegisterTemplate');
+
 // const mapFiles = require('../../helpers/merchantFileMapper');
 const baseUrl = process.env.APP_URL;
 const { Op } = require('sequelize');
@@ -825,6 +826,13 @@ exports.dashboard = async (req, res) => {
                 ? `${baseUrl}/${receptionist.profile_image.replace(/\\/g, "/")}`
                 : null
         }));
+        const notificationCount = await Notification.count({
+            where: {
+                id: merchant.id,
+                user_type: "merchant",
+                is_read: false
+            }
+        });
         const redeemedUsers = await CouponApplied.count({
             where: {
                 status: 1
@@ -840,6 +848,8 @@ exports.dashboard = async (req, res) => {
                 }
             ]
         });
+
+
         return res.json({
             status: 1,
             message: "Dashboard data fetched successfully",
@@ -849,7 +859,7 @@ exports.dashboard = async (req, res) => {
                 merchant_status: merchant.status,
                 merchant_id: merchant.id,
                 merchant_profile_image: data.profile_image,
-
+                unread_notification_count: notificationCount,
                 count_coupon: merchant.Coupons.length,
                 count_branch: merchant.Branches.length,
                 count_receptionist: merchant.Receptionists.length,
@@ -857,7 +867,7 @@ exports.dashboard = async (req, res) => {
                 redeemed_users: redeemedUsers,
 
                 branch_list: data.Branches,
-                receptionist_list: data.Receptionists
+                receptionist_list: data.Receptionists,
 
             }
         });

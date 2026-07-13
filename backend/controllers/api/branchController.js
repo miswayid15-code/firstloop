@@ -8,6 +8,8 @@ const path = require('path');
 const { json } = require('sequelize');
 const { sendPushNotification, getNotificationTemplate } = require("../../helpers/notificationHelper");
 // const { generateBranchPasslock } = require("../../helpers/passlockHelper");
+const moment = require('moment');
+const generateRefId = require("../../helpers/generateRefHelper");
 exports.register = async (req, res) => {
     if (req.body.lat === '') req.body.lat = null;
     if (req.body.lon === '') req.body.lon = null;
@@ -32,7 +34,7 @@ exports.register = async (req, res) => {
             timings,
             visibility,
             age_group, city, state, country,
-            //  passlock
+            passlock
         } = req.body;
 
         const merchant_id = req.user.id;
@@ -42,7 +44,7 @@ exports.register = async (req, res) => {
         // ✅ Required Fields
         if (
             !name
-            // ||!passlock
+            // || !passlock
         ) {
 
             // console.log("VALIDATION FAILED: Required fields missing");
@@ -2719,3 +2721,384 @@ exports.update_appointment_status_by_mer = async (req, res) => {
 //     }
 // };
 
+exports.create_appointment = async (req, res) => {
+
+    try {
+
+        const user = req.merchant || req.receptionist;
+
+        const userType = req.merchant
+            ? 'merchant'
+            : 'receptionist';
+
+
+
+        const customer_id = req.user.id;
+
+        const branch_id =
+            req.body?.branch_id ||
+            req.query?.branch_id ||
+            null;
+
+        const {
+            appointment_date,
+            slot, remarks
+        } = req.body;
+
+
+        if (!branch_id) {
+
+            return res.json({
+
+                status: 0,
+                message: "Branch ID is required"
+
+            });
+
+        }
+
+
+        const branch = await Branch.findOne({
+
+            where: {
+
+                id: branch_id,
+                status: 1,
+                del_status: 0
+
+            },
+            include: [
+                {
+                    model: BranchTiming,
+                    attributes: [
+                        "id",
+                        "day",
+                        "branch_id",
+                        "open_time",
+                        "close_time",
+                        "is_closed"
+                    ]
+                }
+            ]
+
+        });
+        if (!branch) {
+
+            return res.status(401).json({
+
+                status: 0,
+                message: "Branch is not available"
+
+            });
+        }
+
+        if (userType === 'merchant') {
+
+            if (branch.merchant_id != user.id) {
+
+                return res.json({
+
+                    status: 0,
+                    message: "You are not authorized to access this Branch"
+
+                });
+
+            }
+
+        }
+        if (userType === 'receptionist') {
+
+            if (branch.merchant_id != user.merchant_id) {
+
+                return res.json({
+
+                    status: 0,
+                    message: "You are not authorized to access this Branch"
+
+                });
+
+            }
+
+
+
+            if (user.branch_id !== branch_id) {
+
+                return res.json({
+
+                    status: 0,
+                    message: "This coupon is not assigned to your branch"
+
+                });
+
+            }
+
+        }
+        // console.log("slot", slot)
+
+        if (!appointment_date || !slot) {
+
+            return res.json({
+
+                status: 0,
+                message: "Appointment date and slot are required"
+
+            });
+
+        }
+        const formattedDate = moment(
+            appointment_date,
+            ["YYYY-MM-DD", "DD-MM-YYYY"],
+            true
+        );
+
+        if (!formattedDate.isValid()) {
+            return res.json({
+                status: 0,
+                message: "Invalid appointment date format."
+            });
+        }
+
+        const dbDate = formattedDate.format("YYYY-MM-DD");
+        // console.log("appointment_date:", appointment_date);
+        // console.log("new Date:", new Date(appointment_date));
+
+        const customer = await Customer.findOne({
+
+            where: {
+
+                id: customer_id,
+                status: 1,
+                del_status: 0
+
+            }
+
+        });
+
+        if (!customer) {
+
+            return res.json({
+
+                status: 0,
+                message: "Invalid customer"
+
+            });
+
+        }
+
+
+
+
+
+
+        const dayNumber = moment(dbDate).isoWeekday();
+
+
+        const branchTiming = branch.BranchTimings.find(
+            timing => Number(timing.day) === dayNumber
+        );
+
+
+        if (!branchTiming || branchTiming.is_closed === true) {
+            return res.json({
+                status: 0,
+                message: "Branch is closed on the selected day."
+            });
+        }
+
+        // Parse times
+        const slotTime = moment(slot, ["HH:mm", "HH:mm:ss"], true);
+        const openTime = moment(branchTiming.open_time, "HH:mm:ss");
+        const closeTime = moment(branchTiming.close_time, "HH:mm:ss");
+
+        // Invalid slot format
+        if (!slotTime.isValid()) {
+            return res.json({
+                status: 0,
+                message: "Invalid slot format."
+            });
+        }
+
+        // Check whether slot is within branch timings
+        if (
+            slotTime.isBefore(openTime) ||
+            slotTime.isSameOrAfter(closeTime)
+        ) {
+            return res.json({
+                status: 0,
+                message: "Branch is closed for the selected slot."
+            });
+        }
+        const alreadyAppointment = await Appointment.findOne({
+
+            where: {
+
+                cus_id: customer_id,
+                br_id: branch_id,
+                appointment_date: dbDate,
+                slot: slot,
+                status: {
+                    [Op.in]: [0, 1]
+                }
+
+            }
+
+        });
+
+        if (alreadyAppointment) {
+
+            return res.json({
+
+                status: 0,
+                message: "Appointment already booked for this slot"
+
+            });
+
+        }
+
+        const refId = await generateRefId(branch.name);
+
+        const appointment = await Appointment.create({
+            ref_id: refId,
+
+            cus_id: customer_id,
+
+            br_id: branch_id,
+
+            br_name: branch.branch_name || branch.name,
+
+            appointment_date: dbDate,
+
+            slot: slot,
+
+            status: 0,
+
+            cancel_by: null,
+
+            cancel_reason: null,
+            remarks: remarks || null,
+            created_by: userType
+
+        });
+
+        if (branch) {
+            const customerNotification = getNotificationTemplate(
+                "appointment",
+                "b2c",
+                "pending"
+            );
+
+            const customerToken = await UserNotificationToken.findOne({
+                where: {
+                    user_id: customer_id,
+                    user_type: "customer"
+                }
+            });
+
+            if (customerToken?.token) {
+                try {
+                    await sendPushNotification({
+                        token: customerToken.token,
+                        ...customerNotification,
+                        data: {
+                            type: "appointment",
+                            branch_id: branch.id,
+                            appointment_id: appointment.id
+                        }
+                    });
+                } catch (err) {
+                    console.error("Error sending push notification to customer:", err);
+                }
+
+            }
+
+            // Get merchant notification token
+            const merchantToken = await UserNotificationToken.findOne({
+                where: {
+                    user_id: branch.merchant_id,
+                    user_type: "merchant"
+                }
+            });
+
+            const merchantNotification = getNotificationTemplate(
+                "appointment",
+                "b2b",
+                "pending"
+            );
+
+            if (merchantToken?.token) {
+                try {
+                    await sendPushNotification({
+                        token: merchantToken.token,
+                        ...merchantNotification,
+                        data: {
+                            type: "appointment",
+                            branch_id: branch.id,
+                            appointment_id: appointment.id
+                        }
+                    });
+                } catch (err) {
+                    console.error("Error sending push notification to merchant:", err);
+                }
+
+            }
+            const receptionist = await Receptionist.findOne({
+                where: {
+                    branch_id: branch.id,
+                    status: 1,
+                    del_status: 0
+                }
+            });
+            if (receptionist) {
+                const receptionToken = await UserNotificationToken.findOne({
+                    where: {
+                        user_id: receptionist.id,
+                        user_type: "receptionist"
+                    }
+                });
+                const receptionistNotification = getNotificationTemplate(
+                    "appointment",
+                    "b2b",
+                    "pending"
+                );
+
+                if (receptionToken?.token) {
+                    try {
+                        await sendPushNotification({
+                            token: receptionToken.token,
+                            ...receptionistNotification,
+                            data: {
+                                type: "appointment",
+                                appointment_id: appointment.id,
+                                branch_id: branch.id
+                            }
+                        });
+                    } catch (err) {
+                        console.error("Error sending push notification to receptionist:", err);
+                    }
+                }
+            }
+
+        }
+
+        return res.json({
+
+            status: 1,
+            message: "Appointment booked successfully",
+            data: appointment
+
+        });
+
+    } catch (err) {
+
+        console.log("APPOINTMENT ERROR:", err);
+
+        return res.json({
+
+            status: 0,
+            message: err.message
+
+        });
+
+    }
+
+};

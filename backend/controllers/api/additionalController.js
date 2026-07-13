@@ -500,7 +500,8 @@ exports.get_notification_list = async (req, res) => {
                 user_id,
                 user_type,
                 is_read: false
-            }
+            },
+             order: [['createdAt', 'DESC']]
         })
         if (!notification) {
             return res.json({
@@ -520,6 +521,7 @@ exports.get_notification_list = async (req, res) => {
         return res.json({
             status: 1,
             message: "Success",
+
             data: notification
         });
 
@@ -538,12 +540,19 @@ exports.get_notification_list = async (req, res) => {
 
 exports.update_notification = async (req, res) => {
     try {
-        const { user_id, user_type } = req.body;
+        const { user_id, user_type, not_id } = req.body;
 
         if (!user_id) {
             return res.status(400).json({
                 status: 0,
                 message: "User ID is required."
+            });
+        }
+
+        if (!not_id) {
+            return res.status(400).json({
+                status: 0,
+                message: "Notification ID is required."
             });
         }
 
@@ -554,31 +563,37 @@ exports.update_notification = async (req, res) => {
             });
         }
 
-        const [updatedCount] = await Notification.update(
-            {
-                is_read: true
-            },
-            {
-                where: {
-                    user_id,
-                    user_type
-                }
+        const notification = await Notification.findOne({
+            where: {
+                id: not_id,
+                user_id,
+                user_type
             }
-        );
+        });
+
+        if (!notification) {
+            return res.status(404).json({
+                status: 0,
+                message: "Notification not found."
+            });
+        }
+
+        await notification.update({
+            is_read: true
+        });
 
         return res.json({
             status: 1,
-            message: updatedCount > 0
-                ? "Notifications marked as read."
-                : "No notifications found.",
+            message: "Notification marked as read."
         });
 
     } catch (err) {
-        console.log(err);
+        console.log("UPDATE NOTIFICATION ERROR:", err);
 
         return res.status(500).json({
             status: 0,
-            message: "Network issue."
+            message: "Something went wrong.",
+            error: err.message
         });
     }
 };

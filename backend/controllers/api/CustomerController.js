@@ -2758,7 +2758,8 @@ exports.appointment = async (req, res) => {
             cancel_by: null,
 
             cancel_reason: null,
-            remarks: remarks || null
+            remarks: remarks || null,
+            created_by: "customer"
 
         });
 

@@ -47,6 +47,12 @@ module.exports = (sequelize, DataTypes) => {
         // merchant
         // receptionist
         // admin
+        created_by: {
+            type: DataTypes.STRING,
+            allowNull: false,
+            defaultValue: 1,
+            comment: "merchant,Receptionist,Customer"
+        },
         cancel_by: {
             type: DataTypes.STRING,
             allowNull: true
