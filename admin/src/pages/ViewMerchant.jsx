@@ -140,7 +140,7 @@ export default function ViewMerchant() {
     const focusFieldByErrorMessage = (message) => {
         if (!message) return;
         const msg = message.toLowerCase();
-        
+
         if (msg.includes('phone') || msg.includes('mobile')) {
             highlightFieldError('.modal.active input[name="phone"]');
         } else if (msg.includes('email')) {
@@ -3131,10 +3131,10 @@ export default function ViewMerchant() {
 
                             <div className="merchant-profile-stats-avatar">
                                 <div className="merchant-avatar merchant-avatar-small">
-                                    {merchantData?.profile_image ? (
+                                    {merchantData?.brand_image || merchantData?.profile_image ? (
                                         <img
-                                            src={merchantData.profile_image}
-                                            alt={merchantData?.name || 'Merchant'}
+                                            src={merchantData?.brand_image || merchantData?.profile_image}
+                                            alt={merchantData?.name || "Merchant"}
                                         />
                                     ) : (
                                         merchantData?.name?.charAt(0)
@@ -3940,7 +3940,7 @@ export default function ViewMerchant() {
                                             value={receptionistForm.email}
                                             onChange={(e) => setReceptionistForm({ ...receptionistForm, email: e.target.value })}
                                             placeholder=" "
-                                            
+
                                             autoComplete="off"
                                         />
                                         <label className="form-label">Corporate Email</label>
@@ -4232,7 +4232,7 @@ export default function ViewMerchant() {
                                         value={addReceptionistForm.email}
                                         onChange={(e) => setAddReceptionistForm({ ...addReceptionistForm, email: e.target.value })}
                                         placeholder=" "
-                                        
+
                                         autoComplete="off"
                                     />
                                     <label className="form-label">Corporate Email</label>
@@ -6128,7 +6128,7 @@ export default function ViewMerchant() {
                                                 country_code: codeVal || ''
                                             }))
                                         }
-                                        // required={true}
+                                    // required={true}
                                     />
 
                                     <div className="form-group-classic" style={{ width: '100%' }}>

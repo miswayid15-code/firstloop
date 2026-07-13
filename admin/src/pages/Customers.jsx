@@ -874,7 +874,7 @@ export default function Customers() {
                             <th>Mobile Number</th>
                             <th>Email</th>
                             <th>Date of Birth</th>
-                            <th>Joiner Dealora Date</th>
+                            <th>Joiner Date</th>
                             <th>Status</th>
                             {/* <th>Assigned Branch</th> */}
                             <th style={{ textAlign: 'right' }}>Actions</th>

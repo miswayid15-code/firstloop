@@ -641,7 +641,7 @@ exports.forget_password = async (req, res) => {
         await sendMail(
             email,
             'Forget Password OTP',
-            otpTemplate(otp, 'Customer')
+            otpTemplate(otp, 'customer')
         );
         const notificationToken = await UserNotificationToken.findOne({
             where: {

@@ -1,4 +1,4 @@
-const otpTemplate = (otp, type, name = 'User') => {
+const   otpTemplate = (otp, type, name = 'User') => {
 
     const currentYear = new Date().getFullYear();
     const appUrl = (process.env.APP_URL || '').replace(/\/$/, '');
