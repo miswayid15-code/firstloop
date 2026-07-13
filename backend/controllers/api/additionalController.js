@@ -653,30 +653,71 @@ exports.create_support = async (req, res) => {
 exports.check_delete_account = async (req, res) => {
     try {
         const { user_type, id } = req.body;
-        if (!user_type && !id) {
-            return res.status(401).json({
-                status: 0,
-                message: "User_type and id are required",
 
-            })
+        if (!user_type || !id) {
+            return res.status(400).json({
+                status: 0,
+                message: "User type and ID are required."
+            });
         }
-        if (user_type in ![1, 2, 3]){
-            return res.status(401).json({
+
+        if (![1, 2, 3].includes(Number(user_type))) {
+            return res.status(400).json({
                 status: 0,
-                message: "User_type is wrong",
+                message: "Invalid user type."
+            });
+        }
 
-            })}
-       
+        let user = null;
 
-    }
-    catch (err) {
-        console.error("CREATE SUPPORT ERROR:", err);
-        return res.status(401).json({
+        switch (Number(user_type)) {
+            case 1: 
+                user = await Merchant.findOne({
+                    where: { id }
+                });
+                break;
 
+            case 2: 
+                user = await Receptionist.findOne({
+                    where: { id }
+                });
+                break;
+
+            case 3:
+                user = await Customer.findOne({
+                    where: { id }
+                });
+                break;
+        }
+
+        if (!user) {
+            return res.status(404).json({
+                status: 0,
+                message: "User not found."
+            });
+        }
+
+        if (user.del_status === 1) {
+            return res.status(200).json({
+                status: 1,
+                is_deleted: true,
+                message: "This account has been deleted."
+            });
+        }
+
+        return res.status(200).json({
+            status: 1,
+            is_deleted: false,
+            message: "This account is active."
+        });
+
+    } catch (err) {
+        console.error("CHECK DELETE ACCOUNT ERROR:", err);
+
+        return res.status(500).json({
             status: 0,
             message: "Something went wrong.",
             error: err.message
-
-        })
+        });
     }
-}
+};
