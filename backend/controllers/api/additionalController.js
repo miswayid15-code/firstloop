@@ -1,5 +1,6 @@
 const { Banner, Receptionist, Merchant, OtpVerify, CustomerOtpVerify, Customer, AppSetting, Notification, Support } = require('../../models');
 const { sendOtp } = require('../../helpers/sendOtp');
+const CommonMailTemplate = require('../../helpers/CommonMailTemplate');
 const sendMail = require('../../helpers/sendMail');
 const { where } = require('sequelize');
 exports.banner_list = async (req, res) => {
@@ -584,7 +585,7 @@ exports.update_notification = async (req, res) => {
 
 exports.create_support = async (req, res) => {
     try {
-
+// console.log("Er",req.body)
         const {
             name,
             phone,
@@ -629,6 +630,22 @@ exports.create_support = async (req, res) => {
             description,
             status: 0, type, submit_type
         });
+        
+        try {
+            await sendMail(
+                email,
+                "Support Request Submitted",
+                CommonMailTemplate({
+                    userType: type,   // 'merchant' | 'customer' | 'rep'
+                    name: name,
+                    title: "Support Request Submitted",
+                    message: "Your support request has been submitted successfully. Our support team will contact you shortly."
+                })
+            );
+        }
+        catch (err) {
+            console.log("err", err)
+        }
 
         return res.json({
             status: 1,
@@ -671,13 +688,13 @@ exports.check_delete_account = async (req, res) => {
         let user = null;
 
         switch (Number(user_type)) {
-            case 1: 
+            case 1:
                 user = await Merchant.findOne({
                     where: { id }
                 });
                 break;
 
-            case 2: 
+            case 2:
                 user = await Receptionist.findOne({
                     where: { id }
                 });

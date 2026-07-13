@@ -1,5 +1,6 @@
 const { Banner, Page, Receptionist, Merchant, Customer, AppSetting, Support } = require('../../models');
-
+const CommonMailTemplate = require('../../helpers/CommonMailTemplate');
+const sendMail = require('../../helpers/sendMail');
 const { deleteFile } = require('../../helpers/fileHelper');
 const { bool } = require('sharp');
 
@@ -603,7 +604,8 @@ exports.support_list = async (req, res) => {
 
 exports.update_status = async (req, res) => {
     try {
-        console.log("Body",req.body)
+        console.log("Body:", req.body);
+
         const { support_id, status } = req.body;
 
         if (!support_id || status === undefined) {
@@ -622,9 +624,40 @@ exports.update_status = async (req, res) => {
             });
         }
 
-        await support.update({
-            status
-        });
+        await support.update({ status });
+
+        let subject = "";
+        let title = "";
+        let message = "";
+
+        if (Number(status) === 0) {
+            subject = "Support Request Pending";
+            title = "Support Request Pending";
+            message = "Your support request is currently under review. Our support team will get back to you shortly.";
+        } else if (Number(status) === 1) {
+            subject = "Support Request Resolved";
+            title = "Support Request Resolved";
+            message = "Your support request has been reviewed and resolved successfully. If you have any further questions, feel free to contact us.";
+        } else if (Number(status) === 2) {
+            subject = "Support Request Rejected";
+            title = "Support Request Rejected";
+            message = "We have reviewed your support request. Unfortunately, it could not be approved. Please contact our support team if you need further clarification.";
+        }
+
+        try {
+            await sendMail(
+                support.email,
+                subject,
+                CommonMailTemplate({
+                    userType: support.type, // 1 = Merchant, 2 = Receptionist, 3 = Customer
+                    name: support.name,
+                    title,
+                    message
+                })
+            );
+        } catch (mailErr) {
+            console.log("MAIL ERROR:", mailErr);
+        }
 
         return res.json({
             status: 1,

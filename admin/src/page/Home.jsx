@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import SupportForm from "./components/SupportForm";
 const logoWatermark = "/asset/images/img/fs.png";
 const newLogo = "/asset/images/img/new-logo.png";
 
@@ -2780,58 +2781,8 @@ export default function Landing() {
                 </div>
               </div>
               <div className="col-lg-6">
-                <form
-                  className="form-contact effectFade fadeUp"
-                  onSubmit={(e) => e.preventDefault()}
-                >
-                  <h4 className="heading fw-semibold">Fill this form below</h4>
-                  <fieldset className="mb-21">
-                    <label className="fw-semibold text-body-3 mb-20">
-                      Your Name
-                    </label>
-                    <input
-                      className=""
-                      type="text"
-                      placeholder="Enter your full name"
-                      required
-                    />
-                  </fieldset>
-                  <fieldset className="mb-21">
-                    <label className="fw-semibold text-body-3 mb-20">
-                      Your Phone
-                    </label>
-                    <input
-                      className=""
-                      type="text"
-                      placeholder="Enter the Phone number"
-                      required
-                    />
-                  </fieldset>
-                  <fieldset className="mb-21">
-                    <label className="fw-semibold text-body-3 mb-20">
-                      Your E-Mail
-                    </label>
-                    <input
-                      className=""
-                      type="text"
-                      placeholder="Enter the e-mail"
-                      required
-                    />
-                  </fieldset>
-                  <fieldset className="mb-18">
-                    <label className="fw-semibold text-body-3 mb-0">
-                      More about the enqiry
-                    </label>
-                    <textarea name="text" className=""></textarea>
-                  </fieldset>
-                  {/* <div className="attachment d-flex gap-8 align-items-center">
-                    <i className="icon icon-paperclip-solid fs-24"></i>
-                    <div className="fw-semibold text-body-3">Add an Attachment</div>
-                  </div> */}
-                  <button type="submit" className="tf-btn w-100">
-                    Submit Message
-                  </button>
-                </form>
+                {/* submit_type=2 → app */}
+                <SupportForm submitType={2} />
               </div>
             </div>
           </div>
