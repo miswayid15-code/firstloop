@@ -31,6 +31,7 @@ import BranchChat from './pages/BranchChat';
 import BranchPendingImages from './pages/BranchPendingImages';
 import CouponClaim from './pages/CouponClaim';
 import Settings from './pages/Settings';
+import Support from './pages/Support';
 import ProtectedRoute from './pages/ProtectedRoute';
 import NotFound from './pages/NotFound';
 
@@ -189,6 +190,7 @@ function AdminLayout() {
           <Route path="receptionists" element={<Receptionists />} />
           <Route path="settings" element={<Settings />} />
           <Route path="banners" element={<Settings />} />
+          <Route path="support" element={<Support />} />
         </Route>
 
         <Route path="*" element={<NotFound />} />

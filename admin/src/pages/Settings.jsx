@@ -80,12 +80,11 @@ export default function Settings() {
     })
 
     // ==========================================
-    // APP STATUS STATE
+    // APP STATUS STATE (id=1 Merchant, id=2 Customer)
     // ==========================================
-    const [appStatusId, setAppStatusId] = useState(1)
-    const [appStatus, setAppStatus] = useState(true)
+    const [merchantApp, setMerchantApp] = useState({ id: 1, status: true, loading: false, submitting: false })
+    const [customerApp, setCustomerApp] = useState({ id: 2, status: true, loading: false, submitting: false })
     const [appStatusLoading, setAppStatusLoading] = useState(false)
-    const [appStatusSubmitting, setAppStatusSubmitting] = useState(false)
 
     // Confirmation Dialog State
     const [confirmDialog, setConfirmDialog] = useState({
@@ -159,36 +158,63 @@ export default function Settings() {
         try {
             const response = await API.get('admin/app-status')
             if (isSuccessResponse(response.data) && response.data.data) {
-                setAppStatusId(response.data.data.id)
-                setAppStatus(!!response.data.data.app_status)
+                const list = Array.isArray(response.data.data) ? response.data.data : [response.data.data]
+                list.forEach((item) => {
+                    if (Number(item.id) === 1) {
+                        setMerchantApp((prev) => ({ ...prev, id: item.id, status: !!item.app_status }))
+                    }
+                    if (Number(item.id) === 2) {
+                        setCustomerApp((prev) => ({ ...prev, id: item.id, status: !!item.app_status }))
+                    }
+                })
             }
         } catch (err) {
-            console.error("Error fetching app status:", err)
-            toast.error("Failed to fetch app status")
+            console.error('Error fetching app status:', err)
+            toast.error('Failed to fetch app status')
         } finally {
             setAppStatusLoading(false)
         }
     }
 
-    const handleAppStatusToggle = async () => {
-        setAppStatusSubmitting(true)
-        const nextStatus = !appStatus
+    const handleMerchantAppToggle = async () => {
+        setMerchantApp((prev) => ({ ...prev, submitting: true }))
+        const nextStatus = !merchantApp.status
         try {
             const response = await API.post('admin/update-app-status', {
-                id: appStatusId,
+                id: merchantApp.id,
                 app_status: nextStatus
             })
             if (isSuccessResponse(response.data)) {
-                setAppStatus(nextStatus)
-                toast.success(response.data.message || "App status updated successfully")
+                setMerchantApp((prev) => ({ ...prev, status: nextStatus }))
+                toast.success(response.data.message || 'Merchant app status updated')
             } else {
-                toast.error(response.data.message || "Failed to update app status")
+                toast.error(response.data.message || 'Failed to update merchant app status')
             }
         } catch (err) {
-            console.error("Error updating app status:", err)
-            toast.error(err.response?.data?.message || "Failed to update app status")
+            toast.error(err.response?.data?.message || 'Failed to update merchant app status')
         } finally {
-            setAppStatusSubmitting(false)
+            setMerchantApp((prev) => ({ ...prev, submitting: false }))
+        }
+    }
+
+    const handleCustomerAppToggle = async () => {
+        setCustomerApp((prev) => ({ ...prev, submitting: true }))
+        const nextStatus = !customerApp.status
+        try {
+            const response = await API.post('admin/update-app-status', {
+                id: customerApp.id,
+                app_status: nextStatus
+            })
+            if (isSuccessResponse(response.data)) {
+                setCustomerApp((prev) => ({ ...prev, status: nextStatus }))
+                toast.success(response.data.message || 'Customer app status updated')
+            } else {
+                toast.error(response.data.message || 'Failed to update customer app status')
+            }
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Failed to update customer app status')
+        } finally {
+            setCustomerApp((prev) => ({ ...prev, submitting: false }))
         }
     }
 
@@ -1135,71 +1161,118 @@ export default function Settings() {
                     <div className="card" style={{ marginBottom: 18 }}>
                         <div>
                             <h3 className="card-title">App Status Control</h3>
-                            <p className="card-subtitle">Control the availability and status of the consumer application.</p>
+                            <p className="card-subtitle">Control the availability of the Merchant App and Customer App independently.</p>
                         </div>
                     </div>
 
-                    <div className="card" style={{ padding: 24, borderRadius: 16 }}>
-                        {appStatusLoading ? (
-                            <div style={{ textAlign: 'center', padding: '40px' }}>
-                                <i className="fas fa-spinner fa-spin" style={{ fontSize: '2rem', color: 'var(--primary)', marginBottom: 12 }}></i>
-                                <p>Loading app status...</p>
-                            </div>
-                        ) : (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+                    {appStatusLoading ? (
+                        <div className="card" style={{ textAlign: 'center', padding: '40px' }}>
+                            <i className="fas fa-spinner fa-spin" style={{ fontSize: '2rem', color: 'var(--primary)', marginBottom: 12 }}></i>
+                            <p>Loading app status...</p>
+                        </div>
+                    ) : (
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+
+                            {/* Merchant App Card */}
+                            <div className="card" style={{ padding: 24, borderRadius: 16 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16, marginBottom: 16 }}>
                                     <div>
-                                        <h4 style={{ margin: '0 0 6px 0', fontSize: '1.1rem', fontWeight: 600 }}>Consumer App Visibility</h4>
-                                        <p className="card-subtitle" style={{ margin: 0 }}>
-                                            {appStatus 
-                                                ? 'The application is currently ON and fully accessible by users.' 
-                                                : 'The application is currently OFF (Maintenance or suspended mode).'}
+                                        <h4 style={{ margin: '0 0 4px 0', fontSize: '1.05rem', fontWeight: 600 }}>
+                                            <i className="fas fa-store" style={{ marginRight: 8, color: 'var(--primary)' }} />
+                                            Merchant App
+                                        </h4>
+                                        <p className="card-subtitle" style={{ margin: 0, fontSize: '0.82rem' }}>
+                                            {merchantApp.status
+                                                ? 'Merchant app is ON and accessible.'
+                                                : 'Merchant app is OFF (maintenance mode).'}
                                         </p>
                                     </div>
-
                                     <div className="merchant-status-cell">
                                         <label
-                                            className={`merchant-status-toggle ${appStatus ? 'is-active' : 'is-inactive'}`}
-                                            style={{ cursor: appStatusSubmitting ? 'not-allowed' : 'pointer' }}
+                                            className={`merchant-status-toggle ${merchantApp.status ? 'is-active' : 'is-inactive'}`}
+                                            style={{ cursor: merchantApp.submitting ? 'not-allowed' : 'pointer' }}
                                         >
                                             <input
                                                 type="checkbox"
-                                                checked={appStatus}
-                                                disabled={appStatusSubmitting}
-                                                onChange={handleAppStatusToggle}
+                                                checked={merchantApp.status}
+                                                disabled={merchantApp.submitting}
+                                                onChange={handleMerchantAppToggle}
                                             />
                                             <span className="merchant-status-track" aria-hidden="true">
                                                 <span className="merchant-status-knob" />
                                             </span>
                                             <span className="merchant-status-label">
-                                                {appStatus ? 'App is ON' : 'App is OFF'}
+                                                {merchantApp.submitting ? 'Updating...' : (merchantApp.status ? 'ON' : 'OFF')}
                                             </span>
                                         </label>
                                     </div>
                                 </div>
-
-                                <div style={{ 
-                                    background: appStatus ? 'rgba(74, 222, 128, 0.08)' : 'rgba(239, 68, 68, 0.08)',
-                                    border: appStatus ? '1px solid rgba(74, 222, 128, 0.2)' : '1px solid rgba(239, 68, 68, 0.2)',
-                                    borderRadius: 12,
-                                    padding: '16px 20px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 12
+                                <div style={{
+                                    background: merchantApp.status ? 'rgba(74,222,128,0.08)' : 'rgba(239,68,68,0.08)',
+                                    border: merchantApp.status ? '1px solid rgba(74,222,128,0.2)' : '1px solid rgba(239,68,68,0.2)',
+                                    borderRadius: 10, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10
                                 }}>
-                                    <i 
-                                        className={`fas ${appStatus ? 'fa-check-circle' : 'fa-exclamation-triangle'}`} 
-                                        style={{ color: appStatus ? '#22c55e' : '#ef4444', fontSize: '1.25rem' }}
-                                    />
-                                    <span style={{ fontSize: '0.9rem', color: appStatus ? '#15803d' : '#b91c1c', fontWeight: 500 }}>
-                                        {appStatus 
-                                            ? 'Everything is running normally. Users can browse merchants, claim coupons, and book appointments.' 
-                                            : 'Warning: Toggling the app OFF disables essential mobile functions for end users. Please proceed with caution.'}
+                                    <i className={`fas ${merchantApp.status ? 'fa-check-circle' : 'fa-exclamation-triangle'}`}
+                                        style={{ color: merchantApp.status ? '#22c55e' : '#ef4444', fontSize: '1.1rem' }} />
+                                    <span style={{ fontSize: '0.85rem', color: merchantApp.status ? '#15803d' : '#b91c1c', fontWeight: 500 }}>
+                                        {merchantApp.status
+                                            ? 'Merchants can log in and manage their listings.'
+                                            : 'Warning: Merchant app is disabled. Merchants cannot access the platform.'}
                                     </span>
                                 </div>
                             </div>
-                        )}
-                    </div>
+
+                            {/* Customer App Card */}
+                            <div className="card" style={{ padding: 24, borderRadius: 16 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16, marginBottom: 16 }}>
+                                    <div>
+                                        <h4 style={{ margin: '0 0 4px 0', fontSize: '1.05rem', fontWeight: 600 }}>
+                                            <i className="fas fa-users" style={{ marginRight: 8, color: 'var(--primary)' }} />
+                                            Customer App
+                                        </h4>
+                                        <p className="card-subtitle" style={{ margin: 0, fontSize: '0.82rem' }}>
+                                            {customerApp.status
+                                                ? 'Customer app is ON and accessible.'
+                                                : 'Customer app is OFF (maintenance mode).'}
+                                        </p>
+                                    </div>
+                                    <div className="merchant-status-cell">
+                                        <label
+                                            className={`merchant-status-toggle ${customerApp.status ? 'is-active' : 'is-inactive'}`}
+                                            style={{ cursor: customerApp.submitting ? 'not-allowed' : 'pointer' }}
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={customerApp.status}
+                                                disabled={customerApp.submitting}
+                                                onChange={handleCustomerAppToggle}
+                                            />
+                                            <span className="merchant-status-track" aria-hidden="true">
+                                                <span className="merchant-status-knob" />
+                                            </span>
+                                            <span className="merchant-status-label">
+                                                {customerApp.submitting ? 'Updating...' : (customerApp.status ? 'ON' : 'OFF')}
+                                            </span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div style={{
+                                    background: customerApp.status ? 'rgba(74,222,128,0.08)' : 'rgba(239,68,68,0.08)',
+                                    border: customerApp.status ? '1px solid rgba(74,222,128,0.2)' : '1px solid rgba(239,68,68,0.2)',
+                                    borderRadius: 10, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10
+                                }}>
+                                    <i className={`fas ${customerApp.status ? 'fa-check-circle' : 'fa-exclamation-triangle'}`}
+                                        style={{ color: customerApp.status ? '#22c55e' : '#ef4444', fontSize: '1.1rem' }} />
+                                    <span style={{ fontSize: '0.85rem', color: customerApp.status ? '#15803d' : '#b91c1c', fontWeight: 500 }}>
+                                        {customerApp.status
+                                            ? 'Customers can browse merchants, claim coupons, and book appointments.'
+                                            : 'Warning: Customer app is disabled. End users cannot access the platform.'}
+                                    </span>
+                                </div>
+                            </div>
+
+                        </div>
+                    )}
                 </>
             )}
 

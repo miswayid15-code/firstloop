@@ -4388,25 +4388,27 @@ export default function ViewMerchant() {
 
                                 {Number(couponForm.type) !== 3 ? (
                                     <>
-                                        <div className="form-group-classic" style={{ marginBottom: 12 }}>
-                                            <label className="form-label-classic" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer', textTransform: 'none', fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={minAmountToggle}
-                                                    onChange={(e) => {
-                                                        const checked = e.target.checked
-                                                        setMinAmountToggle(checked)
-                                                        setCouponForm(prev => ({
-                                                            ...prev,
-                                                            min_amount: checked ? '' : '0'
-                                                        }))
-                                                    }}
-                                                    disabled={creatingCoupon}
-                                                    style={{ width: 16, height: 16, accentColor: 'var(--primary)', cursor: 'pointer' }}
-                                                />
-                                                <span>Minimum Amount Required</span>
-                                            </label>
-                                        </div>
+                                        {Number(couponForm.type) === 2 && (
+                                            <div className="form-group-classic" style={{ marginBottom: 12 }}>
+                                                <label className="form-label-classic" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer', textTransform: 'none', fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={minAmountToggle}
+                                                        onChange={(e) => {
+                                                            const checked = e.target.checked
+                                                            setMinAmountToggle(checked)
+                                                            setCouponForm(prev => ({
+                                                                ...prev,
+                                                                min_amount: checked ? '' : '0'
+                                                            }))
+                                                        }}
+                                                        disabled={creatingCoupon}
+                                                        style={{ width: 16, height: 16, accentColor: 'var(--primary)', cursor: 'pointer' }}
+                                                    />
+                                                    <span>Minimum Amount Required</span>
+                                                </label>
+                                            </div>
+                                        )}
 
                                         <div className="form-row">
                                             <div className="form-group">
@@ -4427,7 +4429,7 @@ export default function ViewMerchant() {
                                                 </label>
                                             </div>
 
-                                            {minAmountToggle ? (
+                                            {Number(couponForm.type) === 2 && minAmountToggle ? (
                                                 <div className="form-group">
                                                     <input
                                                         type="number"
@@ -4515,45 +4517,7 @@ export default function ViewMerchant() {
                                             </div>
                                         </div>
 
-                                        <div className="form-group-classic" style={{ marginBottom: 12 }}>
-                                            <label className="form-label-classic" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer', textTransform: 'none', fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={minAmountToggle}
-                                                    onChange={(e) => {
-                                                        const checked = e.target.checked
-                                                        setMinAmountToggle(checked)
-                                                        setCouponForm(prev => ({
-                                                            ...prev,
-                                                            min_amount: checked ? '' : '0'
-                                                        }))
-                                                    }}
-                                                    disabled={creatingCoupon}
-                                                    style={{ width: 16, height: 16, accentColor: 'var(--primary)', cursor: 'pointer' }}
-                                                />
-                                                <span>Minimum Amount Required</span>
-                                            </label>
-                                        </div>
-
-                                        {minAmountToggle && (
-                                            <div className="form-row">
-                                                <div className="form-group">
-                                                    <input
-                                                        type="number"
-                                                        name="min_amount"
-                                                        className="form-control"
-                                                        placeholder=" "
-                                                        value={couponForm.min_amount === '0' ? '' : couponForm.min_amount}
-                                                        onChange={handleCouponChange}
-                                                        disabled={creatingCoupon}
-                                                        min="1"
-                                                        required
-                                                    />
-                                                    <label className="form-label">Minimum Amount</label>
-                                                </div>
-                                                <div />
-                                            </div>
-                                        )}
+                                        {/* No minimum amount for Buy X Get Y */}
 
                                         {/* <div className="form-group">
                                                 <input
@@ -4843,25 +4807,27 @@ export default function ViewMerchant() {
 
                                 {Number(editCouponForm.type) !== 3 ? (
                                     <>
-                                        <div className="form-group-classic" style={{ marginBottom: 12 }}>
-                                            <label className="form-label-classic" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer', textTransform: 'none', fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={editMinAmountToggle}
-                                                    onChange={(e) => {
-                                                        const checked = e.target.checked
-                                                        setEditMinAmountToggle(checked)
-                                                        setEditCouponForm(prev => ({
-                                                            ...prev,
-                                                            min_amount: checked ? '' : '0'
-                                                        }))
-                                                    }}
-                                                    disabled={editingCoupon}
-                                                    style={{ width: 16, height: 16, accentColor: 'var(--primary)', cursor: 'pointer' }}
-                                                />
-                                                <span>Minimum Amount Required</span>
-                                            </label>
-                                        </div>
+                                        {Number(editCouponForm.type) === 2 && (
+                                            <div className="form-group-classic" style={{ marginBottom: 12 }}>
+                                                <label className="form-label-classic" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer', textTransform: 'none', fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={editMinAmountToggle}
+                                                        onChange={(e) => {
+                                                            const checked = e.target.checked
+                                                            setEditMinAmountToggle(checked)
+                                                            setEditCouponForm(prev => ({
+                                                                ...prev,
+                                                                min_amount: checked ? '' : '0'
+                                                            }))
+                                                        }}
+                                                        disabled={editingCoupon}
+                                                        style={{ width: 16, height: 16, accentColor: 'var(--primary)', cursor: 'pointer' }}
+                                                    />
+                                                    <span>Minimum Amount Required</span>
+                                                </label>
+                                            </div>
+                                        )}
 
                                         <div className="form-row">
                                             <div className="form-group">
@@ -4882,7 +4848,7 @@ export default function ViewMerchant() {
                                                 </label>
                                             </div>
 
-                                            {editMinAmountToggle ? (
+                                            {Number(editCouponForm.type) === 2 && editMinAmountToggle ? (
                                                 <div className="form-group">
                                                     <input
                                                         type="number"
@@ -4970,45 +4936,7 @@ export default function ViewMerchant() {
                                             </div>
                                         </div>
 
-                                        <div className="form-group-classic" style={{ marginBottom: 12 }}>
-                                            <label className="form-label-classic" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer', textTransform: 'none', fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={editMinAmountToggle}
-                                                    onChange={(e) => {
-                                                        const checked = e.target.checked
-                                                        setEditMinAmountToggle(checked)
-                                                        setEditCouponForm(prev => ({
-                                                            ...prev,
-                                                            min_amount: checked ? '' : '0'
-                                                        }))
-                                                    }}
-                                                    disabled={editingCoupon}
-                                                    style={{ width: 16, height: 16, accentColor: 'var(--primary)', cursor: 'pointer' }}
-                                                />
-                                                <span>Minimum Amount Required</span>
-                                            </label>
-                                        </div>
-
-                                        {editMinAmountToggle && (
-                                            <div className="form-row">
-                                                <div className="form-group">
-                                                    <input
-                                                        type="number"
-                                                        name="min_amount"
-                                                        className="form-control"
-                                                        placeholder=" "
-                                                        value={editCouponForm.min_amount === '0' ? '' : editCouponForm.min_amount}
-                                                        onChange={handleEditCouponChange}
-                                                        disabled={editingCoupon}
-                                                        min="1"
-                                                        required
-                                                    />
-                                                    <label className="form-label">Minimum Amount</label>
-                                                </div>
-                                                <div />
-                                            </div>
-                                        )}
+                                        {/* No minimum amount for Buy X Get Y */}
                                         {/* 
                                             <div className="form-group">
                                                 <input

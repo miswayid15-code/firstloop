@@ -12,11 +12,14 @@ const navItems = [
     { to: '/appointments', icon: 'fa-calendar-check', label: 'Appointments' },
 
     { to: '/coupon-claim', icon: 'fa-ticket-alt', label: 'Coupon Claim' },
- 
+
     { to: '/merchant-reports', icon: 'fa-store', label: 'Reports' },
-   
+
     { to: '/notifications', icon: 'fa-bell', label: 'Notifications' },
+
+    { to: '/support', icon: 'fa-headset', label: 'Support' },
     { to: '/settings', icon: 'fa-cog', label: 'Settings' },
+
 ]
 
 export default function Navbar() {
@@ -128,9 +131,9 @@ export default function Navbar() {
             <div className="navbar-top">
                 <div className="navbar-left">
                     <NavLink to="/dashboard" className="brand-logo-area">
-                                           <div className="nav-user-profile" id="nav-user-profile" ref={profileRef}>
-                        {/* <img src="/assets/img/FirstPass.png" alt="FirstPass" className="desktop-profile-logo" /> */}
-                        {/* <div className="mobile-profile-content">
+                        <div className="nav-user-profile" id="nav-user-profile" ref={profileRef}>
+                            {/* <img src="/assets/img/FirstPass.png" alt="FirstPass" className="desktop-profile-logo" /> */}
+                            {/* <div className="mobile-profile-content">
                             <div className="nav-user-avatar">
                                 <img src="/assets/img/logo.png" alt="User" style={{ width: 20, height: 20, objectFit: 'contain' }} />
                             </div>
@@ -138,16 +141,16 @@ export default function Navbar() {
                                 <span className="nav-user-name">FirstPass</span>
                             </div>
                         </div> */}
-                        <button
-                            type="button"
-                            className="nav-user-trigger"
-                            aria-expanded={profileOpen}
-                           
-                        >
-                            <span className="nav-user-name"> <img src={FirstPass} alt="FirstPass" className="desktop-profile-logo" style={{ width: 150, height: 42, objectFit: 'contain' }} /></span>
-                        </button>
-                       
-                    </div>
+                            <button
+                                type="button"
+                                className="nav-user-trigger"
+                                aria-expanded={profileOpen}
+
+                            >
+                                <span className="nav-user-name"> <img src={FirstPass} alt="FirstPass" className="desktop-profile-logo" style={{ width: 150, height: 42, objectFit: 'contain' }} /></span>
+                            </button>
+
+                        </div>
                     </NavLink>
                 </div>
 
@@ -198,8 +201,8 @@ export default function Navbar() {
                                             {activeNotifications.map((item) => {
                                                 const details = getNotificationTypeDetails(item.type);
                                                 return (
-                                                    <li 
-                                                        key={item.type} 
+                                                    <li
+                                                        key={item.type}
                                                         className="dropdown-item unread"
                                                         onClick={() => {
                                                             setNotificationsOpen(false);
@@ -207,10 +210,10 @@ export default function Navbar() {
                                                         }}
                                                         style={{ cursor: 'pointer', display: 'flex', gap: '12px', padding: '12px 16px', borderBottom: '1px solid rgba(0,0,0,0.04)', transition: 'background 0.2s' }}
                                                     >
-                                                        <div 
-                                                            className="dropdown-item-icon" 
-                                                            style={{ 
-                                                                background: details.bg, 
+                                                        <div
+                                                            className="dropdown-item-icon"
+                                                            style={{
+                                                                background: details.bg,
                                                                 color: details.color,
                                                                 width: '32px',
                                                                 height: '32px',

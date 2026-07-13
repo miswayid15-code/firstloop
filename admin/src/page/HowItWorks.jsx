@@ -110,54 +110,54 @@ const ClipboardIcon = () => (
 
 /* ── Step Data ── */
 const merchantSteps = [
-  {
-    num: '01',
-    title: 'Add Your Branches',
-    desc: 'Set up and manage multiple business branches from a single dashboard. Customize offers, track performance, and maintain complete control over each branch.',
-    highlights: ['Multi-branch management', 'Individual offer control', 'Centralized administration', 'Performance tracking'],
-    image: '1.png',
-    icon: <BuildingIcon />
-  },
-  {
-    num: '02',
-    title: 'Add Reception Teams',
-    desc: 'Assign dedicated reception staff to each branch. Manage customer interactions, bookings, and inquiries while maintaining service quality across all locations.',
-    highlights: ['Dedicated staff members', 'Customer communication', 'Booking management', 'Activity monitoring'],
-    image: '2.png',
-    icon: <UsersIcon />
-  },
-  {
-    num: '03',
-    title: 'Create Powerful Offers',
-    desc: 'Launch attractive offers that bring more customers to your business. Create discounts, special deals, and limited-time campaigns in just a few clicks.',
-    highlights: ['Buy One Get One offers', 'Percentage discounts', 'Fixed-value discounts', 'Super deal coupons'],
-    image: '3.png',
-    icon: <TagIcon />
-  },
-  {
-    num: '04',
-    title: 'Manage Appointments',
-    desc: 'Allow customers to book appointments directly through the platform. Receive instant notifications and confirm bookings effortlessly.',
-    highlights: ['Easy appointment scheduling', 'Instant confirmations', 'Reminder notifications', 'Branch-wise booking control'],
-    image: '4.png',
-    icon: <CalendarIcon />
-  },
-  {
-    num: '05',
-    title: 'Verify & Redeem Appoinments',
-    desc: 'Customers can redeem offers seamlessly while your team verifies and approves coupons in real-time in a smooth experience.',
-    highlights: ['Secure coupon validation', 'Quick approval process', 'Real-time redemption', 'Better customer experience'],
-    image: '5.png',
-    icon: <CheckCircleIcon />
-  },
-  {
-    num: '06',
-    title: 'Track Business Performance',
-    desc: 'Analyze your business performance using a smart dashboard. Check customer engagement, offer success, and growth.',
-    highlights: ['Business analytics', 'Customer engagement reports', 'Campaign performance tracking', 'Growth insights'],
-    image: '6.png',
-    icon: <ChartIcon />
-  }
+{
+num: '01',
+title: 'Add Your Branches',
+desc: 'Set up and manage multiple business branches from a single dashboard. Customize offers, track performance, and maintain complete control over each branch.',
+highlights: ['Multi-branch management', 'Individual offer control', 'Centralized administration', 'Performance tracking'],
+image: '1.png',
+icon: <BuildingIcon />
+},
+{
+num: '02',
+title: 'Add Reception Teams',
+desc: 'Assign dedicated reception staff to each branch. Manage customer interactions, bookings, and inquiries while maintaining service quality across all locations.',
+highlights: ['Dedicated staff members', 'Customer communication', 'Booking management', 'Activity monitoring'],
+image: '2.png',
+icon: <UsersIcon />
+},
+{
+num: '03',
+title: 'Create Powerful Offers',
+desc: 'Launch attractive offers that bring more customers to your business. Create discounts, special deals, and limited-time campaigns in just a few clicks.',
+highlights: ['Buy One Get One offers', 'Percentage discounts', 'Fixed-value discounts', 'Super deal coupons'],
+image: '3.png',
+icon: <TagIcon />
+},
+{
+num: '04',
+title: 'Manage Appointments',
+desc: 'Allow customers to book appointments directly through the platform. Receive instant notifications and confirm bookings effortlessly.',
+highlights: ['Easy appointment scheduling', 'Instant confirmations', 'Reminder notifications', 'Branch-wise booking control'],
+image: '4.png',
+icon: <CalendarIcon />
+},
+{
+num: '05',
+title: 'Verify & Approve Appoinments',
+desc: 'Customers enjoy a seamless coupon redemption process, and your team can review and approve coupons in real time.',
+highlights: ['Secure coupon validation', 'Quick approval process', 'Real-time redemption', 'Better customer experience'],
+image: '5.png',
+icon: <CheckCircleIcon />
+},
+{
+num: '06',
+title: 'Track Business Performance',
+desc: 'Analyze your business performance using a smart dashboard. Check customer engagement, offer success, and growth.',
+highlights: ['Business analytics', 'Customer engagement reports', 'Campaign performance tracking', 'Growth insights'],
+image: '6.png',
+icon: <ChartIcon />
+}
 ];
 
 const customerSteps = [
