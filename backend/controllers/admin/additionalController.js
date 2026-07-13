@@ -93,7 +93,7 @@ exports.create_banner = async (req, res) => {
         });
     }
 };
-
+  
 exports.update_banner = async (req, res) => {
     try {
 
