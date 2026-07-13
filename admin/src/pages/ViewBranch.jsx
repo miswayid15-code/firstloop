@@ -11,9 +11,9 @@ const isSuccessResponse = (data) => {
 
 
 const ageGroupLabels = {
-    0: "All Age",
-    1: "Below 18",
-    2: "Above 18",
+    1: "All Age",
+    2: "Below 18",
+    3: "Above 18",
 };
 const formatTime = (value) => {
     if (!value) {
