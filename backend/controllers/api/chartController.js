@@ -1,4 +1,4 @@
-const { UserNotificationToken, Receptionist, Branch } = require('../../models');
+
 const { sendPushNotification } = require("../../helpers/notificationHelper");
 const { db, admin } = require('../../config/firebase');
 const {
@@ -14,7 +14,7 @@ const {
     MenuImage,
     CouponApplied,
     Wishlist,
-    Appointment
+    Appointment, UserNotificationToken
 } = require('../../models');
 exports.createChat = async (req, res) => {
 
@@ -198,17 +198,21 @@ exports.sendMessage = async (req, res) => {
 
             try {
 
-                // Merchant notification
-                await sendPushNotification({
-                    token: reception_notificationToken.token,
-                    title: customer?.name || "Customer",
-                    body: content,
-                    data: {
-                        type: "message",
-                    }
-                });
+                
+                if (notificationToken?.token) {
+                    await sendPushNotification({
+                        token: notificationToken.token,
+                        title: customer?.name || "Customer",
+                        body: content,
+                        data: {
+                            type: "message",
+                            chat_id: chatId,
+                            branch_id: branchId
+                        }
+                    });
+                }
 
-
+                // Receptionist Notification
                 if (reception_notificationToken?.token) {
                     await sendPushNotification({
                         token: reception_notificationToken.token,
@@ -216,6 +220,8 @@ exports.sendMessage = async (req, res) => {
                         body: content,
                         data: {
                             type: "message",
+                            chat_id: chatId,
+                            branch_id: branchId
                         }
                     });
                 }
