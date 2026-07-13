@@ -1483,6 +1483,9 @@ exports.change_status_br = async (req, res) => {
                 token: notificationToken?.token,
                 title: notification_text.title,
                 body: notification_text.body,
+                data: {
+                    type: "branch_list",
+                }
             });
 
             if (receptionist && receptionToken?.token) {
@@ -1490,6 +1493,9 @@ exports.change_status_br = async (req, res) => {
                     token: receptionToken.token,
                     title: receptionistNotification.title,
                     body: receptionistNotification.body,
+                    data: {
+                        type: "branch_list",
+                    }
                 });
             }
 
@@ -1582,6 +1588,9 @@ exports.change_status_res = async (req, res) => {
                 token: notificationToken.token,
                 title: merchantNotification.title,
                 body: merchantNotification.body,
+                data: {
+                    type: "branch_list",
+                }
             });
 
             // Receptionist
@@ -1589,6 +1598,9 @@ exports.change_status_res = async (req, res) => {
                 token: receptionToken.token,
                 title: receptionistNotification.title,
                 body: receptionistNotification.body,
+                data: {
+                    type: "branch_list",
+                }
             });
 
         } catch (error) {

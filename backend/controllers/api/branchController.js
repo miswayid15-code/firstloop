@@ -358,7 +358,10 @@ exports.register = async (req, res) => {
             const result = await sendPushNotification({
                 token: notificationToken?.token,
                 title: "🎉 Branch Created!",
-                body: `Your branch "${name}" has been created successfully. 🏢`
+                body: `Your branch "${name}" has been created successfully. 🏢`,
+                data: {
+                    type: "branch_list",
+                }
             });
 
 
@@ -608,7 +611,10 @@ exports.delete_branch = async (req, res) => {
             const result = await sendPushNotification({
                 token: notificationToken?.token,
                 title: " Branch Deleted Successfully",
-                body: "The branch has been deleted successfully. ✅"
+                body: "The branch has been deleted successfully. ✅",
+                data: {
+                    type: "branch_list",
+                }
             });
 
 
@@ -995,7 +1001,10 @@ exports.update_branch = async (req, res) => {
             const result = await sendPushNotification({
                 token: notificationToken?.token,
                 title: "🎉 Update Successful!",
-                body: `The branch "${name}" has been updated successfully. 🏢`
+                body: `The branch "${name}" has been updated successfully. 🏢`,
+                data: {
+                    type: "branch_list",
+                }
             });
 
 
@@ -1271,7 +1280,8 @@ exports.register_menu_image = async (req, res) => {
             const result = await sendPushNotification({
                 token: notificationToken?.token,
                 title: "✅ Menu Image Uploaded",
-                body: `Your menu image has been uploaded successfully for ${branch.name}. 📸`
+                body: `Your menu image has been uploaded successfully for ${branch.name}. 📸`,
+                
             });
 
 
