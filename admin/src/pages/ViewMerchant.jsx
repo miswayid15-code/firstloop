@@ -6199,9 +6199,9 @@ export default function ViewMerchant() {
                                                 onChange={handleEditBranchChange}
                                                 disabled={savingBranch}
                                             >
-                                                <option value="All Age">All Age</option>
-                                                <option value="Below 18">Below 18</option>
-                                                <option value="Above 18">Above 18</option>
+                                                <option value="1">All Age</option>
+                                                <option value="2">Below 18</option>
+                                                <option value="3">Above 18</option>
                                             </select>
                                         </div>
                                     </div>
