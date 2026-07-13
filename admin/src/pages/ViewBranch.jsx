@@ -208,7 +208,7 @@ export default function ViewBranch() {
 
             const response = await API.get(`admin/branch/id/${encodeURIComponent(id)}`)
             const data = response.data || {}
-
+console.log("data",data)
             if (isSuccessResponse(data)) {
                 setBranchData(data.data || null)
                 setCoupons(data.coupon || [])
