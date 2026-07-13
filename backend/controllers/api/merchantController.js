@@ -434,7 +434,9 @@ exports.registerStep2 = async (req, res) => {
                 token: notificationToken?.token,
                 title: "Update Successful",
                 body: "Your details were updated successfully.",
-
+                data: {
+                    type: "merchant_profile",
+                }
             });
 
 
