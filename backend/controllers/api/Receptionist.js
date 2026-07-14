@@ -1,5 +1,5 @@
 // controllers\api\Receptionist.js
-const { Receptionist, RefreshToken, Branch, Merchant, Appointment, Coupon, CouponApplied ,UserNotificationToken} = require('../../models');
+const { Receptionist, RefreshToken, Branch, Merchant, Appointment, Coupon, CouponApplied, UserNotificationToken } = require('../../models');
 const bcrypt = require('bcryptjs');
 const { parsePhoneNumber } = require('libphonenumber-js');
 const jwt = require('jsonwebtoken');
@@ -788,6 +788,7 @@ exports.update_receptionist = async (req, res) => {
 exports.dashboard = async (req, res) => {
 
     try {
+        const baseUrl = process.env.APP_URL;
 
         const receptionist = await Receptionist.findByPk(req.user.id, {
 
@@ -825,9 +826,7 @@ exports.dashboard = async (req, res) => {
                         {
                             model: Appointment,
                             limit: 10,
-
                             required: false,
-
                             attributes: [
                                 'id',
                                 'cus_id',
@@ -840,6 +839,17 @@ exports.dashboard = async (req, res) => {
                                 'cancel_reason',
                                 'approved_by',
                                 'approved_by_id'
+                            ],
+                            include: [
+                                {
+                                    model: Customer,
+                                    required: false,
+                                    attributes: [
+                                        'id',
+                                        'name',
+                                        'profile_image'
+                                    ]
+                                }
                             ]
                         },
 
@@ -923,7 +933,11 @@ exports.dashboard = async (req, res) => {
                         ).format("hh:mm A");
 
                     }
-
+                    if (appointment.Customer?.profile_image) {
+                        appointment.Customer.profile_image =
+                            baseUrl + "/" +
+                            appointment.Customer.profile_image.replace(/\\/g, "/");
+                    }
                 });
 
             }
