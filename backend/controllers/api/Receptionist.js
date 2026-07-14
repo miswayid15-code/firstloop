@@ -816,7 +816,8 @@ exports.dashboard = async (req, res) => {
                         'name',
                         'email',
                         'phone',
-                        'profile_image'
+                        'profile_image',
+                        'address'
                     ],
 
                     include: [
@@ -901,6 +902,7 @@ exports.dashboard = async (req, res) => {
                 branch.profile_image = null;
 
             }
+
 
             // appointment count
             branch.dataValues.appointment_count =
