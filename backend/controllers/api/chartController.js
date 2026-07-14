@@ -12,7 +12,7 @@ const {
     Banner,
     BranchImage,
     MenuImage,
-    CouponApplied, 
+    CouponApplied,
     Wishlist,
     Appointment, UserNotificationToken
 } = require('../../models');
@@ -152,84 +152,81 @@ exports.sendMessage = async (req, res) => {
 
         const chatDoc = await db.collection("chats").doc(chatId).get();
 
-        if (!chatDoc.exists) {
-            return res.json({
-                status: 0,
-                message: "Chat not found."
-            });
-        }
+        if (chatDoc.exists) {
+            const chatData = chatDoc.data();
+            const branchId = chatData.branchId;
 
-        const chatData = chatDoc.data();
-        const branchId = chatData.branchId;
-
-        const branch = await Branch.findOne({
-            where: {
-                id: branchId,
-                del_status: 0
-            }
-        });
-
-        if (branch) {
-
-            const notificationToken = await UserNotificationToken.findOne({
+            const branch = await Branch.findOne({
                 where: {
-                    user_id: branch.merchant_id,
-                    user_type: "merchant"
-                }
-            });
-
-            let reception_notificationToken = null;
-
-            const receptionist = await Receptionist.findOne({
-                where: {
-                    branch_id: branchId,
+                    id: branchId,
                     del_status: 0
                 }
             });
 
-            if (receptionist) {
-                reception_notificationToken = await UserNotificationToken.findOne({
+            if (branch) {
+
+                const notificationToken = await UserNotificationToken.findOne({
                     where: {
-                        user_id: receptionist.id,
-                        user_type: "receptionist"
+                        user_id: branch.merchant_id,
+                        user_type: "merchant"
                     }
                 });
-            }
 
-            try {
+                let reception_notificationToken = null;
 
-                
-                if (notificationToken?.token) {
-                    await sendPushNotification({
-                        token: notificationToken.token,
-                        title: customer?.name || "Customer",
-                        body: content,
-                        data: {
-                            type: "message",
-                            chat_id: chatId,
-                            branch_id: branchId
+                const receptionist = await Receptionist.findOne({
+                    where: {
+                        branch_id: branchId,
+                        del_status: 0
+                    }
+                });
+
+                if (receptionist) {
+                    reception_notificationToken = await UserNotificationToken.findOne({
+                        where: {
+                            user_id: receptionist.id,
+                            user_type: "receptionist"
                         }
                     });
                 }
 
-                // Receptionist Notification
-                if (reception_notificationToken?.token) {
-                    await sendPushNotification({
-                        token: reception_notificationToken.token,
-                        title: customer?.name || "Customer",
-                        body: content,
-                        data: {
-                            type: "message",
-                            chat_id: chatId,
-                            branch_id: branchId
-                        }
-                    });
-                }
+                try {
 
-            } catch (error) {
-                console.error("Push Notification Error:", error);
+
+                    if (notificationToken?.token) {
+                        await sendPushNotification({
+                            token: notificationToken.token,
+                            title: customer?.name || "Customer",
+                            body: content,
+                            data: {
+                                type: "message",
+                                chat_id: chatId,
+                                branch_id: branchId
+                            }
+                        });
+                    }
+
+                    // Receptionist Notification
+                    if (reception_notificationToken?.token) {
+                        await sendPushNotification({
+                            token: reception_notificationToken.token,
+                            title: customer?.name || "Customer",
+                            body: content,
+                            data: {
+                                type: "message",
+                                chat_id: chatId,
+                                branch_id: branchId
+                            }
+                        });
+                    }
+
+                } catch (error) {
+                    console.error("Push Notification Error:", error);
+                }
             }
+
         }
+
 
         // console.log("Sender",);
         return res.json({
@@ -432,7 +429,45 @@ exports.sendBranchMessage = async (req, res) => {
                 lastMessageAt: timestamp
 
             });
+        const chatDoc = await db.collection("chats").doc(chatId).get();
+        if (chatDoc.exists) {
+            const chatData = chatDoc.data();
+            const customerId = chatData.customerId;
+            const customer = await Customer.findOne({
+                where: {
+                    id: customerId,
+                    del_status: 0
+                }
+            });
+            if (customer) {
+                const notificationToken = await UserNotificationToken.findOne({
+                    where: {
+                        user_id: customerId,
+                        user_type: "customer"
+                    }
+                });
+                try {
 
+                    if (notificationToken?.token) {
+                        await sendPushNotification({
+                            token: notificationToken.token,
+                            title: customer?.name || "Customer",
+                            body: content,
+                            data: {
+                                type: "message",
+                                chat_id: chatId,
+                                customerId: customerId
+                            }
+                        });
+                    }
+
+
+                } catch (error) {
+                    console.error("Push Notification Error:", error);
+                }
+
+            }
+        }
         return res.json({
 
             status: 1,
