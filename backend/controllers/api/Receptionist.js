@@ -1,5 +1,5 @@
 // controllers\api\Receptionist.js
-const { Receptionist, RefreshToken, Branch, Merchant, Appointment, Coupon, CouponApplied, UserNotificationToken } = require('../../models');
+const { Receptionist, RefreshToken, Branch, Merchant, Appointment, Coupon, CouponApplied, UserNotificationToken ,Customer} = require('../../models');
 const bcrypt = require('bcryptjs');
 const { parsePhoneNumber } = require('libphonenumber-js');
 const jwt = require('jsonwebtoken');
