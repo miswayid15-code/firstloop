@@ -4,7 +4,7 @@ const {
     Merchant,
     Branch,
     Customer,
-    UserNotificationToken, admins
+    UserNotificationToken, admins,Receptionist
 } = require('../../models');
 exports.sendMessage = async (req, res) => {
     try {
