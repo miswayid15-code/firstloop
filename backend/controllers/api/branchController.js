@@ -1560,8 +1560,8 @@ exports.update_menu_image = async (req, res) => {
                 token: notificationToken?.token,
                 title: "✅ Menu Image Updated",
                 body: `Your menu image has been updated successfully for ${branch.name}. 📸`,
-                data:{
-                     type: "branch_list",
+                data: {
+                    type: "branch_list",
                 }
             });
 
@@ -1696,8 +1696,8 @@ exports.delete_menu_image = async (req, res) => {
                 token: notificationToken?.token,
                 title: "✅ Menu Image Removed",
                 body: `The menu image has been removed successfully from ${branch.name}.`,
-                data:{
-                     type: "branch_list",
+                data: {
+                    type: "branch_list",
                 }
             });
 
@@ -2285,7 +2285,12 @@ exports.fetch_appointment_details = async (req, res) => {
         }
 
         const data = appointment.toJSON();
-
+        const baseUrl = process.env.APP_URL;
+        if (data.Customer?.profile_image) {
+            data.Customer.profile_image =
+                baseUrl + "/" +
+                data.Customer.profile_image.replace(/\\/g, "/");
+        }
 
         data.appointment_date =
             new Date(data.appointment_date)
