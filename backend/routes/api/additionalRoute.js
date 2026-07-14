@@ -24,7 +24,10 @@ router.post(
     '/customer/verify-otp',
     controller.customer_verify_otp
 );
-
+router.post(
+    '/refreshAccessToken',
+    controller.refreshAccessToken
+);
 router.post("/check-version", controller.checkVersion);
 router.post("/check-merchant-version", controller.check_MerchantVersion);
 router.post("/check-customer-version", controller.check_CustomerVersion);

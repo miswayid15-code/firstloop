@@ -1,8 +1,9 @@
-const { Banner, Receptionist, Merchant, OtpVerify, CustomerOtpVerify, Customer, AppSetting, Notification, Support } = require('../../models');
+const { Banner, Receptionist, Merchant, OtpVerify, CustomerOtpVerify, Customer, AppSetting, Notification, Support ,RefreshToken} = require('../../models');
 const { sendOtp } = require('../../helpers/sendOtp');
 const CommonMailTemplate = require('../../helpers/CommonMailTemplate');
 const sendMail = require('../../helpers/sendMail');
 const { where } = require('sequelize');
+const jwt = require('jsonwebtoken');
 exports.banner_list = async (req, res) => {
 
     try {
@@ -501,7 +502,7 @@ exports.get_notification_list = async (req, res) => {
                 user_type,
                 // is_read: false
             },
-             order: [['createdAt', 'DESC']]
+            order: [['createdAt', 'DESC']]
         })
         if (!notification) {
             return res.json({
@@ -600,7 +601,7 @@ exports.update_notification = async (req, res) => {
 
 exports.create_support = async (req, res) => {
     try {
-// console.log("Er",req.body)
+        // console.log("Er",req.body)
         const {
             name,
             phone,
@@ -645,7 +646,7 @@ exports.create_support = async (req, res) => {
             description,
             status: 0, type, submit_type
         });
-        
+
         try {
             await sendMail(
                 email,
@@ -751,5 +752,158 @@ exports.check_delete_account = async (req, res) => {
             message: "Something went wrong.",
             error: err.message
         });
+    }
+};
+
+
+exports.refreshAccessToken = async (req, res) => {
+    try {
+
+        const authHeader = req.headers.authorization;
+
+        if (!authHeader || !authHeader.startsWith("Bearer ")) {
+            return res.json({
+                status: 0,
+                message: "Refresh token required"
+            });
+        }
+
+        const refresh_token = authHeader.split(" ")[1];
+
+        const stored = await RefreshToken.findOne({
+            where: {
+                token: refresh_token
+            }
+        });
+
+        if (!stored) {
+            return res.status(401).json({
+                status: 0,
+                message: "Invalid refresh token"
+            });
+        }
+
+        const decoded = jwt.verify(
+            refresh_token,
+            process.env.JWT_REFRESH_SECRET
+        );
+
+        let payload = {};
+
+        if (stored.user_type === "merchant") {
+
+            const merchant = await Merchant.findOne({
+                where: {
+                    id: decoded.id,
+                    del_status: 0
+                }
+            });
+
+            if (!merchant) {
+                return res.status(401).json({
+                    status: 0,
+                    message: "Merchant is not available"
+                });
+            }
+
+            payload = {
+                id: merchant.id,
+                email: merchant.email,
+                user_type: "merchant",
+                token_type: "access"
+            };
+
+        } else if (stored.user_type === "receptionist") {
+
+            const receptionist = await Receptionist.findOne({
+                where: {
+                    id: decoded.id,
+                    del_status: 0
+                }
+            });
+
+            if (!receptionist) {
+                return res.status(401).json({
+                    status: 0,
+                    message: "Receptionist is not available"
+                });
+            }
+
+            payload = {
+                id: receptionist.id,
+                rep_id: receptionist.rep_id,
+                user_type: "receptionist",
+                token_type: "access"
+            };
+
+        } else if (stored.user_type === "customer") {
+
+            const customer = await Customer.findOne({
+                where: {
+                    id: decoded.id,
+                    del_status: 0
+                }
+            });
+
+            if (!customer) {
+                return res.status(401).json({
+                    status: 0,
+                    message: "Customer is not available"
+                });
+            }
+
+            payload = {
+                id: customer.id,
+                email: customer.email,
+                user_type: "customer",
+                token_type: "access"
+            };
+
+        } else {
+
+            return res.status(401).json({
+                status: 0,
+                message: "Invalid user type"
+            });
+
+        }
+
+        const newAccessToken = jwt.sign(
+            payload,
+            process.env.JWT_SECRET,
+            {
+                expiresIn: "10d"
+            }
+        );
+
+        return res.json({
+            status: 1,
+            message: "Access token refreshed successfully",
+            access_token: newAccessToken
+        });
+
+    } catch (err) {
+
+        console.log(err);
+
+        if (err.name === "TokenExpiredError") {
+            return res.status(401).json({
+                status: 0,
+                message: "Refresh token expired"
+            });
+        }
+
+        if (err.name === "JsonWebTokenError") {
+            return res.status(401).json({
+                status: 0,
+                message: "Invalid refresh token"
+            });
+        }
+
+        return res.status(500).json({
+            status: 0,
+            message: "Something went wrong"
+        });
+
     }
 };
