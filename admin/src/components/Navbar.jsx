@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { FaUserCircle } from "react-icons/fa";
 import API from '../api.js'
-import FirstPass from '../assets/img/FirePass1.png'
+import FirstPass from '../assets/img/FirstPass-logo.png'
 import logo from '../assets/img/new_logo.png'
 const navItems = [
     { to: '/dashboard', icon: 'fa-chart-pie', label: 'Dashboard' },

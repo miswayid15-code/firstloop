@@ -14,6 +14,7 @@ import CorporateAddressField from '../components/CorporateAddressField'
 import API from '../api.js';
 
 const BRANCHES_PER_PAGE = 6
+const COUPONS_PER_PAGE = 5
 
 const libraries = ['places']
 
@@ -159,6 +160,7 @@ export default function ViewMerchant() {
     }
 
     const [branchPage, setBranchPage] = useState(1)
+    const [couponPage, setCouponPage] = useState(1)
 
     const [showAddRepPassword, setShowAddRepPassword] = useState(false)
     const [showEditRepPassword, setShowEditRepPassword] = useState(false)
@@ -187,6 +189,7 @@ export default function ViewMerchant() {
         email: '',
         phone: '',
         country_code: '',
+        country_iso: '',
         receptionist_id: '',
         address: '',
         city: '',
@@ -221,6 +224,7 @@ export default function ViewMerchant() {
         email: '',
         phone: '',
         country_code: '+91',
+        country_iso: '',
         receptionist_id: '',
         address: '',
         city: '',
@@ -234,7 +238,8 @@ export default function ViewMerchant() {
         profileImagePreview: '',
         timings: defaultBranchTimings,
         visibility: 0,
-        age_group: 'All Age'
+        age_group: 'All Age',
+        passlock: ''
     }
 
     const [addBranchForm, setAddBranchForm] = useState(initialAddBranchForm)
@@ -242,6 +247,7 @@ export default function ViewMerchant() {
     const [addBranchAutocomplete, setAddBranchAutocomplete] = useState(null)
 
     const [addingBranch, setAddingBranch] = useState(false)
+    const [generatingPasslock, setGeneratingPasslock] = useState(false)
 
     const addBranchMapCenter = useMemo(() => {
         return {
@@ -340,6 +346,8 @@ export default function ViewMerchant() {
 
         name: '',
 
+        ref_name: '',
+
         email: '',
 
         phone: '',
@@ -365,6 +373,8 @@ export default function ViewMerchant() {
         rep_id: '',
 
         name: '',
+
+        ref_name: '',
 
         email: '',
 
@@ -592,6 +602,46 @@ export default function ViewMerchant() {
 
     const unassignedReceptionists = merchantData?.unassigned_receptionists || []
 
+    const couponsList = merchantData?.coupon_list || []
+
+    const totalCouponPages = Math.max(
+        1,
+        Math.ceil(couponsList.length / COUPONS_PER_PAGE)
+    )
+
+    const safeCouponPage = Math.min(
+        couponPage,
+        totalCouponPages
+    )
+
+    const couponPageStartIndex = (safeCouponPage - 1) * COUPONS_PER_PAGE
+
+    const paginatedCoupons = couponsList.slice(
+        couponPageStartIndex,
+        couponPageStartIndex + COUPONS_PER_PAGE
+    )
+
+    const couponStartCount = couponsList.length
+        ? couponPageStartIndex + 1
+        : 0
+
+    const couponEndCount = Math.min(
+        couponPageStartIndex + COUPONS_PER_PAGE,
+        couponsList.length
+    )
+
+    const couponPageNumbers = Array.from(
+        { length: totalCouponPages },
+        (_, index) => index + 1
+    )
+
+    useEffect(() => {
+        if (couponPage !== safeCouponPage) {
+            setCouponPage(safeCouponPage)
+        }
+    }, [couponPage, safeCouponPage])
+
+
     useEffect(() => {
 
         setBranchPage(1)
@@ -708,6 +758,7 @@ export default function ViewMerchant() {
                     email: branch.email || '',
                     phone: branch.phone || '',
                     country_code: branch.country_code || '+91',
+                    country_iso: branch.country_iso || '',
                     receptionist_id: branch.receptionist_id || branch.Receptionists?.[0]?.id || '',
                     address: branch.address || '',
                     city: branch.city || '',
@@ -962,13 +1013,14 @@ export default function ViewMerchant() {
         }
     }
 
-    const geocodeAndUpdateForm = (setForm, lat, lng, placeName = '', countryName = '') => {
+    const geocodeAndUpdateForm = (setForm, lat, lng, placeName = '', countryName = '', countryIso = '') => {
         if (!window.google?.maps?.Geocoder) {
             setForm((prev) => ({
                 ...prev,
                 latitude: String(lat),
                 longitude: String(lng),
-                country: countryName || prev.country
+                country: countryName || prev.country,
+                country_iso: countryIso || prev.country_iso
             }))
             return
         }
@@ -982,7 +1034,8 @@ export default function ViewMerchant() {
                     latitude: String(lat),
                     longitude: String(lng),
                     address: placeName || prev.address,
-                    country: countryName || prev.country
+                    country: countryName || prev.country,
+                    country_iso: countryIso || prev.country_iso
                 }))
                 return
             }
@@ -991,6 +1044,7 @@ export default function ViewMerchant() {
             let city = ''
             let state = ''
             let country = ''
+            let country_iso = ''
             let zipcode = ''
 
             place.address_components?.forEach((component) => {
@@ -998,7 +1052,10 @@ export default function ViewMerchant() {
 
                 if (types.includes('locality')) city = component.long_name
                 if (types.includes('administrative_area_level_1')) state = component.long_name
-                if (types.includes('country')) country = component.long_name
+                if (types.includes('country')) {
+                    country = component.long_name
+                    country_iso = component.short_name
+                }
                 if (types.includes('postal_code')) zipcode = component.long_name
             })
 
@@ -1008,6 +1065,7 @@ export default function ViewMerchant() {
                 city,
                 state,
                 country,
+                country_iso,
                 zipcode,
                 latitude: String(lat),
                 longitude: String(lng)
@@ -1015,12 +1073,12 @@ export default function ViewMerchant() {
         })
     }
 
-    const updateBranchLocationDetails = (lat, lng, placeName = '', countryName = '') => {
-        geocodeAndUpdateForm(setEditBranchForm, lat, lng, placeName, countryName)
+    const updateBranchLocationDetails = (lat, lng, placeName = '', countryName = '', countryIso = '') => {
+        geocodeAndUpdateForm(setEditBranchForm, lat, lng, placeName, countryName, countryIso)
     }
 
-    const updateAddBranchLocationDetails = (lat, lng, placeName = '', countryName = '') => {
-        geocodeAndUpdateForm(setAddBranchForm, lat, lng, placeName, countryName)
+    const updateAddBranchLocationDetails = (lat, lng, placeName = '', countryName = '', countryIso = '') => {
+        geocodeAndUpdateForm(setAddBranchForm, lat, lng, placeName, countryName, countryIso)
     }
 
     const handlePlaceChangedForAutocomplete = (autocomplete, updateLocation) => {
@@ -1031,11 +1089,13 @@ export default function ViewMerchant() {
         if (!place.geometry || !place.geometry.location) return
 
         let country = ''
+        let country_iso = ''
 
         if (place.address_components) {
             place.address_components.forEach((component) => {
                 if (component.types.includes('country')) {
                     country = component.long_name
+                    country_iso = component.short_name
                 }
             })
         }
@@ -1043,7 +1103,7 @@ export default function ViewMerchant() {
         const lat = place.geometry.location.lat()
         const lng = place.geometry.location.lng()
 
-        updateLocation(lat, lng, place.formatted_address || '', country)
+        updateLocation(lat, lng, place.formatted_address || '', country, country_iso)
     }
 
     const handleBranchPlaceChanged = () => {
@@ -1661,6 +1721,12 @@ export default function ViewMerchant() {
             return
         }
 
+        if (!addBranchForm.passlock || !addBranchForm.passlock.trim()) {
+            toast.error('Passcode is required')
+            highlightFieldError('.modal.active input[name="passlock"]')
+            return
+        }
+
         if (!addBranchForm.country || !addBranchForm.country.trim()) {
             toast.error('Country is required')
             highlightFieldError('.modal.active input[name="country"]')
@@ -1677,7 +1743,7 @@ export default function ViewMerchant() {
             formData.append('email', addBranchForm.email)
             formData.append('phone', addBranchForm.phone)
             formData.append('country_code', addBranchForm.country_code)
-            formData.append('password', addBranchForm.password)
+            formData.append('passlock', addBranchForm.passlock)
             formData.append('bus_name', merchantData?.bus_name || '')
             formData.append('bus_cat', merchantData?.bus_cat || '')
             formData.append('address', addBranchForm.address)
@@ -1691,6 +1757,7 @@ export default function ViewMerchant() {
             formData.append('timings', JSON.stringify(addBranchForm.timings || []))
             formData.append('visibility', String(addBranchForm.visibility !== undefined ? addBranchForm.visibility : 0))
             formData.append('age_group', addBranchForm.age_group || 'All Age')
+            formData.append('country_iso', addBranchForm.country_iso || '')
             formData.append('receptionist_id', addBranchForm.receptionist_id || '')
 
             if (addBranchForm.profile_image) {
@@ -1905,6 +1972,7 @@ export default function ViewMerchant() {
             formData.append('timings', JSON.stringify(editBranchForm.timings || []))
             formData.append('visibility', String(editBranchForm.visibility !== undefined ? editBranchForm.visibility : 0))
             formData.append('age_group', editBranchForm.age_group || 'All Age')
+            formData.append('country_iso', editBranchForm.country_iso || '')
 
             if (editBranchForm.profile_image && typeof editBranchForm.profile_image !== 'string') {
                 formData.append('profile_image', editBranchForm.profile_image)
@@ -2028,6 +2096,8 @@ export default function ViewMerchant() {
 
             name: '',
 
+            ref_name: '',
+
             email: '',
 
             phone: '',
@@ -2053,6 +2123,8 @@ export default function ViewMerchant() {
             rep_id: selectedReceptionist.rep_id || '',
 
             name: selectedReceptionist.name || '',
+
+            ref_name: selectedReceptionist.ref_name || '',
 
             email: selectedReceptionist.email || '',
 
@@ -2114,6 +2186,8 @@ export default function ViewMerchant() {
 
             formData.append('country_code', receptionistForm.country_code)
 
+            formData.append('ref_name', receptionistForm.ref_name || '')
+
             if (receptionistForm.password.trim()) {
 
                 formData.append('password', receptionistForm.password)
@@ -2152,6 +2226,8 @@ export default function ViewMerchant() {
 
                     name: receptionistForm.name,
 
+                    ref_name: receptionistForm.ref_name,
+
                     email: receptionistForm.email,
 
                     phone: receptionistForm.phone,
@@ -2179,6 +2255,7 @@ export default function ViewMerchant() {
                                         ? {
                                             ...r,
                                             name: receptionistForm.name,
+                                            ref_name: receptionistForm.ref_name || '',
                                             profile_image: returnedProfileImage
                                         }
                                         : r
@@ -2209,6 +2286,7 @@ export default function ViewMerchant() {
                                     ? {
                                         ...r,
                                         name: receptionistForm.name,
+                                        ref_name: receptionistForm.ref_name || '',
                                         email: receptionistForm.email,
                                         phone: receptionistForm.phone,
                                         country_code: receptionistForm.country_code,
@@ -2277,6 +2355,28 @@ export default function ViewMerchant() {
 
         })
 
+    }
+
+    const generateBranchPasslock = async () => {
+        try {
+            setGeneratingPasslock(true)
+            const response = await API.get('api/generate-branch-passlock')
+            const data = response.data || {}
+            if (isSuccessResponse(data)) {
+                toast.success(data.message || 'Passlock generated successfully!')
+                setAddBranchForm((prev) => ({
+                    ...prev,
+                    passlock: String(data.passlock || '')
+                }))
+            } else {
+                toast.error(data.message || 'Failed to generate passcode')
+            }
+        } catch (error) {
+            toast.error('Failed to generate passcode')
+            console.error('Error generating passlock:', error)
+        } finally {
+            setGeneratingPasslock(false)
+        }
     }
 
     const generateReceptionistId = async () => {
@@ -2377,6 +2477,8 @@ export default function ViewMerchant() {
 
             formData.append('country_code', addReceptionistForm.country_code)
 
+            formData.append('ref_name', addReceptionistForm.ref_name || '')
+
             formData.append('password', addReceptionistForm.password)
 
             if (addReceptionistForm.profile_image) {
@@ -2411,6 +2513,8 @@ export default function ViewMerchant() {
                         rep_id: addReceptionistForm.rep_id,
 
                         name: addReceptionistForm.name,
+
+                        ref_name: addReceptionistForm.ref_name || '',
 
                         email: addReceptionistForm.email,
 
@@ -3280,7 +3384,7 @@ export default function ViewMerchant() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {merchantData.coupon_list.map((coupon) => (
+                                {paginatedCoupons.map((coupon) => (
                                     <tr key={coupon.id}>
                                         <td>{coupon.code}</td>
                                         <td>
@@ -3364,6 +3468,39 @@ export default function ViewMerchant() {
                     )
                 )}
             </div>
+
+            {!loading && couponsList.length > COUPONS_PER_PAGE && (
+                <div className="pagination-container" style={{ marginTop: 16 }}>
+                    <span className="pagination-text">
+                        Showing {couponStartCount} to {couponEndCount} of {couponsList.length} coupons
+                    </span>
+                    <div className="pagination-controls">
+                        <button
+                            className={`btn-page ${safeCouponPage === 1 ? 'disabled' : ''}`}
+                            onClick={() => setCouponPage((page) => Math.max(1, page - 1))}
+                            disabled={safeCouponPage === 1}
+                        >
+                            <i className="fas fa-chevron-left" />
+                        </button>
+                        {couponPageNumbers.map((page) => (
+                            <button
+                                key={page}
+                                className={`btn-page ${page === safeCouponPage ? 'active' : ''}`}
+                                onClick={() => setCouponPage(page)}
+                            >
+                                {page}
+                            </button>
+                        ))}
+                        <button
+                            className={`btn-page ${safeCouponPage === totalCouponPages ? 'disabled' : ''}`}
+                            onClick={() => setCouponPage((page) => Math.min(totalCouponPages, page + 1))}
+                            disabled={safeCouponPage === totalCouponPages}
+                        >
+                            <i className="fas fa-chevron-right" />
+                        </button>
+                    </div>
+                </div>
+            )}
 
             <div
                 className="flex-between"
@@ -3747,9 +3884,12 @@ export default function ViewMerchant() {
                                     </td>
                                 </tr>
                             ))
+                            
                         ) : unassignedReceptionists.length ? (
                             unassignedReceptionists.map((receptionist) => (
+                                
                                 <tr key={receptionist.id}>
+                                    
                                     <td>
                                         <div className="table-cell-profile">
                                             <div className="cell-avatar">
@@ -3773,6 +3913,11 @@ export default function ViewMerchant() {
                                                 <strong>
                                                     {receptionist.name || 'Unnamed'}
                                                 </strong>
+                                                {receptionist.ref_name ? (
+                                                    <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)', display: 'block', marginTop: '2px' }}>
+                                                        Ref: {receptionist.ref_name}
+                                                    </span>
+                                                ) : null}
                                             </div>
                                         </div>
                                     </td>
@@ -3786,18 +3931,18 @@ export default function ViewMerchant() {
                                     <td>
                                         {getReceptionistPhone(receptionist)}
                                     </td>
-
+                                    
                                     <td>
                                         <span
-                                            className={`badge ${receptionist.status == 1
-                                                ? 'active'
-                                                : 'pending'
+                                            className={`badge ${receptionist.status == 0
+                                                ? 'pending'
+                                                : 'active'
                                                 }`}
                                         >
                                             {
-                                                receptionist.status == 1
-                                                    ? 'Active'
-                                                    : 'Inactive'
+                                                receptionist.status == 0
+                                                    ? 'Inactive'
+                                                    : 'Active'
                                             }
                                         </span>
                                     </td>
@@ -3934,6 +4079,19 @@ export default function ViewMerchant() {
 
                                     <div className="form-group">
                                         <input
+                                            type="text"
+                                            id="edit-rep-ref-name"
+                                            className="form-control"
+                                            value={receptionistForm.ref_name || ''}
+                                            onChange={(e) => setReceptionistForm({ ...receptionistForm, ref_name: e.target.value })}
+                                            placeholder=" "
+                                            autoComplete="off"
+                                        />
+                                        <label className="form-label">Reference Name</label>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <input
                                             type="email"
                                             id="edit-rep-email"
                                             className="form-control"
@@ -3949,6 +4107,7 @@ export default function ViewMerchant() {
                                     <PhoneNumberField
                                         value={receptionistForm.phone}
                                         countryCode={receptionistForm.country_code}
+                                        required={true}
                                         onChange={(phoneVal, codeVal) => {
                                             setReceptionistForm({
                                                 ...receptionistForm,
@@ -4038,6 +4197,16 @@ export default function ViewMerchant() {
 
                                             <p className="merchant-subtext">
                                                 {selectedReceptionist.rep_id || '-'}
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <small className="merchant-sub-label">
+                                                Reference Name
+                                            </small>
+
+                                            <p className="merchant-subtext">
+                                                {selectedReceptionist.ref_name || '-'}
                                             </p>
                                         </div>
 
@@ -4226,6 +4395,19 @@ export default function ViewMerchant() {
 
                                 <div className="form-group">
                                     <input
+                                        type="text"
+                                        id="add-rep-ref-name"
+                                        className="form-control"
+                                        value={addReceptionistForm.ref_name || ''}
+                                        onChange={(e) => setAddReceptionistForm({ ...addReceptionistForm, ref_name: e.target.value })}
+                                        placeholder=" "
+                                        autoComplete="off"
+                                    />
+                                    <label className="form-label">Reference Name</label>
+                                </div>
+
+                                <div className="form-group">
+                                    <input
                                         type="email"
                                         id="add-rep-email"
                                         className="form-control"
@@ -4238,9 +4420,10 @@ export default function ViewMerchant() {
                                     <label className="form-label">Corporate Email</label>
                                 </div>
 
-                                <PhoneNumberField
+                                <PhoneNumberField 
                                     value={addReceptionistForm.phone}
                                     countryCode={addReceptionistForm.country_code}
+                                    required={true}
                                     onChange={(phoneVal, codeVal) => {
                                         setAddReceptionistForm({
                                             ...addReceptionistForm,
@@ -5451,6 +5634,36 @@ export default function ViewMerchant() {
                                     </div>
                                 </div>
 
+                                <div className="form-row" style={{ alignItems: 'flex-end' }}>
+                                    <div className="form-group" style={{ flex: 1 }}>
+                                        <input
+                                            type="text"
+                                            name="passlock"
+                                            className="form-control"
+                                            placeholder=" "
+                                            value={addBranchForm.passlock || ''}
+                                            onChange={handleAddBranchChange}
+                                            disabled={addingBranch}
+                                            required
+                                            autoComplete="off"
+                                        />
+                                        <label className="form-label">Passcode <span style={{ color: '#ef4444' }}>*</span></label>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        className="btn btn-secondary"
+                                        onClick={generateBranchPasslock}
+                                        disabled={generatingPasslock || addingBranch}
+                                        style={{ height: '42px', padding: '0 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, borderRadius: '8px', fontSize: '0.875rem' }}
+                                    >
+                                        {generatingPasslock ? (
+                                            <i className="fas fa-spinner fa-spin" />
+                                        ) : (
+                                            'Generate'
+                                        )}
+                                    </button>
+                                </div>
+
                                 <PhoneNumberField
                                     value={addBranchForm.phone}
                                     countryCode={addBranchForm.country_code}
@@ -5461,7 +5674,7 @@ export default function ViewMerchant() {
                                             country_code: codeVal || ''
                                         }))
                                     }
-                                    required={true}
+                                    // required={true}
                                 />
 
                                 <div className="form-group-classic" style={{ width: '100%' }}>

@@ -1,104 +1,104 @@
-/* FirstPass CSS Variables - Brand Design System */
-:root {
-    /* =========================
-       Background Colors
-    ========================= */
-    --bg-primary: #FCF8F8;
-    --bg-surface: #FFFFFF;
-    --bg-sidebar: rgba(255, 255, 255, 0.90);
-    --bg-hover: #F8ECEC;
+   /* FirstPass CSS Variables - Brand Design System */
+   :root {
+      /* =========================
+         Background Colors
+      ========================= */
+      --bg-primary: #FCF8F8;
+      --bg-surface: #FFFFFF;
+      --bg-sidebar: rgba(255, 255, 255, 0.90);
+      --bg-hover: #F8ECEC;
 
-    /* =========================
-       Brand Colors
-    ========================= */
-    --primary: #8F090E;
-    --primary-hover: #74070B;
-    --primary-light: #F5DCDD;
-    --primary-glow: rgba(143, 9, 14, 0.15);
+      /* =========================
+         Brand Colors
+      ========================= */
+      --primary: #8F090E;
+      --primary-hover: #74070B;
+      --primary-light: #F5DCDD;
+      --primary-glow: rgba(143, 9, 14, 0.15);
 
-    --secondary: #B11217;
-    --accent: #C94A4F;
+      --secondary: #B11217;
+      --accent: #C94A4F;
 
-    /* =========================
-       Text Colors
-    ========================= */
-    --text-primary: #2D2323;
-    --text-secondary: #6D6161;
-    --text-muted: #9A8F8F;
-    --text-light: #FFFFFF;
+      /* =========================
+         Text Colors
+      ========================= */
+      --text-primary: #2D2323;
+      --text-secondary: #6D6161;
+      --text-muted: #9A8F8F;
+      --text-light: #FFFFFF;
 
-    /* =========================
-       Status Colors
-    ========================= */
+      /* =========================
+         Status Colors
+      ========================= */
 
-    /* Success */
-    --status-success: #16A34A;
-    --status-success-bg: #DCFCE7;
+      /* Success */
+      --status-success: #16A34A;
+      --status-success-bg: #DCFCE7;
 
-    /* Warning */
-    --status-warning: #D97706;
-    --status-warning-bg: #FEF3C7;
+      /* Warning */
+      --status-warning: #D97706;
+      --status-warning-bg: #FEF3C7;
 
-    /* Danger */
-    --status-danger: #DC2626;
-    --status-danger-bg: #FEE2E2;
+      /* Danger */
+      --status-danger: #DC2626;
+      --status-danger-bg: #FEE2E2;
 
-    /* Info */
-    --status-info: #2563EB;
-    --status-info-bg: #DBEAFE;
+      /* Info */
+      --status-info: #2563EB;
+      --status-info-bg: #DBEAFE;
 
-    /* =========================
-       Gradients
-    ========================= */
-    --gradient-primary: linear-gradient(135deg, #A20A10 0%, #8F090E 100%);
-    --gradient-soft: linear-gradient(135deg, #FAECEC 0%, #F5DCDD 100%);
-    --gradient-glass: linear-gradient(
-        135deg,
-        rgba(255, 255, 255, 0.75) 0%,
-        rgba(255, 255, 255, 0.35) 100%
-    );
+      /* =========================
+         Gradients
+      ========================= */
+      --gradient-primary: linear-gradient(135deg, #A20A10 0%, #8F090E 100%);
+      --gradient-soft: linear-gradient(135deg, #FAECEC 0%, #F5DCDD 100%);
+      --gradient-glass: linear-gradient(
+         135deg,
+         rgba(255, 255, 255, 0.75) 0%,
+         rgba(255, 255, 255, 0.35) 100%
+      );
 
-    /* =========================
-       Typography
-    ========================= */
-    --font-primary: 'Inter', sans-serif;
-    --font-heading: 'Poppins', sans-serif;
+      /* =========================
+         Typography
+      ========================= */
+      --font-primary: 'Inter', sans-serif;
+      --font-heading: 'Poppins', sans-serif;
 
-    /* =========================
-       Layout
-    ========================= */
-    --sidebar-width: 260px;
-    --sidebar-collapsed-width: 80px;
-    --navbar-height: 110px;
+      /* =========================
+         Layout
+      ========================= */
+      --sidebar-width: 260px;
+      --sidebar-collapsed-width: 80px;
+      --navbar-height: 110px;
 
-    /* =========================
-       Border Radius
-    ========================= */
-    --border-radius-sm: 8px;
-    --border-radius-md: 12px;
-    --border-radius-lg: 18px;
-    --border-radius-xl: 24px;
+      /* =========================
+         Border Radius
+      ========================= */
+      --border-radius-sm: 8px;
+      --border-radius-md: 12px;
+      --border-radius-lg: 18px;
+      --border-radius-xl: 24px;
 
-    /* =========================
-       Borders
-    ========================= */
-    --border-glass: 1px solid rgba(143, 9, 14, 0.08);
-    --border-light: 1px solid #EFE5E5;
-    --glass-backdrop-blur: blur(12px);
+      /* =========================
+         Borders
+      ========================= */
+      --border-glass: 1px solid rgba(143, 9, 14, 0.08);
+      --border-light: 1px solid #EFE5E5;
+      --glass-backdrop-blur: blur(12px);
 
-    /* =========================
-       Shadows
-    ========================= */
-    --shadow-sm: 0 4px 12px rgba(143, 9, 14, 0.04);
-    --shadow-md: 0 8px 24px -4px rgba(143, 9, 14, 0.08);
-    --shadow-lg: 0 16px 36px -8px rgba(143, 9, 14, 0.10);
-    --shadow-premium: 0 20px 48px -12px rgba(143, 9, 14, 0.14);
-    --shadow-inset: inset 0 2px 4px rgba(0, 0, 0, 0.02);
+      /* =========================
+         Shadows
+      ========================= */
+      --shadow-sm: 0 4px 12px rgba(143, 9, 14, 0.04);
+      --shadow-md: 0 8px 24px -4px rgba(143, 9, 14, 0.08);
+      --shadow-lg: 0 16px 36px -8px rgba(143, 9, 14, 0.10);
+      --shadow-premium: 0 20px 48px -12px rgba(143, 9, 14, 0.14);
+      --shadow-inset: inset 0 2px 4px rgba(0, 0, 0, 0.02);
 
-    /* =========================
-       Transitions
-    ========================= */
-    --transition-fast: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-bounce: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
+      /* =========================
+         Transitions
+      ========================= */
+      --transition-fast: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-bounce: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+   }

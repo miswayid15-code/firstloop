@@ -176,9 +176,22 @@ export default function Settings() {
         }
     }
 
-    const handleMerchantAppToggle = async () => {
-        setMerchantApp((prev) => ({ ...prev, submitting: true }))
+    const handleConfirmMerchantAppToggle = () => {
         const nextStatus = !merchantApp.status
+        setConfirmDialog({
+            open: true,
+            title: nextStatus ? 'Enable Merchant App' : 'Disable Merchant App',
+            message: `Are you sure you want to ${nextStatus ? 'enable' : 'disable'} the Merchant App?`,
+            confirmText: nextStatus ? 'Enable' : 'Disable',
+            cancelText: 'Cancel',
+            loading: false,
+            onConfirm: () => performMerchantAppToggle(nextStatus)
+        })
+    }
+
+    const performMerchantAppToggle = async (nextStatus) => {
+        setConfirmDialog(prev => ({ ...prev, loading: true }))
+        setMerchantApp((prev) => ({ ...prev, submitting: true }))
         try {
             const response = await API.post('admin/update-app-status', {
                 id: merchantApp.id,
@@ -187,19 +200,35 @@ export default function Settings() {
             if (isSuccessResponse(response.data)) {
                 setMerchantApp((prev) => ({ ...prev, status: nextStatus }))
                 toast.success(response.data.message || 'Merchant app status updated')
+                setConfirmDialog({ open: false, title: '', message: '', loading: false, onConfirm: null })
             } else {
                 toast.error(response.data.message || 'Failed to update merchant app status')
+                setConfirmDialog(prev => ({ ...prev, loading: false }))
             }
         } catch (err) {
             toast.error(err.response?.data?.message || 'Failed to update merchant app status')
+            setConfirmDialog(prev => ({ ...prev, loading: false }))
         } finally {
             setMerchantApp((prev) => ({ ...prev, submitting: false }))
         }
     }
 
-    const handleCustomerAppToggle = async () => {
-        setCustomerApp((prev) => ({ ...prev, submitting: true }))
+    const handleConfirmCustomerAppToggle = () => {
         const nextStatus = !customerApp.status
+        setConfirmDialog({
+            open: true,
+            title: nextStatus ? 'Enable Customer App' : 'Disable Customer App',
+            message: `Are you sure you want to ${nextStatus ? 'enable' : 'disable'} the Customer App?`,
+            confirmText: nextStatus ? 'Enable' : 'Disable',
+            cancelText: 'Cancel',
+            loading: false,
+            onConfirm: () => performCustomerAppToggle(nextStatus)
+        })
+    }
+
+    const performCustomerAppToggle = async (nextStatus) => {
+        setConfirmDialog(prev => ({ ...prev, loading: true }))
+        setCustomerApp((prev) => ({ ...prev, submitting: true }))
         try {
             const response = await API.post('admin/update-app-status', {
                 id: customerApp.id,
@@ -208,11 +237,14 @@ export default function Settings() {
             if (isSuccessResponse(response.data)) {
                 setCustomerApp((prev) => ({ ...prev, status: nextStatus }))
                 toast.success(response.data.message || 'Customer app status updated')
+                setConfirmDialog({ open: false, title: '', message: '', loading: false, onConfirm: null })
             } else {
                 toast.error(response.data.message || 'Failed to update customer app status')
+                setConfirmDialog(prev => ({ ...prev, loading: false }))
             }
         } catch (err) {
             toast.error(err.response?.data?.message || 'Failed to update customer app status')
+            setConfirmDialog(prev => ({ ...prev, loading: false }))
         } finally {
             setCustomerApp((prev) => ({ ...prev, submitting: false }))
         }
@@ -1196,7 +1228,7 @@ export default function Settings() {
                                                 type="checkbox"
                                                 checked={merchantApp.status}
                                                 disabled={merchantApp.submitting}
-                                                onChange={handleMerchantAppToggle}
+                                                onChange={handleConfirmMerchantAppToggle}
                                             />
                                             <span className="merchant-status-track" aria-hidden="true">
                                                 <span className="merchant-status-knob" />
@@ -1245,7 +1277,7 @@ export default function Settings() {
                                                 type="checkbox"
                                                 checked={customerApp.status}
                                                 disabled={customerApp.submitting}
-                                                onChange={handleCustomerAppToggle}
+                                                onChange={handleConfirmCustomerAppToggle}
                                             />
                                             <span className="merchant-status-track" aria-hidden="true">
                                                 <span className="merchant-status-knob" />

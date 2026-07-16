@@ -5,7 +5,7 @@ import API from '../api.js'
 const STATUS_MAP = {
     0: { label: 'Open', badge: 'pending' },
     1: { label: 'Resolved', badge: 'active' },
-    2: { label: 'Closed', badge: 'declined' },
+    2: { label: 'Rejected', badge: 'declined' },
 }
 
 const TYPE_MAP = {
@@ -43,6 +43,20 @@ export default function Support() {
     // Update status dialog
     const [updatingId, setUpdatingId] = useState(null)
 
+    // Reply state
+    const [reply, setReply] = useState('')
+    const [modalStatus, setModalStatus] = useState(0)
+
+    useEffect(() => {
+        if (selected) {
+            setReply(selected.reply || '')
+            setModalStatus(Number(selected.status) === 0 ? 1 : Number(selected.status))
+        } else {
+            setReply('')
+            setModalStatus(1)
+        }
+    }, [selected])
+
     useEffect(() => {
         fetchTickets()
     }, [])
@@ -64,20 +78,21 @@ export default function Support() {
         }
     }
 
-    const handleStatusUpdate = async (id, newStatus) => {
+    const handleStatusUpdate = async (id, newStatus, currentReply = reply) => {
         try {
             setUpdatingId(id)
             const response = await API.post('admin/support/update-status', {
                 support_id: id,
                 status: newStatus,
+                reply: currentReply,
             })
             const data = response.data || {}
             if (data.status === 1 || data.success) {
                 toast.success(data.message || 'Status updated')
                 setTickets((prev) =>
-                    prev.map((t) => (t.id === id ? { ...t, status: newStatus } : t))
+                    prev.map((t) => (t.id === id ? { ...t, status: newStatus, reply: currentReply } : t))
                 )
-                if (selected?.id === id) setSelected((prev) => ({ ...prev, status: newStatus }))
+                if (selected?.id === id) setSelected((prev) => ({ ...prev, status: newStatus, reply: currentReply }))
             } else {
                 toast.error(data.message || 'Failed to update status')
             }
@@ -106,6 +121,10 @@ export default function Support() {
 
     const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
     const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+
+    const startCount = filtered.length ? (page - 1) * PAGE_SIZE + 1 : 0
+    const endCount = Math.min(page * PAGE_SIZE, filtered.length)
+    const pageNumbers = Array.from({ length: totalPages }, (_, index) => index + 1)
 
     const openTickets  = tickets.filter((t) => Number(t.status) === 0).length
     const resolvedTickets = tickets.filter((t) => Number(t.status) === 1).length
@@ -193,16 +212,17 @@ export default function Support() {
                                 <th>Type</th>
                                 <th>Submit On</th>
                                 <th>Description</th>
+                                <th>Reply</th>
                                 <th>Status</th>
                                 <th>Date</th>
-                                <th>Actions</th>
+                                <th style={{ textAlign: 'right' }}>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {loading ? (
                                 Array.from({ length: 5 }).map((_, i) => (
                                     <tr className="skeleton-row" key={`skel-${i}`}>
-                                        {Array.from({ length: 8 }).map((__, ci) => (
+                                        {Array.from({ length: 11 }).map((__, ci) => (
                                             <td key={ci}>
                                                 <span className="skeleton-text" style={{ width: '80%', display: 'inline-block' }} />
                                             </td>
@@ -237,10 +257,9 @@ export default function Support() {
                                                 <span
                                                     style={{
                                                         display: 'block',
-                                                        maxWidth: 220,
-                                                        overflow: 'hidden',
-                                                        textOverflow: 'ellipsis',
-                                                        whiteSpace: 'nowrap',
+                                                        maxWidth: 180,
+                                                        whiteSpace: 'normal',
+                                                        wordBreak: 'break-word',
                                                         cursor: 'pointer',
                                                         color: 'var(--text-muted)',
                                                         fontSize: '0.82rem',
@@ -249,6 +268,23 @@ export default function Support() {
                                                     onClick={() => setSelected(ticket)}
                                                 >
                                                     {ticket.description || '-'}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span
+                                                    style={{
+                                                        display: 'block',
+                                                        maxWidth: 180,
+                                                        whiteSpace: 'normal',
+                                                        wordBreak: 'break-word',
+                                                        cursor: 'pointer',
+                                                        color: 'var(--text-muted)',
+                                                        fontSize: '0.82rem',
+                                                    }}
+                                                    title={ticket.reply || ''}
+                                                    onClick={() => setSelected(ticket)}
+                                                >
+                                                    {ticket.reply || '-'}
                                                 </span>
                                             </td>
                                             <td>
@@ -267,35 +303,6 @@ export default function Support() {
                                                     >
                                                         <i className="fas fa-eye" />
                                                     </button>
-
-                                                    {/* Mark Resolved */}
-                                                    {/* {Number(ticket.status) !== 1 && (
-                                                        <button
-                                                            className="btn-icon"
-                                                            title="Mark as Resolved"
-                                                            disabled={isUpdating}
-                                                            onClick={() => handleStatusUpdate(ticket.id, 1)}
-                                                            style={{ color: '#10b981', borderColor: '#10b981' }}
-                                                        >
-                                                            {isUpdating
-                                                                ? <i className="fas fa-spinner fa-spin" />
-                                                                : <i className="fas fa-check" />}
-                                                        </button>
-                                                    )} */}
-
-                                                    {/* Close */}
-                                                    {/* {Number(ticket.status) !== 2 && (
-                                                        <button
-                                                            className="btn-icon delete"
-                                                            title="Close ticket"
-                                                            disabled={isUpdating}
-                                                            onClick={() => handleStatusUpdate(ticket.id, 2)}
-                                                        >
-                                                            {isUpdating
-                                                                ? <i className="fas fa-spinner fa-spin" />
-                                                                : <i className="fas fa-times" />}
-                                                        </button>
-                                                    )} */}
                                                 </div>
                                             </td>
                                         </tr>
@@ -303,7 +310,7 @@ export default function Support() {
                                 })
                             ) : (
                                 <tr>
-                                    <td colSpan={8} style={{ textAlign: 'center', padding: '36px 16px', color: 'var(--text-muted)' }}>
+                                    <td colSpan={11} style={{ textAlign: 'center', padding: '36px 16px', color: 'var(--text-muted)' }}>
                                         <i className="fas fa-headset" style={{ fontSize: 28, marginBottom: 10, display: 'block', opacity: 0.3 }} />
                                         No support tickets found.
                                     </td>
@@ -314,26 +321,40 @@ export default function Support() {
                 </div>
 
                 {/* Pagination */}
-                {!loading && totalPages > 1 && (
-                    <div className="flex-between" style={{ marginTop: 14, alignItems: 'center' }}>
-                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                            Page {page} of {totalPages} &nbsp;·&nbsp; {filtered.length} result{filtered.length !== 1 ? 's' : ''}
+                {!loading && filtered.length > PAGE_SIZE && (
+                    <div className="pagination-container">
+                        <span className="pagination-text">
+                            Showing {startCount}-{endCount} of {filtered.length} results
                         </span>
-                        <div>
+
+                        <div className="pagination-controls">
                             <button
-                                className="btn-icon"
+                                type="button"
+                                className={`btn-page ${page === 1 ? 'disabled' : ''}`}
+                                onClick={() => setPage((p) => Math.max(1, p - 1))}
                                 disabled={page === 1}
-                                onClick={() => setPage((p) => Math.max(p - 1, 1))}
-                                style={{ marginRight: 8 }}
                             >
-                                <i className="fas fa-chevron-left" />
+                                <i className="fas fa-chevron-left"></i>
                             </button>
+
+                            {pageNumbers.map((pNum) => (
+                                <button
+                                    type="button"
+                                    key={pNum}
+                                    className={`btn-page ${pNum === page ? 'active' : ''}`}
+                                    onClick={() => setPage(pNum)}
+                                >
+                                    {pNum}
+                                </button>
+                            ))}
+
                             <button
-                                className="btn-icon"
+                                type="button"
+                                className={`btn-page ${page === totalPages ? 'disabled' : ''}`}
+                                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                                 disabled={page === totalPages}
-                                onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
                             >
-                                <i className="fas fa-chevron-right" />
+                                <i className="fas fa-chevron-right"></i>
                             </button>
                         </div>
                     </div>
@@ -405,30 +426,59 @@ export default function Support() {
                                         {selected.description || '-'}
                                     </p>
                                 </div>
+
+                                {/* Reply Section */}
+                                {Number(selected.status) === 0 ? (
+                                    <div>
+                                        <small className="merchant-sub-label">Reply</small>
+                                        <textarea
+                                            id="reply"
+                                            name="reply"
+                                            className="form-control textarea-field"
+                                            placeholder="Type your reply here..."
+                                            value={reply}
+                                            onChange={(e) => setReply(e.target.value)}
+                                            style={{ marginTop: 6 }}
+                                        />
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <small className="merchant-sub-label">Reply</small>
+                                        <p className="merchant-subtext" style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: '1.65', marginTop: 6 }}>
+                                            {selected.reply || '-'}
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* Status Section */}
+                                {Number(selected.status) === 0 && (
+                                    <div>
+                                        <small className="merchant-sub-label">Status</small>
+                                        <select
+                                            className="form-select"
+                                            value={modalStatus}
+                                            onChange={(e) => setModalStatus(Number(e.target.value))}
+                                            style={{ marginTop: 6, width: '100%', height: 40 }}
+                                        >
+                                            <option value={1}>Resolve</option>
+                                            <option value={2}>Reject</option>
+                                        </select>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
                         <div className="modal-footer" style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-                            {Number(selected.status) !== 1 && (
+                            {Number(selected.status) === 0 && (
                                 <button
                                     type="button"
                                     className="btn btn-primary"
                                     disabled={updatingId === selected.id}
-                                    onClick={() => handleStatusUpdate(selected.id, 1)}
+                                    onClick={() => handleStatusUpdate(selected.id, modalStatus)}
                                 >
                                     {updatingId === selected.id
-                                        ? <><i className="fas fa-spinner fa-spin" style={{ marginRight: 6 }} />Updating...</>
-                                        : <><i className="fas fa-check" style={{ marginRight: 6 }} />Mark Resolved</>}
-                                </button>
-                            )}
-                            {Number(selected.status) !== 2 && (
-                                <button
-                                    type="button"
-                                    className="btn btn-secondary"
-                                    disabled={updatingId === selected.id}
-                                    onClick={() => handleStatusUpdate(selected.id, 2)}
-                                >
-                                    <i className="fas fa-times" style={{ marginRight: 6 }} />Close Ticket
+                                        ? <><i className="fas fa-spinner fa-spin" style={{ marginRight: 6 }} />Submitting...</>
+                                        : <><i className="fas fa-check" style={{ marginRight: 6 }} />Submit</>}
                                 </button>
                             )}
                             <button type="button" className="btn btn-secondary" onClick={() => setSelected(null)}>
