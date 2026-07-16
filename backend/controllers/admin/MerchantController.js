@@ -576,18 +576,43 @@ exports.delete_status = async (req, res) => {
 
         const deletedAt = new Date();
 
+        // Find all branches of this merchant for deleting their files
+        const branches = await Branch.findAll({
+            where: { merchant_id: id },
+            attributes: ['id', 'profile_image', 'pending_profile_image']
+        });
+        const branchIds = branches.map(item => item.id);
 
+        // Find branch gallery images
+        let branchGalleryImages = [];
+        if (branchIds.length > 0) {
+            branchGalleryImages = await BranchImage.findAll({
+                where: { branch_id: { [Op.in]: branchIds } },
+                attributes: ['image', 'pending_image']
+            });
+        }
+
+        // Find branch menu images
+        let branchMenuImages = [];
+        if (branchIds.length > 0) {
+            branchMenuImages = await MenuImage.findAll({
+                where: { branch_id: { [Op.in]: branchIds } },
+                attributes: ['image', 'pending_image']
+            });
+        }
+
+        // Find receptionists
         const receptionists = await Receptionist.findAll({
             where: {
                 merchant_id: id,
                 del_status: 0
             },
-            attributes: ['id']
+            attributes: ['id', 'profile_image']
         });
 
         const receptionistIds = receptionists.map(item => item.id);
 
-
+        // Perform updates (soft-deletes)
         await Merchant.update(
             {
                 del_status: 1,
@@ -600,7 +625,6 @@ exports.delete_status = async (req, res) => {
                 }
             }
         );
-
 
         await Branch.update(
             {
@@ -615,7 +639,6 @@ exports.delete_status = async (req, res) => {
             }
         );
 
-
         await Receptionist.update(
             {
                 del_status: 1,
@@ -629,7 +652,6 @@ exports.delete_status = async (req, res) => {
             }
         );
 
-
         await RefreshToken.destroy({
             where: {
                 user_id: id,
@@ -637,9 +659,7 @@ exports.delete_status = async (req, res) => {
             }
         });
 
-
         if (receptionistIds.length > 0) {
-
             await RefreshToken.destroy({
                 where: {
                     user_id: {
@@ -648,8 +668,59 @@ exports.delete_status = async (req, res) => {
                     user_type: 'receptionist'
                 }
             });
-
         }
+
+        // Delete BranchImage and MenuImage database records
+        if (branchIds.length > 0) {
+            await BranchImage.destroy({
+                where: { branch_id: { [Op.in]: branchIds } }
+            });
+            await MenuImage.destroy({
+                where: { branch_id: { [Op.in]: branchIds } }
+            });
+        }
+
+        // Helper to safely delete files physically
+        const deleteFile = (filePath) => {
+            if (filePath) {
+                const fullPath = path.join(__dirname, '../../', filePath);
+                if (fs.existsSync(fullPath)) {
+                    try {
+                        fs.unlinkSync(fullPath);
+                    } catch (err) {
+                        console.log(`Error deleting file ${filePath}:`, err.message);
+                    }
+                }
+            }
+        };
+
+        // Physically delete merchant files
+        deleteFile(merchant.profile_image);
+        deleteFile(merchant.document);
+        deleteFile(merchant.brand_image);
+
+        // Physically delete branch files
+        branches.forEach(branch => {
+            deleteFile(branch.profile_image);
+            deleteFile(branch.pending_profile_image);
+        });
+
+        // Physically delete branch gallery images
+        branchGalleryImages.forEach(img => {
+            deleteFile(img.image);
+            deleteFile(img.pending_image);
+        });
+
+        // Physically delete branch menu images
+        branchMenuImages.forEach(img => {
+            deleteFile(img.image);
+            deleteFile(img.pending_image);
+        });
+
+        // Physically delete receptionist files
+        receptionists.forEach(receptionist => {
+            deleteFile(receptionist.profile_image);
+        });
 
         return res.json({
             status: 1,
@@ -690,6 +761,7 @@ exports.receptionistsbyid = async (req, res) => {
                 'id',
                 'rep_id',
                 'name',
+                'ref_name',
                 'email',
                 'country_code',
                 'phone',
@@ -904,13 +976,14 @@ exports.receptionistsRegister = async (req, res) => {
         const {
             rep_id,
             name,
+            ref_name,
             email,
             phone,
             password,
             country_code,
-            mer_id
+            mer_id,
         } = req.body;
-
+// console.log("body",req.body)
         if (!mer_id) {
 
             return res.json({
@@ -1059,6 +1132,7 @@ exports.receptionistsRegister = async (req, res) => {
             password: hashedPassword,
 
             profile_image: profileImage,
+            ref_name: ref_name|| null,
 
             status: 1,
             del_status: 0
@@ -1116,7 +1190,7 @@ exports.branchRegister = async (req, res) => {
             timings,
             visibility,
             age_group,
-            // passlock
+            passlock, country_iso
         } = req.body;
 
         // console.log("BODY:", req.body);
@@ -1125,9 +1199,9 @@ exports.branchRegister = async (req, res) => {
         if (
             !name ||
 
-            !phone ||
+            // !phone ||
             !mer_id
-            // ||!passlock
+            || !passlock
         ) {
 
             return res.json({
@@ -1137,50 +1211,52 @@ exports.branchRegister = async (req, res) => {
 
         }
 
-        // const existingPasslock = await Branch.findOne({
-        //     where: { passlock }
-        // });
+        const existingPasslock = await Branch.findOne({
+            where: { passlock }
+        });
 
-        // if (existingPasslock) {
-        //     return res.json({
-        //         status: 0,
-        //         message: "Passlock already exists."
-        //     });
-        // }
+        if (existingPasslock) {
+            return res.json({
+                status: 0,
+                message: "Passlock already exists."
+            });
+        }
 
         let nationalNumber;
         let callingCode;
+        if (phone) {
+            try {
 
-        try {
+                const cleanPhone = phone.replace(/\s+/g, '');
 
-            const cleanPhone = phone.replace(/\s+/g, '');
+                const fullPhone = cleanPhone.startsWith('+')
+                    ? cleanPhone
+                    : country_code + cleanPhone;
 
-            const fullPhone = cleanPhone.startsWith('+')
-                ? cleanPhone
-                : country_code + cleanPhone;
+                const num = parsePhoneNumber(fullPhone);
+                console.log("num", num)
+                if (!num.isValid()) {
 
-            const num = parsePhoneNumber(fullPhone);
+                    return res.json({
+                        status: 0,
+                        message: "Invalid phone number"
+                    });
 
-            if (!num.isValid()) {
+                }
+
+                callingCode = `+${num.countryCallingCode}`;
+                nationalNumber = num.nationalNumber;
+
+            } catch (err) {
 
                 return res.json({
                     status: 0,
-                    message: "Invalid phone number"
+                    message: "Invalid phone format"
                 });
 
             }
-
-            callingCode = `+${num.countryCallingCode}`;
-            nationalNumber = num.nationalNumber;
-
-        } catch (err) {
-
-            return res.json({
-                status: 0,
-                message: "Invalid phone format"
-            });
-
         }
+
 
         // Email Exists Check
         const emailExists = await Branch.findOne({
@@ -1197,12 +1273,15 @@ exports.branchRegister = async (req, res) => {
         // }
 
         // Phone Exists Check
-        const phoneExists = await Branch.findOne({
-            where: {
-                country_code: callingCode,
-                phone: nationalNumber
-            }
-        });
+        if (phone) {
+            const phoneExists = await Branch.findOne({
+                where: {
+                    country_code: callingCode,
+                    phone: nationalNumber
+                }
+            });
+        }
+
 
         // if (phoneExists) {
 
@@ -1278,7 +1357,7 @@ exports.branchRegister = async (req, res) => {
 
             name,
             email,
-            country_code: callingCode,
+            country_code: callingCode || null,
             phone: nationalNumber,
             profile_image,
             lat,
@@ -1295,7 +1374,7 @@ exports.branchRegister = async (req, res) => {
             zip_code,
             visibility: visibility !== undefined ? visibility : 0,
             age_group: age_group || 'All Age',
-            // passlock
+            passlock, country_iso
 
         });
 
@@ -1422,7 +1501,7 @@ exports.branchUpdate = async (req, res) => {
             receptionist_id,
             timings,
             visibility,
-            age_group
+            age_group, country_iso,
         } = req.body;
 
 
@@ -1677,6 +1756,7 @@ exports.branchUpdate = async (req, res) => {
             state: state || branch.state,
 
             country: country || branch.country,
+            country_iso: country_iso || branch.country_iso,
 
             zip_code: zip_code || branch.zip_code,
             visibility: visibility !== undefined ? visibility : branch.visibility,
@@ -4503,8 +4583,8 @@ exports.verify_branch_pending_img = async (req, res) => {
                 body: Number(status) === 1
                     ? "Your branch profile image has been approved successfully."
                     : `Your branch profile image has been rejected.${rejected_reason ? ` Reason: ${rejected_reason}` : ""}`,
-                     data:{
-                     type: "branch_list",
+                data: {
+                    type: "branch_list",
                 }
             });
         } catch (error) {

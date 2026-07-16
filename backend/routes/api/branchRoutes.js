@@ -148,6 +148,6 @@ router.post(
     controller.update_appointment_status_by_mer
 );
 
-// router.get("/generate-branch-passlock", controller.generate_branch_passlock);
+router.get("/generate-branch-passlock", controller.generate_branch_passlock);
 router.post("/create-appointment", auth(), checkMerchantOrReceptionist, controller.create_appointment);
 module.exports = router;

@@ -489,6 +489,7 @@ exports.fetchmerchant = async (req, res) => {
                                 'id',
                                 'rep_id',
                                 'name',
+                                'ref_name',
                                 'country_code',
                                 'profile_image',
                             ]

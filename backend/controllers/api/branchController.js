@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const { json } = require('sequelize');
 const { sendPushNotification, getNotificationTemplate } = require("../../helpers/notificationHelper");
-// const { generateBranchPasslock } = require("../../helpers/passlockHelper");
+const { generateBranchPasslock } = require("../../helpers/passlockHelper");
 const moment = require('moment');
 const generateRefId = require("../../helpers/generateRefHelper");
 exports.register = async (req, res) => {
@@ -34,7 +34,7 @@ exports.register = async (req, res) => {
             timings,
             visibility,
             age_group, city, state, country,
-            // passlock
+            passlock, country_iso
         } = req.body;
 
         const merchant_id = req.user.id;
@@ -55,16 +55,20 @@ exports.register = async (req, res) => {
             });
 
         }
-        // const existingPasslock = await Branch.findOne({
-        //     where: { passlock }
-        // });
+        if (passlock) {
 
-        // if (existingPasslock) {
-        //     return res.json({
-        //         status: 0,
-        //         message: "Passlock already exists."
-        //     });
-        // }
+            const existingPasslock = await Branch.findOne({
+                where: { passlock }
+            });
+
+            if (existingPasslock) {
+                return res.json({
+                    status: 0,
+                    message: "Passlock already exists."
+                });
+            }
+        }
+
 
         let timingData = [];
 
@@ -301,7 +305,7 @@ exports.register = async (req, res) => {
                 status: 1,
 
                 del_status: 0,
-                // passlock
+                passlock: passlock || 1111
 
 
             });
@@ -537,7 +541,16 @@ exports.delete_branch = async (req, res) => {
             });
 
         }
-
+        await Receptionist.update(
+            {
+                branch_id: null
+            },
+            {
+                where: {
+                    branch_id
+                }
+            }
+        );
         // ✅ delete profile image
         if (branch.profile_image) {
 
@@ -596,7 +609,8 @@ exports.delete_branch = async (req, res) => {
 
         // ✅ soft delete branch
         await branch.update({
-            del_status: 1
+            del_status: 1,
+
         });
         const notificationToken = await UserNotificationToken.findOne({
             where: {
@@ -643,7 +657,7 @@ exports.delete_branch = async (req, res) => {
 exports.update_branch = async (req, res) => {
     if (req.body.lat === '') req.body.lat = null;
     if (req.body.lon === '') req.body.lon = null;
-
+    console.log("body",req.body)
     try {
 
         const {
@@ -661,7 +675,7 @@ exports.update_branch = async (req, res) => {
             timings,
             visibility,
             age_group,
-            city, state, country
+            city, state, country, country_iso
         } = req.body;
 
         const merchant_id = req.user.id;
@@ -888,6 +902,7 @@ exports.update_branch = async (req, res) => {
 
             lat: lat || branch.lat,
             lon: lon || branch.lon,
+            country_iso: country_iso || branch.country_iso,
 
             address: address || branch.address,
             city: city || branch.city,
@@ -2724,26 +2739,26 @@ exports.update_appointment_status_by_mer = async (req, res) => {
 };
 
 
-// exports.generate_branch_passlock = async (req, res) => {
-//     try {
-//         const passlock = await generateBranchPasslock();
+exports.generate_branch_passlock = async (req, res) => {
+    try {
+        const passlock = await generateBranchPasslock();
 
-//         return res.json({
-//             status: 1,
-//             message: "Passlock generated successfully.",
-//             passlock
-//         });
+        return res.json({
+            status: 1,
+            message: "Passlock generated successfully.",
+            passlock
+        });
 
-//     } catch (error) {
-//         console.error("Generate Branch Passlock API Error:", error);
+    } catch (error) {
+        console.error("Generate Branch Passlock API Error:", error);
 
-//         return res.json({
-//             status: 0,
-//             message: "Failed to generate passlock.",
-//             error: error.message
-//         });
-//     }
-// };
+        return res.json({
+            status: 0,
+            message: "Failed to generate passlock.",
+            error: error.message
+        });
+    }
+};
 
 exports.create_appointment = async (req, res) => {
 

@@ -13,11 +13,11 @@ module.exports = (sequelize, DataTypes) => {
         email: DataTypes.STRING,
 
         phone: DataTypes.STRING,
-        // passlock: {
-        //     type: DataTypes.STRING(20),
-        //     allowNull: true,
-        //     unique: true
-        // },
+        passlock: {
+            type: DataTypes.STRING(20),
+            allowNull: true,
+            unique: true
+        },
 
         profile_image: DataTypes.STRING,
         pending_profile_image: DataTypes.STRING,
@@ -35,6 +35,7 @@ module.exports = (sequelize, DataTypes) => {
 
         address: DataTypes.TEXT,
         country_code: DataTypes.STRING,
+        country_iso: DataTypes.STRING,
 
         // ✅ Added
         open_time: {

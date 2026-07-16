@@ -586,7 +586,7 @@ exports.refreshAccessToken = async (req, res) => {
     }
 };
 exports.login = async (req, res) => {
-
+console.log("Body",req.body);
     try {
         const { email, password } = req.body;
         const merchant = await Merchant.findOne({ where: { email } })
@@ -830,7 +830,7 @@ exports.dashboard = async (req, res) => {
         }));
         const notificationCount = await Notification.count({
             where: {
-                id: merchant.id,
+                user_id: merchant.id,
                 user_type: "merchant",
                 is_read: false
             }
@@ -985,6 +985,9 @@ exports.receptionist_list = async (req, res) => {
             include: [
                 {
                     model: Branch,
+                    where: {
+                        del_status: 0
+                    },
                     attributes: ['id', 'name', 'address', 'phone', 'email'],
                     required: false
                 }

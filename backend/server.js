@@ -2,7 +2,7 @@ const dns = require('dns');
 dns.setDefaultResultOrder('ipv4first');
 
 require('dotenv').config();
-require('./cron/deleteMerchantImages');
+// require('./cron/deleteMerchantImages');
 const app = require('./app');
 
 const PORT = process.env.PORT || 5000;

@@ -357,7 +357,7 @@ exports.login = async (req, res) => {
 
             return res.json({
                 status: 0,
-                message: "Invalid email or password"
+                message: "Invalid password"
             });
 
         }
@@ -370,7 +370,7 @@ exports.login = async (req, res) => {
             },
             process.env.JWT_REFRESH_SECRET,
             {
-                expiresIn: '30d'
+                expiresIn: '1m'
             }
         );
 
@@ -380,7 +380,8 @@ exports.login = async (req, res) => {
             user_type: 'customer',
             token: refreshToken,
             expires_at: new Date(
-                Date.now() + 30 * 24 * 60 * 60 * 1000
+                // Date.now() + 10 * 30 * 60 * 60 * 1000
+                  Date.now() + 1 * 60 * 1000
             )
 
         });
@@ -394,7 +395,7 @@ exports.login = async (req, res) => {
             },
             process.env.JWT_SECRET,
             {
-                expiresIn: '10d'
+                expiresIn: '1m'
             }
         );
 
@@ -1070,7 +1071,7 @@ exports.home = async (req, res) => {
             req.body?.customer_id ||
             req.query?.customer_id ||
             null;
-
+console.log("customer_id", customer_id)
         const baseUrl = process.env.APP_URL;
         const googleApiKey = process.env.GOOGLE_MAP_KEY;
 
@@ -1627,7 +1628,7 @@ exports.coupon_apply = async (req, res) => {
             req.body?.coupon_id ||
             req.query?.coupon_id ||
             null;
-        // const passlock = req.body.passlock;
+        const passlock = req.body.passlock;
 
         const branch_id = req.body?.branch_id ||
             null;
@@ -1658,18 +1659,18 @@ exports.coupon_apply = async (req, res) => {
             });
 
         }
-        // if (!passlock) {
+        if (!passlock) {
 
-        //     return res.json({
+            return res.json({
 
-        //         status: 0,
+                status: 0,
 
-        //         message:
-        //             "PassLock is required"
+                message:
+                    "PassLock is required"
 
-        //     });
+            });
 
-        // }
+        }
         if (customer_id) {
 
             const customer = await Customer.findOne({
@@ -1692,18 +1693,18 @@ exports.coupon_apply = async (req, res) => {
             }
 
         }
-        // const check_paslock = await Branch.findOne({
-        //     where: {
-        //         id: branch_id,
-        //         passlock: passlock
-        //     }
-        // })
-        // if (!check_paslock) {
-        //     return res.status(401).json({
-        //         status: 0,
-        //         message: "This code is not applicable for this branch."
-        //     })
-        // }
+        const check_paslock = await Branch.findOne({
+            where: {
+                id: branch_id,
+                passlock: passlock
+            }
+        })
+        if (!check_paslock) {
+            return res.status(401).json({
+                status: 0,
+                message: "This code is not applicable for this branch."
+            })
+        }
         const coupon =
             await Coupon.findOne({
 

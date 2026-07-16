@@ -93,7 +93,7 @@ exports.create_banner = async (req, res) => {
         });
     }
 };
-  
+
 exports.update_banner = async (req, res) => {
     try {
 
@@ -414,7 +414,43 @@ exports.update_app_status = async (req, res) => {
         await appSetting.update({
             app_status
         });
+        let appName = "";
 
+        if (id == 1) {
+            appName = "Merchant App";
+        } else if (id == 2) {
+            appName = "Customer App";
+        } else {
+            appName = "FirstPass App";
+        }
+
+        let subject = "";
+        let title = "";
+        let message = "";
+
+        if (app_status) {
+            subject = `${appName} Enabled`;
+            title = `${appName} Enabled`;
+            message = `The ${appName} has been enabled successfully. Users can now access the application.`;
+        } else {
+            subject = `${appName} Disabled`;
+            title = `${appName} Disabled`;
+            message = `The ${appName} has been disabled successfully. Users will no longer be able to access the application until it is enabled again.`;
+        }
+        try {
+            await sendMail(
+                "minsway01@gmail.com",
+                subject,
+                CommonMailTemplate({
+                    userType: 1, // 1 = Merchant, 2 = Receptionist, 3 = Customer
+                    name: "ADMIN",
+                    title,
+                    message
+                })
+            );
+        } catch (mailErr) {
+            console.log("MAIL ERROR:", mailErr);
+        }
         return res.json({
             status: 1,
             message: "App status updated successfully",
@@ -604,9 +640,9 @@ exports.support_list = async (req, res) => {
 
 exports.update_status = async (req, res) => {
     try {
-        console.log("Body:", req.body);
+        // console.log("Body:", req.body);
 
-        const { support_id, status } = req.body;
+        const { support_id, status, reply } = req.body;
 
         if (!support_id || status === undefined) {
             return res.json({
@@ -624,7 +660,7 @@ exports.update_status = async (req, res) => {
             });
         }
 
-        await support.update({ status });
+        await support.update({ status, reply });
 
         let subject = "";
         let title = "";
@@ -642,6 +678,11 @@ exports.update_status = async (req, res) => {
             subject = "Support Request Rejected";
             title = "Support Request Rejected";
             message = "We have reviewed your support request. Unfortunately, it could not be approved. Please contact our support team if you need further clarification.";
+        }
+
+        // Append reply if available
+        if (reply && reply.trim() !== "") {
+            message += `<br><br><strong>Reply from Support Team:</strong><br>${reply}`;
         }
 
         try {

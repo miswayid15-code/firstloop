@@ -1,5 +1,5 @@
 // controllers\api\Receptionist.js
-const { Receptionist, RefreshToken, Branch, Merchant, Appointment, Coupon, CouponApplied, UserNotificationToken ,Customer} = require('../../models');
+const { Receptionist, RefreshToken, Branch, Merchant, Appointment, Coupon, CouponApplied, UserNotificationToken, Customer } = require('../../models');
 const bcrypt = require('bcryptjs');
 const { parsePhoneNumber } = require('libphonenumber-js');
 const jwt = require('jsonwebtoken');
@@ -10,7 +10,7 @@ exports.register = async (req, res) => {
 
     try {
 
-        const { name, email, rep_id, phone, password, branch_id, country_code } = req.body;
+        const { name, email, rep_id, phone, password, branch_id, country_code ,ref_name} = req.body;
         // console.log("Body", req.body)
 
         // merchant check
@@ -191,6 +191,7 @@ exports.register = async (req, res) => {
             phone: nationalNumber,
             country_code,
             password: hashedPassword,
+            ref_name: ref_name || null,
 
             profile_image: profileImage,
 
@@ -274,7 +275,7 @@ exports.login = async (req, res) => {
         }
         const match = await bcrypt.compare(password, receptionist.password);
         if (!match) {
-            return res.json({ status: 0, message: "Invalid Receptionist ID or password" });
+            return res.json({ status: 0, message: "Invalid password" });
         }
         const refreshToken = jwt.sign(
             {
@@ -872,6 +873,13 @@ exports.dashboard = async (req, res) => {
             ]
 
         });
+        const notificationCount = await Notification.count({
+            where: {
+                user_id: receptionist.id,
+                user_type: "receptionist",
+                is_read: false
+            }
+        });
 
         if (!receptionist) {
 
@@ -1001,7 +1009,7 @@ exports.dashboard = async (req, res) => {
                 redeemed_users;
 
         }
-
+        receptionist.dataValues.unread_notification_count = notificationCount;
         return res.json({
             status: 1,
             message: "Receptionist Dashboard",

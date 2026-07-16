@@ -372,7 +372,7 @@ exports.check_MerchantVersion = async (req, res) => {
 
         const minVersions = {
             ios: 5,
-            android: 5,
+            android: 8,
             unknown: 0,
         };
 
@@ -872,7 +872,7 @@ exports.refreshAccessToken = async (req, res) => {
             payload,
             process.env.JWT_SECRET,
             {
-                expiresIn: "10d"
+                expiresIn: "1m"
             }
         );
 
