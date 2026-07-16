@@ -872,7 +872,7 @@ exports.refreshAccessToken = async (req, res) => {
             payload,
             process.env.JWT_SECRET,
             {
-                expiresIn: "1m"
+                expiresIn: "30d"
             }
         );
 

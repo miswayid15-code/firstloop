@@ -370,7 +370,7 @@ exports.login = async (req, res) => {
             },
             process.env.JWT_REFRESH_SECRET,
             {
-                expiresIn: '1m'
+                expiresIn: '30d'
             }
         );
 
@@ -380,8 +380,7 @@ exports.login = async (req, res) => {
             user_type: 'customer',
             token: refreshToken,
             expires_at: new Date(
-                // Date.now() + 10 * 30 * 60 * 60 * 1000
-                  Date.now() + 1 * 60 * 1000
+                Date.now() + 30 * 24 * 60 * 60 * 1000
             )
 
         });
@@ -395,7 +394,7 @@ exports.login = async (req, res) => {
             },
             process.env.JWT_SECRET,
             {
-                expiresIn: '1m'
+                expiresIn: '10d'
             }
         );
 
@@ -1071,7 +1070,7 @@ exports.home = async (req, res) => {
             req.body?.customer_id ||
             req.query?.customer_id ||
             null;
-console.log("customer_id", customer_id)
+
         const baseUrl = process.env.APP_URL;
         const googleApiKey = process.env.GOOGLE_MAP_KEY;
 
