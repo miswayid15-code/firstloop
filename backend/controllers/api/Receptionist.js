@@ -1,5 +1,5 @@
 // controllers\api\Receptionist.js
-const { Receptionist, RefreshToken, Branch, Merchant, Appointment, Coupon, CouponApplied, UserNotificationToken, Customer } = require('../../models');
+const { Receptionist, RefreshToken, Branch, Merchant, Appointment, Coupon, CouponApplied, UserNotificationToken, Customer, Notification } = require('../../models');
 const bcrypt = require('bcryptjs');
 const { parsePhoneNumber } = require('libphonenumber-js');
 const jwt = require('jsonwebtoken');
@@ -10,7 +10,7 @@ exports.register = async (req, res) => {
 
     try {
 
-        const { name, email, rep_id, phone, password, branch_id, country_code ,ref_name} = req.body;
+        const { name, email, rep_id, phone, password, branch_id, country_code, ref_name } = req.body;
         // console.log("Body", req.body)
 
         // merchant check
