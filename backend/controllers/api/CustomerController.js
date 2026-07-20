@@ -3074,6 +3074,8 @@ exports.fetch_appointment = async (req, res) => {
 exports.fetch_appointment_details = async (req, res) => {
 
     try {
+                const baseUrl =
+            process.env.APP_URL;
         const language = req.language;
         const appointment_id =
             req.body?.appointment_id ||
