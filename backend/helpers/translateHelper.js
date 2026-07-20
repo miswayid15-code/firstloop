@@ -30,14 +30,39 @@ const translateMultiple = async (texts = [], targetLanguage = "en") => {
             return texts;
         }
 
+        // Keep original positions
+        const indexedTexts = texts.map((text, index) => ({
+            text,
+            index
+        }));
+
+        // Remove empty/null values before sending to Google
+        const validTexts = indexedTexts.filter(
+            item =>
+                typeof item.text === "string" &&
+                item.text.trim() !== ""
+        );
+
+        if (validTexts.length === 0) {
+            return texts;
+        }
+
         const [response] = await client.translateText({
             parent: `projects/${PROJECT_ID}/locations/global`,
-            contents: texts,
+            contents: validTexts.map(item => item.text),
             mimeType: "text/plain",
             targetLanguageCode: targetLanguage,
         });
 
-        return response.translations.map(item => item.translatedText);
+        // Restore original order
+        const result = [...texts];
+
+        response.translations.forEach((translation, i) => {
+            result[validTexts[i].index] =
+                translation.translatedText;
+        });
+
+        return result;
     } catch (error) {
         console.error("Translation Error:", error.message);
         return texts;
