@@ -1,7 +1,13 @@
+// helpers/responseMessage.js
+
+const requestContext = require("./requestContext");
 const { translateMultiple } = require("./translateHelper");
 
-const responseMessage = async (message, language) => {
-    if (!language || language === "en") {
+const responseMessage = async (message) => {
+    const store = requestContext.getStore();
+    const language = store?.language || "en";
+
+    if (language === "en") {
         return message;
     }
 
@@ -9,4 +15,4 @@ const responseMessage = async (message, language) => {
     return translated;
 };
 
-module.exports = { responseMessage };
+module.exports = responseMessage;

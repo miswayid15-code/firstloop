@@ -2655,7 +2655,7 @@ exports.appointment = async (req, res) => {
             return res.json({
 
                 status: 0,
-                message: "Branch ID is required"
+                message: await responseMessage("Branch ID is required"),
 
             });
 
@@ -2667,7 +2667,9 @@ exports.appointment = async (req, res) => {
             return res.json({
 
                 status: 0,
-                message: "Appointment date and slot are required"
+                message: await responseMessage("Appointment date and slot are required"),
+
+
 
             });
 
@@ -2681,7 +2683,9 @@ exports.appointment = async (req, res) => {
         if (!formattedDate.isValid()) {
             return res.json({
                 status: 0,
-                message: "Invalid appointment date format."
+                message: await responseMessage("Invalid appointment date format."),
+
+
             });
         }
 
@@ -2706,7 +2710,8 @@ exports.appointment = async (req, res) => {
             return res.json({
 
                 status: 0,
-                message: "Invalid customer"
+                message: await responseMessage("Invalid customer"),
+
 
             });
 
@@ -2743,7 +2748,9 @@ exports.appointment = async (req, res) => {
             return res.json({
 
                 status: 0,
-                message: "Branch not found"
+                message: await responseMessage("Branch not found"),
+
+
 
             });
 
@@ -2761,7 +2768,9 @@ exports.appointment = async (req, res) => {
         if (!branchTiming || branchTiming.is_closed === true) {
             return res.json({
                 status: 0,
-                message: "Branch is closed on the selected day."
+                message: await responseMessage("Branch is closed on the selected day."),
+
+
             });
         }
 
@@ -2774,7 +2783,8 @@ exports.appointment = async (req, res) => {
         if (!slotTime.isValid()) {
             return res.json({
                 status: 0,
-                message: "Invalid slot format."
+                message: await responseMessage("Invalid slot format."),
+
             });
         }
 
@@ -2785,7 +2795,8 @@ exports.appointment = async (req, res) => {
         ) {
             return res.json({
                 status: 0,
-                message: "Branch is closed for the selected slot."
+                message: await responseMessage("Branch is closed for the selected slot."),
+
             });
         }
         const alreadyAppointment = await Appointment.findOne({
@@ -2809,7 +2820,8 @@ exports.appointment = async (req, res) => {
             return res.json({
 
                 status: 0,
-                message: "Appointment already booked for this slot"
+                message: await responseMessage("Appointment already booked for this slot"),
+
 
             });
 
@@ -2943,7 +2955,7 @@ exports.appointment = async (req, res) => {
         return res.json({
 
             status: 1,
-            message: "Appointment booked successfully",
+            message: await responseMessage("Appointment booked successfully"),
             data: appointment
 
         });
@@ -3042,8 +3054,7 @@ exports.fetch_appointment = async (req, res) => {
         return res.json({
 
             status: 1,
-
-            message: "Appointments fetched successfully",
+            message: await responseMessage("Appointments fetched successfully"),
             counts: status_count,
             data: formattedAppointments
 
@@ -3232,7 +3243,8 @@ exports.search = async (req, res) => {
 
             return res.json({
                 status: 0,
-                message: "Search query is required"
+                    message: await responseMessage("Search query is required"),
+              
             });
 
         }
@@ -3422,9 +3434,8 @@ exports.search = async (req, res) => {
         return res.json({
 
             status: 1,
-
-            message:
-                "Search results fetched successfully",
+    message: await responseMessage("Search results fetched successfully"),
+          
 
             total: results.length,
 
@@ -3616,7 +3627,8 @@ exports.cancel_appointment = async (req, res) => {
         if (!customer_id) {
             return res.json({
                 status: 0,
-                message: "Customer ID is required"
+                message: await responseMessage("Customer ID is required"),
+             
             });
         }
 
@@ -3628,7 +3640,8 @@ exports.cancel_appointment = async (req, res) => {
         if (!appointment_id) {
             return res.json({
                 status: 0,
-                message: "Appointment ID is required"
+                message: await responseMessage("Appointment ID is required"),
+          
             });
         }
 
@@ -3642,14 +3655,16 @@ exports.cancel_appointment = async (req, res) => {
         if (!appointment) {
             return res.json({
                 status: 0,
-                message: "Appointment not found"
+                message: await responseMessage("Appointment not found"),
+                
             });
         }
 
         if (Number(appointment.status) === 2) {
             return res.json({
                 status: 0,
-                message: "Appointment is already cancelled"
+                message: await responseMessage("Appointment is already cancelled"),
+               
             });
         }
 
@@ -3780,7 +3795,8 @@ exports.cancel_appointment = async (req, res) => {
 
         return res.json({
             status: 1,
-            message: "Appointment cancelled successfully",
+            message: await responseMessage("Appointment cancelled successfully"),
+        
             // data: appointment
         });
 
