@@ -53,7 +53,7 @@ exports.register = async (req, res) => {
             profile_image
         } = req.body;
 
-
+console.log("body",req.body)
         let phoneNumber;
         let nationalNumber;
         let callingCode;
@@ -137,7 +137,7 @@ exports.register = async (req, res) => {
         // profile image upload
         let profileImage = '';
 
-        // console.log("FILES:", req.files);
+        console.log("FILES:", req.files);
 
         if (req.files && req.files.length > 0) {
 
