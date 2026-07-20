@@ -25,7 +25,7 @@ const generateRefId = require("../../helpers/generateRefHelper");
 const RegisterTemplate = require('../../helpers/RegisterTemplate');
 const { sendOtp } = require('../../helpers/sendOtp');
 const ResetsTemplate = require('../../helpers/ResetsTemplate');
-const { responseMessage } = require("../../helpers/responseHelper");
+const  responseMessage  = require("../../helpers/responseMessage");
 const { otpTemplate } = require('../../helpers/mailTemplate');
 const { Op } = require('sequelize');
 const axios = require("axios");
@@ -1660,7 +1660,7 @@ exports.coupon_apply = async (req, res) => {
 
                 status: 0,
 
-                message: await responseMessage("Coupon ID is required", language)
+                message: await responseMessage("Coupon ID is required")
 
             });
 
@@ -1671,7 +1671,7 @@ exports.coupon_apply = async (req, res) => {
 
                 status: 0,
 
-                message: await responseMessage("Branch ID is required", language)
+                message: await responseMessage("Branch ID is required")
 
             });
 
@@ -1682,7 +1682,7 @@ exports.coupon_apply = async (req, res) => {
 
                 status: 0,
 
-                message: await responseMessage("PassLock is required", language)
+                message: await responseMessage("PassLock is required")
 
             });
 
@@ -1703,7 +1703,7 @@ exports.coupon_apply = async (req, res) => {
 
                 return res.json({
                     status: 0,
-                    message: await responseMessage("Invalid customer", language)
+                    message: await responseMessage("Invalid customer")
                 });
 
             }
@@ -1718,7 +1718,7 @@ exports.coupon_apply = async (req, res) => {
         if (!check_paslock) {
             return res.status(401).json({
                 status: 0,
-                message: await responseMessage("This code is not applicable for this branch", language)
+                message: await responseMessage("This code is not applicable for this branch")
 
             })
         }
@@ -1744,7 +1744,7 @@ exports.coupon_apply = async (req, res) => {
 
                 status: 0,
 
-                message: await responseMessage("Coupon not found", language)
+                message: await responseMessage("Coupon not found")
 
             });
 
@@ -1757,7 +1757,7 @@ exports.coupon_apply = async (req, res) => {
             return res.json({
 
                 status: 0,
-                message: await responseMessage("Coupon is not applicable for this branch", language)
+                message: await responseMessage("Coupon is not applicable for this branch")
 
 
             });
@@ -1781,7 +1781,7 @@ exports.coupon_apply = async (req, res) => {
             return res.json({
 
                 status: 0,
-                message: await responseMessage("Coupon expired", language)
+                message: await responseMessage("Coupon expired")
             });
 
         }
@@ -1797,7 +1797,7 @@ exports.coupon_apply = async (req, res) => {
         if (existingCoupon) {
             return res.json({
                 status: 0,
-                message: await responseMessage("This coupon is already processing. Please wait for approval.", language)
+                message: await responseMessage("This coupon is already processing. Please wait for approval.")
             });
         }
 
@@ -2010,7 +2010,7 @@ exports.coupon_apply = async (req, res) => {
 
             status: 1,
 
-            message: await responseMessage("Coupon applied successfully", language),
+            message: await responseMessage("Coupon applied successfully"),
 
 
             data: {
@@ -2272,8 +2272,7 @@ exports.Coupon_list = async (req, res) => {
             counts: status_count,
 
             message: await responseMessage(
-                "Coupon List Fetch Successfully",
-                language
+                "Coupon List Fetch Successfully"
             ),
 
             data:
@@ -2301,8 +2300,7 @@ exports.claim_coupon_details = async (req, res) => {
             return res.status(400).json({
                 status: 0,
                 message: await responseMessage(
-                    "coupon_claim_id is required",
-                    language
+                    "coupon_claim_id is required"
                 )
             });
         }
@@ -2349,8 +2347,7 @@ exports.claim_coupon_details = async (req, res) => {
             return res.status(404).json({
                 status: 0,
                 message: await responseMessage(
-                    "No Claimed Coupon found",
-                    language
+                    "No Claimed Coupon found"
                 )
             });
         }
@@ -2383,8 +2380,7 @@ exports.claim_coupon_details = async (req, res) => {
         return res.status(200).json({
             status: 1,
             message: await responseMessage(
-                "Successfully fetched coupon details",
-                language
+                "Successfully fetched coupon details"
             ),
             data
         });
@@ -2447,8 +2443,7 @@ exports.wishlist = async (req, res) => {
 
                 status: 0,
                 message: await responseMessage(
-                    "Invalid customer",
-                    language
+                    "Invalid customer"
                 ),
 
 
@@ -2486,8 +2481,7 @@ exports.wishlist = async (req, res) => {
 
 
                 message: await responseMessage(
-                    "Branch not found",
-                    language
+                    "Branch not found"
                 ),
             });
 
@@ -2538,8 +2532,7 @@ exports.wishlist = async (req, res) => {
 
 
                 message: await responseMessage(
-                    "Wishlist removed successfully",
-                    language
+                    "Wishlist removed successfully"
                 ),
 
                 data: {
