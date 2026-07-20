@@ -3539,86 +3539,103 @@ exports.search = async (req, res) => {
 };
 
 exports.merchants = async (req, res) => {
-
     try {
+        const merchant_id = req.body?.merchant_id || null;
 
-        const merchant_id =
-            req.body?.merchant_id ||
-            null;
-        // console.log("MERCHANT ID:", merchant_id);
-        // ✅ Merchant ID required
+        let choose_country = req.body?.ch_code || req.query?.ch_code || null;
+        if (choose_country) {
+            choose_country = choose_country.trim().toUpperCase();
+        }
+
         if (!merchant_id) {
-
             return res.json({
                 status: 0,
                 message: "Merchant ID is required"
             });
-
         }
 
-        const merchants = await Merchant.findAll({
+        // Check merchant exists
+        const merchantExists = await Merchant.findByPk(merchant_id);
 
+        if (!merchantExists) {
+            return res.json({
+                status: 0,
+                message: "Merchant not found"
+            });
+        }
+
+        const branchWhere = {
+            del_status: 0,
+            status: 1
+        };
+
+        if (choose_country) {
+            branchWhere.country_iso = choose_country;
+        }
+
+        const baseUrl = process.env.APP_URL;
+
+        const merchants = await Merchant.findAll({
             where: {
                 id: merchant_id
             },
-
             attributes: [
                 'id',
                 'bus_name'
             ],
-
             include: [
                 {
                     model: Branch,
-
-                    where: {
-                        del_status: 0,
-                        status: 1
-                    },
-
                     required: true,
-
+                    where: branchWhere,
                     attributes: [
                         'id',
-                        'name'
+                        'name',
+                        'profile_image',
+                        'address',
+                        'country_iso'
                     ]
                 }
             ]
-
         });
 
-        // ✅ No Data Check
-        if (!merchants || merchants.length === 0) {
-
+        // No branches found
+        if (merchants.length === 0) {
             return res.json({
                 status: 0,
-                message: "No merchants found"
+                message: choose_country
+                    ? `No branch available for this country .`
+                    : "No branch available for this merchant."
             });
-
         }
 
-        return res.json({
+        const data = merchants.map(merchant => {
+            const item = merchant.toJSON();
 
-            status: 1,
-            message: "Merchants fetched successfully",
-            data: merchants
+            item.Branches = item.Branches.map(branch => ({
+                ...branch,
+                profile_image: branch.profile_image
+                    ? `${baseUrl}/${branch.profile_image.replace(/\\/g, "/")}`
+                    : null
+            }));
 
+            return item;
         });
 
-    }
-    catch (err) {
+        return res.json({
+            status: 1,
+            message: "Merchants fetched successfully",
+            data
+        });
 
+    } catch (err) {
         console.log("MERCHANTS FETCH ERROR:", err);
 
         return res.json({
-
             status: 0,
             message: err.message
-
         });
-
     }
-
 };
 
 exports.fetch_wishlist = async (req, res) => {
