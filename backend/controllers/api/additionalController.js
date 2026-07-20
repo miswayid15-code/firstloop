@@ -2,8 +2,43 @@ const { Banner, Receptionist, Merchant, OtpVerify, CustomerOtpVerify, Customer, 
 const { sendOtp } = require('../../helpers/sendOtp');
 const CommonMailTemplate = require('../../helpers/CommonMailTemplate');
 const sendMail = require('../../helpers/sendMail');
-const { where } = require('sequelize');
+const { where, Op } = require('sequelize');
 const jwt = require('jsonwebtoken');
+
+const getMappingForCountryCode = (inputCode) => {
+    const { getCountries, getCountryCallingCode } = require('libphonenumber-js');
+    const cleanInput = String(inputCode).trim();
+    const results = new Set([cleanInput]);
+    
+    try {
+        if (cleanInput.startsWith('+')) {
+            const phoneCode = cleanInput.replace('+', '');
+            // Find all country codes matching this phone code
+            const countries = getCountries();
+            for (const country of countries) {
+                if (getCountryCallingCode(country) === phoneCode) {
+                    results.add(country);
+                    results.add(country.toLowerCase());
+                }
+            }
+        } else {
+            // It's probably an ISO code (like IN, US)
+            const upperCode = cleanInput.toUpperCase();
+            results.add(upperCode);
+            results.add(upperCode.toLowerCase());
+            // Get its phone code
+            const phoneCode = getCountryCallingCode(upperCode);
+            if (phoneCode) {
+                results.add(`+${phoneCode}`);
+            }
+        }
+    } catch (e) {
+        console.error("Error in country code mapping:", e);
+    }
+    
+    return Array.from(results);
+};
+
 exports.banner_list = async (req, res) => {
 
     try {
@@ -19,7 +54,8 @@ exports.banner_list = async (req, res) => {
         };
 
         if (country_code) {
-            whereClause.country_code = country_code;
+            const mappedCodes = getMappingForCountryCode(country_code);
+            whereClause.country_code = { [Op.in]: mappedCodes };
         }
 
         const banners = await Banner.findAll({
