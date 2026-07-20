@@ -3177,12 +3177,14 @@ exports.fetch_appointment_details = async (req, res) => {
 
 
         if (language !== "en") {
-            const [branchName] = await translateMultiple(
+            const [branchName,branchAddress] = await translateMultiple(
                 [data.br_name || ""],
+                [data.address || ""],
                 language
             );
 
             data.br_name = branchName;
+            data.address = branchAddress;
         }
 
         data.appointment_date =
