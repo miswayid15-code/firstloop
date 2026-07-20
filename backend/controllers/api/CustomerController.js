@@ -25,7 +25,7 @@ const generateRefId = require("../../helpers/generateRefHelper");
 const RegisterTemplate = require('../../helpers/RegisterTemplate');
 const { sendOtp } = require('../../helpers/sendOtp');
 const ResetsTemplate = require('../../helpers/ResetsTemplate');
-const  responseMessage  = require("../../helpers/responseMessage");
+const responseMessage = require("../../helpers/responseMessage");
 const { otpTemplate } = require('../../helpers/mailTemplate');
 const { Op } = require('sequelize');
 const axios = require("axios");
@@ -2971,7 +2971,7 @@ exports.appointment = async (req, res) => {
 exports.fetch_appointment = async (req, res) => {
 
     try {
-
+        const language = req.language;
         const customer_id = req.user.id;
 
         const appointments = await Appointment.findAll({
@@ -2999,38 +2999,39 @@ exports.fetch_appointment = async (req, res) => {
         });
 
         // ✅ Format Date & Slot
-        const formattedAppointments = appointments.map(item => {
+        const formattedAppointments = await Promise.all(
+            appointments.map(async (item) => {
 
-            const data = item.toJSON();
+                const data = item.toJSON();
 
+                if (language !== "en") {
+                    const [branchName] = await translateMultiple(
+                        [data.br_name || ""],
+                        language
+                    );
 
-            return {
+                    data.br_name = branchName;
+                }
 
-                ...data,
+                return {
+                    ...data,
 
-                appointment_date:
-                    new Date(data.appointment_date)
-                        .toLocaleDateString('en-US', {
-
-                            month: 'long',
-                            day: '2-digit',
-                            year: 'numeric'
-
+                    appointment_date: new Date(data.appointment_date)
+                        .toLocaleDateString("en-US", {
+                            month: "long",
+                            day: "2-digit",
+                            year: "numeric"
                         }),
 
-                slot:
-                    new Date(`1970-01-01T${data.slot}`)
-                        .toLocaleTimeString('en-US', {
-
-                            hour: '2-digit',
-                            minute: '2-digit',
+                    slot: new Date(`1970-01-01T${data.slot}`)
+                        .toLocaleTimeString("en-US", {
+                            hour: "2-digit",
+                            minute: "2-digit",
                             hour12: true
-
                         })
-
-            };
-
-        });
+                };
+            })
+        );
         const status_count = {
 
             pending:
@@ -3175,6 +3176,15 @@ exports.fetch_appointment_details = async (req, res) => {
         const data = appointment.toJSON();
 
 
+        if (language !== "en") {
+            const [branchName] = await translateMultiple(
+                [data.br_name || ""],
+                language
+            );
+
+            data.br_name = branchName;
+        }
+
         data.appointment_date =
             new Date(data.appointment_date)
                 .toLocaleDateString('en-US', {
@@ -3236,8 +3246,8 @@ exports.search = async (req, res) => {
 
             return res.json({
                 status: 0,
-                    message: await responseMessage("Search query is required"),
-              
+                message: await responseMessage("Search query is required"),
+
             });
 
         }
@@ -3427,8 +3437,8 @@ exports.search = async (req, res) => {
         return res.json({
 
             status: 1,
-    message: await responseMessage("Search results fetched successfully"),
-          
+            message: await responseMessage("Search results fetched successfully"),
+
 
             total: results.length,
 
@@ -3621,7 +3631,7 @@ exports.cancel_appointment = async (req, res) => {
             return res.json({
                 status: 0,
                 message: await responseMessage("Customer ID is required"),
-             
+
             });
         }
 
@@ -3634,7 +3644,7 @@ exports.cancel_appointment = async (req, res) => {
             return res.json({
                 status: 0,
                 message: await responseMessage("Appointment ID is required"),
-          
+
             });
         }
 
@@ -3649,7 +3659,7 @@ exports.cancel_appointment = async (req, res) => {
             return res.json({
                 status: 0,
                 message: await responseMessage("Appointment not found"),
-                
+
             });
         }
 
@@ -3657,7 +3667,7 @@ exports.cancel_appointment = async (req, res) => {
             return res.json({
                 status: 0,
                 message: await responseMessage("Appointment is already cancelled"),
-               
+
             });
         }
 
@@ -3789,7 +3799,7 @@ exports.cancel_appointment = async (req, res) => {
         return res.json({
             status: 1,
             message: await responseMessage("Appointment cancelled successfully"),
-        
+
             // data: appointment
         });
 
