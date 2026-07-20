@@ -2154,11 +2154,28 @@ exports.Coupon_list = async (req, res) => {
                         const data = item.toJSON();
                         if (language !== "en") {
 
-                            // Translate coupon fields
+                            // Translate top-level coupon_code
+                            const [couponCode] = await translateMultiple(
+                                [data.coupon_code || ""],
+                                language
+                            );
 
+                            data.coupon_code = couponCode;
 
-                            // Translate branch name
+                            // Translate Coupon.code
+                            if (data.Coupon) {
+
+                                const [code] = await translateMultiple(
+                                    [data.Coupon.code || ""],
+                                    language
+                                );
+
+                                data.Coupon.code = code;
+                            }
+
+                            // Translate Branch.name
                             if (data.Branch) {
+
                                 const [branchName] = await translateMultiple(
                                     [data.Branch.name || ""],
                                     language
@@ -2258,8 +2275,10 @@ exports.Coupon_list = async (req, res) => {
             status: 1,
             counts: status_count,
 
-            message:
+            message: await responseMessage(
                 "Coupon List Fetch Successfully",
+                language
+            ),
 
             data:
                 finalData
