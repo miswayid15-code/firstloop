@@ -1,5 +1,7 @@
 const axios = require("axios");
 const { Notification, UserNotificationToken } = require("../models");
+const { translateMultiple } = require("../helpers/translateHelper");
+const requestContext = require("../helpers/requestContext");
 const sendPushNotification = async ({
     token,
     title,
@@ -13,7 +15,8 @@ const sendPushNotification = async ({
     reference_id = null,
 }) => {
     try {
-
+        const store = requestContext.getStore();
+        const language = store?.language || "en";
 
         if (!token) {
             return {
@@ -21,7 +24,17 @@ const sendPushNotification = async ({
                 message: "Notification token is missing",
             };
         }
+        if (language !== "en") {
 
+            const [translatedTitle, translatedBody] =
+                await translateMultiple(
+                    [title, body],
+                    language
+                );
+
+            title = translatedTitle;
+            body = translatedBody;
+        }
         const tokenRecord = await UserNotificationToken.findOne({
             where: {
                 token

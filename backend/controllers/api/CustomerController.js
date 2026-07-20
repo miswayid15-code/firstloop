@@ -2116,6 +2116,7 @@ exports.Coupon_list = async (req, res) => {
                             'id',
                             'branch_ids',
                             'code',
+                            'description',
                             'percentage',
                             'start_date',
                             'end_date',
@@ -2154,33 +2155,28 @@ exports.Coupon_list = async (req, res) => {
                         const data = item.toJSON();
                         if (language !== "en") {
 
-                            // Translate top-level coupon_code
-                            const [couponCode] = await translateMultiple(
-                                [data.coupon_code || ""],
-                                language
-                            );
+                            const texts = [
+                                data.coupon_code || "",
+                                data.Coupon?.code || "",
+                                data.Coupon?.description || "",
+                                data.Branch?.name || ""
+                            ];
+
+                            const [
+                                couponCode,
+                                couponCodeName,
+                                couponDescription,
+                                branchName
+                            ] = await translateMultiple(texts, language);
 
                             data.coupon_code = couponCode;
 
-                            // Translate Coupon.code
                             if (data.Coupon) {
-
-                                const [code] = await translateMultiple(
-                                    [data.Coupon.code || ""],
-                                    language
-                                );
-
-                                data.Coupon.code = code;
+                                data.Coupon.code = couponCodeName;
+                                data.Coupon.description = couponDescription;
                             }
 
-                            // Translate Branch.name
                             if (data.Branch) {
-
-                                const [branchName] = await translateMultiple(
-                                    [data.Branch.name || ""],
-                                    language
-                                );
-
                                 data.Branch.name = branchName;
                             }
                         }
@@ -2428,7 +2424,7 @@ exports.wishlist = async (req, res) => {
             });
 
         }
-
+        const language = req.language;
         // ✅ Customer Check
         const customer =
             await Customer.findOne({
@@ -2450,9 +2446,11 @@ exports.wishlist = async (req, res) => {
             return res.json({
 
                 status: 0,
+                message: await responseMessage(
+                    "Invalid customer",
+                    language
+                ),
 
-                message:
-                    "Invalid customer"
 
             });
 
@@ -2485,9 +2483,12 @@ exports.wishlist = async (req, res) => {
 
                 status: 0,
 
-                message:
-                    "Branch not found"
 
+
+                message: await responseMessage(
+                    "Branch not found",
+                    language
+                ),
             });
 
         }
@@ -2535,8 +2536,11 @@ exports.wishlist = async (req, res) => {
 
                 status: 1,
 
-                message:
+
+                message: await responseMessage(
                     "Wishlist removed successfully",
+                    language
+                ),
 
                 data: {
 
