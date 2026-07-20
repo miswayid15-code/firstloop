@@ -3074,7 +3074,7 @@ exports.fetch_appointment = async (req, res) => {
 exports.fetch_appointment_details = async (req, res) => {
 
     try {
-                const baseUrl =
+        const baseUrl =
             process.env.APP_URL;
         const language = req.language;
         const appointment_id =
@@ -3251,6 +3251,7 @@ exports.fetch_appointment_details = async (req, res) => {
 exports.search = async (req, res) => {
 
     try {
+        const language = req.language;
         const today = new Date();
         const query =
             req.body?.query ||
@@ -3448,7 +3449,62 @@ exports.search = async (req, res) => {
             });
 
         });
+        if (language !== "en") {
+            await Promise.all(
+                results.map(async (item) => {
+                    if (item.type === "category") {
+                        const [categoryName] = await translateMultiple(
+                            [item.name || ""],
+                            language
+                        );
 
+                        item.name = categoryName;
+
+                        if (item.merchants?.length) {
+                            await Promise.all(
+                                item.merchants.map(async (merchant) => {
+                                    const [busName] = await translateMultiple(
+                                        [merchant.bus_name || ""],
+                                        language
+                                    );
+
+                                    merchant.bus_name = busName;
+                                })
+                            );
+                        }
+                    }
+
+                    if (item.type === "merchant") {
+                        const [busName] = await translateMultiple(
+                            [item.data.bus_name || ""],
+                            language
+                        );
+
+                        item.data.bus_name = busName;
+                    }
+
+                    if (item.type === "branch") {
+                        const [branchName] = await translateMultiple(
+                            [item.data.name || ""],
+                            language
+                        );
+
+                        item.data.name = branchName;
+                    }
+
+                  
+                    if (item.type === "coupon") {
+                        const [couponCode] = await translateMultiple(
+                            [item.data.code || ""],
+                            language
+                        );
+        
+                        item.data.code = couponCode;
+                    }
+                    
+                })
+            );
+        }
         return res.json({
 
             status: 1,
