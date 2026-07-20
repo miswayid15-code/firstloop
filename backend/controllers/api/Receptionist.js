@@ -265,62 +265,68 @@ exports.register = async (req, res) => {
 
 
 
-
 exports.login = async (req, res) => {
     try {
         const { rep_id, password } = req.body;
-        const receptionist = await Receptionist.findOne({ where: { rep_id } })
+
+        const receptionist = await Receptionist.findOne({ where: { rep_id } });
+
         if (!receptionist) {
             return res.json({ status: 0, message: "Invalid Reception Id" });
         }
+
         const match = await bcrypt.compare(password, receptionist.password);
+
         if (!match) {
             return res.json({ status: 0, message: "Invalid password" });
         }
+
+        // Refresh Token - 2 minutes
         const refreshToken = jwt.sign(
             {
                 id: receptionist.id,
-                user_type: 'receptionist',
-                token_type: 'refresh'
+                user_type: "receptionist",
+                token_type: "refresh",
             },
             process.env.JWT_REFRESH_SECRET,
-            { expiresIn: '30d' }
+            { expiresIn: "2m" }
         );
+
         await RefreshToken.create({
             user_id: receptionist.id,
-            user_type: 'receptionist',
-
+            user_type: "receptionist",
             token: refreshToken,
-            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+            expires_at: new Date(Date.now() + 2 * 60 * 1000), // 2 minutes
         });
+
+        // Access Token - 1 minute
         const accessToken = jwt.sign(
             {
                 id: receptionist.id,
                 rep_id: receptionist.rep_id,
-                user_type: 'receptionist',
-                token_type: 'access'
+                user_type: "receptionist",
+                token_type: "access",
             },
             process.env.JWT_SECRET,
-            { expiresIn: '10d' }
+            { expiresIn: "1m" }
         );
+
         return res.json({
             status: 1,
             message: "Login successful",
             user_id: receptionist.id,
             access_token: accessToken,
-            refresh_token: refreshToken
+            refresh_token: refreshToken,
         });
     } catch (err) {
-
         console.log(err);
-
+         
         return res.json({
             status: 0,
-            message: "Error"
+            message: "Error",
         });
     }
-}
-
+};
 exports.logout = async (req, res) => {
     try {
 

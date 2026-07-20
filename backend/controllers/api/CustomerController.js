@@ -1058,11 +1058,10 @@ exports.home = async (req, res) => {
         const lat = req.body?.lat || req.query?.lat || null;
         const lon = req.body?.lon || req.query?.lon || null;
         let choose_country = req.body?.ch_code || req.query?.ch_code || null;
-
-        if (choose_country && !choose_country.startsWith('+')) {
-            choose_country = '+' + choose_country.trim();
-
+        if (choose_country) {
+            choose_country = choose_country?.trim().toUpperCase();
         }
+
         // console.log("choose_country", choose_country)
 
         const customer_id =
@@ -1104,7 +1103,7 @@ exports.home = async (req, res) => {
             where: {
                 status: 1,
                 del_status: 0,
-                country_code: choose_country
+                country_iso: choose_country
             },
 
             include: [{
@@ -2454,9 +2453,9 @@ exports.wishlist = async (req, res) => {
                     token: notificationToken?.token,
                     title: "Wishlist Updated!",
                     body: `The branch "${branch.name}" has been removed from your wishlist.`,
-                     data:{
-                     type: "wishlist",
-                }
+                    data: {
+                        type: "wishlist",
+                    }
                 });
 
 
@@ -2510,8 +2509,8 @@ exports.wishlist = async (req, res) => {
                 token: notificationToken?.token,
                 title: "🎉 Wishlist Updated!",
                 body: `The branch "${branch.name}" has been added to your wishlist. ❤️`,
-                 data:{
-                     type: "wishlist",
+                data: {
+                    type: "wishlist",
                 }
             });
 
@@ -3150,7 +3149,7 @@ exports.fetch_appointment_details = async (req, res) => {
 exports.search = async (req, res) => {
 
     try {
-
+        const today = new Date();
         const query =
             req.body?.query ||
             req.query?.query ||
@@ -3164,7 +3163,10 @@ exports.search = async (req, res) => {
             });
 
         }
-
+        let choose_country = req.body?.ch_code || req.query?.ch_code || null;
+        if (choose_country) {
+            choose_country = choose_country?.trim().toUpperCase();
+        }
         // =========================
         // CATEGORY SEARCH
         // =========================
@@ -3174,7 +3176,9 @@ exports.search = async (req, res) => {
             where: {
                 name: {
                     [Op.iLike]: `%${query}%`
-                }
+                },
+                status: 1,
+                del_status: 0,
             },
 
             attributes: [
@@ -3189,18 +3193,18 @@ exports.search = async (req, res) => {
         // =========================
 
         const branches = await Branch.findAll({
-
             where: {
                 name: {
                     [Op.iLike]: `%${query}%`
-                }
+                },
+                status: 1,
+                del_status: 0,
+                country_iso: choose_country
             },
-
             attributes: [
                 'id',
                 'name'
             ]
-
         });
 
         // =========================
@@ -3212,8 +3216,17 @@ exports.search = async (req, res) => {
             where: {
                 code: {
                     [Op.iLike]: `%${query}%`
+                },
+                status: 1,
+                del_status: 0,
+                start_date: {
+                    [Op.lte]: today
+                },
+                end_date: {
+                    [Op.gte]: today
                 }
             },
+
 
             attributes: [
                 'id',
@@ -3232,7 +3245,9 @@ exports.search = async (req, res) => {
             where: {
                 bus_name: {
                     [Op.iLike]: `%${query}%`
-                }
+                },
+                status: 1,
+                del_status: 0,
             },
 
             attributes: [
