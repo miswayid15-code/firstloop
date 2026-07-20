@@ -19,7 +19,7 @@ const { sendPushNotification, getNotificationTemplate } = require("../../helpers
 const bcrypt = require('bcryptjs');
 const { parsePhoneNumber } = require('libphonenumber-js');
 const jwt = require('jsonwebtoken');
-
+const { translateMultiple } = require("../../helpers/translateHelper");
 const sendMail = require('../../helpers/sendMail');
 const generateRefId = require("../../helpers/generateRefHelper");
 const RegisterTemplate = require('../../helpers/RegisterTemplate');
@@ -1061,7 +1061,8 @@ exports.home = async (req, res) => {
         if (choose_country) {
             choose_country = choose_country?.trim().toUpperCase();
         }
-
+        const language = req.language;
+        // console.log("language", language)
         // console.log("choose_country", choose_country)
 
         const customer_id =
@@ -1144,6 +1145,15 @@ exports.home = async (req, res) => {
                 const item = branch.toJSON();
 
 
+                if (language !== "en") {
+                    const [name, address] = await translateMultiple(
+                        [item.name, item.address],
+                        language
+                    );
+
+                    item.name = name;
+                    item.address = address;
+                }
                 item.profile_image = item.profile_image
                     ? `${baseUrl}/${item.profile_image.replace(/\\/g, '/')}`
                     : null;
@@ -1265,7 +1275,7 @@ exports.branch_details = async (req, res) => {
             req.query?.customer_id ||
             null;
         // console.log("customer_id", customer_id)
-
+        const language = req.language;
         if (!branch_id) {
 
             return res.json({
@@ -1373,7 +1383,21 @@ exports.branch_details = async (req, res) => {
         const item =
             branch.toJSON();
 
+        if (language !== "en") {
 
+            const [name, address, description] = await translateMultiple(
+                [
+                    item.name || "",
+                    item.address || "",
+                    item.description || ""
+                ],
+                language
+            );
+
+            item.name = name;
+            item.address = address;
+            item.description = description;
+        }
 
         const current_time = moment().format('HH:mm:ss');
 
@@ -1448,17 +1472,27 @@ exports.branch_details = async (req, res) => {
             });
 
         // ✅ Coupon Data
-        item.Coupons =
-            coupons.map(coupon => {
+        item.Coupons = await Promise.all(
+            coupons.map(async (coupon) => {
 
-                const c =
-                    coupon.toJSON();
+                const c = coupon.toJSON();
 
-                const now =
-                    moment().format(
-                        'HH:mm:ss'
+                if (language !== "en") {
+                    const [description, buy_item, get_item] = await translateMultiple(
+                        [
+                            c.description || "",
+                            c.buy_item || "",
+                            c.get_item || ""
+                        ],
+                        language
                     );
 
+                    c.description = description;
+                    c.buy_item = buy_item;
+                    c.get_item = get_item;
+                }
+
+                const now = moment().format("HH:mm:ss");
 
                 c.is_active =
                     now >= c.start_date &&
@@ -1466,26 +1500,17 @@ exports.branch_details = async (req, res) => {
                         ? 1
                         : 0;
 
+                c.start_date = c.start_date
+                    ? moment(c.start_date, "YYYY-MM-DD").format("DD/MM/YYYY")
+                    : null;
 
-                c.start_date =
-                    c.start_date
-                        ? moment(
-                            c.start_date,
-                            'YYYY-MM-DD'
-                        ).format('DD/MM/YYYY')
-                        : null;
-
-                c.end_date =
-                    c.end_date
-                        ? moment(
-                            c.end_date,
-                            'YYYY-MM-DD'
-                        ).format('DD/MM/YYYY')
-                        : null;
+                c.end_date = c.end_date
+                    ? moment(c.end_date, "YYYY-MM-DD").format("DD/MM/YYYY")
+                    : null;
 
                 return c;
-
-            });
+            })
+        );
 
 
         item.profile_image =

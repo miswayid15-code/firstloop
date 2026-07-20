@@ -7,7 +7,14 @@ app.use(cors());
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use((req, res, next) => {
+    req.language =
+        req.headers["accept-language"] ||
+        req.headers["x-language"] ||
+        "en";
 
+    next();
+});
 app.use('/uploads', express.static('uploads'));
 
 app.get('/', (req, res) => {
