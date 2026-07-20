@@ -2162,7 +2162,7 @@ exports.Coupon_list = async (req, res) => {
                                 data.Coupon?.description || "",
                                 data.Branch?.name || ""
                             ];
-
+                            console.log("Texts:", texts);
                             const [
                                 couponCode,
                                 couponCodeName,
@@ -2181,6 +2181,7 @@ exports.Coupon_list = async (req, res) => {
                                 data.Branch.name = branchName;
                             }
                         }
+
 
                         // ✅ Used Date Format
                         data.used_at =
@@ -3493,16 +3494,16 @@ exports.search = async (req, res) => {
                         item.data.name = branchName;
                     }
 
-                  
+
                     if (item.type === "coupon") {
                         const [couponCode] = await translateMultiple(
                             [item.data.code || ""],
                             language
                         );
-        
+
                         item.data.code = couponCode;
                     }
-                    
+
                 })
             );
         }
