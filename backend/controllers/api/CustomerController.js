@@ -49,7 +49,8 @@ exports.register = async (req, res) => {
             gender,
             address,
             lat,
-            lon
+            lon,
+            profile_image
         } = req.body;
 
 
@@ -154,7 +155,7 @@ exports.register = async (req, res) => {
 
         }
 
-        // console.log("PROFILE IMAGE:", profileImage);
+        console.log("PROFILE IMAGE:", profileImage);
 
         // password hash
         // console.log("Hashing password...");
