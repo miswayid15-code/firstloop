@@ -2083,6 +2083,7 @@ exports.Coupon_list = async (req, res) => {
 
         }
         const language = req.language;
+        console.log("Language:", language);
         // ✅ Fetch Applied Coupons
         const applied_coupons =
             await CouponApplied.findAll({

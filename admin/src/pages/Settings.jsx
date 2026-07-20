@@ -252,8 +252,16 @@ export default function Settings() {
 
     const getCountryName = (countryCode) => {
         if (!countryCode) return 'N/A'
+        
+        // Try matching by ISO2 code (e.g. IN, US)
+        let matches = countriesList.filter(c => String(c.iso2).toLowerCase() === String(countryCode).toLowerCase())
+        if (matches.length > 0) {
+            return matches[0].name
+        }
+        
+        // Fallback: match by phone_code for legacy entries (e.g. +91)
         const cleanCode = String(countryCode).replace('+', '')
-        const matches = countriesList.filter(c => String(c.phone_code) === cleanCode)
+        matches = countriesList.filter(c => String(c.phone_code) === cleanCode)
         if (matches.length === 0) return countryCode
         
         if (cleanCode === '1') {
@@ -1341,7 +1349,7 @@ export default function Settings() {
                                     </label>
                                     <CountrySelect
                                         onChange={(country) => {
-                                            setNewBanner({ ...newBanner, country_code: country ? `+${country.phone_code}` : '' })
+                                            setNewBanner({ ...newBanner, country_code: country ? country.iso2 : '' })
                                         }}
                                         placeHolder="Select Country"
                                         inputClassName="form-control"
@@ -1440,9 +1448,12 @@ export default function Settings() {
                                         {countriesList.length > 0 && (
                                             <CountrySelect
                                                 key={editBanner.id}
-                                                defaultValue={countriesList.find(c => String(c.phone_code) === String(editBanner.country_code).replace('+', ''))}
+                                                defaultValue={countriesList.find(c => 
+                                                    String(c.iso2).toLowerCase() === String(editBanner.country_code).toLowerCase() ||
+                                                    String(c.phone_code) === String(editBanner.country_code).replace('+', '')
+                                                )}
                                                 onChange={(country) => {
-                                                    setEditBanner({ ...editBanner, country_code: country ? `+${country.phone_code}` : '' })
+                                                    setEditBanner({ ...editBanner, country_code: country ? country.iso2 : '' })
                                                 }}
                                                 placeHolder="Select Country"
                                                 inputClassName="form-control"
