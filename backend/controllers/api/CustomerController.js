@@ -2010,8 +2010,8 @@ exports.coupon_apply = async (req, res) => {
 
             status: 1,
 
-             message: await responseMessage("Coupon applied successfully", language),
-                
+            message: await responseMessage("Coupon applied successfully", language),
+
 
             data: {
 
@@ -2082,7 +2082,7 @@ exports.Coupon_list = async (req, res) => {
             });
 
         }
-
+        const language = req.language;
         // ✅ Fetch Applied Coupons
         const applied_coupons =
             await CouponApplied.findAll({
@@ -2151,8 +2151,22 @@ exports.Coupon_list = async (req, res) => {
                 applied_coupons.map(
                     async item => {
 
-                        const data =
-                            item.toJSON();
+                        const data = item.toJSON();
+                        if (language !== "en") {
+
+                            // Translate coupon fields
+
+
+                            // Translate branch name
+                            if (data.Branch) {
+                                const [branchName] = await translateMultiple(
+                                    [data.Branch.name || ""],
+                                    language
+                                );
+
+                                data.Branch.name = branchName;
+                            }
+                        }
 
                         // ✅ Used Date Format
                         data.used_at =
@@ -2271,10 +2285,13 @@ exports.claim_coupon_details = async (req, res) => {
         if (!coupon_claim_id) {
             return res.status(400).json({
                 status: 0,
-                message: "coupon_claim_id is required"
+                message: await responseMessage(
+                    "coupon_claim_id is required",
+                    language
+                )
             });
         }
-
+        const language = req.language;
         const coupon_claim = await CouponApplied.findOne({
             where: {
                 id: coupon_claim_id,
@@ -2316,11 +2333,25 @@ exports.claim_coupon_details = async (req, res) => {
         if (!coupon_claim) {
             return res.status(404).json({
                 status: 0,
-                message: "No Claimed Coupon found"
+                message: await responseMessage(
+                    "No Claimed Coupon found",
+                    language
+                )
             });
         }
 
         const data = coupon_claim.toJSON();
+        if (language !== "en") {
+
+            if (data.branches) {
+                const [branchName] = await translateMultiple(
+                    [data.branches.name || ""],
+                    language
+                );
+
+                data.branches.name = branchName;
+            }
+        }
 
         data.used_at = data.used_at
             ? moment(data.used_at).format('DD-MM-YYYY hh:mm A')
@@ -2336,7 +2367,10 @@ exports.claim_coupon_details = async (req, res) => {
         }
         return res.status(200).json({
             status: 1,
-            message: "Successfully fetched coupon details",
+            message: await responseMessage(
+                "Successfully fetched coupon details",
+                language
+            ),
             data
         });
 
@@ -2940,6 +2974,7 @@ exports.fetch_appointment = async (req, res) => {
         const formattedAppointments = appointments.map(item => {
 
             const data = item.toJSON();
+
 
             return {
 
