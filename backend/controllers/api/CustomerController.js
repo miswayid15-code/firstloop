@@ -2157,11 +2157,11 @@ exports.Coupon_list = async (req, res) => {
                         if (language !== "en") {
 
                             const texts = [
-                                data.coupon_code || "",
-                                data.Coupon?.code || "",
-                                data.Coupon?.description || "",
-                                data.Branch?.name || ""
-                            ];
+                                data.coupon_code,
+                                data.Coupon?.code,
+                                data.Coupon?.description,
+                                data.Branch?.name
+                            ].map(text => text ?? "");
                             console.log("Texts:", texts);
                             const [
                                 couponCode,
