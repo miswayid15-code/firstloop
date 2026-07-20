@@ -3151,6 +3151,7 @@ exports.fetch_appointment_details = async (req, res) => {
                         'id',
                         'name',
                         'address',
+                        'profile_image',
                         'phone',
                         'lat',
                         'lon'
@@ -3192,6 +3193,11 @@ exports.fetch_appointment_details = async (req, res) => {
                 data.Branch.address = branchAddress;
             }
         }
+
+        data.Branch.profile_image =
+            data.Branch.profile_image
+                ? `${baseUrl}/${data.Branch.profile_image.replace(/\\/g, '/')}`
+                : null;
         data.appointment_date =
             new Date(data.appointment_date)
                 .toLocaleDateString('en-US', {
