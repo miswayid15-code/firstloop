@@ -657,7 +657,7 @@ exports.delete_branch = async (req, res) => {
 exports.update_branch = async (req, res) => {
     if (req.body.lat === '') req.body.lat = null;
     if (req.body.lon === '') req.body.lon = null;
-    // console.log("body",req.body)
+    console.log("body",req.body)
     try {
 
         const {
@@ -992,63 +992,80 @@ exports.update_branch = async (req, res) => {
                         }
                     }
 
-                    await BranchImage.destroy({
-                        where: {
-                            id: deleteNumericIds,
-                            branch_id: branch_id
-                        }
-                    });
+                    // await BranchImage.destroy({
+                    //     where: {
+                    //         id: deleteNumericIds,
+                    //         branch_id: branch_id
+                    //     }
+                    // });
                 }
             }
         }
 
         // ✅ Replace Branch Images
-        if (branchImages.length > 0) {
+  if (branchImages.length > 0) {
 
-            const oldPendingImages = await BranchImage.findAll({
-                where: {
-                    branch_id,
-                    image_status: 0
-                }
-            });
+    let replaceIds = [];
 
-            for (const img of oldPendingImages) {
+    if (req.body.deleted_images) {
+        replaceIds = typeof req.body.deleted_images === "string"
+            ? JSON.parse(req.body.deleted_images)
+            : req.body.deleted_images;
+    }
 
-                if (img.pending_image) {
+    let uploadIndex = 0;
 
-                    const filePath = path.join(
-                        __dirname,
-                        "../../",
-                        img.pending_image
-                    );
+    // Update existing images
+    for (const imageId of replaceIds) {
 
-                    if (fs.existsSync(filePath)) {
-                        try {
-                            fs.unlinkSync(filePath);
-                        } catch (err) {
-                            console.log(err.message);
-                        }
+        if (uploadIndex >= branchImages.length) break;
+
+        const image = await BranchImage.findOne({
+            where: {
+                id: imageId,
+                branch_id: branch.id
+            }
+        });
+
+        if (image) {
+
+            // Delete previous pending image if exists
+            if (image.pending_image) {
+                const filePath = path.join(__dirname, "../../", image.pending_image);
+
+                if (fs.existsSync(filePath)) {
+                    try {
+                        fs.unlinkSync(filePath);
+                    } catch (err) {
+                        console.log(err.message);
                     }
                 }
             }
 
-            await BranchImage.destroy({
-                where: {
-                    branch_id,
-                    image_status: 0
-                }
-            });
-
-            const imageData = branchImages.map(file => ({
-                branch_id,
-                image: null,
-                pending_image: file.path.replace(/\\/g, "/"),
+            await image.update({
+                pending_image: branchImages[uploadIndex].path.replace(/\\/g, "/"),
                 image_status: 0,
                 rejected_reason: null
-            }));
+            });
 
-            await BranchImage.bulkCreate(imageData);
+            uploadIndex++;
         }
+    }
+
+    // Create new records for remaining uploaded images
+    while (uploadIndex < branchImages.length) {
+
+        await BranchImage.create({
+            branch_id: branch.id,
+            image: null,
+            pending_image: branchImages[uploadIndex].path.replace(/\\/g, "/"),
+            image_status: 0,
+            rejected_reason: null
+        });
+
+        uploadIndex++;
+    }
+}
 
         const notificationToken = await UserNotificationToken.findOne({
             where: {

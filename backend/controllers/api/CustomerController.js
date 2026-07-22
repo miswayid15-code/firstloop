@@ -1070,7 +1070,11 @@ exports.home = async (req, res) => {
         const language = req.language;
         // console.log("language", language)
         // console.log("choose_country", choose_country)
-
+console.log("Method:", req.method);
+console.log("Body:", req.body);
+console.log("Query:", req.query);
+console.log("lat:", lat);
+console.log("lon:", lon);
         const customer_id =
             req.user?.id ||
             req.body?.customer_id ||

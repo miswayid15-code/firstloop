@@ -289,14 +289,15 @@ exports.login = async (req, res) => {
                 token_type: "refresh",
             },
             process.env.JWT_REFRESH_SECRET,
-            { expiresIn: "2m" }
+            { expiresIn: "30d" }
         );
 
         await RefreshToken.create({
             user_id: receptionist.id,
             user_type: "receptionist",
             token: refreshToken,
-            expires_at: new Date(Date.now() + 2 * 60 * 1000), // 2 minutes
+            expires_at: new Date( Date.now() + 30 * 24 * 60 * 60 * 1000), // 2 minutes
+            
         });
 
         // Access Token - 1 minute
@@ -308,7 +309,7 @@ exports.login = async (req, res) => {
                 token_type: "access",
             },
             process.env.JWT_SECRET,
-            { expiresIn: "1m" }
+            { expiresIn: "10d" }
         );
 
         return res.json({

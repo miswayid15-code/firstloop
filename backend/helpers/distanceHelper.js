@@ -5,21 +5,22 @@ exports.getDistanceDuration = async (
     originLon,
     destLat,
     destLon,
-        
+
 ) => {
 
     try {
-const googleApiKey =
-    process.env.GOOGLE_MAP_KEY;
+        const googleApiKey =
+            process.env.GOOGLE_MAP_KEY;
         const url =
             `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${originLat},${originLon}&destinations=${destLat},${destLon}&key=${googleApiKey}`;
-            // console.log("===============")
-            // console.log(url);
-            // console.log("===============")
+        // console.log("===============")
+        // console.log(url);
+        // console.log("===============")
 
         const response =
             await axios.get(url);
-
+        console.log("Google Response:");
+        console.log(JSON.stringify(response.data, null, 2));
         if (
             response.data &&
             response.data.status === "OK" &&
