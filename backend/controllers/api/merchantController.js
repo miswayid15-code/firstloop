@@ -79,40 +79,18 @@ exports.registerStep1 = async (req, res) => {
         // PHONE EXISTS CHECK
         // =========================
 
-        const phexists = await Merchant.findOne({
+        const existingByEmail = await Merchant.findOne({
+            where: { email }
+        });
 
+        const existingByPhone = await Merchant.findOne({
             where: {
                 country_code: callingCode,
                 phone: nationalNumber
             }
-
         });
 
-        if (phexists) {
 
-            return res.json({
-                status: 0,
-                message: "Phone already exists"
-            });
-
-        }
-
-        // =========================
-        // EMAIL EXISTS CHECK
-        // =========================
-
-        const exists = await Merchant.findOne({
-            where: { email }
-        });
-
-        if (exists) {
-
-            return res.json({
-                status: 0,
-                message: "Email already exists"
-            });
-
-        }
 
         // =========================
         // PROFILE IMAGE UPLOAD
@@ -140,26 +118,59 @@ exports.registerStep1 = async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // =========================
-        // CREATE MERCHANT
-        // =========================
+        let merchant;
 
-        const merchant = await Merchant.create({
+        if (existingByEmail && existingByPhone) {
 
-            name,
-            email,
+            if (existingByEmail.id === existingByPhone.id) {
 
-            // separated storage
-            country_code: callingCode,
-            phone: nationalNumber,
+                await existingByEmail.update({
+                    name,
+                    email,
+                    country_code: callingCode,
+                    phone: nationalNumber,
+                    password: hashedPassword,
+                    profile_image: profileImage || existingByEmail.profile_image,
+                });
 
-            password: hashedPassword,
+                merchant = existingByEmail;
 
-            profile_image: profileImage,
+            } else {
 
-            status: 0
+                return res.json({
+                    status: 0,
+                    message: "Email or Phone already belongs to another account"
+                });
 
-        });
+            }
+
+        } else if (existingByEmail) {
+
+            return res.json({
+                status: 0,
+                message: "Email already exists"
+            });
+
+        } else if (existingByPhone) {
+
+            return res.json({
+                status: 0,
+                message: "Phone already exists"
+            });
+
+        } else {
+
+            merchant = await Merchant.create({
+                name,
+                email,
+                country_code: callingCode,
+                phone: nationalNumber,
+                password: hashedPassword,
+                profile_image: profileImage,
+                status: 0
+            });
+
+        }
 
         // =========================
         // ACCESS TOKEN
@@ -586,7 +597,7 @@ exports.refreshAccessToken = async (req, res) => {
     }
 };
 exports.login = async (req, res) => {
-console.log("Body",req.body);
+    console.log("Body", req.body);
     try {
         const { email, password } = req.body;
         const merchant = await Merchant.findOne({ where: { email } })

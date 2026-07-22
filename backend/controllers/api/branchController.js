@@ -657,7 +657,7 @@ exports.delete_branch = async (req, res) => {
 exports.update_branch = async (req, res) => {
     if (req.body.lat === '') req.body.lat = null;
     if (req.body.lon === '') req.body.lon = null;
-    console.log("body",req.body)
+    // console.log("body",req.body)
     try {
 
         const {
@@ -953,6 +953,53 @@ exports.update_branch = async (req, res) => {
 
             await BranchTiming.bulkCreate(branchTimings);
 
+        }
+
+        // ✅ Delete Branch Images if requested
+        if (req.body.deleted_images) {
+            let deleteIds = [];
+            try {
+                deleteIds = typeof req.body.deleted_images === 'string'
+                    ? JSON.parse(req.body.deleted_images)
+                    : req.body.deleted_images;
+            } catch (e) {
+                console.log("Error parsing deleted_images:", e);
+            }
+
+            if (Array.isArray(deleteIds) && deleteIds.length > 0) {
+                const deleteNumericIds = deleteIds.map(id => parseInt(id)).filter(Boolean);
+                if (deleteNumericIds.length > 0) {
+                    const imgsToDelete = await BranchImage.findAll({
+                        where: {
+                            id: deleteNumericIds,
+                            branch_id: branch_id
+                        }
+                    });
+
+                    for (const img of imgsToDelete) {
+                        // Delete physical files
+                        if (img.image) {
+                            const filePath = path.join(__dirname, "../../", img.image);
+                            if (fs.existsSync(filePath)) {
+                                try { fs.unlinkSync(filePath); } catch (err) { console.log(err.message); }
+                            }
+                        }
+                        if (img.pending_image) {
+                            const filePath = path.join(__dirname, "../../", img.pending_image);
+                            if (fs.existsSync(filePath)) {
+                                try { fs.unlinkSync(filePath); } catch (err) { console.log(err.message); }
+                            }
+                        }
+                    }
+
+                    await BranchImage.destroy({
+                        where: {
+                            id: deleteNumericIds,
+                            branch_id: branch_id
+                        }
+                    });
+                }
+            }
         }
 
         // ✅ Replace Branch Images

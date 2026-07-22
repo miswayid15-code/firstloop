@@ -716,3 +716,65 @@ exports.update_status = async (req, res) => {
         });
     }
 };
+
+exports.send_mails = async (req, res) => {
+    try {
+        const {
+            type,
+            name,
+            mail,
+            subject,
+            title,
+            message
+        } = req.body;
+
+        // Validate required fields
+        if (!mail || !subject || !title || !message) {
+            return res.status(400).json({
+                status: 0,
+                message: "Mail, subject, title and message are required."
+            });
+        }
+
+        try {
+            await sendMail(
+                mail,
+                subject,
+                CommonMailTemplate({
+                    userType: type, // 1 = Merchant, 2 = Receptionist, 3 = Customer
+                    name: name,
+                    title: title,
+                    message: message
+                })
+            );
+        } catch (mailErr) {
+            console.error("MAIL ERROR:", mailErr);
+
+            return res.status(500).json({
+                status: 0,
+                message: "Failed to send mail."
+            });
+        }
+
+        return res.json({
+            status: 1,
+            message: "Mail sent successfully.",
+            data: {
+                type,
+                name,
+                mail,
+                subject,
+                title,
+                message
+            }
+        });
+
+    } catch (err) {
+        console.error(err);
+
+        return res.status(500).json({
+            status: 0,
+            message: "Internal server error."
+        });
+    }
+};

@@ -264,6 +264,7 @@ export default function ViewMerchant() {
     const [loadingReceptionists, setLoadingReceptionists] = useState(false)
 
     const [branchGalleryImages, setBranchGalleryImages] = useState([])
+    const [deletedImageIds, setDeletedImageIds] = useState([])
 
     const [branchMenuImages, setBranchMenuImages] = useState([])
 
@@ -501,9 +502,9 @@ export default function ViewMerchant() {
                     merchant.cat_id?.toString() || ''
                 )
 
-                setBranchesData(
-                    merchant.Branches || []
-                )
+                const branches = merchant.Branches || []
+                const sortedBranches = [...branches].sort((a, b) => Number(b.id) - Number(a.id))
+                setBranchesData(sortedBranches)
 
             }
             else {
@@ -712,6 +713,7 @@ export default function ViewMerchant() {
         })
 
         setBranchGalleryImages([])
+        setDeletedImageIds([])
 
         setBranchMenuImages([])
 
@@ -847,6 +849,7 @@ export default function ViewMerchant() {
         })
 
         setBranchGalleryImages([])
+        setDeletedImageIds([])
 
         setBranchMenuImages([])
 
@@ -1894,6 +1897,7 @@ export default function ViewMerchant() {
 
     const removeExistingGalleryImage = (id) => {
         setBranchGalleryImages((prev) => prev.filter((img) => img.id !== id))
+        setDeletedImageIds((prev) => [...prev, id])
     }
 
     const handleAddBranchGalleryFilesAdd = (e) => {
@@ -1979,6 +1983,8 @@ export default function ViewMerchant() {
             }
 
             formData.append('receptionist_id', editBranchForm.receptionist_id || '')
+
+            formData.append('deleted_images', JSON.stringify(deletedImageIds))
 
             branchGalleryImages.forEach((img) => {
                 formData.append('existing_image_ids', String(img.id))
@@ -5707,7 +5713,7 @@ export default function ViewMerchant() {
                                                         color: isAssigned ? '#999' : '#000'
                                                     }}
                                                 >
-                                                    {receptionist.name || 'Unnamed'} {receptionist.email ? `(${receptionist.email})` : (receptionist.phone ? `(${receptionist.phone})` : '')}
+                                                    {receptionist.name || 'Unnamed'} {receptionist.email ? `(${receptionist.email})` : (receptionist.ref_name ? `(${receptionist.ref_name})` : '')}
                                                     {isAssigned ? ` (Assigned to ${assignedBranch.name})` : ''}
                                                 </option>
                                             );
@@ -6375,7 +6381,7 @@ export default function ViewMerchant() {
                                                             color: isCurrentBranch ? 'var(--primary)' : (isAssigned ? '#999' : '#000')
                                                         }}
                                                     >
-                                                        {receptionist.name || 'Unnamed'} {receptionist.email ? `(${receptionist.email})` : (receptionist.phone ? `(${receptionist.phone})` : '')}
+                                                        {receptionist.name || 'Unnamed'} {receptionist.email ? `(${receptionist.email})` : (receptionist.ref_name ? `(${receptionist.ref_name})` : '')}
                                                         {isCurrentBranch ? ' (Current)' : (isAssigned ? ` (Assigned to ${assignedBranch.name})` : '')}
                                                     </option>
                                                 );

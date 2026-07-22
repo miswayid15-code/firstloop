@@ -494,7 +494,7 @@ export default function Notifications() {
                         </div>
 
                         <div className="form-row">
-                            <div className="form-group-classic">
+                            {/* <div className="form-group-classic">
                                 <label className="form-label-classic">Notification Type</label>
                                 <select
                                     name="notificationType"
@@ -507,8 +507,8 @@ export default function Notifications() {
                                     <option value="Alert">Alert</option>
                                     <option value="Reminder">Reminder</option>
                                 </select>
-                            </div>
-                            <div className="form-group-classic">
+                            </div> */}
+                            {/* <div className="form-group-classic">
                                 <label className="form-label-classic">Send Mode</label>
                                 <select
                                     name="sendMode"
@@ -519,7 +519,7 @@ export default function Notifications() {
                                     <option value="Send Now">Send Now</option>
                                     <option value="Schedule">Schedule</option>
                                 </select>
-                            </div>
+                            </div> */}
                         </div>
 
                         {formValues.sendMode === 'Schedule' && (
@@ -580,9 +580,7 @@ export default function Notifications() {
                             >
                                 <i className="fas fa-paper-plane" /> {isDispatching ? 'Dispatching...' : 'Dispatch Notification'}
                             </button>
-                            <button className="btn btn-secondary" type="button">
-                                <i className="fas fa-save" /> Save Draft
-                            </button>
+                            {/*   */}
                         </div>
 
                         {statusMessage && (

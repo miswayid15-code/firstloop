@@ -889,26 +889,28 @@ export default function ViewBranch() {
                                 <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center', flexShrink: 0 }}>
                                     <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
                                         {/* Current / Approved image */}
-                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                                            <small style={{ fontSize: '0.66rem', fontWeight: 600, color: isApproved ? '#10b981' : 'var(--text-muted)' }}>
-                                                {isApproved ? 'Image' : 'Current'}
-                                            </small>
-                                            <div style={{ position: 'relative' }}>
-                                                <div style={{
-                                                    width: 110, height: 110,
-                                                    borderRadius: 12, overflow: 'hidden',
-                                                    border: `2px solid ${statusColor}`
-                                                }}>
-                                                    <img src={item.image} alt="Branch gallery" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        {item.image && (
+                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                                                <small style={{ fontSize: '0.66rem', fontWeight: 600, color: isApproved ? '#10b981' : 'var(--text-muted)' }}>
+                                                    {isApproved ? 'Image' : 'Current'}
+                                                </small>
+                                                <div style={{ position: 'relative' }}>
+                                                    <div style={{
+                                                        width: 110, height: 110,
+                                                        borderRadius: 12, overflow: 'hidden',
+                                                        border: `2px solid ${statusColor}`
+                                                    }}>
+                                                        <img src={item.image} alt="Branch gallery" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                    </div>
+                                                    <span style={{
+                                                        position: 'absolute', top: 5, left: 5,
+                                                        background: statusColor, color: '#fff',
+                                                        fontSize: '0.58rem', fontWeight: 700,
+                                                        padding: '2px 6px', borderRadius: 20
+                                                    }}>{statusLabel}</span>
                                                 </div>
-                                                <span style={{
-                                                    position: 'absolute', top: 5, left: 5,
-                                                    background: statusColor, color: '#fff',
-                                                    fontSize: '0.58rem', fontWeight: 700,
-                                                    padding: '2px 6px', borderRadius: 20
-                                                }}>{statusLabel}</span>
                                             </div>
-                                        </div>
+                                        )}
 
                                         {/* Show pending image only for Pending (0) or Rejected (2) */}
                                         {!isApproved && item.pending_image && (

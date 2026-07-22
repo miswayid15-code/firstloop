@@ -1482,6 +1482,7 @@ exports.branchUpdate = async (req, res) => {
     if (req.body.lat === '') req.body.lat = null;
     if (req.body.lon === '') req.body.lon = null;
     console.log("Update branch BODY:", req.body);
+
     try {
 
         const {
@@ -1533,6 +1534,9 @@ exports.branchUpdate = async (req, res) => {
             });
 
         }
+
+//         console.log("DB Location:", branch.lat, branch.lon);
+// console.log("Request Location:", lat, lon);
         // ✅ Email Exists Check
         if (email) {
 
@@ -3330,6 +3334,7 @@ exports.receptionist_list = async (req, res) => {
                 'id',
                 'rep_id',
                 'name',
+                'ref_name',
                 'email',
                 'phone',
                 'branch_id',

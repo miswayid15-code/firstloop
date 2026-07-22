@@ -468,7 +468,9 @@ exports.fetchmerchant = async (req, res) => {
                         'country_code',
                         'status',
                         'visibility',
-                        'age_group'
+                        'age_group',
+                        'lat',
+                        'lon'
                     ],
 
                     required: false,
@@ -870,7 +872,9 @@ exports.fetch_delete_merchant = async (req, res) => {
                         'country_code',
                         'status',
                         'visibility',
-                        'age_group'
+                        'age_group',
+                        'lat',
+                        'lon'
                     ],
 
                     required: false,

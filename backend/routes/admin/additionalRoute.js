@@ -66,6 +66,7 @@ router.post("/update-app-status",auth('admin'),checkAdmin, controller.update_app
 
 router.get("/support/list",auth('admin'),checkAdmin, controller.support_list);
 router.post("/support/update-status",auth('admin'),checkAdmin, controller.update_status);
+router.post("/send-mail",auth('admin'),checkAdmin, controller.send_mails);
 
 
 module.exports = router;

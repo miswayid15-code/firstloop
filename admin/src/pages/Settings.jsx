@@ -86,6 +86,24 @@ export default function Settings() {
     const [customerApp, setCustomerApp] = useState({ id: 2, status: true, loading: false, submitting: false })
     const [appStatusLoading, setAppStatusLoading] = useState(false)
 
+    // ==========================================
+    // MAIL STATE & HANDLERS
+    // ==========================================
+    const [mailForm, setMailForm] = useState({
+        type: '1', // '1' = Merchant, '3' = Customer
+        name: '',
+        mail: '',
+        subject: '',
+        title: '',
+        message: ''
+    })
+    const [recipients, setRecipients] = useState([])
+    const [loadingRecipients, setLoadingRecipients] = useState(false)
+    const [recipientSearch, setRecipientSearch] = useState('')
+    const [selectedRecipient, setSelectedRecipient] = useState(null)
+    const [showRecipientDropdown, setShowRecipientDropdown] = useState(false)
+    const [sendingMail, setSendingMail] = useState(false)
+
     // Confirmation Dialog State
     const [confirmDialog, setConfirmDialog] = useState({
         open: false,
@@ -285,6 +303,137 @@ export default function Settings() {
             setCountriesList(data || [])
         })
     }, [])
+
+    const fetchRecipients = async (type) => {
+        setLoadingRecipients(true)
+        try {
+            if (type === '1') {
+                const response = await API.get('admin/merchant-list')
+                if (isSuccessResponse(response.data)) {
+                    setBanners(prevBanners => {
+                        // Keep this fetch isolated to setting recipients
+                        return prevBanners
+                    })
+                    setRecipients(response.data.data || [])
+                } else {
+                    setRecipients([])
+                }
+            } else {
+                const response = await API.post('admin/customer/list')
+                if (isSuccessResponse(response.data)) {
+                    setRecipients(response.data.data || [])
+                } else {
+                    setRecipients([])
+                }
+            }
+        } catch (err) {
+            console.error("Error fetching recipients:", err)
+            setRecipients([])
+        } finally {
+            setLoadingRecipients(false)
+        }
+    }
+
+    useEffect(() => {
+        if (activeTab === 'send_mail') {
+            fetchRecipients(mailForm.type)
+            setSelectedRecipient(null)
+            setRecipientSearch('')
+        }
+    }, [activeTab, mailForm.type])
+
+    const handleSelectRecipient = (recipient) => {
+        setSelectedRecipient(recipient)
+        setRecipientSearch(recipient.name || recipient.bus_name || '')
+        setMailForm(prev => ({
+            ...prev,
+            name: recipient.name || '',
+            mail: recipient.email || ''
+        }))
+        setShowRecipientDropdown(false)
+    }
+
+    const handleMailFormChange = (e) => {
+        const { name, value } = e.target
+        setMailForm(prev => ({
+            ...prev,
+            [name]: value
+        }))
+    }
+
+    const handleMessageChange = (html) => {
+        setMailForm(prev => ({
+            ...prev,
+            message: html
+        }))
+    }
+
+    const handleSendMail = async (e) => {
+        e.preventDefault()
+
+        if (!mailForm.mail.trim()) {
+            toast.error("Recipient email is required.")
+            return
+        }
+        if (!mailForm.subject.trim()) {
+            toast.error("Subject is required.")
+            return
+        }
+        if (!mailForm.title.trim()) {
+            toast.error("Title is required.")
+            return
+        }
+        if (!mailForm.message.trim() || mailForm.message === '<p><br></p>') {
+            toast.error("Message content is required.")
+            return
+        }
+
+        setSendingMail(true)
+        try {
+            const response = await API.post('admin/send-mail', {
+                type: Number(mailForm.type),
+                name: mailForm.name.trim() || undefined,
+                mail: mailForm.mail.trim(),
+                subject: mailForm.subject.trim(),
+                title: mailForm.title.trim(),
+                message: mailForm.message
+            })
+
+            if (isSuccessResponse(response.data)) {
+                toast.success(response.data.message || "Mail sent successfully!")
+                setMailForm({
+                    type: mailForm.type,
+                    name: '',
+                    mail: '',
+                    subject: '',
+                    title: '',
+                    message: ''
+                })
+                setSelectedRecipient(null)
+                setRecipientSearch('')
+            } else {
+                toast.error(response.data.message || "Failed to send mail.")
+            }
+        } catch (err) {
+            console.error("Error sending mail:", err)
+            toast.error(err.response?.data?.message || "Failed to send mail.")
+        } finally {
+            setSendingMail(false)
+        }
+    }
+
+    const filteredRecipients = recipients.filter(r => {
+        const val = recipientSearch.toLowerCase()
+        if (!val) return false
+        const name = (r.name || '').toLowerCase()
+        const email = (r.email || '').toLowerCase()
+        if (mailForm.type === '1') {
+            const busName = (r.bus_name || '').toLowerCase()
+            return name.includes(val) || email.includes(val) || busName.includes(val)
+        } else {
+            return name.includes(val) || email.includes(val)
+        }
+    })
 
     useEffect(() => {
         setCurrentPage(1)
@@ -772,6 +921,20 @@ export default function Settings() {
                     }}
                 >
                     App Status
+                </button>
+                <button
+                    onClick={() => setActiveTab('send_mail')}
+                    style={{
+                        padding: '12px 20px',
+                        border: 'none',
+                        background: 'none',
+                        borderBottom: activeTab === 'send_mail' ? '2px solid var(--primary)' : 'none',
+                        color: activeTab === 'send_mail' ? 'var(--primary)' : 'var(--text-muted)',
+                        fontWeight: 600,
+                        cursor: 'pointer'
+                    }}
+                >
+                    Send Mail
                 </button>
             </div>
 
@@ -1314,6 +1477,216 @@ export default function Settings() {
 
                         </div>
                     )}
+                </>
+            )}
+
+            {activeTab === 'send_mail' && (
+                <>
+                    <div className="card" style={{ marginBottom: 18 }}>
+                        <div>
+                            <h3 className="card-title">Send Email Notification</h3>
+                            <p className="card-subtitle">Compose and send formatted email notifications to merchants or customers.</p>
+                        </div>
+                    </div>
+
+                    <div className="card" style={{ padding: 24, borderRadius: 16 }}>
+                        <form onSubmit={handleSendMail} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
+                                <div className="form-group-classic">
+                                    <label className="form-label-classic">Recipient Type</label>
+                                    <select
+                                        name="type"
+                                        className="form-select"
+                                        value={mailForm.type}
+                                        onChange={(e) => {
+                                            handleMailFormChange(e)
+                                            setSelectedRecipient(null)
+                                            setRecipientSearch('')
+                                        }}
+                                        disabled={sendingMail}
+                                    >
+                                        <option value="1">Merchant</option>
+                                        <option value="3">Customer</option>
+                                    </select>
+                                </div>
+
+                                <div className="form-group-classic" style={{ position: 'relative' }}>
+                                    <label className="form-label-classic">Search Recipient</label>
+                                    <div style={{ display: 'flex', gap: 8 }}>
+                                        <div style={{ position: 'relative', flex: 1 }}>
+                                            <input
+                                                type="text"
+                                                className="form-control"
+                                                placeholder={mailForm.type === '1' ? "Search name, email, or business..." : "Search name or email..."}
+                                                value={recipientSearch}
+                                                onChange={(e) => {
+                                                    setRecipientSearch(e.target.value)
+                                                    setShowRecipientDropdown(true)
+                                                }}
+                                                onFocus={() => setShowRecipientDropdown(true)}
+                                                onBlur={() => setTimeout(() => setShowRecipientDropdown(false), 250)}
+                                                disabled={sendingMail}
+                                            />
+                                            {showRecipientDropdown && filteredRecipients.length > 0 && (
+                                                <div style={{
+                                                    position: 'absolute',
+                                                    top: '100%',
+                                                    left: 0,
+                                                    right: 0,
+                                                    backgroundColor: '#ffffff',
+                                                    border: '1px solid var(--border)',
+                                                    borderRadius: '8px',
+                                                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                                    zIndex: 1000,
+                                                    maxHeight: '200px',
+                                                    overflowY: 'auto',
+                                                    marginTop: '4px'
+                                                }}>
+                                                    {filteredRecipients.map(recipient => (
+                                                        <div
+                                                            key={recipient.id}
+                                                            onClick={() => handleSelectRecipient(recipient)}
+                                                            style={{
+                                                                padding: '10px 14px',
+                                                                cursor: 'pointer',
+                                                                borderBottom: '1px solid #f0f0f0',
+                                                                display: 'flex',
+                                                                flexDirection: 'column',
+                                                                gap: '2px'
+                                                            }}
+                                                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f7fafc'}
+                                                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ffffff'}
+                                                        >
+                                                            <span style={{ fontWeight: 600, fontSize: '0.9rem', color: '#1a202c' }}>
+                                                                {mailForm.type === '1' ? (recipient.bus_name || recipient.name || 'Unnamed') : (recipient.name || 'Unnamed')}
+                                                            </span>
+                                                            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                                                                {recipient.email} {recipient.phone ? `• ${recipient.phone}` : ''}
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                        {selectedRecipient && (
+                                            <button
+                                                type="button"
+                                                className="btn btn-outline-secondary"
+                                                onClick={() => {
+                                                    setSelectedRecipient(null)
+                                                    setRecipientSearch('')
+                                                    setMailForm(prev => ({ ...prev, name: '', mail: '' }))
+                                                }}
+                                                style={{ padding: '0 16px', height: '42px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                            >
+                                                Clear
+                                            </button>
+                                        )}
+                                    </div>
+                                    {selectedRecipient && (
+                                        <small style={{ color: '#22c55e', fontSize: '0.78rem', display: 'block', marginTop: '6px', fontWeight: 500 }}>
+                                            <i className="fas fa-check-circle" style={{ marginRight: 4 }} />
+                                            Selected: {mailForm.type === '1' ? (selectedRecipient.bus_name || selectedRecipient.name) : selectedRecipient.name} ({selectedRecipient.email})
+                                        </small>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
+                                <div className="form-group-classic">
+                                    <label className="form-label-classic">Recipient Email <span style={{ color: '#ef4444' }}>*</span></label>
+                                    <input
+                                        type="email"
+                                        name="mail"
+                                        className="form-control"
+                                        placeholder="recipient@email.com"
+                                        value={mailForm.mail}
+                                        onChange={handleMailFormChange}
+                                        disabled={sendingMail}
+                                        required
+                                    />
+                                </div>
+
+                                <div className="form-group-classic">
+                                    <label className="form-label-classic">Recipient Name (Optional)</label>
+                                    <input
+                                        type="text"
+                                        name="name"
+                                        className="form-control"
+                                        placeholder="Recipient full name"
+                                        value={mailForm.name}
+                                        onChange={handleMailFormChange}
+                                        disabled={sendingMail}
+                                    />
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
+                                <div className="form-group-classic">
+                                    <label className="form-label-classic">Email Subject <span style={{ color: '#ef4444' }}>*</span></label>
+                                    <input
+                                        type="text"
+                                        name="subject"
+                                        className="form-control"
+                                        placeholder="e.g. Account Updates and Verification"
+                                        value={mailForm.subject}
+                                        onChange={handleMailFormChange}
+                                        disabled={sendingMail}
+                                        required
+                                    />
+                                </div>
+
+                                <div className="form-group-classic">
+                                    <label className="form-label-classic">Email Header/Title <span style={{ color: '#ef4444' }}>*</span></label>
+                                    <input
+                                        type="text"
+                                        name="title"
+                                        className="form-control"
+                                        placeholder="e.g. Notice of Verification Status"
+                                        value={mailForm.title}
+                                        onChange={handleMailFormChange}
+                                        disabled={sendingMail}
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="form-group-classic">
+                                <label className="form-label-classic">Message Body <span style={{ color: '#ef4444' }}>*</span></label>
+                                <div style={{ backgroundColor: '#ffffff', borderRadius: 8 }}>
+                                    <ReactQuill
+                                        theme="snow"
+                                        value={mailForm.message}
+                                        onChange={handleMessageChange}
+                                        modules={quillModules}
+                                        placeholder="Write your email body content here..."
+                                        readOnly={sendingMail}
+                                    />
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
+                                <button
+                                    type="submit"
+                                    className="btn btn-primary"
+                                    disabled={sendingMail || loadingRecipients}
+                                    style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: '130px', justifyContent: 'center' }}
+                                >
+                                    {sendingMail ? (
+                                        <>
+                                            <i className="fas fa-spinner fa-spin" />
+                                            Sending...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <i className="fas fa-paper-plane" />
+                                            Send Email
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </>
             )}
 
