@@ -53,7 +53,7 @@ exports.register = async (req, res) => {
             profile_image
         } = req.body;
 
-// console.log("body",req.body)
+        // console.log("body",req.body)
         let phoneNumber;
         let nationalNumber;
         let callingCode;
@@ -1070,11 +1070,11 @@ exports.home = async (req, res) => {
         const language = req.language;
         // console.log("language", language)
         // console.log("choose_country", choose_country)
-console.log("Method:", req.method);
-console.log("Body:", req.body);
-console.log("Query:", req.query);
-console.log("lat:", lat);
-console.log("lon:", lon);
+        console.log("Method:", req.method);
+        console.log("Body:", req.body);
+        console.log("Query:", req.query);
+        console.log("lat:", lat);
+        console.log("lon:", lon);
         const customer_id =
             req.user?.id ||
             req.body?.customer_id ||
@@ -1336,7 +1336,8 @@ exports.branch_details = async (req, res) => {
                 'description',
                 'open_time',
                 'close_time',
-                'profile_image'
+                'profile_image',
+                'pending_profile_image'
             ],
 
             include: [
@@ -1348,6 +1349,10 @@ exports.branch_details = async (req, res) => {
                         'branch_id',
                         'image'
                     ]
+                },
+                {
+                    model: Merchant,
+                    attributes: ["brand_image"]
                 },
 
                 {
@@ -1519,24 +1524,25 @@ exports.branch_details = async (req, res) => {
         );
 
 
-        item.profile_image =
-            item.profile_image
-                ? `${baseUrl}/${item.profile_image.replace(/\\/g, '/')}`
-                : null;
+        const brandImage = item.Merchant?.brand_image
+            ? `${baseUrl}/${item.Merchant.brand_image.replace(/\\/g, "/")}`
+            : null;
 
+        // Profile image
+        item.profile_image = item.profile_image
+            ? `${baseUrl}/${item.profile_image.replace(/\\/g, "/")}`
+            : brandImage;
 
-        item.BranchImages =
-            (item.BranchImages || [])
-                .map(img => {
+        // Check whether at least one approved branch image exists
+        const hasBranchImage = (item.BranchImages || []).some(img => !!img.image);
 
-                    img.image =
-                        img.image
-                            ? `${baseUrl}/${img.image.replace(/\\/g, '/')}`
-                            : null;
-
-                    return img;
-
-                });
+        // Branch images
+        item.BranchImages = (item.BranchImages || []).map(img => ({
+            ...img,
+            image: img.image
+                ? `${baseUrl}/${img.image.replace(/\\/g, "/")}`
+                : (!hasBranchImage ? brandImage : null)
+        }));
 
 
         item.MenuImages =

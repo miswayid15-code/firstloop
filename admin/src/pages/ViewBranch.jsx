@@ -607,40 +607,47 @@ export default function ViewBranch() {
                                 const statusLabel = st === 0 ? 'Pending' : st === 2 ? 'Rejected' : 'Approved';
                                 const statusColor = st === 0 ? '#f59e0b' : st === 2 ? '#ef4444' : '#10b981';
 
+                                const showCurrentImage = isApproved ? true : (branchData?.profile_image && branchData?.profile_image !== branchData?.pending_profile_image);
+                                const showPendingImage = !isApproved && !!branchData?.pending_profile_image;
+
                                 return (
                                     <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, flexShrink: 0 }}>
                                         {/* Current / Approved image */}
-                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                                            <small style={{ fontSize: '0.68rem', fontWeight: 600, color: isApproved ? '#10b981' : 'var(--text-muted)' }}>
-                                                {isApproved ? 'Profile' : 'Current'}
-                                            </small>
-                                            <div style={{ position: 'relative' }}>
-                                                <div className="cell-avatar merchant-avatar" style={{ border: `2px solid ${statusColor}` }}>
-                                                    {branchData?.profile_image ? (
-                                                        <img
-                                                            src={branchData.profile_image}
-                                                            alt={branchData?.name || 'Branch'}
-                                                            style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' }}
-                                                        />
-                                                    ) : (
-                                                        branchData?.name?.charAt(0) || 'B'
-                                                    )}
+                                        {showCurrentImage && (
+                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                                                <small style={{ fontSize: '0.68rem', fontWeight: 600, color: isApproved ? '#10b981' : 'var(--text-muted)' }}>
+                                                    {isApproved ? 'Profile' : 'Current'}
+                                                </small>
+                                                <div style={{ position: 'relative' }}>
+                                                    <div className="cell-avatar merchant-avatar" style={{ border: `2px solid ${statusColor}` }}>
+                                                        {branchData?.profile_image ? (
+                                                            <img
+                                                                src={branchData.profile_image}
+                                                                alt={branchData?.name || 'Branch'}
+                                                                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' }}
+                                                            />
+                                                        ) : (
+                                                            branchData?.name?.charAt(0) || 'B'
+                                                        )}
+                                                    </div>
+                                                    <span style={{
+                                                        position: 'absolute', bottom: 4, right: 4,
+                                                        background: statusColor, color: '#fff',
+                                                        fontSize: '0.58rem', fontWeight: 700,
+                                                        padding: '2px 6px', borderRadius: 20, whiteSpace: 'nowrap'
+                                                    }}>{statusLabel}</span>
                                                 </div>
-                                                <span style={{
-                                                    position: 'absolute', bottom: 4, right: 4,
-                                                    background: statusColor, color: '#fff',
-                                                    fontSize: '0.58rem', fontWeight: 700,
-                                                    padding: '2px 6px', borderRadius: 20, whiteSpace: 'nowrap'
-                                                }}>{statusLabel}</span>
                                             </div>
-                                        </div>
+                                        )}
 
                                         {/* Show pending image only when status is Pending (0) or Rejected (2) */}
-                                        {!isApproved && branchData?.pending_profile_image && (
+                                        {showPendingImage && (
                                             <>
-                                                <div style={{ display: 'flex', alignItems: 'center', paddingBottom: 20 }}>
-                                                    <i className="fas fa-arrow-right" style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }} />
-                                                </div>
+                                                {showCurrentImage && (
+                                                    <div style={{ display: 'flex', alignItems: 'center', paddingBottom: 20 }}>
+                                                        <i className="fas fa-arrow-right" style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }} />
+                                                    </div>
+                                                )}
                                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
                                                     <small style={{ fontSize: '0.68rem', fontWeight: 600, color: st === 2 ? '#ef4444' : '#f59e0b' }}>
                                                         {st === 2 ? 'Rejected' : 'Pending Review'}
@@ -885,11 +892,15 @@ export default function ViewBranch() {
                             const isApproved = st === 1;
                             const statusLabel = st === 0 ? 'Pending' : st === 1 ? 'Approved' : 'Rejected';
                             const statusColor = st === 0 ? '#f59e0b' : st === 1 ? '#10b981' : '#ef4444';
+                            
+                            const showCurrentImage = isApproved ? !!item.image : (item.image && item.image !== item.pending_image);
+                            const showPendingImage = !isApproved && !!item.pending_image;
+
                             return (
                                 <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center', flexShrink: 0 }}>
                                     <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
                                         {/* Current / Approved image */}
-                                        {item.image && (
+                                        {showCurrentImage && (
                                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
                                                 <small style={{ fontSize: '0.66rem', fontWeight: 600, color: isApproved ? '#10b981' : 'var(--text-muted)' }}>
                                                     {isApproved ? 'Image' : 'Current'}
@@ -913,11 +924,13 @@ export default function ViewBranch() {
                                         )}
 
                                         {/* Show pending image only for Pending (0) or Rejected (2) */}
-                                        {!isApproved && item.pending_image && (
+                                        {showPendingImage && (
                                             <>
-                                                <div style={{ paddingBottom: 16 }}>
-                                                    <i className="fas fa-arrow-right" style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }} />
-                                                </div>
+                                                {showCurrentImage && (
+                                                    <div style={{ paddingBottom: 16 }}>
+                                                        <i className="fas fa-arrow-right" style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }} />
+                                                    </div>
+                                                )}
                                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
                                                     <small style={{ fontSize: '0.66rem', fontWeight: 600, color: st === 2 ? '#ef4444' : '#f59e0b' }}>
                                                         {st === 2 ? 'Rejected' : 'Pending'}
@@ -970,37 +983,45 @@ export default function ViewBranch() {
                             const isApproved = st === 1;
                             const statusLabel = st === 0 ? 'Pending' : st === 1 ? 'Approved' : 'Rejected';
                             const statusColor = st === 0 ? '#f59e0b' : st === 1 ? '#10b981' : '#ef4444';
+                            
+                            const showCurrentImage = isApproved ? !!item.image : (item.image && item.image !== item.pending_image);
+                            const showPendingImage = !isApproved && !!item.pending_image;
+
                             return (
                                 <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center', flexShrink: 0 }}>
                                     <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
                                         {/* Current / Approved image */}
-                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                                            <small style={{ fontSize: '0.66rem', fontWeight: 600, color: isApproved ? '#10b981' : 'var(--text-muted)' }}>
-                                                {isApproved ? 'Image' : 'Current'}
-                                            </small>
-                                            <div style={{ position: 'relative' }}>
-                                                <div style={{
-                                                    width: 110, height: 110,
-                                                    borderRadius: 12, overflow: 'hidden',
-                                                    border: `2px solid ${statusColor}`
-                                                }}>
-                                                    <img src={item.image} alt="Menu item" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        {showCurrentImage && (
+                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                                                <small style={{ fontSize: '0.66rem', fontWeight: 600, color: isApproved ? '#10b981' : 'var(--text-muted)' }}>
+                                                    {isApproved ? 'Image' : 'Current'}
+                                                </small>
+                                                <div style={{ position: 'relative' }}>
+                                                    <div style={{
+                                                        width: 110, height: 110,
+                                                        borderRadius: 12, overflow: 'hidden',
+                                                        border: `2px solid ${statusColor}`
+                                                    }}>
+                                                        <img src={item.image} alt="Menu item" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                    </div>
+                                                    <span style={{
+                                                        position: 'absolute', top: 5, left: 5,
+                                                        background: statusColor, color: '#fff',
+                                                        fontSize: '0.58rem', fontWeight: 700,
+                                                        padding: '2px 6px', borderRadius: 20
+                                                    }}>{statusLabel}</span>
                                                 </div>
-                                                <span style={{
-                                                    position: 'absolute', top: 5, left: 5,
-                                                    background: statusColor, color: '#fff',
-                                                    fontSize: '0.58rem', fontWeight: 700,
-                                                    padding: '2px 6px', borderRadius: 20
-                                                }}>{statusLabel}</span>
                                             </div>
-                                        </div>
+                                        )}
 
                                         {/* Show pending image only for Pending (0) or Rejected (2) */}
-                                        {!isApproved && item.pending_image && (
+                                        {showPendingImage && (
                                             <>
-                                                <div style={{ paddingBottom: 16 }}>
-                                                    <i className="fas fa-arrow-right" style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }} />
-                                                </div>
+                                                {showCurrentImage && (
+                                                    <div style={{ paddingBottom: 16 }}>
+                                                        <i className="fas fa-arrow-right" style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }} />
+                                                    </div>
+                                                )}
                                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
                                                     <small style={{ fontSize: '0.66rem', fontWeight: 600, color: st === 2 ? '#ef4444' : '#f59e0b' }}>
                                                         {st === 2 ? 'Rejected' : 'Pending'}
