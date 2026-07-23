@@ -253,13 +253,13 @@ export default function BranchPendingImages() {
                                         Current Approved Image
                                     </h4>
                                     {branchData.profile_image ? (
-                                        <div style={{ width: '100%', height: '220px', borderRadius: 'var(--border-radius-sm)', overflow: 'hidden', border: '1px solid var(--border-light)' }}>
+                                        <div style={{ width: '100%', aspectRatio: '1/1', borderRadius: 'var(--border-radius-sm)', overflow: 'hidden', border: '1px solid var(--border-light)' }}>
                                             <img src={branchData.profile_image} alt="Current profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                         </div>
                                     ) : (
                                         <div style={{ 
                                             width: '100%', 
-                                            height: '220px', 
+                                            aspectRatio: '1/1', 
                                             borderRadius: 'var(--border-radius-sm)', 
                                             border: '2px dashed var(--border-light)', 
                                             display: 'flex', 
@@ -279,7 +279,7 @@ export default function BranchPendingImages() {
                                     <h4 style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '10px', fontWeight: 600 }}>
                                         New Pending Image
                                     </h4>
-                                    <div style={{ width: '100%', height: '220px', borderRadius: 'var(--border-radius-sm)', overflow: 'hidden', border: '1px solid var(--border-light)' }}>
+                                    <div style={{ width: '100%', aspectRatio: '1/1', borderRadius: 'var(--border-radius-sm)', overflow: 'hidden', border: '1px solid var(--border-light)' }}>
                                         <img src={branchData.pending_profile_image} alt="Pending profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                     </div>
                                 </div>
@@ -379,13 +379,13 @@ export default function BranchPendingImages() {
                                                 <div>
                                                     <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Current</span>
                                                     {img.image ? (
-                                                        <div style={{ width: '100%', height: '160px', borderRadius: 'var(--border-radius-sm)', overflow: 'hidden', border: '1px solid var(--border-light)' }}>
+                                                        <div style={{ width: '100%', aspectRatio: '1/1', borderRadius: 'var(--border-radius-sm)', overflow: 'hidden', border: '1px solid var(--border-light)' }}>
                                                             <img src={img.image} alt="Current gallery" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                                         </div>
                                                     ) : (
                                                         <div style={{ 
                                                             width: '100%', 
-                                                            height: '160px', 
+                                                            aspectRatio: '1/1', 
                                                             borderRadius: 'var(--border-radius-sm)', 
                                                             border: '2px dashed var(--border-light)', 
                                                             display: 'flex', 
@@ -401,7 +401,7 @@ export default function BranchPendingImages() {
                                                 </div>
                                                 <div>
                                                     <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Pending Approval</span>
-                                                    <div style={{ width: '100%', height: '160px', borderRadius: 'var(--border-radius-sm)', overflow: 'hidden', border: '1px solid var(--border-light)' }}>
+                                                    <div style={{ width: '100%', aspectRatio: '1/1', borderRadius: 'var(--border-radius-sm)', overflow: 'hidden', border: '1px solid var(--border-light)' }}>
                                                         <img src={img.pending_image} alt="Pending gallery" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                                     </div>
                                                 </div>
@@ -494,13 +494,13 @@ export default function BranchPendingImages() {
                                                 <div>
                                                     <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Current</span>
                                                     {img.image ? (
-                                                        <div style={{ width: '100%', height: '160px', borderRadius: 'var(--border-radius-sm)', overflow: 'hidden', border: '1px solid var(--border-light)' }}>
+                                                        <div style={{ width: '100%', aspectRatio: '1/1', borderRadius: 'var(--border-radius-sm)', overflow: 'hidden', border: '1px solid var(--border-light)' }}>
                                                             <img src={img.image} alt="Current menu" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                                         </div>
                                                     ) : (
                                                         <div style={{ 
                                                             width: '100%', 
-                                                            height: '160px', 
+                                                            aspectRatio: '1/1', 
                                                             borderRadius: 'var(--border-radius-sm)', 
                                                             border: '2px dashed var(--border-light)', 
                                                             display: 'flex', 
@@ -516,7 +516,7 @@ export default function BranchPendingImages() {
                                                 </div>
                                                 <div>
                                                     <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Pending Approval</span>
-                                                    <div style={{ width: '100%', height: '160px', borderRadius: 'var(--border-radius-sm)', overflow: 'hidden', border: '1px solid var(--border-light)' }}>
+                                                    <div style={{ width: '100%', aspectRatio: '1/1', borderRadius: 'var(--border-radius-sm)', overflow: 'hidden', border: '1px solid var(--border-light)' }}>
                                                         <img src={img.pending_image} alt="Pending menu" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                                     </div>
                                                 </div>
