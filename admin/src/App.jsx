@@ -88,7 +88,7 @@ function ScrollToTopAndAnimate() {
 
 function WebsiteLayout() {
   const { pathname } = useLocation();
-  const hideHeaderFooter = ['/under-construction', '/delete-account'].includes(pathname);
+  const hideHeaderFooter = ['/under-construction', '/delete-account', '/data-policy', '/conditions'].includes(pathname);
 
   const [loading, setLoading] = useState(!hideHeaderFooter);
   const [fade, setFade] = useState(false);
