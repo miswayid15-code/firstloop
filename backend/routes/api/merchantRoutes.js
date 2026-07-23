@@ -141,7 +141,6 @@ router.post(
 router.post(
     '/merchant/accept-terms',
     auth('merchant'),
-    checkMerchant,
     controller.update_terms_accepted
 );
 

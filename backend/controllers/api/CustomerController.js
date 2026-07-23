@@ -1124,7 +1124,7 @@ exports.home = async (req, res) => {
                 where: {
                     status: 1,
                     del_status: 0
-                }
+                },
             }],
             attributes: [
                 'id',
