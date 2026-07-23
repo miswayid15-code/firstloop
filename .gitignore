@@ -17,7 +17,7 @@ yarn-error.log*
 # Build folders
 backend/dist/
 backend/build/
-backend/uploads/
+# backend/uploads/
 
 admin/dist/
 admin/build/

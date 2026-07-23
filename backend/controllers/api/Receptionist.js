@@ -823,6 +823,7 @@ exports.dashboard = async (req, res) => {
                     attributes: [
                         'id',
                         'name',
+                        'passlock',
                         'email',
                         'phone',
                         'profile_image',

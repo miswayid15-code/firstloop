@@ -1544,20 +1544,19 @@ exports.branch_details = async (req, res) => {
                 : (!hasBranchImage ? brandImage : null)
         }));
 
+        item.MenuImages = (item.MenuImages || []).map(img => ({
+            ...img,
+            image: img.image
+                ? `${baseUrl}/${img.image.replace(/\\/g, "/")}`
+                : null
+        }));
 
-        item.MenuImages =
-            (item.MenuImages || [])
-                .map(img => {
+        const hasMenuImage = item.MenuImages.some(img => !!img.image);
 
-                    img.image =
-                        img.image
-                            ? `${baseUrl}/${img.image.replace(/\\/g, '/')}`
-                            : null;
-
-                    return img;
-
-                });
-
+        item.MenuImages = item.MenuImages.map(img => ({
+            ...img,
+            image: img.image || (!hasMenuImage ? brandImage : null)
+        }));
 
         item.user_lat = lat;
 
