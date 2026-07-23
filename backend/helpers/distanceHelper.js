@@ -19,8 +19,8 @@ exports.getDistanceDuration = async (
 
         const response =
             await axios.get(url);
-        console.log("Google Response:");
-        console.log(JSON.stringify(response.data, null, 2));
+        // console.log("Google Response:");
+        // console.log(JSON.stringify(response.data, null, 2));
         if (
             response.data &&
             response.data.status === "OK" &&

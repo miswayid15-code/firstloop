@@ -1120,11 +1120,21 @@ exports.home = async (req, res) => {
             include: [{
                 model: Merchant,
                 required: true,
-                attributes: [],
+                attributes: ['id', 'brand_image'],
                 where: {
                     status: 1,
                     del_status: 0
-                },
+                }, include: [
+                    {
+                        model: Category,
+                        required: true,
+                        attributes: ['id', 'name'],
+                        where: {
+                            status: 1,
+                            del_status: 0
+                        }
+                    }
+                ]
             }],
             attributes: [
                 'id',
@@ -1133,6 +1143,9 @@ exports.home = async (req, res) => {
                 'lon',
                 'address',
                 'address_line_2',
+                'city',
+                'state',
+                'country',
                 'profile_image'
             ],
 
@@ -1155,9 +1168,18 @@ exports.home = async (req, res) => {
 
                 const item = branch.toJSON();
 
-                item.address = item.address_line_2?.trim()
-                    ? item.address_line_2
-                    : item.address;
+                item.category = item.Merchant?.Category || null;
+                const city = item.city?.trim();
+                const state = item.state?.trim();
+                const country = item.country?.trim();
+
+                if (city) {
+                    item.address = [city, country].filter(Boolean).join('- ');
+                } else if (state) {
+                    item.address = [state, country].filter(Boolean).join('- ');
+                } else {
+                    item.address = country || null;
+                }
                 if (language !== "en") {
                     const [name, address] = await translateMultiple(
                         [item.name, item.address],
@@ -1169,7 +1191,9 @@ exports.home = async (req, res) => {
                 }
                 item.profile_image = item.profile_image
                     ? `${baseUrl}/${item.profile_image.replace(/\\/g, '/')}`
-                    : null;
+                    : item.Merchant?.brand_image
+                        ? `${baseUrl}/${item.Merchant.brand_image.replace(/\\/g, '/')}`
+                        : null;
 
 
                 item.user_lat = lat;
@@ -1213,7 +1237,10 @@ exports.home = async (req, res) => {
                         distanceData.duration;
 
                 }
-
+                delete item.Merchant;
+                delete item.city;
+                delete item.state;
+                delete item.country;
                 return item;
 
             })
