@@ -359,13 +359,13 @@ export default function Settings() {
                 return {
                     subject: 'Your FirstPass Account Login Details',
                     title: 'Your Account Credentials',
-                    message: `<p>Hello ${name},</p>\n<p>Your FirstPass account has been set up successfully. You can log in using the credentials below:</p>\n<p><strong>Username :</strong> ${email}<br/>\n<strong> Password:</strong> <code>[Enter Password Here]</code></p>\n<p>For security reasons, we strongly recommend that you change this password after your first login.</p>\n<p>Best regards,<br/><strong>The Dealora Team</strong></p>`
+                    message: `<p>Hello ${name},</p>\n<p>Your FirstPass account has been set up successfully. You can log in using the credentials below:</p>\n<p><strong>Username :</strong> <br/>\n<strong> Password:</strong> <code>[Enter Password Here]</code></p>\n<p>For security reasons, we strongly recommend that you change this password after your first login.</p>\n<p>Best regards,<br/><strong>The FirstPassTeam</strong></p>`
                 }
             case 'inactive':
                 return {
                     subject: 'Important: Your FirstPass Account is Now Inactive',
                     title: 'Account Status Update: Inactive',
-                    message: `<p>Hello ${name},</p>\n<p>We are writing to inform you that your account on <strong>FirstPass</strong> is currently <strong>Inactive</strong>.</p>\n<p>As a result, you will not be able to log in or access dashboard features at this time. If you believe this is a mistake or would like to request reactivation, please reach out to our admin support team.</p>\n<p>Best regards,<br/><strong>The Dealora Team</strong></p>`
+                    message: `<p>Hello ${name},</p>\n<p>We are writing to inform you that your account on <strong>FirstPass</strong> is currently <strong>Inactive</strong>.</p>\n<p>As a result, you will not be able to log in or access dashboard features at this time. If you believe this is a mistake or would like to request reactivation, please reach out to our admin support team.</p>\n<p>Best regards,<br/><strong>The FirstPassTeam</strong></p>`
                 }
             default:
                 return {
