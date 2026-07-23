@@ -1178,6 +1178,7 @@ exports.branchRegister = async (req, res) => {
             lat,
             lon,
             address,
+            address_line_2,
             description,
 
             country_code,
@@ -1363,6 +1364,7 @@ exports.branchRegister = async (req, res) => {
             lat,
             lon,
             address,
+            address_line_2,
             description,
 
             merchant_id: mer_id,
@@ -1493,6 +1495,7 @@ exports.branchUpdate = async (req, res) => {
             lat,
             lon,
             address,
+            address_line_2,
             description,
             country_code,
             city,
@@ -1753,6 +1756,7 @@ exports.branchUpdate = async (req, res) => {
             lon: lon || branch.lon,
 
             address: address || branch.address,
+            address_line_2: address_line_2 || branch.address_line_2,
 
             description: description || branch.description,
             city: city || branch.city,
@@ -2140,6 +2144,7 @@ exports.fetch_branch_id = async (req, res) => {
                     'country',
                     'state',
                     'address',
+                    'address_line_2',
                     'merchant_id',
                     'description',
                     'visibility',

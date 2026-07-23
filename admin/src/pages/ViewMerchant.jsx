@@ -192,6 +192,7 @@ export default function ViewMerchant() {
         country_iso: '',
         receptionist_id: '',
         address: '',
+        address_line_2: '',
         city: '',
         state: '',
         country: '',
@@ -227,6 +228,7 @@ export default function ViewMerchant() {
         country_iso: '',
         receptionist_id: '',
         address: '',
+        address_line_2: '',
         city: '',
         state: '',
         country: '',
@@ -698,6 +700,7 @@ export default function ViewMerchant() {
             country_code: '+91',
             receptionist_id: '',
             address: '',
+            address_line_2: '',
             city: '',
             state: '',
             country: '',
@@ -763,6 +766,7 @@ export default function ViewMerchant() {
                     country_iso: branch.country_iso || '',
                     receptionist_id: branch.receptionist_id || branch.Receptionists?.[0]?.id || '',
                     address: branch.address || '',
+                    address_line_2: branch.address_line_2 || '',
                     city: branch.city || '',
                     state: branch.state || '',
                     country: branch.country || '',
@@ -834,6 +838,7 @@ export default function ViewMerchant() {
             country_code: '+91',
             receptionist_id: '',
             address: '',
+            address_line_2: '',
             city: '',
             state: '',
             country: '',
@@ -1750,6 +1755,7 @@ export default function ViewMerchant() {
             formData.append('bus_name', merchantData?.bus_name || '')
             formData.append('bus_cat', merchantData?.bus_cat || '')
             formData.append('address', addBranchForm.address)
+            formData.append('address_line_2', addBranchForm.address_line_2 || '')
             formData.append('city', addBranchForm.city)
             formData.append('state', addBranchForm.state)
             formData.append('country', addBranchForm.country)
@@ -1968,6 +1974,7 @@ export default function ViewMerchant() {
             formData.append('lat', editBranchForm.latitude)
             formData.append('lon', editBranchForm.longitude)
             formData.append('address', editBranchForm.address)
+            formData.append('address_line_2', editBranchForm.address_line_2 || '')
             formData.append('city', editBranchForm.city)
             formData.append('state', editBranchForm.state)
             formData.append('country', editBranchForm.country)
@@ -5824,21 +5831,35 @@ export default function ViewMerchant() {
                                 )}
 
                                 {isBranchMapLoaded && (
-                                    <CorporateAddressField
-                                        form={addBranchForm}
-                                        onInputChange={handleAddBranchChange}
-                                        onAutocompleteLoad={(auto) => setAddBranchAutocomplete(auto)}
-                                        onPlaceChanged={handleAddBranchPlaceChanged}
-                                        onMapClick={(event) => {
-                                            if (event.latLng) {
-                                                updateAddBranchLocationDetails(event.latLng.lat(), event.latLng.lng())
-                                            }
-                                        }}
-                                        onMarkerDragEnd={handleAddBranchMarkerDragEnd}
-                                        center={addBranchMapCenter}
-                                        mapContainerStyle={mapContainerStyle}
-                                        isBranch={true}
-                                    />
+                                    <>
+                                        <CorporateAddressField
+                                            form={addBranchForm}
+                                            onInputChange={handleAddBranchChange}
+                                            onAutocompleteLoad={(auto) => setAddBranchAutocomplete(auto)}
+                                            onPlaceChanged={handleAddBranchPlaceChanged}
+                                            onMapClick={(event) => {
+                                                if (event.latLng) {
+                                                    updateAddBranchLocationDetails(event.latLng.lat(), event.latLng.lng())
+                                                }
+                                            }}
+                                            onMarkerDragEnd={handleAddBranchMarkerDragEnd}
+                                            center={addBranchMapCenter}
+                                            mapContainerStyle={mapContainerStyle}
+                                            isBranch={true}
+                                        />
+                                        <div className="form-group" style={{ marginTop: 10 }}>
+                                            <input
+                                                name="address_line_2"
+                                                type="text"
+                                                className="form-control"
+                                                placeholder=" "
+                                                value={addBranchForm.address_line_2 || ''}
+                                                onChange={handleAddBranchChange}
+                                                disabled={addingBranch}
+                                            />
+                                            <label className="form-label">Location Details (Optional)</label>
+                                        </div>
+                                    </>
                                 )}
 
                                 <div className="form-group" style={{ gridColumn: '1 / -1' }}>
@@ -6442,21 +6463,35 @@ export default function ViewMerchant() {
                                     )}
 
                                     {isBranchMapLoaded && (
-                                        <CorporateAddressField
-                                            form={editBranchForm}
-                                            onInputChange={handleEditBranchChange}
-                                            onAutocompleteLoad={(auto) => setBranchAutocomplete(auto)}
-                                            onPlaceChanged={handleBranchPlaceChanged}
-                                            onMapClick={(event) => {
-                                                if (event.latLng) {
-                                                    updateBranchLocationDetails(event.latLng.lat(), event.latLng.lng())
-                                                }
-                                            }}
-                                            onMarkerDragEnd={handleBranchMarkerDragEnd}
-                                            center={branchMapCenter}
-                                            mapContainerStyle={mapContainerStyle}
-                                            isBranch={true}
-                                        />
+                                        <>
+                                            <CorporateAddressField
+                                                form={editBranchForm}
+                                                onInputChange={handleEditBranchChange}
+                                                onAutocompleteLoad={(auto) => setBranchAutocomplete(auto)}
+                                                onPlaceChanged={handleBranchPlaceChanged}
+                                                onMapClick={(event) => {
+                                                    if (event.latLng) {
+                                                        updateBranchLocationDetails(event.latLng.lat(), event.latLng.lng())
+                                                    }
+                                                }}
+                                                onMarkerDragEnd={handleBranchMarkerDragEnd}
+                                                center={branchMapCenter}
+                                                mapContainerStyle={mapContainerStyle}
+                                                isBranch={true}
+                                            />
+                                            <div className="form-group" style={{ marginTop: 10 }}>
+                                                <input
+                                                    name="address_line_2"
+                                                    type="text"
+                                                    className="form-control"
+                                                    placeholder=" "
+                                                    value={editBranchForm.address_line_2 || ''}
+                                                    onChange={handleEditBranchChange}
+                                                    disabled={savingBranch}
+                                                />
+                                                <label className="form-label">Address Line 2 (Optional)</label>
+                                            </div>
+                                        </>
                                     )}
 
                                     <div className="form-group" style={{ gridColumn: '1 / -1' }}>

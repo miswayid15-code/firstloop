@@ -103,6 +103,7 @@ export default function Settings() {
     const [selectedRecipient, setSelectedRecipient] = useState(null)
     const [showRecipientDropdown, setShowRecipientDropdown] = useState(false)
     const [sendingMail, setSendingMail] = useState(false)
+    const [selectedTemplate, setSelectedTemplate] = useState('')
 
     // Confirmation Dialog State
     const [confirmDialog, setConfirmDialog] = useState({
@@ -339,17 +340,86 @@ export default function Settings() {
             fetchRecipients(mailForm.type)
             setSelectedRecipient(null)
             setRecipientSearch('')
+            setSelectedTemplate('')
         }
     }, [activeTab, mailForm.type])
+
+    const getTemplateData = (templateId, recipientName, recipientEmail) => {
+        const name = recipientName || '[Recipient Name]'
+        const email = recipientEmail || '[Recipient Email]'
+        
+        switch (templateId) {
+            case 'welcome':
+                return {
+                    subject: 'Welcome to FirstPass!',
+                    title: 'Welcome to FirstPass Platform',
+                    message: `<p>Hello ${name},</p>\n<p>We are thrilled to welcome you to <strong>FirstPass</strong>! Your account has been successfully created.</p>\n<p>You can now log in and start exploring all the amazing deals and features we have for you. If you have any questions or need assistance, feel free to contact our support team.</p>\n<p>Best regards,<br/><strong>The FirsPass Team</strong></p>`
+                }
+            case 'credentials':
+                return {
+                    subject: 'Your FirstPass Account Login Details',
+                    title: 'Your Account Credentials',
+                    message: `<p>Hello ${name},</p>\n<p>Your FirstPass account has been set up successfully. You can log in using the credentials below:</p>\n<p><strong>Username :</strong> ${email}<br/>\n<strong> Password:</strong> <code>[Enter Password Here]</code></p>\n<p>For security reasons, we strongly recommend that you change this password after your first login.</p>\n<p>Best regards,<br/><strong>The Dealora Team</strong></p>`
+                }
+            case 'inactive':
+                return {
+                    subject: 'Important: Your FirstPass Account is Now Inactive',
+                    title: 'Account Status Update: Inactive',
+                    message: `<p>Hello ${name},</p>\n<p>We are writing to inform you that your account on <strong>FirstPass</strong> is currently <strong>Inactive</strong>.</p>\n<p>As a result, you will not be able to log in or access dashboard features at this time. If you believe this is a mistake or would like to request reactivation, please reach out to our admin support team.</p>\n<p>Best regards,<br/><strong>The Dealora Team</strong></p>`
+                }
+            default:
+                return {
+                    subject: '',
+                    title: '',
+                    message: ''
+                }
+        }
+    }
+
+    const handleTemplateChange = (e) => {
+        const templateId = e.target.value
+        setSelectedTemplate(templateId)
+        if (templateId) {
+            const recipientName = selectedRecipient ? (selectedRecipient.name || selectedRecipient.bus_name) : mailForm.name
+            const recipientEmail = selectedRecipient ? selectedRecipient.email : mailForm.mail
+            const data = getTemplateData(templateId, recipientName, recipientEmail)
+            setMailForm(prev => ({
+                ...prev,
+                subject: data.subject,
+                title: data.title,
+                message: data.message
+            }))
+        } else {
+            setMailForm(prev => ({
+                ...prev,
+                subject: '',
+                title: '',
+                message: ''
+            }))
+        }
+    }
 
     const handleSelectRecipient = (recipient) => {
         setSelectedRecipient(recipient)
         setRecipientSearch(recipient.name || recipient.bus_name || '')
-        setMailForm(prev => ({
-            ...prev,
-            name: recipient.name || '',
-            mail: recipient.email || ''
-        }))
+        
+        const rName = recipient.name || recipient.bus_name || ''
+        const rEmail = recipient.email || ''
+        
+        setMailForm(prev => {
+            const updated = {
+                ...prev,
+                name: rName,
+                mail: rEmail
+            }
+            if (selectedTemplate) {
+                const data = getTemplateData(selectedTemplate, rName, rEmail)
+                updated.subject = data.subject
+                updated.title = data.title
+                updated.message = data.message
+            }
+            return updated
+        })
         setShowRecipientDropdown(false)
     }
 
@@ -411,6 +481,7 @@ export default function Settings() {
                 })
                 setSelectedRecipient(null)
                 setRecipientSearch('')
+                setSelectedTemplate('')
             } else {
                 toast.error(response.data.message || "Failed to send mail.")
             }
@@ -1491,6 +1562,32 @@ export default function Settings() {
 
                     <div className="card" style={{ padding: 24, borderRadius: 16 }}>
                         <form onSubmit={handleSendMail} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+                            <div className="form-group-classic">
+                                <label className="form-label-classic">
+                                    <i className="fas fa-file-alt" style={{ marginRight: 6, color: 'var(--primary)' }}></i>
+                                     Draft Template (Optional)
+                                </label>
+                                <select
+                                    className="form-select"
+                                    value={selectedTemplate}
+                                    onChange={handleTemplateChange}
+                                    disabled={sendingMail}
+                                    style={{
+                                        border: '1px solid var(--primary)',
+                                        boxShadow: '0 0 0 1px rgba(var(--primary-rgb), 0.1)',
+                                        fontWeight: '500'
+                                    }}
+                                >
+                                    <option value="">-- Choose a template to auto-populate fields --</option>
+                                    <option value="welcome">Welcome Email</option>
+                                    <option value="credentials">Account Credentials (Username & Password)</option>
+                                    <option value="inactive">Account Inactivation Notice</option>
+                                </select>
+                                <small style={{ color: 'var(--text-muted)', fontSize: '0.78rem', marginTop: 4, display: 'block' }}>
+                                    Selecting a draft will auto-populate the Subject, Title, and Message Body. You can edit them freely.
+                                </small>
+                            </div>
+
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
                                 <div className="form-group-classic">
                                     <label className="form-label-classic">Recipient Type</label>
@@ -1575,7 +1672,20 @@ export default function Settings() {
                                                 onClick={() => {
                                                     setSelectedRecipient(null)
                                                     setRecipientSearch('')
-                                                    setMailForm(prev => ({ ...prev, name: '', mail: '' }))
+                                                    setMailForm(prev => {
+                                                        const updated = {
+                                                            ...prev,
+                                                            name: '',
+                                                            mail: ''
+                                                        }
+                                                        if (selectedTemplate) {
+                                                            const data = getTemplateData(selectedTemplate, '', '')
+                                                            updated.subject = data.subject
+                                                            updated.title = data.title
+                                                            updated.message = data.message
+                                                        }
+                                                        return updated
+                                                    })
                                                 }}
                                                 style={{ padding: '0 16px', height: '42px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                             >

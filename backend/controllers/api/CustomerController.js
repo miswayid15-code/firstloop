@@ -1070,11 +1070,11 @@ exports.home = async (req, res) => {
         const language = req.language;
         // console.log("language", language)
         // console.log("choose_country", choose_country)
-        console.log("Method:", req.method);
-        console.log("Body:", req.body);
-        console.log("Query:", req.query);
-        console.log("lat:", lat);
-        console.log("lon:", lon);
+        // console.log("Method:", req.method);
+        // console.log("Body:", req.body);
+        // console.log("Query:", req.query);
+        // console.log("lat:", lat);
+        // console.log("lon:", lon);
         const customer_id =
             req.user?.id ||
             req.body?.customer_id ||
@@ -1132,6 +1132,7 @@ exports.home = async (req, res) => {
                 'lat',
                 'lon',
                 'address',
+                'address_line_2',
                 'profile_image'
             ],
 
@@ -1154,7 +1155,9 @@ exports.home = async (req, res) => {
 
                 const item = branch.toJSON();
 
-
+                item.address = item.address_line_2?.trim()
+                    ? item.address_line_2
+                    : item.address;
                 if (language !== "en") {
                     const [name, address] = await translateMultiple(
                         [item.name, item.address],

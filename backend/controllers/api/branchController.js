@@ -34,7 +34,7 @@ exports.register = async (req, res) => {
             timings,
             visibility,
             age_group, city, state, country,
-            passlock, country_iso
+            passlock, country_iso,address_line_2
         } = req.body;
 
         const merchant_id = req.user.id;
@@ -291,6 +291,7 @@ exports.register = async (req, res) => {
                 lon,
 
                 address,
+                address_line_2:address_line_2|| null,
                 country,
                 state: state?.trim() || null,
                 city: city?.trim() || null,
@@ -443,6 +444,7 @@ exports.fetch_list = async (req, res) => {
                 'lat',
                 'lon',
                 'address',
+                'address_line_2',
                 'merchant_id',
                 'description',
                 'open_time',
@@ -675,7 +677,7 @@ exports.update_branch = async (req, res) => {
             timings,
             visibility,
             age_group,
-            city, state, country, country_iso
+            city, state, country, country_iso,address_line_2
         } = req.body;
 
         const merchant_id = req.user.id;
@@ -905,6 +907,7 @@ exports.update_branch = async (req, res) => {
             country_iso: country_iso || branch.country_iso,
 
             address: address || branch.address,
+            address_line_2: address_line_2 || branch.address_line_2,
             city: city || branch.city,
             state: state || branch.state,
             country: country || branch.country,
@@ -1170,6 +1173,7 @@ exports.branch_id = async (req, res) => {
                     'lat',
                     'lon',
                     'address',
+                    'address_line_2',
                     'merchant_id',
                     'description',
                     'country_code',

@@ -11,13 +11,14 @@
       /* =========================
          Brand Colors
       ========================= */
-      --primary: #8F090E;
-      --primary-hover: #74070B;
-      --primary-light: #F5DCDD;
+      --primary: #FF0000;
+      --primary-hover: #D60000;
+
+     --primary-light: #FFE6E6;
       --primary-glow: rgba(143, 9, 14, 0.15);
 
-      --secondary: #B11217;
-      --accent: #C94A4F;
+      --secondary: #FF2D2D;
+      --accent: #FF5C5C;
 
       /* =========================
          Text Colors
@@ -47,16 +48,27 @@
       --status-info: #2563EB;
       --status-info-bg: #DBEAFE;
 
-      /* =========================
-         Gradients
-      ========================= */
-      --gradient-primary: linear-gradient(135deg, #A20A10 0%, #8F090E 100%);
-      --gradient-soft: linear-gradient(135deg, #FAECEC 0%, #F5DCDD 100%);
-      --gradient-glass: linear-gradient(
-         135deg,
-         rgba(255, 255, 255, 0.75) 0%,
-         rgba(255, 255, 255, 0.35) 100%
-      );
+/* =========================
+   Gradients
+========================= */
+
+/* Main Brand Gradient */
+--gradient-primary: linear-gradient(
+   135deg,
+   #FF3B3B 0%,
+   #EF0003 50%,
+   #D80000 100%
+);
+
+/* Soft Background Gradient */
+--gradient-soft: linear-gradient(
+   135deg,
+   #FFF5F5 0%,
+   #FFE5E5 100%
+);
+
+   /* Glass Effect */
+   --gradient-glass: linear-gradient(135deg,rgba(255, 255, 255, 0.80) 0%,rgba(255, 245, 245, 0.55) 100%);
 
       /* =========================
          Typography
