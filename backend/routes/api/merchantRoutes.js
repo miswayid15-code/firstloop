@@ -138,5 +138,11 @@ router.post(
     checkMerchant,
     controller.change_status_res
 );
+router.post(
+    '/merchant/accept-terms',
+    auth('merchant'),
+    checkMerchant,
+    controller.update_terms_accepted
+);
 
 module.exports = router;

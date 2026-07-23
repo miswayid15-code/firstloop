@@ -881,6 +881,7 @@ exports.dashboard = async (req, res) => {
 
                 branch_list: data.Branches,
                 receptionist_list: data.Receptionists,
+                terms_accepted: merchant.terms_accepted,
 
             }
         });
@@ -1636,3 +1637,33 @@ exports.change_status_res = async (req, res) => {
 };
 
 
+exports.update_terms_accepted = async (req, res) => {
+    try {
+
+        const merchant = await Merchant.findByPk(req.user.id);
+
+        if (!merchant) {
+            return res.status(404).json({
+                status: 0,
+                message: "Merchant not found."
+            });
+        }
+
+        await merchant.update({
+            terms_accepted: true
+        });
+
+        return res.status(200).json({
+            status: 1,
+            message: "Terms & Conditions accepted successfully."
+        });
+
+    } catch (err) {
+        console.error("Error:", err);
+
+        return res.status(500).json({
+            status: 0,
+            message: "Failed to update Terms & Conditions."
+        });
+    }
+};

@@ -9,6 +9,7 @@ const checkAdmin = require('../../middleware/checkAdmin');
 
 
 router.post('/customer/list', auth('admin'), checkAdmin, controller.list);
+router.post('/customer/deleted-list', auth('admin'), checkAdmin, controller.delete_list);
 
 router.post(
     '/customer/status-update',

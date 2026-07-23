@@ -889,3 +889,59 @@ exports.coupon_claim_list = async (req, res) => {
         });
     }
 };
+
+exports.delete_list = async (req, res) => {
+    try {
+        const customers = await Customer.findAll({
+            where: { del_status: 1 },
+            attributes: [
+                'id',
+                'name',
+                'email',
+                'phone',
+                'dob',
+                'profile_image',
+                'gender',
+                'city',
+                'status',
+                'createdAt',
+
+                'status',
+                'del_status',
+                'lat',
+                'lon'
+            ]
+        });
+        if (customers.length === 0) {
+            return res.json({
+                status: 0,
+                message: "No customers found"
+            });
+        }
+
+        const data = customers.map(customer => {
+
+            const customerData = customer.toJSON();
+
+            customerData.profile_image =
+                customerData.profile_image
+                    ? baseUrl + '/' + customerData.profile_image.replace(/\\/g, '/')
+                    : null;
+
+            return customerData;
+        });
+
+        return res.json({
+            status: 1,
+            message: "Customer List",
+            data: data
+        });
+    }
+    catch (err) {
+        console.log("ERROR:", err);
+        return res.json({
+            status: 0,
+            message: "Error",
+        });
+    }
+}

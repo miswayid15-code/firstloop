@@ -983,7 +983,7 @@ exports.receptionistsRegister = async (req, res) => {
             country_code,
             mer_id,
         } = req.body;
-// console.log("body",req.body)
+        // console.log("body",req.body)
         if (!mer_id) {
 
             return res.json({
@@ -1132,7 +1132,7 @@ exports.receptionistsRegister = async (req, res) => {
             password: hashedPassword,
 
             profile_image: profileImage,
-            ref_name: ref_name|| null,
+            ref_name: ref_name || null,
 
             status: 1,
             del_status: 0
@@ -1535,8 +1535,8 @@ exports.branchUpdate = async (req, res) => {
 
         }
 
-//         console.log("DB Location:", branch.lat, branch.lon);
-// console.log("Request Location:", lat, lon);
+        //         console.log("DB Location:", branch.lat, branch.lon);
+        // console.log("Request Location:", lat, lon);
         // ✅ Email Exists Check
         if (email) {
 

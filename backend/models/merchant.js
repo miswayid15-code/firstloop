@@ -48,6 +48,7 @@ module.exports = (sequelize, DataTypes) => {
     status: DataTypes.INTEGER,
     doc_verify: DataTypes.INTEGER,
     del_status: DataTypes.INTEGER,
+    terms_accepted: DataTypes.INTEGER,
     deleted_at: {
       type: DataTypes.DATE,
       allowNull: true

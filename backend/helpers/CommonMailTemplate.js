@@ -61,7 +61,7 @@ const CommonMailTemplate = ({
     const currentYear = new Date().getFullYear();
 
     const appUrl = (process.env.APP_URL || '').replace(/\/$/, '');
-    const logoUrl = `${appUrl}/uploads/public/firstpass.png`;
+    const logoUrl = `${appUrl}/uploads/public/FirstPass-logo.png`;
     const loginUrl = `${appUrl}/login`;
 
     const normalizedType = parseInt(userType, 10);
