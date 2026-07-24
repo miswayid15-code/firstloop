@@ -57,64 +57,66 @@ exports.register = async (req, res) => {
         let phoneNumber;
         let nationalNumber;
         let callingCode;
+        if (phone) {
+            try {
 
-        try {
+                const cleanPhone = phone.replace(/\s+/g, '');
 
-            const cleanPhone = phone.replace(/\s+/g, '');
+                const fullPhone = cleanPhone.startsWith('+')
+                    ? cleanPhone
+                    : (country_code || '') + cleanPhone;
 
-            const fullPhone = cleanPhone.startsWith('+')
-                ? cleanPhone
-                : (country_code || '') + cleanPhone;
+                const num = parsePhoneNumber(fullPhone);
 
-            const num = parsePhoneNumber(fullPhone);
+                if (!num.isValid()) {
 
-            if (!num.isValid()) {
+                    return res.json({
+                        status: 0,
+                        message: "Invalid phone"
+                    });
+
+                }
+
+                callingCode = `+${num.countryCallingCode}`;
+                nationalNumber = num.nationalNumber;
+
+                phoneNumber = num.number;
+
+            } catch (phoneErr) {
 
                 return res.json({
                     status: 0,
-                    message: "Invalid phone"
+                    message: "Invalid phone format"
                 });
 
             }
 
-            callingCode = `+${num.countryCallingCode}`;
-            nationalNumber = num.nationalNumber;
+            // check phone exists
+            // console.log("Checking phone exists...");
 
-            phoneNumber = num.number;
+            const phoneExists = await Customer.findOne({
 
-        } catch (phoneErr) {
+                where: {
 
-            return res.json({
-                status: 0,
-                message: "Invalid phone format"
+                    country_code: callingCode,
+                    phone: nationalNumber
+
+                }
+
             });
 
-        }
+            // console.log("PHONE EXISTS:", phoneExists);
 
-        // check phone exists
-        // console.log("Checking phone exists...");
+            if (phoneExists) {
 
-        const phoneExists = await Customer.findOne({
-
-            where: {
-
-                country_code: callingCode,
-                phone: nationalNumber
+                return res.json({
+                    status: 0,
+                    message: "Phone already exists"
+                });
 
             }
-
-        });
-
-        // console.log("PHONE EXISTS:", phoneExists);
-
-        if (phoneExists) {
-
-            return res.json({
-                status: 0,
-                message: "Phone already exists"
-            });
-
         }
+
 
         // check email exists
         // console.log("Checking email exists...");
@@ -171,8 +173,8 @@ exports.register = async (req, res) => {
 
             name,
             email,
-            country_code: callingCode,
-            phone: nationalNumber,
+            country_code: callingCode|| null,
+            phone: nationalNumber|| null,
             password: hashedPassword,
             dob,
             gender,
@@ -848,7 +850,7 @@ exports.update = async (req, res) => {
                 }
             });
 
-            console.log("EMAIL EXISTS:", emailExists);
+            // console.log("EMAIL EXISTS:", emailExists);
 
             if (emailExists) {
 
