@@ -1237,7 +1237,7 @@ exports.home = async (req, res) => {
 
                     item.duration =
                         distanceData.duration;
-
+item.distance_value = distanceData.distance_value;
                 }
                 delete item.Merchant;
                 delete item.city;
