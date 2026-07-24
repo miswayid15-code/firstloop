@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { GoogleMap, Marker, Autocomplete } from '@react-google-maps/api'
 
 export default function CorporateAddressField({
@@ -15,6 +16,39 @@ export default function CorporateAddressField({
     errors = {}
 }) {
     const showRequired = isBranch || isMerchant || required;
+
+    // Helper to geocode country name and get its ISO-2 code using Google Maps Geocoder
+    const geocodeCountryToIso = (countryName) => {
+        if (!countryName || !window.google?.maps?.Geocoder) return;
+
+        const geocoder = new window.google.maps.Geocoder();
+        geocoder.geocode({ address: countryName }, (results, status) => {
+            if (status === 'OK' && results?.[0]) {
+                const place = results[0];
+                let country_iso = '';
+                place.address_components?.forEach((component) => {
+                    if (component.types.includes('country')) {
+                        country_iso = component.short_name; // e.g., 'OM', 'IN'
+                    }
+                });
+                if (country_iso) {
+                    onInputChange({
+                        target: {
+                            name: 'country_iso',
+                            value: country_iso.toUpperCase()
+                        }
+                    });
+                }
+            }
+        });
+    };
+
+    // Auto-resolve country ISO code using Google Maps on load/mount if country exists but country_iso is empty
+    useEffect(() => {
+        if (isBranch && form.country && !form.country_iso) {
+            geocodeCountryToIso(form.country);
+        }
+    }, [isBranch, form.country, form.country_iso]);
 
     return (
         <>
@@ -93,6 +127,11 @@ export default function CorporateAddressField({
                         type="text"
                         value={form.country}
                         onChange={onInputChange}
+                        onBlur={(e) => {
+                            if (isBranch) {
+                                geocodeCountryToIso(e.target.value);
+                            }
+                        }}
                         className="form-control"
                         placeholder=" "
                         required
@@ -100,6 +139,31 @@ export default function CorporateAddressField({
 
                     <label className="form-label">Country {showRequired && <span style={{ color: '#ef4444' }}>*</span>}</label>
                 </div>
+
+                {isBranch && (
+                    <div className="form-group">
+                        <input
+                            name="country_iso"
+                            type="text"
+                            value={form.country_iso || ''}
+                            onChange={(e) => {
+                                const val = (e.target.value || '').toUpperCase();
+                                onInputChange({
+                                    target: {
+                                        name: 'country_iso',
+                                        value: val
+                                    }
+                                });
+                            }}
+                            className="form-control"
+                            placeholder=" "
+                            maxLength={2}
+                            style={{ textTransform: 'uppercase' }}
+                        />
+
+                        <label className="form-label">Country ISO Code {showRequired && <span style={{ color: '#ef4444' }}>*</span>}</label>
+                    </div>
+                )}
 
                 <div className="form-group">
                     <input
