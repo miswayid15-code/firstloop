@@ -1764,7 +1764,7 @@ exports.branchUpdate = async (req, res) => {
             state: state || branch.state,
 
             country: country || branch.country,
-            country_iso: nod || branch.country_iso,
+            country_iso: country_iso || branch.country_iso,
 
             zip_code: zip_code || branch.zip_code,
             visibility: visibility !== undefined ? visibility : branch.visibility,
