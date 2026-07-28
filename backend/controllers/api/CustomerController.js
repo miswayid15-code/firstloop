@@ -88,7 +88,7 @@ exports.register = async (req, res) => {
                     status: 0,
                     message: "Invalid phone format"
                 });
-
+   
             }
 
             // check phone exists
