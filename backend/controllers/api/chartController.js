@@ -1,6 +1,12 @@
 
 const { sendPushNotification } = require("../../helpers/notificationHelper");
-const { db, admin } = require('../../config/firebase');
+const { db, admin ,bucket} = require('../../config/firebase');
+const multer = require("multer");
+const { v4: uuidv4 } = require("uuid");
+const fs = require("fs");
+const upload = multer({
+    storage: multer.memoryStorage(),
+});
 const {
     Merchant,
     Coupon,
@@ -79,7 +85,7 @@ exports.createChat = async (req, res) => {
                     lastMessageAt:
                         admin.firestore.FieldValue.serverTimestamp()
 
-                });
+                });                                                                                                                         
 
         return res.json({
 
@@ -108,13 +114,20 @@ exports.createChat = async (req, res) => {
 
 
 exports.sendMessage = async (req, res) => {
-
     try {
 
-        const {
-            chatId,
-            content
-        } = req.body;
+        // console.log("========== SEND MESSAGE ==========");
+        // console.log("Body:", req.body);
+        // console.log("Files:", req.files);
+
+        const { chatId, content } = req.body;
+
+        if (!chatId) {
+            return res.json({
+                status: 0,
+                message: "Chat ID is required"
+            });
+        }
 
         const senderId = req.user.id;
 
@@ -124,35 +137,73 @@ exports.sendMessage = async (req, res) => {
             }
         });
 
+        let type = "text";
+        let imageUrl = "";
+
+        // Find uploaded image (because middleware uses .any())
+        const file = req.files?.find(f => f.fieldname === "image");
+
+        if (file) {
+
+            console.log("Uploading image to Firebase...");
+
+            const fileName = `chat_images/${uuidv4()}_${file.originalname}`;
+
+            console.log("Firebase File:", fileName);
+
+            const firebaseFile = bucket.file(fileName);
+
+            await firebaseFile.save(
+                fs.readFileSync(file.path),
+                {
+                    metadata: {
+                        contentType: file.mimetype
+                    }
+                }
+            );
+
+            await firebaseFile.makePublic();
+
+            imageUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+
+            console.log("Image URL:", imageUrl);
+
+            // Delete temporary local file
+            fs.unlinkSync(file.path);
+
+            type = "image";
+        }
+
+        // Save message
         await db
-            .collection('chats')
+            .collection("chats")
             .doc(chatId)
-            .collection('messages')
+            .collection("messages")
             .add({
                 senderId: String(senderId),
-                senderRole: 'customer',
-                senderName: customer?.name || '',
-                type: 'text',
-                content,
-                timestamp:
-                    admin.firestore.FieldValue.serverTimestamp()
+                senderRole: "customer",
+                senderName: customer?.name || "",
+                type,
+                content: content || "",
+                imageUrl,
+                timestamp: admin.firestore.FieldValue.serverTimestamp(),
             });
 
+        // Update chat
         await db
-            .collection('chats')
+            .collection("chats")
             .doc(chatId)
             .update({
-                customerName: customer?.name || '',
-                lastMessage: content,
-
-                lastMessageAt:
-                    admin.firestore.FieldValue.serverTimestamp()
-
+                customerName: customer?.name || "",
+                lastMessage: type === "image" ? "📷 Image" : (content || ""),
+                lastMessageAt: admin.firestore.FieldValue.serverTimestamp()
             });
 
+        // Get chat details
         const chatDoc = await db.collection("chats").doc(chatId).get();
 
         if (chatDoc.exists) {
+
             const chatData = chatDoc.data();
             const branchId = chatData.branchId;
 
@@ -165,14 +216,16 @@ exports.sendMessage = async (req, res) => {
 
             if (branch) {
 
-                const notificationToken = await UserNotificationToken.findOne({
+                // Merchant token
+                const merchantToken = await UserNotificationToken.findOne({
                     where: {
                         user_id: branch.merchant_id,
                         user_type: "merchant"
                     }
                 });
 
-                let reception_notificationToken = null;
+                // Receptionist token
+                let receptionistToken = null;
 
                 const receptionist = await Receptionist.findOne({
                     where: {
@@ -182,7 +235,7 @@ exports.sendMessage = async (req, res) => {
                 });
 
                 if (receptionist) {
-                    reception_notificationToken = await UserNotificationToken.findOne({
+                    receptionistToken = await UserNotificationToken.findOne({
                         where: {
                             user_id: receptionist.id,
                             user_type: "receptionist"
@@ -192,12 +245,11 @@ exports.sendMessage = async (req, res) => {
 
                 try {
 
-
-                    if (notificationToken?.token) {
+                    if (merchantToken?.token) {
                         await sendPushNotification({
-                            token: notificationToken.token,
+                            token: merchantToken.token,
                             title: customer?.name || "Customer",
-                            body: content,
+                            body: type === "image" ? "📷 Image" : (content || ""),
                             data: {
                                 type: "message",
                                 chat_id: chatId,
@@ -206,12 +258,11 @@ exports.sendMessage = async (req, res) => {
                         });
                     }
 
-                    // Receptionist Notification
-                    if (reception_notificationToken?.token) {
+                    if (receptionistToken?.token) {
                         await sendPushNotification({
-                            token: reception_notificationToken.token,
+                            token: receptionistToken.token,
                             title: customer?.name || "Customer",
-                            body: content,
+                            body: type === "image" ? "📷 Image" : (content || ""),
                             data: {
                                 type: "message",
                                 chat_id: chatId,
@@ -220,38 +271,35 @@ exports.sendMessage = async (req, res) => {
                         });
                     }
 
-                } catch (error) {
-                    console.error("Push Notification Error:", error);
+                } catch (err) {
+                    console.log("Push Notification Error:", err);
                 }
             }
-
         }
 
+        // console.log("========== SUCCESS ==========");
 
-        // console.log("Sender",);
         return res.json({
-
-
             status: 1,
-
-            message: 'Message sent'
-
+            message: "Message sent successfully",
+            data: {
+                type,
+                content,
+                imageUrl
+            }
         });
 
     } catch (err) {
 
+        // console.log("========== ERROR ==========");
+        console.error(err);
+
         return res.json({
-
             status: 0,
-
             message: err.message
-
         });
-
     }
-
 };
-
 
 
 exports.getBranchChats = async (req, res) => {
@@ -349,29 +397,34 @@ exports.getChatMessages = async (req, res) => {
 };
 
 exports.sendBranchMessage = async (req, res) => {
-
     try {
+
+        // console.log("========== SEND BRANCH MESSAGE ==========");
+        // console.log("Body:", req.body);
+        // console.log("Files:", req.files);
+
         const user = req.merchant || req.receptionist;
 
         const userType = req.merchant
-            ? 'merchant'
-            : 'receptionist';
+            ? "merchant"
+            : "receptionist";
 
-        let senderId = '';
-        let senderRole = '';
-        let branchId = '';
-        let senderName = '';
+        let senderId = "";
+        let senderRole = "";
+        let branchId = "";
+        let senderName = "";
 
-        if (userType == 'merchant') {
+        if (userType === "merchant") {
 
             senderId = String(req.merchant.id);
-            senderRole = 'merchant';
+            senderRole = "merchant";
             senderName =
                 req.merchant.bus_name ||
                 req.merchant.name ||
-                '';
+                "";
 
             branchId = String(req.body.branchId);
+
         } else {
 
             const receptionist = await Receptionist.findOne({
@@ -381,111 +434,145 @@ exports.sendBranchMessage = async (req, res) => {
             });
 
             senderId = String(receptionist.id);
-            senderRole = 'receptionist';
-            senderName =
-                receptionist.name ||
-                '';
+            senderRole = "receptionist";
+            senderName = receptionist.name || "";
             branchId = String(receptionist.branch_id);
         }
 
-        const {
-            chatId,
-            message
-        } = req.body;
+        const { chatId, message } = req.body;
 
-        if (!chatId || !message) {
-
+        if (!chatId) {
             return res.json({
                 status: 0,
-                message: 'Chat ID and message are required'
+                message: "Chat ID is required"
             });
+        }
 
+        let type = "text";
+        let imageUrl = "";
+
+        // Get uploaded image
+        const file = req.files?.find(f => f.fieldname === "image");
+
+        if (file) {
+
+            console.log("Uploading image to Firebase...");
+
+            const fileName = `chat_images/${uuidv4()}_${file.originalname}`;
+
+            const firebaseFile = bucket.file(fileName);
+
+            await firebaseFile.save(
+                fs.readFileSync(file.path),
+                {
+                    metadata: {
+                        contentType: file.mimetype
+                    }
+                }
+            );
+
+            await firebaseFile.makePublic();
+
+            imageUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+
+            console.log("Image URL:", imageUrl);
+
+            // Delete temporary file
+            fs.unlinkSync(file.path);
+
+            type = "image";
         }
 
         const timestamp = new Date();
 
         await db
-            .collection('chats')
+            .collection("chats")
             .doc(chatId)
-            .collection('messages')
+            .collection("messages")
             .add({
-
                 senderId,
                 senderRole,
                 senderName,
-                type: 'text',
-                content: message,
-                timestamp: new Date()
-
+                type,
+                content: message || "",
+                imageUrl,
+                timestamp: admin.firestore.FieldValue.serverTimestamp()
             });
 
         await db
-            .collection('chats')
+            .collection("chats")
             .doc(chatId)
             .update({
-
-                lastMessage: message,
-
-                lastMessageAt: timestamp
-
+                lastMessage: type === "image" ? "📷 Image" : (message || ""),
+                lastMessageAt: admin.firestore.FieldValue.serverTimestamp()
             });
+
         const chatDoc = await db.collection("chats").doc(chatId).get();
+
         if (chatDoc.exists) {
+
             const chatData = chatDoc.data();
             const customerId = chatData.customerId;
+
             const customer = await Customer.findOne({
                 where: {
                     id: customerId,
                     del_status: 0
                 }
             });
+
             if (customer) {
+
                 const notificationToken = await UserNotificationToken.findOne({
                     where: {
                         user_id: customerId,
                         user_type: "customer"
                     }
                 });
+
                 try {
 
                     if (notificationToken?.token) {
+
                         await sendPushNotification({
                             token: notificationToken.token,
-                            title: customer?.name || "Customer",
-                            body: content,
+                            title: senderName || "Merchant",
+                            body: type === "image" ? "📷 Image" : (message || ""),
                             data: {
                                 type: "message",
                                 chat_id: chatId,
                                 customerId: customerId
                             }
                         });
-                    }
 
+                    }
 
                 } catch (error) {
                     console.error("Push Notification Error:", error);
                 }
-
             }
         }
+
+        // console.log("========== SUCCESS ==========");
+
         return res.json({
-
             status: 1,
-
-            message: 'Message sent successfully'
-
+            message: "Message sent successfully",
+            data: {
+                type,
+                message,
+                imageUrl
+            }
         });
 
     } catch (err) {
 
+        // console.log("========== ERROR ==========");
+        console.error(err);
+
         return res.json({
-
             status: 0,
-
             message: err.message
-
         });
-
     }
-
 };

@@ -117,6 +117,63 @@ const dayNamesMap = {
     7: { full: 'Sunday', short: 'Sun' }
 }
 
+const getCountryIso = (countryName, fallbackIso = '') => {
+    if (!countryName) return fallbackIso
+    const name = countryName.trim().toLowerCase()
+    const map = {
+        'india': 'IN',
+        'united states': 'US',
+        'united states of america': 'US',
+        'usa': 'US',
+        'united kingdom': 'GB',
+        'uk': 'GB',
+        'canada': 'CA',
+        'australia': 'AU',
+        'united arab emirates': 'AE',
+        'uae': 'AE',
+        'singapore': 'SG',
+        'malaysia': 'MY',
+        'germany': 'DE',
+        'france': 'FR',
+        'italy': 'IT',
+        'spain': 'ES',
+        'japan': 'JP',
+        'china': 'CN',
+        'brazil': 'BR',
+        'south africa': 'ZA',
+        'new zealand': 'NZ',
+        'saudi arabia': 'SA',
+        'qatar': 'QA',
+        'kuwait': 'KW',
+        'bahrain': 'BH',
+        'oman': 'OM',
+        'ireland': 'IE',
+        'netherlands': 'NL',
+        'switzerland': 'CH',
+        'sweden': 'SE',
+        'norway': 'NO',
+        'denmark': 'DK',
+        'finland': 'FI',
+        'belgium': 'BE',
+        'austria': 'AT',
+        'mexico': 'MX',
+        'philippines': 'PH',
+        'indonesia': 'ID',
+        'thailand': 'TH',
+        'vietnam': 'VN',
+        'russia': 'RU',
+        'turkey': 'TR',
+        'argentina': 'AR',
+        'colombia': 'CO',
+        'chile': 'CL',
+        'peru': 'PE',
+        'egypt': 'EG',
+        'nigeria': 'NG',
+        'kenya': 'KE'
+    }
+    return map[name] || fallbackIso
+}
+
 export default function ViewMerchant() {
 
     const navigate = useNavigate()
@@ -698,6 +755,7 @@ export default function ViewMerchant() {
             email: '',
             phone: '',
             country_code: '+91',
+            country_iso: '',
             receptionist_id: '',
             address: '',
             address_line_2: '',
@@ -836,6 +894,7 @@ export default function ViewMerchant() {
             email: '',
             phone: '',
             country_code: '+91',
+            country_iso: '',
             receptionist_id: '',
             address: '',
             address_line_2: '',
@@ -1021,14 +1080,29 @@ export default function ViewMerchant() {
         }
     }
 
-    const geocodeAndUpdateForm = (setForm, lat, lng, placeName = '', countryName = '', countryIso = '') => {
+    const geocodeAndUpdateForm = (setForm, lat, lng, placeName = '', countryName = '', countryIso = '', cityVal = '', stateVal = '', zipcodeVal = '') => {
+        if (placeName) {
+            setForm((prev) => ({
+                ...prev,
+                address: placeName,
+                city: cityVal || prev.city,
+                state: stateVal || prev.state,
+                country: countryName || prev.country,
+                country_iso: (countryIso || prev.country_iso || '').toUpperCase(),
+                zipcode: zipcodeVal || prev.zipcode,
+                latitude: String(lat),
+                longitude: String(lng)
+            }))
+            return
+        }
+
         if (!window.google?.maps?.Geocoder) {
             setForm((prev) => ({
                 ...prev,
                 latitude: String(lat),
                 longitude: String(lng),
                 country: countryName || prev.country,
-                country_iso: countryIso || prev.country_iso
+                country_iso: (countryIso || prev.country_iso || '').toUpperCase()
             }))
             return
         }
@@ -1043,7 +1117,7 @@ export default function ViewMerchant() {
                     longitude: String(lng),
                     address: placeName || prev.address,
                     country: countryName || prev.country,
-                    country_iso: countryIso || prev.country_iso
+                    country_iso: (countryIso || prev.country_iso || '').toUpperCase()
                 }))
                 return
             }
@@ -1069,24 +1143,24 @@ export default function ViewMerchant() {
 
             setForm((prev) => ({
                 ...prev,
-                address: place.formatted_address || placeName || prev.address,
-                city,
-                state,
-                country,
-                country_iso,
-                zipcode,
+                address: place.formatted_address || prev.address,
+                city: city || prev.city,
+                state: state || prev.state,
+                country: country || prev.country,
+                country_iso: (country_iso || prev.country_iso || '').toUpperCase(),
+                zipcode: zipcode || prev.zipcode,
                 latitude: String(lat),
                 longitude: String(lng)
             }))
         })
     }
 
-    const updateBranchLocationDetails = (lat, lng, placeName = '', countryName = '', countryIso = '') => {
-        geocodeAndUpdateForm(setEditBranchForm, lat, lng, placeName, countryName, countryIso)
+    const updateBranchLocationDetails = (lat, lng, placeName = '', countryName = '', countryIso = '', city = '', state = '', zipcode = '') => {
+        geocodeAndUpdateForm(setEditBranchForm, lat, lng, placeName, countryName, countryIso, city, state, zipcode)
     }
 
-    const updateAddBranchLocationDetails = (lat, lng, placeName = '', countryName = '', countryIso = '') => {
-        geocodeAndUpdateForm(setAddBranchForm, lat, lng, placeName, countryName, countryIso)
+    const updateAddBranchLocationDetails = (lat, lng, placeName = '', countryName = '', countryIso = '', city = '', state = '', zipcode = '') => {
+        geocodeAndUpdateForm(setAddBranchForm, lat, lng, placeName, countryName, countryIso, city, state, zipcode)
     }
 
     const handlePlaceChangedForAutocomplete = (autocomplete, updateLocation) => {
@@ -1096,22 +1170,29 @@ export default function ViewMerchant() {
 
         if (!place.geometry || !place.geometry.location) return
 
+        let city = ''
+        let state = ''
         let country = ''
         let country_iso = ''
+        let zipcode = ''
 
         if (place.address_components) {
             place.address_components.forEach((component) => {
-                if (component.types.includes('country')) {
+                const types = component.types
+                if (types.includes('locality')) city = component.long_name
+                if (types.includes('administrative_area_level_1')) state = component.long_name
+                if (types.includes('country')) {
                     country = component.long_name
                     country_iso = component.short_name
                 }
+                if (types.includes('postal_code')) zipcode = component.long_name
             })
         }
 
         const lat = place.geometry.location.lat()
         const lng = place.geometry.location.lng()
 
-        updateLocation(lat, lng, place.formatted_address || '', country, country_iso)
+        updateLocation(lat, lng, place.formatted_address || '', country, country_iso ? country_iso.toUpperCase() : '', city, state, zipcode)
     }
 
     const handleBranchPlaceChanged = () => {
@@ -1766,7 +1847,9 @@ export default function ViewMerchant() {
             formData.append('timings', JSON.stringify(addBranchForm.timings || []))
             formData.append('visibility', String(addBranchForm.visibility !== undefined ? addBranchForm.visibility : 0))
             formData.append('age_group', addBranchForm.age_group || 'All Age')
-            formData.append('country_iso', addBranchForm.country_iso || '')
+            
+            const addCountryIsoVal = addBranchForm.country_iso || getCountryIso(addBranchForm.country) || ''
+            formData.append('country_iso', addCountryIsoVal.toUpperCase())
             formData.append('receptionist_id', addBranchForm.receptionist_id || '')
 
             if (addBranchForm.profile_image) {
@@ -1983,7 +2066,9 @@ export default function ViewMerchant() {
             formData.append('timings', JSON.stringify(editBranchForm.timings || []))
             formData.append('visibility', String(editBranchForm.visibility !== undefined ? editBranchForm.visibility : 0))
             formData.append('age_group', editBranchForm.age_group || 'All Age')
-            formData.append('country_iso', editBranchForm.country_iso || '')
+            
+            const editCountryIsoVal = editBranchForm.country_iso || getCountryIso(editBranchForm.country) || ''
+            formData.append('country_iso', editCountryIsoVal.toUpperCase())
 
             if (editBranchForm.profile_image && typeof editBranchForm.profile_image !== 'string') {
                 formData.append('profile_image', editBranchForm.profile_image)

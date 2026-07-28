@@ -50,7 +50,7 @@ exports.register = async (req, res) => {
             address,
             lat,
             lon,
-            profile_image
+            profile_image, country_code
         } = req.body;
 
         // console.log("body",req.body)
@@ -64,7 +64,7 @@ exports.register = async (req, res) => {
 
                 const fullPhone = cleanPhone.startsWith('+')
                     ? cleanPhone
-                    : (country_code || '') + cleanPhone;
+                    : `+${country_code}${cleanPhone}`;
 
                 const num = parsePhoneNumber(fullPhone);
 
@@ -83,7 +83,7 @@ exports.register = async (req, res) => {
                 phoneNumber = num.number;
 
             } catch (phoneErr) {
-
+                console.log("Err", phoneErr)
                 return res.json({
                     status: 0,
                     message: "Invalid phone format"
@@ -173,8 +173,8 @@ exports.register = async (req, res) => {
 
             name,
             email,
-            country_code: callingCode|| null,
-            phone: nationalNumber|| null,
+            country_code: callingCode || null,
+            phone: nationalNumber || null,
             password: hashedPassword,
             dob,
             gender,
@@ -1237,7 +1237,7 @@ exports.home = async (req, res) => {
 
                     item.duration =
                         distanceData.duration;
-item.distance_value = distanceData.distance_value;
+                    item.distance_value = distanceData.distance_value;
                 }
                 delete item.Merchant;
                 delete item.city;

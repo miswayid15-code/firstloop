@@ -19,6 +19,7 @@ router.post(
 router.post(
     '/send',
     auth('customer'),
+    upload,
     checkCustomer,
     controller.sendMessage
 );
@@ -44,6 +45,7 @@ router.post(
 router.post(
     '/send-branch-message',
      auth(),
+     upload,
     checkMerchantOrReceptionist,
     controller.sendBranchMessage
 );
