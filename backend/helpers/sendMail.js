@@ -21,11 +21,11 @@ const customerTransporter = nodemailer.createTransport({
 });
 
 const sendMail = async (type, to, subject, html) => {
-    console.log({
-        type,
-        to,
-        subject
-    });
+    // console.log({
+    //     type,
+    //     to,
+    //     subject
+    // });
 
     try {
         const transporter =

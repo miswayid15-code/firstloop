@@ -757,7 +757,7 @@ exports.reset_ps = async (req, res) => {
             "customer",
             email,
             'Password Reset Successful',
-            ResetsTemplate('Customer')
+            ResetsTemplate('customer')
         );
         const notificationToken = await UserNotificationToken.findOne({
             where: {
