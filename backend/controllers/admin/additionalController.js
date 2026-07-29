@@ -735,9 +735,10 @@ exports.send_mails = async (req, res) => {
                 message: "Mail, subject, title and message are required."
             });
         }
-
+const mailType = Number(type) === 3 ? "customer" : "merchant";
         try {
             await sendMail(
+                mailType,
                 mail,
                 subject,
                 CommonMailTemplate({
