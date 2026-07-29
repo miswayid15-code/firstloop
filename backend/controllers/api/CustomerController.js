@@ -753,12 +753,18 @@ exports.reset_ps = async (req, res) => {
         });
 
         // send mail
-        await sendMail(
+         try {
+                    await sendMail(
             "customer",
             email,
             'Password Reset Successful',
             ResetsTemplate('customer')
         );
+         }
+         catch (error) {
+            console.error("Mail issuse:", error);
+        }
+
         const notificationToken = await UserNotificationToken.findOne({
             where: {
                 user_id: customer.id,
