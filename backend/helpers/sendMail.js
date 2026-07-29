@@ -1,50 +1,49 @@
-const { Resend } = require('resend');
+const nodemailer = require("nodemailer");
 
-// console.log('RESEND_API_KEY:', process.env.RESEND_API_KEY ? 'FOUND' : 'MISSING');
-// console.log('MAIL_USER:', process.env.MAIL_USER);
+const merchantTransporter = nodemailer.createTransport({
+    host: process.env.MAIL_HOST,
+    port: 465,
+    secure: true,
+    auth: {
+        user: process.env.MAIL_USER,
+        pass: process.env.MAIL_PASS,
+    },
+});
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const customerTransporter = nodemailer.createTransport({
+    host: process.env.MAIL_HOST,
+    port: 465,
+    secure: true,
+    auth: {
+        user: process.env.MAIL_USER_CUSTOMER,
+        pass: process.env.MAIL_PASS_CUSTOMER,
+    },
+});
 
-const sendMail = async (to, subject, html) => {
-
+const sendMail = async (type, to, subject, html) => {
     try {
+        const transporter =
+            type === "customer"
+                ? customerTransporter
+                : merchantTransporter;
 
-        // console.log('================================');
-        // console.log('SENDMAIL FUNCTION CALLED');
-        // console.log('TO:', to);
-        // console.log('SUBJECT:', subject);
-        // console.log('FROM:', process.env.MAIL_USER || 'onboarding@resend.dev');
-        // console.log('================================');
+        const from =
+            type === "customer"
+                ? `"FirstPass Support" <${process.env.MAIL_USER_CUSTOMER}>`
+                : `"FirstPass" <${process.env.MAIL_USER}>`;
 
-        const response = await resend.emails.send({
-
-            from: process.env.MAIL_USER || 'onboarding@resend.dev',
-
+        await transporter.sendMail({
+            from,
             to,
-
             subject,
-
-            html
-
+            html,
         });
 
-        // console.log('EMAIL SENT SUCCESS');
-        // console.log(JSON.stringify(response, null, 2));
-
         return true;
-
     } catch (err) {
-
-        console.log('================================');
-        console.log('EMAIL ERROR');
-        console.log('MESSAGE:', err.message);
-        console.log('ERROR:', err);
-        console.log('================================');
-
+        console.error("EMAIL ERROR:", err);
         return false;
-
     }
-
 };
 
 module.exports = sendMail;

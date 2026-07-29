@@ -232,9 +232,29 @@ function MessageBubble({ msg }) {
                         boxShadow: cfg.bubbleShadow,
                     }}
                 >
-                    <p className="bch-bubble-text" style={{ color: cfg.textColor }}>
-                        {msg.message || msg.content || msg.text}
-                    </p>
+                    {msg.type === 'image' && msg.imageUrl && (
+                        <div style={{ marginBottom: (msg.message || msg.content || msg.text) ? 8 : 0 }}>
+                            <a href={msg.imageUrl} target="_blank" rel="noopener noreferrer">
+                                <img
+                                    src={msg.imageUrl}
+                                    alt="Shared attachment"
+                                    style={{
+                                        maxWidth: '100%',
+                                        maxHeight: 240,
+                                        borderRadius: 8,
+                                        objectFit: 'contain',
+                                        display: 'block',
+                                        cursor: 'zoom-in'
+                                    }}
+                                />
+                            </a>
+                        </div>
+                    )}
+                    {(msg.message || msg.content || msg.text) && (
+                        <p className="bch-bubble-text" style={{ color: cfg.textColor }}>
+                            {msg.message || msg.content || msg.text}
+                        </p>
+                    )}
                     <div className="bch-bubble-meta">
                         <span className="bch-bubble-time" style={{
                             color: isRight ? 'rgba(255,255,255,0.6)' : '#bbb',
@@ -283,6 +303,33 @@ export default function BranchChat() {
     const [inputText, setInputText] = useState('')
     const [sending, setSending] = useState(false)
     const [loading, setLoading] = useState(true)
+    const [selectedImage, setSelectedImage] = useState(null)
+    const [imagePreview, setImagePreview] = useState('')
+
+    const handleImageChange = (e) => {
+        const file = e.target.files?.[0]
+        if (file) {
+            setSelectedImage(file)
+            setImagePreview(URL.createObjectURL(file))
+        }
+        e.target.value = ''
+    }
+
+    const clearSelectedImage = () => {
+        if (imagePreview) {
+            URL.revokeObjectURL(imagePreview)
+        }
+        setSelectedImage(null)
+        setImagePreview('')
+    }
+
+    useEffect(() => {
+        return () => {
+            if (imagePreview) {
+                URL.revokeObjectURL(imagePreview)
+            }
+        }
+    }, [imagePreview])
 
     const fetchBranch = async () => {
         try {
@@ -372,7 +419,7 @@ export default function BranchChat() {
     }, [id]);
     const selectConversation = (conv) => {
         setActiveConv(conv)
-
+        clearSelectedImage()
     }
 
 
@@ -380,31 +427,47 @@ export default function BranchChat() {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }, [messages, activeConv])
 
-   const handleSend = async () => {
+    const handleSend = async () => {
+        const text = inputText.trim();
 
-    const text = inputText.trim();
+        if (!text && !selectedImage) return;
+        if (sending || !activeConv) return;
 
-    if (!text || sending || !activeConv) return;
+        try {
+            setSending(true);
 
-    try {
+            let response;
+            if (selectedImage) {
+                const formData = new FormData();
+                formData.append('chatId', activeConv.id);
+                formData.append('content', text);
+                formData.append('image', selectedImage);
 
-        setSending(true);
+                response = await API.post('/admin/chat/send', formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
+                });
+            } else {
+                response = await API.post('/admin/chat/send', {
+                    chatId: activeConv.id,
+                    content: text
+                });
+            }
 
-        const response = await API.post('/admin/chat/send', {
-            chatId: activeConv.id,
-            content: text
-        });
-
-        if (response.data.status === 1) {
-            setInputText('');
+            if (response.data.status === 1) {
+                setInputText('');
+                clearSelectedImage();
+                if (inputRef.current) {
+                    inputRef.current.style.height = 'auto';
+                }
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setSending(false);
         }
-
-    } catch (error) {
-        console.error(error);
-    } finally {
-        setSending(false);
-    }
-};
+    };
 
     const handleKeyDown = (e) => {
         if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() }
@@ -691,9 +754,69 @@ export default function BranchChat() {
                                 <div ref={messagesEndRef} />
                             </div>
 
+                            {/* Image Preview Area */}
+                            {imagePreview && (
+                                <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 12,
+                                    padding: '10px 20px',
+                                    background: '#fff',
+                                    borderTop: '1px solid #f0f0f0',
+                                    borderBottom: '1px solid #f0f0f0'
+                                }}>
+                                    <div style={{
+                                        position: 'relative',
+                                        width: 60,
+                                        height: 60,
+                                        borderRadius: 6,
+                                        overflow: 'hidden',
+                                        border: '1.5px solid #e0e0e0',
+                                        flexShrink: 0
+                                    }}>
+                                        <img src={imagePreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        <button
+                                            type="button"
+                                            onClick={clearSelectedImage}
+                                            style={{
+                                                position: 'absolute',
+                                                top: 2,
+                                                right: 2,
+                                                width: 18,
+                                                height: 18,
+                                                borderRadius: '50%',
+                                                background: 'rgba(0,0,0,0.6)',
+                                                border: 'none',
+                                                color: '#fff',
+                                                fontSize: 10,
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                padding: 0
+                                            }}
+                                        >
+                                            <i className="fas fa-times" />
+                                        </button>
+                                    </div>
+                                    <div style={{ fontSize: '0.78rem', color: '#666' }}>
+                                        Image selected: <span style={{ fontWeight: 600 }}>{selectedImage?.name}</span>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Input bar */}
                             <div className="bch-input-bar">
                                 <div className="bch-input-wrap">
+                                    <label style={{ cursor: 'pointer', margin: 0, padding: '4px', display: 'flex', alignItems: 'center', color: selectedImage ? '#e91e8c' : '#888' }} title="Attach Image">
+                                        <i className="fas fa-image" style={{ fontSize: '1.2rem' }} />
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleImageChange}
+                                            style={{ display: 'none' }}
+                                        />
+                                    </label>
                                     <textarea ref={inputRef} rows={1}
                                         placeholder="Send Message..."
                                         value={inputText}
@@ -706,7 +829,7 @@ export default function BranchChat() {
                                         id="bch-message-input" />
                                 </div>
                                 <button className="bch-send-btn" onClick={handleSend}
-                                    disabled={!inputText.trim() || sending}
+                                    disabled={(!inputText.trim() && !selectedImage) || sending}
                                     title="Send message" id="bch-send-btn">
                                     {sending
                                         ? <i className="fas fa-circle-notch fa-spin" />

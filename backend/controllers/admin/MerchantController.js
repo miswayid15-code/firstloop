@@ -1191,7 +1191,7 @@ exports.branchRegister = async (req, res) => {
             timings,
             visibility,
             age_group,
-            passlock, country_iso
+            passlock, country_iso,profile_image_status
         } = req.body;
 
         // console.log("BODY:", req.body);
@@ -1374,6 +1374,7 @@ exports.branchRegister = async (req, res) => {
             state,
             country,
             zip_code,
+            profile_image_status :1,
             visibility: visibility !== undefined ? visibility : 0,
             age_group: age_group || 'All Age',
             passlock, country_iso
@@ -1429,7 +1430,8 @@ exports.branchRegister = async (req, res) => {
 
                 branch_id: branch.id,
 
-                image: file.path.replace(/\\/g, '/')
+                image: file.path.replace(/\\/g, '/'),
+                image_status: 1,
 
             }));
 
@@ -1483,7 +1485,7 @@ exports.branchRegister = async (req, res) => {
 exports.branchUpdate = async (req, res) => {
     if (req.body.lat === '') req.body.lat = null;
     if (req.body.lon === '') req.body.lon = null;
-    console.log("Update branch BODY:", req.body);
+    // console.log("Update branch BODY:", req.body);
 
     try {
 
@@ -1505,7 +1507,7 @@ exports.branchUpdate = async (req, res) => {
             receptionist_id,
             timings,
             visibility,
-            age_group, country_iso,
+            age_group, country_iso,profile_image_status
         } = req.body;
 
 
@@ -1768,7 +1770,8 @@ exports.branchUpdate = async (req, res) => {
 
             zip_code: zip_code || branch.zip_code,
             visibility: visibility !== undefined ? visibility : branch.visibility,
-            age_group: age_group || branch.age_group
+            age_group: age_group || branch.age_group,
+            profile_image_status :1,
         });
 
         // ✅ Replace Branch Timings
@@ -1948,7 +1951,8 @@ exports.branchUpdate = async (req, res) => {
                         branch_id,
 
                         image:
-                            file.path.replace(/\\/g, '/')
+                            file.path.replace(/\\/g, '/'),
+                            image_status: 1,
 
                     }));
 

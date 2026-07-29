@@ -1,4 +1,4 @@
-const { Banner, Receptionist, Merchant, OtpVerify, CustomerOtpVerify, Customer, AppSetting, Notification, Support ,RefreshToken} = require('../../models');
+const { Banner, Receptionist, Merchant, OtpVerify, CustomerOtpVerify, Customer, AppSetting, Notification, Support, RefreshToken } = require('../../models');
 const { sendOtp } = require('../../helpers/sendOtp');
 const CommonMailTemplate = require('../../helpers/CommonMailTemplate');
 const sendMail = require('../../helpers/sendMail');
@@ -9,7 +9,7 @@ const getMappingForCountryCode = (inputCode) => {
     const { getCountries, getCountryCallingCode } = require('libphonenumber-js');
     const cleanInput = String(inputCode).trim();
     const results = new Set([cleanInput]);
-    
+
     try {
         if (cleanInput.startsWith('+')) {
             const phoneCode = cleanInput.replace('+', '');
@@ -35,7 +35,7 @@ const getMappingForCountryCode = (inputCode) => {
     } catch (e) {
         console.error("Error in country code mapping:", e);
     }
-    
+
     return Array.from(results);
 };
 
@@ -291,6 +291,7 @@ exports.customer_verify_mail = async (req, res) => {
         }
 
         await sendMail(
+            "type",
             email,
             'OTP Sent for Registration Verification',
             sendOtp(randomOtp, type)
@@ -682,9 +683,10 @@ exports.create_support = async (req, res) => {
             description,
             status: 0, type, submit_type
         });
-
+        const mailType = Number(type) === 3 ? "customer" : "merchant";
         try {
             await sendMail(
+                mailType,
                 email,
                 "Support Request Submitted",
                 CommonMailTemplate({

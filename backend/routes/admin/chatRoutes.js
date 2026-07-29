@@ -7,5 +7,5 @@ const controller = require('../../controllers/admin/chatController');
 
 const checkAdmin = require('../../middleware/checkAdmin');
 
-router.post('/chat/send', auth('admin'), checkAdmin, controller.sendMessage);
+router.post('/chat/send', auth('admin'),upload, checkAdmin, controller.sendMessage);
 module.exports = router;

@@ -249,6 +249,7 @@ exports.register = async (req, res) => {
         try {
 
             await sendMail(
+                "customer",
                 email,
                 'Customer Registration Successful',
                 RegisterTemplate('customer', customer.name, 'active')
@@ -642,6 +643,7 @@ exports.forget_password = async (req, res) => {
 
         // send mail
         await sendMail(
+            "customer",
             email,
             'Forget Password OTP',
             otpTemplate(otp, 'customer')
@@ -752,6 +754,7 @@ exports.reset_ps = async (req, res) => {
 
         // send mail
         await sendMail(
+            "customer",
             email,
             'Password Reset Successful',
             ResetsTemplate('Customer')
