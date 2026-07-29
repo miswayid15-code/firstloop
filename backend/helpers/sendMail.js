@@ -21,6 +21,12 @@ const customerTransporter = nodemailer.createTransport({
 });
 
 const sendMail = async (type, to, subject, html) => {
+    console.log({
+        type,
+        to,
+        subject
+    });
+
     try {
         const transporter =
             type === "customer"
@@ -29,7 +35,7 @@ const sendMail = async (type, to, subject, html) => {
 
         const from =
             type === "customer"
-                ? `"FirstPass Support" <${process.env.MAIL_USER_CUSTOMER}>`
+                ? `"FirstPass" <${process.env.MAIL_USER_CUSTOMER}>`
                 : `"FirstPass" <${process.env.MAIL_USER}>`;
 
         await transporter.sendMail({
