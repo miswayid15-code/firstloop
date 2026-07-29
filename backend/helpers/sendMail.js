@@ -15,8 +15,8 @@ const customerTransporter = nodemailer.createTransport({
     port: 465,
     secure: true,
     auth: {
-        user: process.env.MAIL_USER_Customer,
-        pass: process.env.MAIL_PASS_Customer,
+        user: process.env.MAIL_USER_CUSTOMER,
+        pass: process.env.MAIL_PASS_CUSTOMER,
     },
 });
 
@@ -35,7 +35,7 @@ const sendMail = async (type, to, subject, html) => {
 
         const from =
             type === "customer"
-                ? `"FirstPass " <${process.env.MAIL_USER_CUSTOMER}>`
+                ? `"FirstPass" <${process.env.MAIL_USER_CUSTOMER}>`
                 : `"FirstPass" <${process.env.MAIL_USER}>`;
 
         await transporter.sendMail({
