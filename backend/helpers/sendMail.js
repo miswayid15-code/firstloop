@@ -1,5 +1,6 @@
 const nodemailer = require("nodemailer");
-
+console.log(process.env.MAIL_USER_CUSTOMER);
+console.log(process.env.MAIL_PASS_CUSTOMER);
 const merchantTransporter = nodemailer.createTransport({
     host: process.env.MAIL_HOST,
     port: 465,
