@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams,useNavigate } from 'react-router-dom'
 
 import { useJsApiLoader } from '@react-google-maps/api'
 import { toast } from 'react-hot-toast'
@@ -63,6 +63,7 @@ const getStatusLabel = (status) => {
 }
 
 export default function Customers() {
+        const navigate = useNavigate()
     const [searchParams] = useSearchParams()
     const customerIdParam = searchParams.get('id')
     const searchParam = searchParams.get('search') || ''
@@ -222,7 +223,7 @@ export default function Customers() {
 
             const response = await API.post('admin/customer/list')
 
-            console.log(response.data)
+            // console.log(response.data)
 
             if (response.data.status === 1) {
 
@@ -949,7 +950,7 @@ export default function Customers() {
                                     </td>
                                     <td>
                                         <div className="action-group" style={{ justifyContent: 'flex-end' }}>
-                                            <button
+                                                                                        <button
                                                 className="btn-icon view"
                                                 title="View Customer Details"
                                                 onClick={() => {
@@ -959,6 +960,18 @@ export default function Customers() {
                                                 }}
                                             >
                                                 <i className="fas fa-eye" />
+                                            </button>
+                                            <button
+                                                className="btn-icon view"
+                                                title="Send Charts"
+                                                 onClick={() => navigate(`/admin-chat/${row.id}`)}
+                                                                                             style={{
+                                                    background: 'linear-gradient(135deg, rgba(233,30,140,0.12) 0%, rgba(233,30,140,0.06) 100%)',
+                                                    color: '#e91e8c',
+                                                    border: '1.5px solid rgba(233,30,140,0.22)'
+                                                }}
+                                            >
+                                                <i className="fas fa-comments" />
                                             </button>
                                             <button
                                                 className="btn-icon edit"

@@ -34,6 +34,7 @@ import Settings from './pages/Settings';
 import Support from './pages/Support';
 import ProtectedRoute from './pages/ProtectedRoute';
 import NotFound from './pages/NotFound';
+import AdminCharts from './pages/AdminCharts';
 
 
 // Website
@@ -185,6 +186,7 @@ function AdminLayout() {
           <Route path="view-branch/:id" element={<ViewBranch />} />
           <Route path="branch-report/:id" element={<BranchReport />} />
           <Route path="branch-chat/:id" element={<BranchChat />} />
+          <Route path="admin-chat/:id" element={<AdminCharts />} />
           <Route path="branch-pending-images/:id" element={<BranchPendingImages />} />
           <Route path="branches" element={<Branches />} />
           <Route path="receptionists" element={<Receptionists />} />

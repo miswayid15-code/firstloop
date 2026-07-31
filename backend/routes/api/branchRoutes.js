@@ -22,7 +22,7 @@ router.post(
     },
     upload,
     (req, res, next) => {
-        console.log("STEP 3 MULTER OK");
+        // console.log("STEP 3 MULTER OK");
         next();
     },
     controller.register

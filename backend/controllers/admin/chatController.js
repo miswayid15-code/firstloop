@@ -42,7 +42,7 @@ exports.sendMessage = async (req, res) => {
         const file = req.files?.find(f => f.fieldname === "image");
 
         if (file) {
-            const fileName = `chats/${chatId}/${uuidv4()}_${file.originalname}`;
+            const fileName = `chat_images/${chatId}/${uuidv4()}_${file.originalname}`;
 
             console.log("========== NEW CONTROLLER ==========");
             console.log("Chat ID:", chatId);

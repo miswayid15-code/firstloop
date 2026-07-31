@@ -441,6 +441,7 @@ exports.fetch_list = async (req, res) => {
                 'email',
                 'phone',
                 'profile_image',
+                'passlock',
                 'lat',
                 'lon',
                 'address',
@@ -1177,6 +1178,7 @@ exports.branch_id = async (req, res) => {
                     'merchant_id',
                     'description',
                     'country_code',
+                    'passlock',
                     'visibility',
                     'age_group',
                     'lat', 'lon', 'city', 'state', 'country'

@@ -38,8 +38,8 @@ export default function ReachUs() {
                 <div className="box-contact-item text-center effectFade fadeUp" data-delay="0.1">
                   <i className="icon icon-headset-solid"></i>
                   <h6 className="title fw-semibold">Phone number</h6>
-                  <a href="tel:+919876543210" className="text">
-                    +91 98765 43210
+                  <a href="tel:+968 75218810" className="text">
+                    +968 75218810
                   </a>
                 </div>
               </div>
