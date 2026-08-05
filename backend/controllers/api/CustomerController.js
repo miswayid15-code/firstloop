@@ -39,7 +39,7 @@ exports.register = async (req, res) => {
     // console.log("========== CUSTOMER REGISTER START ==========");
 
     try {
-        // console.log("REQ BODY:", req.body);
+        console.log("REQ BODY:", req.body);
         const {
             name,
             email,
