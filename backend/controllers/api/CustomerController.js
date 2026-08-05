@@ -2712,7 +2712,8 @@ exports.appointment = async (req, res) => {
             });
 
         }
-        // console.log("slot", slot)
+        console.log("slot", slot)
+        console.log("appointment_date", appointment_date)
 
         if (!appointment_date || !slot) {
 
@@ -2741,9 +2742,9 @@ exports.appointment = async (req, res) => {
             });
         }
 
-            const dbDate = formattedDate.format("YYYY-MM-DD");
-            console.log("appointment_date:", appointment_date);
-            console.log("new Date:", new Date(appointment_date));
+        const dbDate = formattedDate.format("YYYY-MM-DD");
+        // console.log("appointment_date:", appointment_date);
+        // console.log("new Date:", new Date(appointment_date));
 
         const customer = await Customer.findOne({
 
