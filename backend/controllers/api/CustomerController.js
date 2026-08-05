@@ -2831,14 +2831,14 @@ exports.appointment = async (req, res) => {
         const slotTime = moment(slot, ["HH:mm", "HH:mm:ss"], true);
         const openTime = moment(branchTiming.open_time, "HH:mm:ss");
         const closeTime = moment(branchTiming.close_time, "HH:mm:ss");
-        console.log("slot:", slot);
-        console.log("branch open:", branchTiming.open_time);
-        console.log("branch close:", branchTiming.close_time);
+        // console.log("slot:", slot);
+        // console.log("branch open:", branchTiming.open_time);
+        // console.log("branch close:", branchTiming.close_time);
 
-        console.log("slotTime:", slotTime.format("HH:mm:ss"));
-        console.log("openTime:", openTime.format("HH:mm:ss"));
-        console.log("closeTime:", closeTime.format("HH:mm:ss"));
-
+        // console.log("slotTime:", slotTime.format("HH:mm:ss"));
+        // console.log("openTime:", openTime.format("HH:mm:ss"));
+        // console.log("closeTime:", closeTime.format("HH:mm:ss"));
+        let isWithinHours;
         // Invalid slot format
         if (!slotTime.isValid()) {
             return res.json({
@@ -2849,14 +2849,22 @@ exports.appointment = async (req, res) => {
         }
 
         // Check whether slot is within branch timings
-        if (
-            slotTime.isBefore(openTime) ||
-            slotTime.isSameOrAfter(closeTime)
-        ) {
+        if (closeTime.isAfter(openTime)) {
+            // Same-day timing (e.g. 10 AM - 6 PM)
+            isWithinHours =
+                slotTime.isSameOrAfter(openTime) &&
+                slotTime.isBefore(closeTime);
+        } else {
+            // Overnight timing (e.g. 10 AM - 1 AM next day)
+            isWithinHours =
+                slotTime.isSameOrAfter(openTime) ||
+                slotTime.isBefore(closeTime);
+        }
+
+        if (!isWithinHours) {
             return res.json({
                 status: 0,
-                message: await responseMessage("Branch is closed for the selected slot."),
-
+                message: await responseMessage("Branch is closed for the selected slot.")
             });
         }
         const alreadyAppointment = await Appointment.findOne({
