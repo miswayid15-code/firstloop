@@ -78,10 +78,7 @@ export default function Appointments() {
                 })
 
                 setAppointments(mapped)
-            } else {
-                setAppointments([])
-                toast.error(data.message || 'Failed to load appointments')
-            }
+            } 
         } catch (error) {
             setAppointments([])
             toast.error(
