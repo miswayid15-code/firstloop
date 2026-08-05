@@ -61,10 +61,13 @@ exports.register = async (req, res) => {
             try {
 
                 const cleanPhone = phone.replace(/\s+/g, '');
+                const cleanCountryCode = country_code.startsWith('+')
+                    ? country_code
+                    : `+${country_code}`;
 
                 const fullPhone = cleanPhone.startsWith('+')
                     ? cleanPhone
-                    : `+${country_code}${cleanPhone}`;
+                    : `${cleanCountryCode}${cleanPhone}`;
 
                 const num = parsePhoneNumber(fullPhone);
 
@@ -88,7 +91,7 @@ exports.register = async (req, res) => {
                     status: 0,
                     message: "Invalid phone format"
                 });
-   
+
             }
 
             // check phone exists
@@ -751,15 +754,15 @@ exports.reset_ps = async (req, res) => {
         });
 
         // send mail
-         try {
-                    await sendMail(
-            "customer",
-            email,
-            'Password Reset Successful',
-            ResetsTemplate('customer')
-        );
-         }
-         catch (error) {
+        try {
+            await sendMail(
+                "customer",
+                email,
+                'Password Reset Successful',
+                ResetsTemplate('customer')
+            );
+        }
+        catch (error) {
             console.error("Mail issuse:", error);
         }
 
