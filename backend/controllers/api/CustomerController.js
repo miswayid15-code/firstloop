@@ -2831,6 +2831,13 @@ exports.appointment = async (req, res) => {
         const slotTime = moment(slot, ["HH:mm", "HH:mm:ss"], true);
         const openTime = moment(branchTiming.open_time, "HH:mm:ss");
         const closeTime = moment(branchTiming.close_time, "HH:mm:ss");
+        console.log("slot:", slot);
+        console.log("branch open:", branchTiming.open_time);
+        console.log("branch close:", branchTiming.close_time);
+
+        console.log("slotTime:", slotTime.format("HH:mm:ss"));
+        console.log("openTime:", openTime.format("HH:mm:ss"));
+        console.log("closeTime:", closeTime.format("HH:mm:ss"));
 
         // Invalid slot format
         if (!slotTime.isValid()) {
