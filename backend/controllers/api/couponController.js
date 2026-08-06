@@ -322,8 +322,8 @@ exports.create_coupon = async (req, res) => {
                 token: notificationToken?.token,
                 title: "🎉 Coupon Created!",
                 body: `Your coupon "${code}" has been created successfully.`,
-                data:{
-                     type: "coupon_list",
+                data: {
+                    type: "coupon_list",
                 }
             });
 
@@ -372,7 +372,7 @@ exports.update_coupon = async (req, res) => {
             end_date,
             type,
             buy_item,
-            get_item,status
+            get_item, status
         } = req.body;
 
         const merchant_id = req.user.id;
@@ -602,8 +602,8 @@ exports.update_coupon = async (req, res) => {
                 token: notificationToken?.token,
                 title: "🎉 Coupon updated!",
                 body: `Your coupon "${code}" has been updated successfully.`,
-                 data:{
-                     type: "coupon_list",
+                data: {
+                    type: "coupon_list",
                 }
             });
 
@@ -1281,12 +1281,12 @@ exports.redeem_customer = async (req, res) => {
             include: [
                 {
                     model: Coupon,
-                    attributes: ['id', 'branch_ids', 'type','buy_item', 'get_item'],
+                    attributes: ['id', 'branch_ids', 'type', 'buy_item', 'get_item'],
                     required: true,
                     where: {
                         ...couponWhere,
 
-                      
+
                         ...(userType === 'receptionist' && {
                             branch_ids: {
                                 [Op.contains]: [Number(user.branch_id)]
@@ -1376,7 +1376,7 @@ exports.redeem_customer = async (req, res) => {
                 : null;
             row.buy_item = row.Coupon
                 ? row.Coupon.buy_item
-                : null; 
+                : null;
             row.get_item = row.Coupon
                 ? row.Coupon.get_item
                 : null;
@@ -1798,7 +1798,7 @@ exports.delete_coupon = async (req, res) => {
 };
 
 
-exports.cancel_coupon_by_customer = async (req, res) => {
+exports.delete_coupon_applied = async (req, res) => {
     try {
 
         const customer = req.customer;
@@ -1827,17 +1827,16 @@ exports.cancel_coupon_by_customer = async (req, res) => {
         }
 
         // Only pending coupons can be cancelled
-        if (couponApplied.status !== 0) {
-            return res.json({
-                status: 0,
-                message: "Only pending coupon requests can be cancelled"
-            });
-        }
+        // if (couponApplied.status !== 0) {
+        //     return res.json({
+        //         status: 0,
+        //         message: "Only pending coupon requests can be cancelled"
+        //     });
+        // }
 
         await CouponApplied.update(
             {
-                status: 2,
-                cancel_by: "customer",
+                del_status: 1,
                 cancel_reason: cancel_reason || null,
                 approved_by: null,
                 approved_by_id: null,

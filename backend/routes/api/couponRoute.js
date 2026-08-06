@@ -60,9 +60,9 @@ router.post('/redeem-customer',     auth(),
 );
 
 router.post(
-    '/cancel-coupon',
+    '/delete-coupon-applied',
     auth('customer'),
     checkCustomer,
-    controller.cancel_coupon_by_customer
+    controller.delete_coupon_applied
 );
 module.exports = router;
