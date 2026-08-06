@@ -597,16 +597,19 @@ exports.refreshAccessToken = async (req, res) => {
     }
 };
 exports.login = async (req, res) => {
-    console.log("Body", req.body);
+    // console.log("Body", req.body);
     try {
         const { email, password } = req.body;
         const merchant = await Merchant.findOne({ where: { email } })
         if (!merchant) {
             return res.json({ status: 0, message: "Invalid email " });
         }
-
+        console.log("Password:", password, typeof password);
+        console.log("Merchant:", merchant);
+        console.log("Merchant password:", merchant?.password, typeof merchant?.password);
 
         const match = await bcrypt.compare(password, merchant.password);
+
         if (!match) {
             return res.json({ status: 0, message: "Invalid password" });
         }
