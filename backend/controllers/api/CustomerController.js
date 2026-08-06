@@ -1847,7 +1847,8 @@ exports.coupon_apply = async (req, res) => {
                 coupon_id: coupon.id,
                 cus_id: customer_id,
                 branch_id: branch_id,
-                status: 0
+                status: 0,
+                del_status: 0
             }
         });
 
