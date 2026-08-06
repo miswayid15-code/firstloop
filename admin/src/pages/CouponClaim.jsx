@@ -9,6 +9,9 @@ const isSuccessResponse = (data) => {
 }
 
 const getCouponClaimStatus = (claim) => {
+    if (claim?.del_status === 1 || claim?.del_status === '1') {
+        return { label: 'Customer deleted the coupon', badge: 'pending', filter: 'cancelled' }
+    }
     const status = claim?.status
     if (status === 1 || status === '1') return { label: 'Approved', badge: 'active', filter: 'approved' }
     if (status === 2 || status === '2') return { label: 'Cancelled', badge: 'pending', filter: 'cancelled' }
@@ -71,6 +74,7 @@ const mapCouponClaim = (claim) => {
         cancel_reason: claim.cancel_reason,
         approved_by: claim.approved_by,
         approved_by_id: claim.approved_by_id,
+        del_status: claim.del_status,
         raw: claim
     }
 }
@@ -430,6 +434,8 @@ export default function CouponClaim() {
                                                 className="btn-icon edit"
                                                 title="Review Coupon Claim"
                                                 onClick={() => openClaimDialog(row)}
+                                                disabled={row.del_status === 1 || row.del_status === '1'}
+                                                style={row.del_status === 1 || row.del_status === '1' ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
                                             >
                                                 <i className="fas fa-edit"></i>
                                             </button>
@@ -586,7 +592,7 @@ export default function CouponClaim() {
                                 Close Details
                             </button>
 
-                            {selectedClaim?.status === 'Pending' && (
+                            {selectedClaim?.status === 'Pending' && selectedClaim?.del_status !== 1 && selectedClaim?.del_status !== '1' && (
                                 <button
                                     className="btn btn-primary"
                                     type="button"

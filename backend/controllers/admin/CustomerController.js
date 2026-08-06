@@ -843,7 +843,9 @@ exports.coupon_claim_list = async (req, res) => {
                 'cancel_by',
                 'cancel_reason',
                 'approved_by',
-                'approved_by_id'
+                'approved_by_id',
+                'status',
+                'del_status'
             ],
             include: [
                 {
