@@ -118,6 +118,7 @@ exports.banner_list = async (req, res) => {
 exports.verify_mail = async (req, res) => {
     try {
         const { email, type } = req.body;
+        console.log("verify_mail", req.body)
 
         const missingFields = [];
 
