@@ -328,7 +328,9 @@ exports.createOrUpdateMerchant = async (req, res) => {
             ...fileData,
 
             status: merchantStatus,
-            password: hashedPassword
+               ...(hashedPassword && {
+        password: hashedPassword
+    })
 
         });
 
