@@ -1796,3 +1796,79 @@ exports.delete_coupon = async (req, res) => {
     }
 
 };
+
+
+exports.cancel_coupon_by_customer = async (req, res) => {
+    try {
+
+        const customer = req.customer;
+
+        const { coupon_applied_id, cancel_reason } = req.body;
+
+        if (!coupon_applied_id) {
+            return res.json({
+                status: 0,
+                message: "Coupon request ID is required"
+            });
+        }
+
+        const couponApplied = await CouponApplied.findOne({
+            where: {
+                id: coupon_applied_id,
+                cus_id: customer.id
+            }
+        });
+
+        if (!couponApplied) {
+            return res.json({
+                status: 0,
+                message: "Coupon request not found"
+            });
+        }
+
+        // Only pending coupons can be cancelled
+        if (couponApplied.status !== 0) {
+            return res.json({
+                status: 0,
+                message: "Only pending coupon requests can be cancelled"
+            });
+        }
+
+        await CouponApplied.update(
+            {
+                status: 2,
+                cancel_by: "customer",
+                cancel_reason: cancel_reason || null,
+                approved_by: null,
+                approved_by_id: null,
+                used_at: null
+            },
+            {
+                where: {
+                    id: coupon_applied_id
+                }
+            }
+        );
+
+        const updatedCoupon = await CouponApplied.findOne({
+            where: {
+                id: coupon_applied_id
+            }
+        });
+
+        return res.json({
+            status: 1,
+            message: "Coupon cancelled successfully",
+            data: updatedCoupon
+        });
+
+    } catch (err) {
+
+        console.log("CUSTOMER CANCEL COUPON ERROR:", err);
+
+        return res.json({
+            status: 0,
+            message: err.message
+        });
+    }
+};

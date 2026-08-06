@@ -8,7 +8,7 @@ const auth = require('../../middleware/auth');
 const checkMerchant = require('../../middleware/checkMerchant'); 
 const checkMerchantOrReceptionist = require('../../middleware/checkMerchantOrReceptionist'); 
 const checkReceptionist = require('../../middleware/checkReceptionist'); 
-
+const checkCustomer = require('../../middleware/checkCustomer'); 
 router.post(
     '/coupon-create',
 
@@ -57,5 +57,12 @@ router.post('/redeem-customer',     auth(),
         auth('merchant'),
         checkMerchant,
     controller.delete_coupon
+);
+
+router.post(
+    '/cancel-coupon',
+    auth('customer'),
+    checkCustomer,
+    controller.cancel_coupon_by_customer
 );
 module.exports = router;

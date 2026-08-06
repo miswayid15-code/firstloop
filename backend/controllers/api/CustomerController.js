@@ -2712,8 +2712,8 @@ exports.appointment = async (req, res) => {
             });
 
         }
-        console.log("slot", slot)
-        console.log("appointment_date", appointment_date)
+        // console.log("slot", slot)
+        // console.log("appointment_date", appointment_date)
 
         if (!appointment_date || !slot) {
 

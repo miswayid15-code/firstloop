@@ -191,11 +191,11 @@ const getNotificationTemplate = (
     reason = null
 ) => {
 
-    console.log("========== NOTIFICATION TEMPLATE ==========");
-    console.log("Event:", event);
-    console.log("Audience:", audience);
-    console.log("Status:", status);
-    console.log("Reason:", reason);
+    // console.log("========== NOTIFICATION TEMPLATE ==========");
+    // console.log("Event:", event);
+    // console.log("Audience:", audience);
+    // console.log("Status:", status);
+    // console.log("Reason:", reason);
 
     const template = NotificationTemplates[event]?.[audience]?.[status];
 
