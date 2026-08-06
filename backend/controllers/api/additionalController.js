@@ -177,6 +177,7 @@ exports.verify_mail = async (req, res) => {
         }
 
         await sendMail(
+            type,
             email,
             'OTP Sent for Registration',
             sendOtp(randomOtp, type)
