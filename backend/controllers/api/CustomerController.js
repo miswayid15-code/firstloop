@@ -1949,7 +1949,7 @@ exports.coupon_apply = async (req, res) => {
                 new Date(),
 
             status: 1,
-            
+
 
 
             del_status: 0
@@ -3516,15 +3516,55 @@ exports.search = async (req, res) => {
 
         // Coupons
 
+        // =========================
+        // Coupons
+        // =========================
+
+        // Get all branch IDs for the selected country
+        let countryBranchIds = [];
+
+        if (choose_country) {
+
+            const countryBranches = await Branch.findAll({
+                where: {
+                    country_iso: choose_country,
+                    status: 1,
+                    del_status: 0
+                },
+                attributes: ["id"]
+            });
+
+            countryBranchIds = countryBranches.map(branch => Number(branch.id));
+        }
+
         coupons.forEach((item) => {
 
-            results.push({
+            // If no country is selected, show all coupons
+            if (!choose_country) {
 
-                type: "coupon",
+                results.push({
+                    type: "coupon",
+                    data: item
+                });
 
-                data: item
+                return;
+            }
 
-            });
+            const couponBranchIds = item.branch_ids || [];
+
+            // Check whether any coupon branch belongs to the selected country
+            const hasMatchingBranch = couponBranchIds.some(id =>
+                countryBranchIds.includes(Number(id))
+            );
+
+            if (hasMatchingBranch) {
+
+                results.push({
+                    type: "coupon",
+                    data: item
+                });
+
+            }
 
         });
         if (language !== "en") {
