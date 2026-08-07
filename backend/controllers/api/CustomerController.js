@@ -1949,7 +1949,7 @@ exports.coupon_apply = async (req, res) => {
                 new Date(),
 
             status: 1,
-
+            
 
 
             del_status: 0
@@ -3397,11 +3397,7 @@ exports.search = async (req, res) => {
 // COUPON SEARCH
 // =========================
 
-// Get branch IDs for selected country
 let branchIds = [];
-
-console.log("=================================");
-console.log("Selected Country:", choose_country);
 
 if (choose_country) {
 
@@ -3411,73 +3407,27 @@ if (choose_country) {
             status: 1,
             del_status: 0
         },
-        attributes: ["id", "name", "country_iso"]
+        attributes: ["id"]
     });
 
-    console.log(
-        "Country Branches:",
-        JSON.stringify(countryBranches, null, 2)
-    );
-
     branchIds = countryBranches.map(branch => Number(branch.id));
-
-    console.log("Branch IDs:", branchIds);
 }
 
-const couponWhere = {
-    code: {
-        [Op.iLike]: `%${query}%`
+let coupons = await Coupon.findAll({
+
+    where: {
+        code: {
+            [Op.iLike]: `%${query}%`
+        },
+        status: 1,
+        del_status: 0,
+        start_date: {
+            [Op.lte]: today
+        },
+        end_date: {
+            [Op.gte]: today
+        }
     },
-    status: 1,
-    del_status: 0,
-    start_date: {
-        [Op.lte]: today
-    },
-    end_date: {
-        [Op.gte]: today
-    }
-};
-
-console.log("Coupon Where Before:", JSON.stringify(couponWhere, null, 2));
-
-if (choose_country) {
-
-    if (branchIds.length === 0) {
-
-        console.log("No branches found for country:", choose_country);
-
-        couponWhere.id = 0;
-
-    } else {
-
-        couponWhere.branch_ids = {
-            [Op.overlap]: branchIds
-        };
-
-        console.log("Applying Branch Filter:", branchIds);
-    }
-}
-
-console.log("Final Coupon Where:", JSON.stringify(couponWhere, null, 2));
-console.log("================================="); 
-
-// Apply country filter only if a country is selected
-if (choose_country) {
-
-    // If no branches exist for that country, return no coupons
-    if (branchIds.length === 0) {
-        couponWhere.id = 0;
-    } else {
-        couponWhere.branch_ids = {
-            [Op.overlap]: branchIds
-        };
-    }
-
-}
-
-const coupons = await Coupon.findAll({
-
-    where: couponWhere,
 
     attributes: [
         "id",
@@ -3486,6 +3436,20 @@ const coupons = await Coupon.findAll({
     ]
 
 });
+
+// Filter coupons by selected country
+if (choose_country) {
+
+    coupons = coupons.filter(coupon => {
+
+        const ids = coupon.branch_ids || [];
+
+        // Every branch in this coupon must belong to the selected country
+        return ids.every(id => branchIds.includes(Number(id)));
+
+    });
+
+}
 
         // =========================
         // MERCHANT SEARCH
