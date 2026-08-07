@@ -2139,6 +2139,7 @@ exports.fetch_branch_id = async (req, res) => {
                     'name',
                     'email',
                     'phone',
+                    'passlock',
                     'country_code',
                     'profile_image',
                     'pending_profile_image',

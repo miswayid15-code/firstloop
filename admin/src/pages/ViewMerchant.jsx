@@ -3652,6 +3652,7 @@ export default function ViewMerchant() {
                             <th>Branch Name</th>
 
                             <th>Store Address</th>
+                            <th>Pin</th>
 
                             <th>Status</th>
 
@@ -3682,6 +3683,9 @@ export default function ViewMerchant() {
                                     </td>
                                     <td>
                                         <span className="skeleton-text" style={{ width: '100%', display: 'inline-block' }} />
+                                    </td>
+                                    <td>
+                                        <span className="skeleton-text" style={{ width: '60px', display: 'inline-block' }} />
                                     </td>
                                     <td>
                                         <span className="skeleton-text" style={{ width: '70px', display: 'inline-block' }} />
@@ -3727,6 +3731,7 @@ export default function ViewMerchant() {
                                             {branch.address}
                                         </div>
                                     </td>
+                                    <td>{branch.passlock || '-'}</td>
                                     <td>
                                         <span
                                             className={`badge ${branch.status == 1

@@ -788,6 +788,10 @@ export default function ViewBranch() {
                                             {branchData?.address || '-'}
                                         </p>
                                     </div>
+                                    <div>
+                                        <small className="merchant-sub-label">Pin</small>
+                                        <p className="merchant-subtext">{branchData?.passlock || '-'}</p>
+                                    </div>
 
                                     {branchData?.description ? (
                                         <div style={{ gridColumn: '1 / -1' }}>

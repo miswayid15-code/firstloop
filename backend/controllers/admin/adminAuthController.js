@@ -464,6 +464,7 @@ exports.fetchmerchant = async (req, res) => {
                         'address',
                         'email',
                         'phone',
+                        'passlock',
                         'profile_image',
                         'country_code',
                         'status',

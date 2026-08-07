@@ -1233,30 +1233,42 @@ exports.claim_coupon = async (req, res) => {
 };
 
 exports.redeem_customer = async (req, res) => {
-
     try {
+
+        console.log("============= REDEEM CUSTOMER API =============");
+        console.log("Request Body:", JSON.stringify(req.body, null, 2));
 
         const { br_id } = req.body;
 
+        console.log("Branch ID:", br_id);
+
         const user = req.merchant || req.receptionist;
 
-        const userType = req.merchant
-            ? 'merchant'
-            : 'receptionist';
+        console.log("Logged User:", JSON.stringify(user, null, 2));
 
-        const couponWhere = {
-            // del_status: 0
-        };
+        const userType = req.merchant ? "merchant" : "receptionist";
 
-        if (userType === 'merchant') {
+        console.log("User Type:", userType);
 
+        const couponWhere = {};
+
+        if (userType === "merchant") {
             couponWhere.merchant_id = user.id;
-
         } else {
-
             couponWhere.merchant_id = user.merchant_id;
-
         }
+
+        console.log("Coupon Where:", JSON.stringify(couponWhere, null, 2));
+
+        if (userType === "receptionist") {
+            console.log("Filtering Coupon Branch:", user.branch_id);
+        }
+
+        if (userType === "merchant") {
+            console.log("Selected Branch:", br_id);
+        }
+
+        console.log("Fetching CouponApplied...");
 
         const couponApplieds = await CouponApplied.findAll({
 
@@ -1265,97 +1277,122 @@ exports.redeem_customer = async (req, res) => {
             },
 
             attributes: [
-                'id',
-                'coupon_code',
-                'percentage',
-                'cus_id',
-                'coupon_id',
-                'status',
-                'approved_by',
-                'approved_by_id',
-                'branch_id',
-                'cancel_by',
-                'cancel_reason'
+                "id",
+                "coupon_code",
+                "percentage",
+                "cus_id",
+                "coupon_id",
+                "status",
+                "approved_by",
+                "approved_by_id",
+                "branch_id",
+                "cancel_by",
+                "cancel_reason"
             ],
 
             include: [
                 {
                     model: Coupon,
-                    attributes: ['id', 'branch_ids', 'type', 'buy_item', 'get_item'],
                     required: true,
+                    attributes: [
+                        "id",
+                        "branch_ids",
+                        "merchant_id",
+                        "type",
+                        "buy_item",
+                        "get_item"
+                    ],
                     where: {
                         ...couponWhere,
 
-
-                        ...(userType === 'receptionist' && {
+                        ...(userType === "receptionist" && {
                             branch_ids: {
                                 [Op.contains]: [Number(user.branch_id)]
                             }
                         }),
 
-                        // Merchant -> filter by selected branch
-                        ...(userType === 'merchant' &&
+                        ...(userType === "merchant" &&
                             br_id &&
                             Number(br_id) > 0 && {
-                            branch_ids: {
-                                [Op.contains]: [Number(br_id)]
-                            }
-                        })
+                                branch_ids: {
+                                    [Op.contains]: [Number(br_id)]
+                                }
+                            })
                     }
                 },
                 {
                     model: Customer,
+                    required: false,
                     attributes: [
-                        'id',
-                        'name',
-                        'email',
-                        'phone'
-                    ],
-                    required: false
+                        "id",
+                        "name",
+                        "email",
+                        "phone"
+                    ]
                 }
             ],
 
-            order: [['id', 'DESC']]
+            order: [["id", "DESC"]]
 
         });
 
-        // Get branch ids from CouponApplied.branch_id
+        console.log("CouponApplied Count:", couponApplieds.length);
+
+        console.log(
+            "CouponApplied Data:",
+            JSON.stringify(couponApplieds, null, 2)
+        );
+
         const allBranchIds = [];
 
         couponApplieds.forEach(item => {
+            console.log(
+                `CouponApplied ${item.id} -> Branch ID:`,
+                item.branch_id
+            );
 
             if (item.branch_id) {
-
                 allBranchIds.push(item.branch_id);
-
             }
-
         });
+
+        console.log("Collected Branch IDs:", allBranchIds);
+
+        const uniqueBranchIds = [...new Set(allBranchIds)];
+
+        console.log("Unique Branch IDs:", uniqueBranchIds);
 
         const branches = await Branch.findAll({
 
             where: {
-                id: [...new Set(allBranchIds)]
+                id: uniqueBranchIds
             },
 
             attributes: [
-                'id',
-                'name'
+                "id",
+                "name"
             ]
 
         });
 
+        console.log(
+            "Branches:",
+            JSON.stringify(branches, null, 2)
+        );
+
         const branchMap = {};
 
         branches.forEach(branch => {
-
             branchMap[branch.id] = branch.name;
-
         });
+
+        console.log("Branch Map:", branchMap);
 
         const data = couponApplieds.map(item => {
 
             const row = item.toJSON();
+
+            console.log("Processing CouponApplied ID:", row.id);
 
             row.customer_name = row.Customer
                 ? row.Customer.name
@@ -1369,14 +1406,16 @@ exports.redeem_customer = async (req, res) => {
                 ? row.Customer.phone
                 : null;
 
-            // Branch name from CouponApplied.branch_id
             row.branch_name = branchMap[row.branch_id] || null;
+
             row.type = row.Coupon
                 ? row.Coupon.type
                 : null;
+
             row.buy_item = row.Coupon
                 ? row.Coupon.buy_item
                 : null;
+
             row.get_item = row.Coupon
                 ? row.Coupon.get_item
                 : null;
@@ -1384,34 +1423,48 @@ exports.redeem_customer = async (req, res) => {
             delete row.Customer;
             delete row.Coupon;
 
-            return row;
+            console.log(
+                "Final Row:",
+                JSON.stringify(row, null, 2)
+            );
 
+            return row;
         });
 
-        return res.json({
+        console.log("Final Response Count:", data.length);
+        console.log(
+            "Final Response:",
+            JSON.stringify(data, null, 2)
+        );
 
+        console.log("============= API END =============");
+
+        return res.json({
             status: 1,
             message: "Redeemed customers fetched successfully",
             data
-
         });
 
     } catch (err) {
 
-        console.log(
-            "REDEEM CUSTOMER ERROR:",
-            err
-        );
+        console.log("============= API ERROR =============");
+        console.error(err);
+
+        if (err.sql) {
+            console.log("SQL:", err.sql);
+        }
+
+        if (err.parameters) {
+            console.log("SQL Parameters:", err.parameters);
+        }
+
+        console.log("Stack:", err.stack);
 
         return res.json({
-
             status: 0,
             message: err.message
-
         });
-
     }
-
 };
 
 exports.applied_coupons = async (req, res) => {

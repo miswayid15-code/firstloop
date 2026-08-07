@@ -46,7 +46,7 @@ exports.banner_list = async (req, res) => {
         const baseUrl = process.env.APP_URL;
 
         const { country_code } = req.body;
-        console.log("country_code", country_code)
+        // console.log("country_code", country_code)
 
         const whereClause = {
             status: 1,
@@ -118,7 +118,7 @@ exports.banner_list = async (req, res) => {
 exports.verify_mail = async (req, res) => {
     try {
         const { email, type } = req.body;
-        console.log("verify_mail", req.body)
+        // console.log("verify_mail", req.body)
 
         const missingFields = [];
 
