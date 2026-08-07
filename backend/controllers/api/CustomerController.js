@@ -1949,7 +1949,7 @@ exports.coupon_apply = async (req, res) => {
                 new Date(),
 
             status: 1,
-            
+
 
 
             del_status: 0
@@ -3393,6 +3393,22 @@ exports.search = async (req, res) => {
         // COUPON SEARCH
         // =========================
 
+        let branchIds = [];
+
+        if (choose_country) {
+
+            const countryBranches = await Branch.findAll({
+                where: {
+                    country_iso: choose_country,
+                    status: 1,
+                    del_status: 0
+                },
+                attributes: ["id"]
+            });
+
+            branchIds = countryBranches.map(branch => Number(branch.id));
+        }
+
         const coupons = await Coupon.findAll({
 
             where: {
@@ -3406,14 +3422,19 @@ exports.search = async (req, res) => {
                 },
                 end_date: {
                     [Op.gte]: today
-                }
+                },
+
+                ...(choose_country && {
+                    branch_ids: {
+                        [Op.overlap]: branchIds
+                    }
+                })
             },
 
-
             attributes: [
-                'id',
-                'branch_ids',
-                'code'
+                "id",
+                "branch_ids",
+                "code"
             ]
 
         });
