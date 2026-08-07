@@ -3529,6 +3529,7 @@ exports.search = async (req, res) => {
         // Branches
 
         branches.forEach((item) => {
+
             const branch = item.toJSON();
 
             branch.image = branch.profile_image
@@ -3538,11 +3539,8 @@ exports.search = async (req, res) => {
             delete branch.profile_image;
 
             results.push({
-
                 type: "branch",
-
-                data: item
-
+                data: branch   // ✅ Correct
             });
 
         });
