@@ -3521,14 +3521,7 @@ exports.search = async (req, res) => {
         // =========================
 
         // Get all branch IDs for the selected country
-        // =========================
-        // COUPON SEARCH
-        // =========================
-
-        console.log("======================================");
-        console.log("Selected Country:", choose_country);
-
-        let branchIds = [];
+        let countryBranchIds = [];
 
         if (choose_country) {
 
@@ -3538,98 +3531,42 @@ exports.search = async (req, res) => {
                     status: 1,
                     del_status: 0
                 },
-                attributes: ["id", "name", "country_iso"]
+                attributes: ["id"]
             });
 
-            console.log(
-                "Country Branches:",
-                JSON.stringify(countryBranches.map(b => b.toJSON()), null, 2)
-            );
-
-            branchIds = countryBranches.map(branch => Number(branch.id));
-
-            console.log("Country Branch IDs:", branchIds);
+            countryBranchIds = countryBranches.map(branch => Number(branch.id));
         }
 
-        let coupons = await Coupon.findAll({
+        coupons.forEach((item) => {
 
-            where: {
-                code: {
-                    [Op.iLike]: `%${query}%`
-                },
-                status: 1,
-                del_status: 0,
-                start_date: {
-                    [Op.lte]: today
-                },
-                end_date: {
-                    [Op.gte]: today
-                }
-            },
+            // If no country is selected, show all coupons
+            if (!choose_country) {
 
-            attributes: [
-                "id",
-                "branch_ids",
-                "code"
-            ]
+                results.push({
+                    type: "coupon",
+                    data: item
+                });
 
-        });
+                return;
+            }
 
-        console.log("Coupons Found:", coupons.length);
+            const couponBranchIds = item.branch_ids || [];
 
-        coupons.forEach(coupon => {
-            console.log("--------------------------------");
-            console.log("Coupon ID:", coupon.id);
-            console.log("Coupon Code:", coupon.code);
-            console.log("Coupon Branch IDs:", coupon.branch_ids);
+            // Check whether any coupon branch belongs to the selected country
+            const hasMatchingBranch = couponBranchIds.some(id =>
+                countryBranchIds.includes(Number(id))
+            );
 
-            if (choose_country) {
+            if (hasMatchingBranch) {
 
-                const matched = coupon.branch_ids.filter(id =>
-                    branchIds.includes(Number(id))
-                );
-
-                console.log("Matched Branch IDs:", matched);
-
-                const notMatched = coupon.branch_ids.filter(id =>
-                    !branchIds.includes(Number(id))
-                );
-
-                console.log("Not Matched Branch IDs:", notMatched);
+                results.push({
+                    type: "coupon",
+                    data: item
+                });
 
             }
+
         });
-
-        if (choose_country) {
-
-            coupons = coupons.filter(coupon => {
-
-                const matched = coupon.branch_ids.filter(id =>
-                    branchIds.includes(Number(id))
-                );
-
-                console.log(
-                    `Coupon ${coupon.code} -> Matched Count: ${matched.length}`
-                );
-
-                return matched.length > 0;
-
-            });
-
-        }
-
-        console.log("Coupons After Filter:", coupons.length);
-
-        coupons.forEach(coupon => {
-            console.log(
-                "Returned Coupon:",
-                coupon.code,
-                "Branches:",
-                coupon.branch_ids
-            );
-        });
-
-        console.log("======================================");
         if (language !== "en") {
             await Promise.all(
                 results.map(async (item) => {
