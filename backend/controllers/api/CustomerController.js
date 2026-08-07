@@ -1949,7 +1949,7 @@ exports.coupon_apply = async (req, res) => {
                 new Date(),
 
             status: 1,
-            
+
 
 
             del_status: 0
@@ -3345,6 +3345,7 @@ exports.search = async (req, res) => {
             });
 
         }
+        const baseUrl = process.env.APP_URL;
         let choose_country = req.body?.ch_code || req.query?.ch_code || null;
         if (choose_country) {
             choose_country = choose_country?.trim().toUpperCase();
@@ -3385,7 +3386,8 @@ exports.search = async (req, res) => {
             },
             attributes: [
                 'id',
-                'name'
+                'name',
+                'profile_image'
             ]
         });
 
@@ -3420,22 +3422,22 @@ exports.search = async (req, res) => {
 
         let branchIds = [];
 
-if (choose_country) {
+        if (choose_country) {
 
-    const countryBranches = await Branch.findAll({
-        where: {
-            country_iso: choose_country,
-            status: 1,
-            del_status: 0
-        },
-        attributes: ["id"]
-    });
+            const countryBranches = await Branch.findAll({
+                where: {
+                    country_iso: choose_country,
+                    status: 1,
+                    del_status: 0
+                },
+                attributes: ["id"]
+            });
 
-    branchIds = countryBranches.map(branch => Number(branch.id));
+            branchIds = countryBranches.map(branch => Number(branch.id));
 
-    // console.log("Selected Country:", choose_country);
-    // console.log("Country Branch IDs:", branchIds);
-}
+            // console.log("Selected Country:", choose_country);
+            // console.log("Country Branch IDs:", branchIds);
+        }
         // =========================
         // MERCHANT SEARCH
         // =========================
@@ -3453,7 +3455,8 @@ if (choose_country) {
             attributes: [
                 'id',
                 'bus_name',
-                'cat_id'
+                'cat_id',
+                'brand_image'
             ]
 
         });
@@ -3505,6 +3508,14 @@ if (choose_country) {
         merchants.forEach((item) => {
 
             if (!categoryIds.includes(item.cat_id)) {
+                const merchant = item.toJSON();
+
+                merchant.image = merchant.brand_image
+                    ? `${baseUrl}/${merchant.brand_image.replace(/\\/g, "/")}`
+                    : null;
+
+                delete merchant.brand_image;
+
 
                 results.push({
 
@@ -3521,6 +3532,13 @@ if (choose_country) {
         // Branches
 
         branches.forEach((item) => {
+            const branch = item.toJSON();
+
+            branch.image = branch.profile_image
+                ? `${baseUrl}/${branch.profile_image.replace(/\\/g, "/")}`
+                : null;
+
+            delete branch.profile_image;
 
             results.push({
 
@@ -3534,49 +3552,49 @@ if (choose_country) {
 
         // Coupons
 
-// =========================
-// COUPON SEARCH
-// =========================
+        // =========================
+        // COUPON SEARCH
+        // =========================
 
-coupons.forEach((item) => {
+        coupons.forEach((item) => {
 
-    const coupon = item.toJSON();
+            const coupon = item.toJSON();
 
-    if (!choose_country) {
+            if (!choose_country) {
 
-        results.push({
-            type: "coupon",
-            data: coupon
+                results.push({
+                    type: "coupon",
+                    data: coupon
+                });
+
+                return;
+            }
+
+            // console.log("--------------------------------");
+            // console.log("Coupon:", coupon.code);
+            // console.log("Original Branch IDs:", coupon.branch_ids);
+
+            const matchedBranchIds = coupon.branch_ids.filter(id =>
+                branchIds.includes(Number(id))
+            );
+
+            // console.log("Matched Branch IDs:", matchedBranchIds);
+
+            // Update branch_ids to only the matching ones
+            coupon.branch_ids = matchedBranchIds;
+
+            if (coupon.branch_ids.length > 0) {
+
+                // console.log("Returning Coupon:", coupon.code);
+
+                results.push({
+                    type: "coupon",
+                    data: coupon
+                });
+
+            }
+
         });
-
-        return;
-    }
-
-    // console.log("--------------------------------");
-    // console.log("Coupon:", coupon.code);
-    // console.log("Original Branch IDs:", coupon.branch_ids);
-
-    const matchedBranchIds = coupon.branch_ids.filter(id =>
-        branchIds.includes(Number(id))
-    );
-
-    // console.log("Matched Branch IDs:", matchedBranchIds);
-
-    // Update branch_ids to only the matching ones
-    coupon.branch_ids = matchedBranchIds;
-
-    if (coupon.branch_ids.length > 0) {
-
-        // console.log("Returning Coupon:", coupon.code);
-
-        results.push({
-            type: "coupon",
-            data: coupon
-        });
-
-    } 
-
-});
         if (language !== "en") {
             await Promise.all(
                 results.map(async (item) => {
@@ -3633,6 +3651,7 @@ coupons.forEach((item) => {
                 })
             );
         }
+
         return res.json({
 
             status: 1,
