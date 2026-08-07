@@ -3433,8 +3433,8 @@ if (choose_country) {
 
     branchIds = countryBranches.map(branch => Number(branch.id));
 
-    console.log("Selected Country:", choose_country);
-    console.log("Country Branch IDs:", branchIds);
+    // console.log("Selected Country:", choose_country);
+    // console.log("Country Branch IDs:", branchIds);
 }
         // =========================
         // MERCHANT SEARCH
@@ -3552,33 +3552,29 @@ coupons.forEach((item) => {
         return;
     }
 
-    console.log("--------------------------------");
-    console.log("Coupon:", coupon.code);
-    console.log("Original Branch IDs:", coupon.branch_ids);
+    // console.log("--------------------------------");
+    // console.log("Coupon:", coupon.code);
+    // console.log("Original Branch IDs:", coupon.branch_ids);
 
     const matchedBranchIds = coupon.branch_ids.filter(id =>
         branchIds.includes(Number(id))
     );
 
-    console.log("Matched Branch IDs:", matchedBranchIds);
+    // console.log("Matched Branch IDs:", matchedBranchIds);
 
     // Update branch_ids to only the matching ones
     coupon.branch_ids = matchedBranchIds;
 
     if (coupon.branch_ids.length > 0) {
 
-        console.log("Returning Coupon:", coupon.code);
+        // console.log("Returning Coupon:", coupon.code);
 
         results.push({
             type: "coupon",
             data: coupon
         });
 
-    } else {
-
-        console.log("Skipping Coupon:", coupon.code);
-
-    }
+    } 
 
 });
         if (language !== "en") {

@@ -296,8 +296,8 @@ exports.login = async (req, res) => {
             user_id: receptionist.id,
             user_type: "receptionist",
             token: refreshToken,
-            expires_at: new Date( Date.now() + 30 * 24 * 60 * 60 * 1000), // 2 minutes
-            
+            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 2 minutes
+
         });
 
         // Access Token - 1 minute
@@ -321,7 +321,7 @@ exports.login = async (req, res) => {
         });
     } catch (err) {
         console.log(err);
-         
+
         return res.json({
             status: 0,
             message: "Error",
@@ -982,6 +982,8 @@ exports.dashboard = async (req, res) => {
                 await CouponApplied.count({
                     where: {
                         status: 1,
+                        del_status: 0,
+                        branch_id: branch.id
                     },
 
                     include: [
