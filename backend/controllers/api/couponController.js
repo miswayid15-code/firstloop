@@ -1559,7 +1559,7 @@ exports.applied_coupons = async (req, res) => {
 
     }
 
-};
+}; 
 
 
 // fetch coupon details 
