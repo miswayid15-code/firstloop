@@ -429,6 +429,7 @@ exports.registerStep2 = async (req, res) => {
         await merchant.update({
             ...req.body,
             ...fileData,
+             terms_accepted: 1
 
         });
         const notificationToken = await UserNotificationToken.findOne({

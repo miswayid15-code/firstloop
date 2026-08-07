@@ -1946,9 +1946,11 @@ exports.coupon_apply = async (req, res) => {
             branch_id: branch_id,
 
             used_at:
-                null,
+                new Date(),
 
-            status: 0,
+            status: 1,
+            
+
 
             del_status: 0
 
