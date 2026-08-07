@@ -3459,7 +3459,7 @@ if (choose_country) {
 }
 
 console.log("Final Coupon Where:", JSON.stringify(couponWhere, null, 2));
-console.log("=================================");
+console.log("================================="); 
 
 // Apply country filter only if a country is selected
 if (choose_country) {
