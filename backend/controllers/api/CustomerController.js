@@ -3393,51 +3393,66 @@ exports.search = async (req, res) => {
         // COUPON SEARCH
         // =========================
 
-        let branchIds = [];
+// =========================
+// COUPON SEARCH
+// =========================
 
-        if (choose_country) {
+// Get branch IDs for selected country
+let branchIds = [];
 
-            const countryBranches = await Branch.findAll({
-                where: {
-                    country_iso: choose_country,
-                    status: 1,
-                    del_status: 0
-                },
-                attributes: ["id"]
-            });
+if (choose_country) {
 
-            branchIds = countryBranches.map(branch => Number(branch.id));
-        }
+    const countryBranches = await Branch.findAll({
+        where: {
+            country_iso: choose_country,
+            status: 1,
+            del_status: 0
+        },
+        attributes: ["id"]
+    });
 
-        const coupons = await Coupon.findAll({
+    branchIds = countryBranches.map(branch => Number(branch.id));
+}
 
-            where: {
-                code: {
-                    [Op.iLike]: `%${query}%`
-                },
-                status: 1,
-                del_status: 0,
-                start_date: {
-                    [Op.lte]: today
-                },
-                end_date: {
-                    [Op.gte]: today
-                },
+const couponWhere = {
+    code: {
+        [Op.iLike]: `%${query}%`
+    },
+    status: 1,
+    del_status: 0,
+    start_date: {
+        [Op.lte]: today
+    },
+    end_date: {
+        [Op.gte]: today
+    }
+};
 
-                ...(choose_country && {
-                    branch_ids: {
-                        [Op.overlap]: branchIds
-                    }
-                })
-            },
+// Apply country filter only if a country is selected
+if (choose_country) {
 
-            attributes: [
-                "id",
-                "branch_ids",
-                "code"
-            ]
+    // If no branches exist for that country, return no coupons
+    if (branchIds.length === 0) {
+        couponWhere.id = 0;
+    } else {
+        couponWhere.branch_ids = {
+            [Op.overlap]: branchIds
+        };
+    }
 
-        });
+}
+
+const coupons = await Coupon.findAll({
+
+    where: couponWhere,
+
+    attributes: [
+        "id",
+        "branch_ids",
+        "code"
+    ]
+
+});
 
         // =========================
         // MERCHANT SEARCH
