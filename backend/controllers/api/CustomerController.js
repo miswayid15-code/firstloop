@@ -3418,6 +3418,24 @@ exports.search = async (req, res) => {
 
         });
 
+        let branchIds = [];
+
+if (choose_country) {
+
+    const countryBranches = await Branch.findAll({
+        where: {
+            country_iso: choose_country,
+            status: 1,
+            del_status: 0
+        },
+        attributes: ["id"]
+    });
+
+    branchIds = countryBranches.map(branch => Number(branch.id));
+
+    console.log("Selected Country:", choose_country);
+    console.log("Country Branch IDs:", branchIds);
+}
         // =========================
         // MERCHANT SEARCH
         // =========================
