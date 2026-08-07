@@ -306,6 +306,7 @@ exports.register = async (req, res) => {
                 status: 1,
 
                 del_status: 0,
+                country_iso: country_iso || "OM",
                 passlock: passlock || 1111
 
 
@@ -905,7 +906,7 @@ exports.update_branch = async (req, res) => {
 
             lat: lat || branch.lat,
             lon: lon || branch.lon,
-            country_iso: country_iso || branch.country_iso,
+            country_iso: country_iso || branch.country_iso|| "OM",
 
             address: address || branch.address,
             address_line_2: address_line_2 || branch.address_line_2,
