@@ -978,44 +978,29 @@ exports.dashboard = async (req, res) => {
                 coupon_count;
 
             // redeemed users count
-            const redeemed_users =
-                await CouponApplied.count({
-                    where: {
-                        status: 1,
-                        branch_id: branch.id
-                    },
+            const redeemed_users = await CouponApplied.count({
+                where: {
+                    status: 1,
+                    del_status: 0,
+                    branch_id: branch.id
+                },
 
-                    include: [
-
-                        {
-                            model: Coupon,
-
-                            required: true,
-
-                            where: {
-
-                                branch_ids: {
-                                    [Op.contains]: [branch.id]
-                                },
-
-                                status: 1,
-                                del_status: 0
-
-                            }
-
+                include: [
+                    {
+                        model: Coupon,
+                        required: true,
+                        where: {
+                            branch_ids: {
+                                [Op.contains]: [branch.id]
+                            },
+                            status: 1,
+                            del_status: 0
                         }
-
-                    ],
-
-                    where: {
-                        status: 1,
-                        del_status: 0
                     }
+                ]
+            });
 
-                });
-
-            branch.dataValues.Redeemed_Users =
-                redeemed_users;
+            branch.dataValues.Redeemed_Users = redeemed_users;
 
         }
         receptionist.dataValues.unread_notification_count = notificationCount;
