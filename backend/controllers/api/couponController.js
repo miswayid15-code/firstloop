@@ -1233,22 +1233,16 @@ exports.claim_coupon = async (req, res) => {
 };
 
 exports.redeem_customer = async (req, res) => {
-    try {
 
-        console.log("============= REDEEM CUSTOMER API =============");
-        console.log("Request Body:", JSON.stringify(req.body, null, 2));
+    try {
 
         const { br_id } = req.body;
 
-        console.log("Branch ID:", br_id);
-
         const user = req.merchant || req.receptionist;
 
-        console.log("Logged User:", JSON.stringify(user, null, 2));
-
-        const userType = req.merchant ? "merchant" : "receptionist";
-
-        console.log("User Type:", userType);
+        const userType = req.merchant
+            ? "merchant"
+            : "receptionist";
 
         const couponWhere = {};
 
@@ -1258,23 +1252,26 @@ exports.redeem_customer = async (req, res) => {
             couponWhere.merchant_id = user.merchant_id;
         }
 
-        console.log("Coupon Where:", JSON.stringify(couponWhere, null, 2));
+        // Filter CouponApplied
+        const couponAppliedWhere = {
+            // del_status: 0
+        };
 
         if (userType === "receptionist") {
-            console.log("Filtering Coupon Branch:", user.branch_id);
+            couponAppliedWhere.branch_id = Number(user.branch_id);
         }
 
-        if (userType === "merchant") {
-            console.log("Selected Branch:", br_id);
+        if (
+            userType === "merchant" &&
+            br_id &&
+            Number(br_id) > 0
+        ) {
+            couponAppliedWhere.branch_id = Number(br_id);
         }
-
-        console.log("Fetching CouponApplied...");
 
         const couponApplieds = await CouponApplied.findAll({
 
-            where: {
-                del_status: 0
-            },
+            where: couponAppliedWhere,
 
             attributes: [
                 "id",
@@ -1293,42 +1290,25 @@ exports.redeem_customer = async (req, res) => {
             include: [
                 {
                     model: Coupon,
-                    required: true,
                     attributes: [
                         "id",
                         "branch_ids",
-                        "merchant_id",
                         "type",
                         "buy_item",
                         "get_item"
                     ],
-                    where: {
-                        ...couponWhere,
-
-                        ...(userType === "receptionist" && {
-                            branch_ids: {
-                                [Op.contains]: [Number(user.branch_id)]
-                            }
-                        }),
-
-                        ...(userType === "merchant" &&
-                            br_id &&
-                            Number(br_id) > 0 && {
-                                branch_ids: {
-                                    [Op.contains]: [Number(br_id)]
-                                }
-                            })
-                    }
+                    required: true,
+                    where: couponWhere
                 },
                 {
                     model: Customer,
-                    required: false,
                     attributes: [
                         "id",
                         "name",
                         "email",
                         "phone"
-                    ]
+                    ],
+                    required: false
                 }
             ],
 
@@ -1336,49 +1316,20 @@ exports.redeem_customer = async (req, res) => {
 
         });
 
-        console.log("CouponApplied Count:", couponApplieds.length);
-
-        console.log(
-            "CouponApplied Data:",
-            JSON.stringify(couponApplieds, null, 2)
-        );
-
         const allBranchIds = [];
 
         couponApplieds.forEach(item => {
-            console.log(
-                `CouponApplied ${item.id} -> Branch ID:`,
-                item.branch_id
-            );
-
             if (item.branch_id) {
                 allBranchIds.push(item.branch_id);
             }
         });
 
-        console.log("Collected Branch IDs:", allBranchIds);
-
-        const uniqueBranchIds = [...new Set(allBranchIds)];
-
-        console.log("Unique Branch IDs:", uniqueBranchIds);
-
         const branches = await Branch.findAll({
-
             where: {
-                id: uniqueBranchIds
+                id: [...new Set(allBranchIds)]
             },
-
-            attributes: [
-                "id",
-                "name"
-            ]
-
+            attributes: ["id", "name"]
         });
-
-        console.log(
-            "Branches:",
-            JSON.stringify(branches, null, 2)
-        );
 
         const branchMap = {};
 
@@ -1386,58 +1337,26 @@ exports.redeem_customer = async (req, res) => {
             branchMap[branch.id] = branch.name;
         });
 
-        console.log("Branch Map:", branchMap);
-
         const data = couponApplieds.map(item => {
 
             const row = item.toJSON();
 
-            console.log("Processing CouponApplied ID:", row.id);
-
-            row.customer_name = row.Customer
-                ? row.Customer.name
-                : null;
-
-            row.customer_email = row.Customer
-                ? row.Customer.email
-                : null;
-
-            row.customer_phone = row.Customer
-                ? row.Customer.phone
-                : null;
+            row.customer_name = row.Customer?.name || null;
+            row.customer_email = row.Customer?.email || null;
+            row.customer_phone = row.Customer?.phone || null;
 
             row.branch_name = branchMap[row.branch_id] || null;
 
-            row.type = row.Coupon
-                ? row.Coupon.type
-                : null;
-
-            row.buy_item = row.Coupon
-                ? row.Coupon.buy_item
-                : null;
-
-            row.get_item = row.Coupon
-                ? row.Coupon.get_item
-                : null;
+            row.type = row.Coupon?.type || null;
+            row.buy_item = row.Coupon?.buy_item || null;
+            row.get_item = row.Coupon?.get_item || null;
 
             delete row.Customer;
             delete row.Coupon;
 
-            console.log(
-                "Final Row:",
-                JSON.stringify(row, null, 2)
-            );
-
             return row;
+
         });
-
-        console.log("Final Response Count:", data.length);
-        console.log(
-            "Final Response:",
-            JSON.stringify(data, null, 2)
-        );
-
-        console.log("============= API END =============");
 
         return res.json({
             status: 1,
@@ -1447,23 +1366,13 @@ exports.redeem_customer = async (req, res) => {
 
     } catch (err) {
 
-        console.log("============= API ERROR =============");
-        console.error(err);
-
-        if (err.sql) {
-            console.log("SQL:", err.sql);
-        }
-
-        if (err.parameters) {
-            console.log("SQL Parameters:", err.parameters);
-        }
-
-        console.log("Stack:", err.stack);
+        console.log("REDEEM CUSTOMER ERROR:", err);
 
         return res.json({
             status: 0,
             message: err.message
         });
+
     }
 };
 
@@ -1559,7 +1468,7 @@ exports.applied_coupons = async (req, res) => {
 
     }
 
-}; 
+};
 
 
 // fetch coupon details 
