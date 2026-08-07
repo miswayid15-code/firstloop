@@ -3520,111 +3520,49 @@ exports.search = async (req, res) => {
 // COUPON SEARCH
 // =========================
 
-console.log("======================================");
-console.log("Selected Country:", choose_country);
+coupons.forEach((item) => {
 
-let branchIds = [];
+    const coupon = item.toJSON();
 
-if (choose_country) {
+    if (!choose_country) {
 
-    const countryBranches = await Branch.findAll({
-        where: {
-            country_iso: choose_country,
-            status: 1,
-            del_status: 0
-        },
-        attributes: ["id", "name", "country_iso"]
-    });
+        results.push({
+            type: "coupon",
+            data: coupon
+        });
 
-    console.log(
-        "Country Branches:",
-        JSON.stringify(countryBranches.map(b => b.toJSON()), null, 2)
+        return;
+    }
+
+    console.log("--------------------------------");
+    console.log("Coupon:", coupon.code);
+    console.log("Original Branch IDs:", coupon.branch_ids);
+
+    const matchedBranchIds = coupon.branch_ids.filter(id =>
+        branchIds.includes(Number(id))
     );
 
-    branchIds = countryBranches.map(branch => Number(branch.id));
+    console.log("Matched Branch IDs:", matchedBranchIds);
 
-    console.log("Country Branch IDs:", branchIds);
-}
+    // Update branch_ids to only the matching ones
+    coupon.branch_ids = matchedBranchIds;
 
-let coupons = await Coupon.findAll({
+    if (coupon.branch_ids.length > 0) {
 
-    where: {
-        code: {
-            [Op.iLike]: `%${query}%`
-        },
-        status: 1,
-        del_status: 0,
-        start_date: {
-            [Op.lte]: today
-        },
-        end_date: {
-            [Op.gte]: today
-        }
-    },
+        console.log("Returning Coupon:", coupon.code);
 
-    attributes: [
-        "id",
-        "branch_ids",
-        "code"
-    ]
+        results.push({
+            type: "coupon",
+            data: coupon
+        });
 
-});
+    } else {
 
-console.log("Coupons Found:", coupons.length);
-
-coupons.forEach(coupon => {
-    console.log("--------------------------------");
-    console.log("Coupon ID:", coupon.id);
-    console.log("Coupon Code:", coupon.code);
-    console.log("Coupon Branch IDs:", coupon.branch_ids);
-
-    if (choose_country) {
-
-        const matched = coupon.branch_ids.filter(id =>
-            branchIds.includes(Number(id))
-        );
-
-        console.log("Matched Branch IDs:", matched);
-
-        const notMatched = coupon.branch_ids.filter(id =>
-            !branchIds.includes(Number(id))
-        );
-
-        console.log("Not Matched Branch IDs:", notMatched);
+        console.log("Skipping Coupon:", coupon.code);
 
     }
+
 });
-
-if (choose_country) {
-
-    coupons = coupons.filter(coupon => {
-
-        const matched = coupon.branch_ids.filter(id =>
-            branchIds.includes(Number(id))
-        );
-
-        console.log(
-            `Coupon ${coupon.code} -> Matched Count: ${matched.length}`
-        );
-
-        return matched.length > 0;
-
-    });
-
-}
-
-console.log("Coupons After Filter:", coupons.length);
-
-coupons.forEach(coupon => {
-    console.log(
-        "Returned Coupon:",
-        coupon.code,
-        "Branches:",
-        coupon.branch_ids
-    );
-});
-
-console.log("======================================");
         if (language !== "en") {
             await Promise.all(
                 results.map(async (item) => {
