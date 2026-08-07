@@ -3393,63 +3393,30 @@ exports.search = async (req, res) => {
         // COUPON SEARCH
         // =========================
 
-// =========================
-// COUPON SEARCH
-// =========================
+        const coupons = await Coupon.findAll({
 
-let branchIds = [];
+            where: {
+                code: {
+                    [Op.iLike]: `%${query}%`
+                },
+                status: 1,
+                del_status: 0,
+                start_date: {
+                    [Op.lte]: today
+                },
+                end_date: {
+                    [Op.gte]: today
+                }
+            },
 
-if (choose_country) {
 
-    const countryBranches = await Branch.findAll({
-        where: {
-            country_iso: choose_country,
-            status: 1,
-            del_status: 0
-        },
-        attributes: ["id"]
-    });
+            attributes: [
+                'id',
+                'branch_ids',
+                'code'
+            ]
 
-    branchIds = countryBranches.map(branch => Number(branch.id));
-}
-
-let coupons = await Coupon.findAll({
-
-    where: {
-        code: {
-            [Op.iLike]: `%${query}%`
-        },
-        status: 1,
-        del_status: 0,
-        start_date: {
-            [Op.lte]: today
-        },
-        end_date: {
-            [Op.gte]: today
-        }
-    },
-
-    attributes: [
-        "id",
-        "branch_ids",
-        "code"
-    ]
-
-});
-
-// Filter coupons by selected country
-if (choose_country) {
-
-    coupons = coupons.filter(coupon => {
-
-        const ids = coupon.branch_ids || [];
-
-        // Every branch in this coupon must belong to the selected country
-        return ids.every(id => branchIds.includes(Number(id)));
-
-    });
-
-}
+        });
 
         // =========================
         // MERCHANT SEARCH
