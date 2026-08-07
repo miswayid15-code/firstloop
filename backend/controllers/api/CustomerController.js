@@ -3508,6 +3508,7 @@ exports.search = async (req, res) => {
         merchants.forEach((item) => {
 
             if (!categoryIds.includes(item.cat_id)) {
+
                 const merchant = item.toJSON();
 
                 merchant.image = merchant.brand_image
@@ -3516,13 +3517,9 @@ exports.search = async (req, res) => {
 
                 delete merchant.brand_image;
 
-
                 results.push({
-
                     type: "merchant",
-
-                    data: item
-
+                    data: merchant
                 });
 
             }
