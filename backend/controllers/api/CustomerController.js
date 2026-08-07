@@ -3400,6 +3400,9 @@ exports.search = async (req, res) => {
 // Get branch IDs for selected country
 let branchIds = [];
 
+console.log("=================================");
+console.log("Selected Country:", choose_country);
+
 if (choose_country) {
 
     const countryBranches = await Branch.findAll({
@@ -3408,10 +3411,17 @@ if (choose_country) {
             status: 1,
             del_status: 0
         },
-        attributes: ["id"]
+        attributes: ["id", "name", "country_iso"]
     });
 
+    console.log(
+        "Country Branches:",
+        JSON.stringify(countryBranches, null, 2)
+    );
+
     branchIds = countryBranches.map(branch => Number(branch.id));
+
+    console.log("Branch IDs:", branchIds);
 }
 
 const couponWhere = {
@@ -3427,6 +3437,29 @@ const couponWhere = {
         [Op.gte]: today
     }
 };
+
+console.log("Coupon Where Before:", JSON.stringify(couponWhere, null, 2));
+
+if (choose_country) {
+
+    if (branchIds.length === 0) {
+
+        console.log("No branches found for country:", choose_country);
+
+        couponWhere.id = 0;
+
+    } else {
+
+        couponWhere.branch_ids = {
+            [Op.overlap]: branchIds
+        };
+
+        console.log("Applying Branch Filter:", branchIds);
+    }
+}
+
+console.log("Final Coupon Where:", JSON.stringify(couponWhere, null, 2));
+console.log("=================================");
 
 // Apply country filter only if a country is selected
 if (choose_country) {
