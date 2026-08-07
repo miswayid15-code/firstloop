@@ -3393,30 +3393,30 @@ exports.search = async (req, res) => {
         // COUPON SEARCH
         // =========================
 
-        // const coupons = await Coupon.findAll({
+        const coupons = await Coupon.findAll({
 
-        //     where: {
-        //         code: {
-        //             [Op.iLike]: `%${query}%`
-        //         },
-        //         status: 1,
-        //         del_status: 0,
-        //         start_date: {
-        //             [Op.lte]: today
-        //         },
-        //         end_date: {
-        //             [Op.gte]: today
-        //         }
-        //     },
+            where: {
+                code: {
+                    [Op.iLike]: `%${query}%`
+                },
+                status: 1,
+                del_status: 0,
+                start_date: {
+                    [Op.lte]: today
+                },
+                end_date: {
+                    [Op.gte]: today
+                }
+            },
 
 
-        //     attributes: [
-        //         'id',
-        //         'branch_ids',
-        //         'code'
-        //     ]
+            attributes: [
+                'id',
+                'branch_ids',
+                'code'
+            ]
 
-        // });
+        });
 
         // =========================
         // MERCHANT SEARCH
@@ -3516,53 +3516,17 @@ exports.search = async (req, res) => {
 
         // Coupons
 
-// =========================
-// COUPON SEARCH
-// =========================
+        coupons.forEach((item) => {
 
-coupons.forEach((item) => {
+            results.push({
 
-    const coupon = item.toJSON();
+                type: "coupon",
 
-    if (!choose_country) {
+                data: item
 
-        results.push({
-            type: "coupon",
-            data: coupon
+            });
+
         });
-
-        return;
-    }
-
-    console.log("--------------------------------");
-    console.log("Coupon:", coupon.code);
-    console.log("Original Branch IDs:", coupon.branch_ids);
-
-    const matchedBranchIds = coupon.branch_ids.filter(id =>
-        branchIds.includes(Number(id))
-    );
-
-    console.log("Matched Branch IDs:", matchedBranchIds);
-
-    // Update branch_ids to only the matching ones
-    coupon.branch_ids = matchedBranchIds;
-
-    if (coupon.branch_ids.length > 0) {
-
-        console.log("Returning Coupon:", coupon.code);
-
-        results.push({
-            type: "coupon",
-            data: coupon
-        });
-
-    } else {
-
-        console.log("Skipping Coupon:", coupon.code);
-
-    }
-
-});
         if (language !== "en") {
             await Promise.all(
                 results.map(async (item) => {
