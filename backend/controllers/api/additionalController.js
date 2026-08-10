@@ -432,7 +432,7 @@ exports.check_MerchantVersion = async (req, res) => {
         return res.json({
             status: 0,
             result: "fail",
-            text: `Update Required - Version ${mv} is outdated. Minimum required: ${minRequired}`,
+            text: `A new version of FirstPass Partner App is available. Please update the app to continue.`,
             // current_version: Number(mv) || 0,
             min_required_version: minRequired,
             update_required: true,
@@ -494,7 +494,7 @@ exports.check_CustomerVersion = async (req, res) => {
         return res.json({
             status: 0,
             result: "fail",
-            text: `Update Required - Version ${mv} is outdated. Minimum required: ${minRequired}`,
+            text: `A new version of FirstPass App is available. Please update the app to continue.`,
             // current_version: Number(mv) || 0,
             // min_required_version: minRequired,
             update_required: true,
