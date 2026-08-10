@@ -927,7 +927,13 @@ export default function ViewMerchant() {
 
         const { name, value } = e.target
 
-        setEditBranchForm((prev) => ({ ...prev, [name]: value }))
+        setEditBranchForm((prev) => {
+            const updated = { ...prev, [name]: value }
+            if (name === 'country') {
+                updated.country_iso = getCountryIso(value) || ''
+            }
+            return updated
+        })
 
     }
 
@@ -1088,7 +1094,7 @@ export default function ViewMerchant() {
                 city: cityVal || prev.city,
                 state: stateVal || prev.state,
                 country: countryName || prev.country,
-                country_iso: (countryIso || prev.country_iso || '').toUpperCase(),
+                country_iso: (countryIso || getCountryIso(countryName) || prev.country_iso || '').toUpperCase(),
                 zipcode: zipcodeVal || prev.zipcode,
                 latitude: String(lat),
                 longitude: String(lng)
@@ -1102,7 +1108,7 @@ export default function ViewMerchant() {
                 latitude: String(lat),
                 longitude: String(lng),
                 country: countryName || prev.country,
-                country_iso: (countryIso || prev.country_iso || '').toUpperCase()
+                country_iso: (countryIso || getCountryIso(countryName) || prev.country_iso || '').toUpperCase()
             }))
             return
         }
@@ -1117,7 +1123,7 @@ export default function ViewMerchant() {
                     longitude: String(lng),
                     address: placeName || prev.address,
                     country: countryName || prev.country,
-                    country_iso: (countryIso || prev.country_iso || '').toUpperCase()
+                    country_iso: (countryIso || getCountryIso(countryName) || prev.country_iso || '').toUpperCase()
                 }))
                 return
             }
@@ -1147,7 +1153,7 @@ export default function ViewMerchant() {
                 city: city || prev.city,
                 state: state || prev.state,
                 country: country || prev.country,
-                country_iso: (country_iso || prev.country_iso || '').toUpperCase(),
+                country_iso: (country_iso || getCountryIso(country) || prev.country_iso || '').toUpperCase(),
                 zipcode: zipcode || prev.zipcode,
                 latitude: String(lat),
                 longitude: String(lng)
@@ -1239,7 +1245,13 @@ export default function ViewMerchant() {
     const handleAddBranchChange = (e) => {
         const { name, value } = e.target
 
-        setAddBranchForm((prev) => ({ ...prev, [name]: value }))
+        setAddBranchForm((prev) => {
+            const updated = { ...prev, [name]: value }
+            if (name === 'country') {
+                updated.country_iso = getCountryIso(value) || ''
+            }
+            return updated
+        })
     }
 
     const toCouponApiDate = (value) => {
@@ -1848,7 +1860,7 @@ export default function ViewMerchant() {
             formData.append('visibility', String(addBranchForm.visibility !== undefined ? addBranchForm.visibility : 0))
             formData.append('age_group', addBranchForm.age_group || 'All Age')
             
-            const addCountryIsoVal = addBranchForm.country_iso || getCountryIso(addBranchForm.country) || ''
+            const addCountryIsoVal = getCountryIso(addBranchForm.country) || addBranchForm.country_iso || ''
             formData.append('country_iso', addCountryIsoVal.toUpperCase())
             formData.append('receptionist_id', addBranchForm.receptionist_id || '')
 
@@ -2067,7 +2079,7 @@ export default function ViewMerchant() {
             formData.append('visibility', String(editBranchForm.visibility !== undefined ? editBranchForm.visibility : 0))
             formData.append('age_group', editBranchForm.age_group || 'All Age')
             
-            const editCountryIsoVal = editBranchForm.country_iso || getCountryIso(editBranchForm.country) || ''
+            const editCountryIsoVal = getCountryIso(editBranchForm.country) || editBranchForm.country_iso || ''
             formData.append('country_iso', editCountryIsoVal.toUpperCase())
 
             if (editBranchForm.profile_image && typeof editBranchForm.profile_image !== 'string') {
