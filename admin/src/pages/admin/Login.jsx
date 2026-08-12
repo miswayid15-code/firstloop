@@ -3,9 +3,9 @@ import { useNavigate } from "react-router-dom";
 
 import { toast } from "react-hot-toast";
 
-import API from '../api.js';
+import API from '../../api.js';
 
-import logo from "../assets/img/logo.png";
+import logo from "../../assets/img/logo.png";
 
 export default function Login() {
 
@@ -96,7 +96,7 @@ export default function Login() {
   return (
     <>
       {/* Custom Toaster */}
-      
+
       <div className="login-page">
 
         <div className="deco-blob blob-1" />
@@ -154,51 +154,51 @@ export default function Login() {
 
             </div>
 
-             <div className="form-group" style={{ position: 'relative' }}>
+            <div className="form-group" style={{ position: 'relative' }}>
 
-               <input
-                 type={showPassword ? "text" : "password"}
-                 id="password"
-                 className="form-control"
-                 placeholder=" "
-                 value={password}
-                 onChange={(event) =>
-                   setPassword(event.target.value)
-                 }
-                 required
-                 style={{ paddingRight: '40px' }}
-               />
+              <input
+                type={showPassword ? "text" : "password"}
+                id="password"
+                className="form-control"
+                placeholder=" "
+                value={password}
+                onChange={(event) =>
+                  setPassword(event.target.value)
+                }
+                required
+                style={{ paddingRight: '40px' }}
+              />
 
-               <label
-                 htmlFor="password"
-                 className="form-label"
-               >
-                 Security Password
-               </label>
+              <label
+                htmlFor="password"
+                className="form-label"
+              >
+                Security Password
+              </label>
 
-               <button
-                 type="button"
-                 onClick={() => setShowPassword(!showPassword)}
-                 style={{
-                   position: 'absolute',
-                   right: '12px',
-                   top: '50%',
-                   transform: 'translateY(-50%)',
-                   background: 'none',
-                   border: 'none',
-                   cursor: 'pointer',
-                   color: 'var(--text-secondary)',
-                   padding: 0,
-                   display: 'flex',
-                   alignItems: 'center',
-                   justifyContent: 'center',
-                   zIndex: 10
-                 }}
-               >
-                 <i className={showPassword ? "fas fa-eye-slash" : "fas fa-eye"}></i>
-               </button>
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--text-secondary)',
+                  padding: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 10
+                }}
+              >
+                <i className={showPassword ? "fas fa-eye-slash" : "fas fa-eye"}></i>
+              </button>
 
-             </div>
+            </div>
 
             <button
               type="submit"

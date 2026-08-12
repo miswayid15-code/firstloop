@@ -1,18 +1,18 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import API from '../api.js'
+import API from '../../api.js'
 
 // --- Helpers ---
 const apptStatusMap = {
-    0: { label: 'Pending',   color: '#F59E0B', bg: '#FEF3C7' },
-    1: { label: 'Approved',  color: '#3B82F6', bg: '#DBEAFE' },
+    0: { label: 'Pending', color: '#F59E0B', bg: '#FEF3C7' },
+    1: { label: 'Approved', color: '#3B82F6', bg: '#DBEAFE' },
     2: { label: 'Completed', color: '#10B981', bg: '#D1FAE5' },
     3: { label: 'Cancelled', color: '#EF4444', bg: '#FEE2E2' },
-    4: { label: 'Rejected',  color: '#EF4444', bg: '#FEE2E2' },
+    4: { label: 'Rejected', color: '#EF4444', bg: '#FEE2E2' },
 }
 
 const couponStatusMap = {
-    0: { label: 'Pending',  color: '#F59E0B', bg: '#FEF3C7' },
+    0: { label: 'Pending', color: '#F59E0B', bg: '#FEF3C7' },
     1: { label: 'Approved', color: '#10B981', bg: '#D1FAE5' },
 }
 
@@ -62,7 +62,7 @@ function SvgMultiLineChart({ series = [] }) {
             indices.push(i * step)
         }
         indices.push(length - 1)
-        return [...new Set(indices)].sort((a,b)=>a-b)
+        return [...new Set(indices)].sort((a, b) => a - b)
     }
 
     const labelIndices = getXLabelIndices(allDates.length)
@@ -90,7 +90,7 @@ function SvgMultiLineChart({ series = [] }) {
                         const areaPath = pts.length > 1
                             ? `${linePath} L ${pts[pts.length - 1].x} ${H} L ${pts[0].x} ${H} Z`
                             : ''
-                        
+
                         const drawCircles = allDates.length <= 40;
                         const circleRadius = allDates.length > 20 ? 1.8 : 3.5;
                         const strokeWidth = allDates.length > 20 ? 0.75 : 1.2;
@@ -164,14 +164,14 @@ function SvgMultiLineChart({ series = [] }) {
                 {labelIndices.map((idx) => {
                     const pct = (getX(idx) / W) * 100
                     return (
-                        <span 
-                            key={idx} 
-                            style={{ 
-                                position: 'absolute', 
-                                left: `${pct}%`, 
-                                transform: 'translateX(-50%)', 
-                                fontSize: '0.62rem', 
-                                color: 'var(--text-muted)', 
+                        <span
+                            key={idx}
+                            style={{
+                                position: 'absolute',
+                                left: `${pct}%`,
+                                transform: 'translateX(-50%)',
+                                fontSize: '0.62rem',
+                                color: 'var(--text-muted)',
                                 fontWeight: 600,
                                 whiteSpace: 'nowrap'
                             }}
@@ -354,13 +354,13 @@ export default function BranchReport() {
 
     // --- Derived Summary Cards ---
     const summaryCards = [
-        { title: 'Pending Bookings',    value: report.pending_appointment || 0,  icon: 'fa-clock',          gradient: 'bg-gradient-purple' },
-        { title: 'Approved Bookings',   value: report.approved_appointment || 0, icon: 'fa-calendar-check', gradient: 'bg-gradient-teal' },
-        { title: 'Rejected Bookings',   value: report.rejected_appointment || 0, icon: 'fa-calendar-times', gradient: 'bg-gradient-pink' },
-        { title: 'Total Coupons',       value: report.total_coupon || 0,         icon: 'fa-ticket-alt',     gradient: 'bg-gradient-blue' },
-        { title: 'Active Coupons',      value: report.active_coupon || 0,        icon: 'fa-check-circle',   gradient: 'bg-gradient-teal' },
-        { title: 'Expired Coupons',     value: report.expired_coupon || 0,       icon: 'fa-times-circle',   gradient: 'bg-gradient-pink' },
-        { title: 'Redeemed Coupons',     value: report.applied_coupon || 0,       icon: 'fa-check-double',   gradient: 'bg-gradient-orange' },
+        { title: 'Pending Bookings', value: report.pending_appointment || 0, icon: 'fa-clock', gradient: 'bg-gradient-purple' },
+        { title: 'Approved Bookings', value: report.approved_appointment || 0, icon: 'fa-calendar-check', gradient: 'bg-gradient-teal' },
+        { title: 'Rejected Bookings', value: report.rejected_appointment || 0, icon: 'fa-calendar-times', gradient: 'bg-gradient-pink' },
+        { title: 'Total Coupons', value: report.total_coupon || 0, icon: 'fa-ticket-alt', gradient: 'bg-gradient-blue' },
+        { title: 'Active Coupons', value: report.active_coupon || 0, icon: 'fa-check-circle', gradient: 'bg-gradient-teal' },
+        { title: 'Expired Coupons', value: report.expired_coupon || 0, icon: 'fa-times-circle', gradient: 'bg-gradient-pink' },
+        { title: 'Redeemed Coupons', value: report.applied_coupon || 0, icon: 'fa-check-double', gradient: 'bg-gradient-orange' },
     ]
 
     // --- Filtering & Pagination ---
@@ -410,7 +410,7 @@ export default function BranchReport() {
     const handleExport = (format) => {
         let csvContent = "";
         let fileName = "";
-        
+
         if (activeListTab === 'appointments') {
             fileName = `branch_${id}_appointments_report.${format === 'Excel' ? 'xls' : 'csv'}`;
             const headers = ["Appointment ID", "Customer Name", "Customer ID", "Appointment Date", "Slot", "Status", "Booked On"];
@@ -462,7 +462,7 @@ export default function BranchReport() {
 
         if (format === 'Email') {
             const subject = encodeURIComponent(`Branch ${id} Analytics Report`);
-            const body = encodeURIComponent(`Find the summary of Branch ${id} below:\n\n` + 
+            const body = encodeURIComponent(`Find the summary of Branch ${id} below:\n\n` +
                 `Pending Appointments: ${report.pending_appointment || 0}\n` +
                 `Approved Appointments: ${report.approved_appointment || 0}\n` +
                 `Active Coupons: ${report.active_coupon || 0}\n\n` +

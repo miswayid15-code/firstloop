@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { NavLink, useNavigate, useParams } from 'react-router-dom'
-import API from '../api.js'
-import { db } from "../firebase";
+import API from '../../api.js'
+import { db } from "../../firebase.js";
 import { v4 as uuidv4 } from "uuid";
 import {
     collection,
@@ -76,7 +76,7 @@ const ROLE_CONFIG = {
 }
 import { getAuth } from "firebase/auth";
 
-console.log("currentUser",getAuth().currentUser);
+console.log("currentUser", getAuth().currentUser);
 /* ═══════════════════════════════════════════════════════
    HELPERS
    ═══════════════════════════════════════════════════════ */
@@ -432,14 +432,14 @@ export default function AdminCharts() {
             // 1. Upload file if selected
             if (selectedImage) {
                 const fileName = `chat_images/${chatId}/${uuidv4()}_${selectedImage.name}`;
-                  const storageRef = ref(storage, fileName);
-const uploadSnapshot = await uploadBytes(storageRef, selectedImage);
- imageUrl = await getDownloadURL(uploadSnapshot.ref);
+                const storageRef = ref(storage, fileName);
+                const uploadSnapshot = await uploadBytes(storageRef, selectedImage);
+                imageUrl = await getDownloadURL(uploadSnapshot.ref);
             }
 
             // 2. Add message to chats/{chatId}/messages subcollection
             const messagePayload = {
-                     customerId: chatData.customerId,
+                customerId: chatData.customerId,
                 senderId: "admin",
                 senderName: "Admin",
                 senderRole: "admin",

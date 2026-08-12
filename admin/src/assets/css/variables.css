@@ -7,6 +7,8 @@
       --bg-surface: #FFFFFF;
       --bg-sidebar: rgba(255, 255, 255, 0.90);
       --bg-hover: #F8ECEC;
+     --bg-secondary: #f6fafc;
+ --firstloop-bg-primary: #f6fafc;
 
       /* =========================
          Brand Colors
@@ -19,6 +21,9 @@
 
       --secondary: #FF2D2D;
       --accent: #FF5C5C;
+      --firstloop-primary: #0E88B8;
+      --firstloop-secondary: #0E88B8;
+      --firstloop-primary-light: #E6F2FA;
 
       /* =========================
          Text Colors
@@ -59,7 +64,7 @@
    #EF0003 50%,
    #D80000 100%
 );
-
+--firstloop-gradient-primary: linear-gradient(135deg, #4CC7E8 0%, #00A6D6 50%, #0E88B8 100%);
 /* Soft Background Gradient */
 --gradient-soft: linear-gradient(
    135deg,

@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
-import API from '../api.js';
+import API from '../../api.js'
 
 const NEW_MERCHANT_DAYS = 7
 const MERCHANTS_PER_PAGE = 10
@@ -47,24 +47,15 @@ const isNewMerchant = (createdAt) => {
     return daysSinceCreated >= 0 && daysSinceCreated <= NEW_MERCHANT_DAYS
 }
 
-export default function Merchants() {
-
+export default function DeletedMerchants() {
     const navigate = useNavigate()
 
     const [merchants, setMerchants] = useState([])
-
     const [search, setSearch] = useState('')
-
     const [merchantPage, setMerchantPage] = useState(1)
-
     const [loading, setLoading] = useState(true)
 
-    const [showMerchantView, setShowMerchantView] = useState(false)
-
-    const [selectedMerchant, setSelectedMerchant] = useState(null)
-
     const filteredMerchants = merchants.filter((merchant) => {
-
         const searchValue = search.toLowerCase()
         const merchantName = merchant.name || ''
         const merchantEmail = merchant.email || ''
@@ -77,7 +68,6 @@ export default function Merchants() {
             merchantPhone.toLowerCase().includes(searchValue) ||
             merchantBusinessName.toLowerCase().includes(searchValue)
         )
-
     })
 
     const totalMerchantPages = Math.max(
@@ -111,146 +101,36 @@ export default function Merchants() {
         (_, index) => index + 1
     )
 
-
     useEffect(() => {
-
-        fetchMerchants()
-
+        fetchDeletedMerchants()
     }, [])
 
     useEffect(() => {
-
         setMerchantPage(1)
-
     }, [search])
 
-    useEffect(() => {
-
-        if (merchantPage !== safeMerchantPage) {
-
-            setMerchantPage(safeMerchantPage)
-
-        }
-
-    }, [merchantPage, safeMerchantPage])
-
-    const fetchMerchants = async () => {
-
+    const fetchDeletedMerchants = async () => {
         try {
-
-            const response = await API.get('admin/merchant-list')
-
-            // console.log(response.data)
-
+            setLoading(true)
+            const response = await API.get('admin/delete-merchant-list')
             if (response.data.status === 1) {
-
-                setMerchants(response.data.data)
-
+                setMerchants(response.data.data || [])
             }
-
         } catch (error) {
-
-            // console.log(error)
-            toast.error('Failed to fetch merchants')
-
+            console.error('Fetch Deleted Merchants Error:', error)
+            toast.error('Failed to fetch deleted merchants')
         } finally {
-
             setLoading(false)
-
         }
-
     }
-
-    const openView = (merchant) => {
-
-        setSelectedMerchant(merchant)
-
-        setShowMerchantView(true)
-
-    }
-
-    const closeView = () => {
-
-        setSelectedMerchant(null)
-
-        setShowMerchantView(false)
-
-    }
-
-    const handleStatusToggle = async (id, currentStatus) => {
-
-        const newStatus = currentStatus == 1 ? 0 : 1
-
-        try {
-
-            await API.post("admin/merchant/status-update", {
-                id: id,
-                status: newStatus
-            })
-
-            setMerchants(prev =>
-                prev.map(item =>
-                    item.id === id
-                        ? { ...item, status: newStatus }
-                        : item
-                )
-            )
-
-            toast.success(
-                newStatus === 1
-                    ? "Merchant Activated"
-                    : "Merchant Deactivated"
-            )
-
-        } catch (error) {
-
-            toast.error("Failed to update status")
-
-        }
-
-    }
-const handleDeleteAccount = async (id) => {
-
-    try {
-
-        const response = await API.post(
-            "admin/merchant/delete-status",
-            {
-                id: id
-            }
-        );
-
-        if (response.data.status === 1) {
-
-            setMerchants(prev =>
-                prev.filter(item => item.id !== id)
-            );
-
-            toast.success("Account Deleted Successfully");
-
-        } else {
-
-            toast.error(response.data.message);
-
-        }
-
-    } catch (err) {
-
-        toast.error("Failed to delete account");
-
-    }
-
-}
 
     return (
-
         <>
-            
             <div className="card" style={{ marginBottom: 18 }}>
                 <div className="flex-between" style={{ gap: 12, flexWrap: 'wrap' }}>
                     <div>
-                        <h3 className="card-title">Merchants</h3>
-                        <p className="card-subtitle">Manage merchant accounts and view branch activity.</p>
+                        <h3 className="card-title">Deleted Merchants</h3>
+                        <p className="card-subtitle">View and manage previously deleted merchant accounts.</p>
                     </div>
 
                     <div
@@ -277,7 +157,7 @@ const handleDeleteAccount = async (id) => {
                             <input
                                 type="text"
                                 className="search-input"
-                                placeholder="Search merchant name, email, phone..."
+                                placeholder="Search deleted merchant name, email, phone..."
                                 value={search}
                                 onChange={(event) => setSearch(event.target.value)}
                             />
@@ -286,34 +166,23 @@ const handleDeleteAccount = async (id) => {
                         <button
                             type="button"
                             className="btn btn-secondary"
-                            onClick={() => navigate('/deleted-merchants')}
+                            onClick={() => navigate('/merchants')}
                             style={{ display: 'flex', alignItems: 'center', gap: 6 }}
                         >
-                            <i className="fas fa-trash-alt" /> Deleted Merchants
-                        </button>
-
-                        <button
-                            type="button"
-                            className="btn btn-primary"
-                            onClick={() => navigate('/add-merchant')}
-                        >
-                            + Add Merchant
+                            <i className="fas fa-arrow-left" /> Back to Merchants
                         </button>
                     </div>
                 </div>
             </div>
 
             <div className="table-wrapper">
-
                 <table className="data-table">
-
                     <thead>
                         <tr>
                             <th>Merchant Name</th>
                             <th>Business Name</th>
                             <th>Email</th>
                             <th>Phone</th>
-
                             <th>Total Branches</th>
                             <th>Created Date</th>
                             <th>Status</th>
@@ -322,9 +191,7 @@ const handleDeleteAccount = async (id) => {
                     </thead>
 
                     <tbody>
-
                         {loading ? (
-
                             Array.from({ length: 5 }).map((_, index) => (
                                 <tr className="skeleton-row" key={`skeleton-${index}`}>
                                     <td>
@@ -350,121 +217,64 @@ const handleDeleteAccount = async (id) => {
                                     <td>
                                         <span className="skeleton-text" style={{ width: '100px' }} />
                                     </td>
+                                    <td>
+                                        <span className="skeleton-text" style={{ width: '70px' }} />
+                                    </td>
+                                    <td>
+                                        <span className="skeleton-text" style={{ width: '60px' }} />
+                                    </td>
                                 </tr>
                             ))
-
                         ) : paginatedMerchants.length > 0 ? (
-
                             paginatedMerchants.map((row) => (
-
                                 <tr key={row.id}>
-
                                     <td>
                                         <div className="table-cell-profile">
-
                                             <div className="cell-avatar">
                                                 {row.name?.charAt(0)}
                                             </div>
-
                                             <div className="cell-info">
-
                                                 <div className="merchant-name-line">
-                                                    <span className="cell-name">
-                                                        {row.name}
-                                                    </span>
-
+                                                    <span className="cell-name">{row.name}</span>
                                                     {isNewMerchant(row.createdAt) && (
-                                                        <span className="badge merchant-new-badge">
-                                                            New
-                                                        </span>
+                                                        <span className="badge merchant-new-badge">New</span>
                                                     )}
                                                 </div>
-
                                             </div>
-
                                         </div>
                                     </td>
-
                                     <td>{row.bus_name}</td>
-
                                     <td>{row.email}</td>
-
                                     <td>{row.country_code}{row.phone}</td>
-
-
-
                                     <td>{row.branch_count}</td>
-
                                     <td>{row.createdAt}</td>
                                     <td>
-                                        <div className="merchant-status-cell">
-                                            <label
-                                                className={`merchant-status-toggle ${row.status == 1 ? 'is-active' : 'is-inactive'}`}
-                                                title={row.status == 1 ? 'Deactivate merchant' : 'Activate merchant'}
-                                            >
-                                                <input
-                                                    type="checkbox"
-                                                    checked={row.status == 1}
-                                                    onChange={() => handleStatusToggle(row.id, row.status)}
-                                                />
-                                                <span className="merchant-status-track" aria-hidden="true">
-                                                    <span className="merchant-status-knob" />
-                                                </span>
-                                                <span className="merchant-status-label">
-                                                    {row.status == 1 ? 'Active' : 'Inactive'}
-                                                </span>
-                                            </label>
-                                        </div>
+                                        <span className="badge pending">Deleted</span>
                                     </td>
-
                                     <td>
-
                                         <div
                                             className="action-group"
                                             style={{ justifyContent: 'flex-end' }}
                                         >
-
                                             <button
                                                 className="btn-icon view"
-                                                onClick={() => navigate(`/view-merchant/${row.id}`)}
+                                                onClick={() => navigate(`/view-deleted-merchant/${row.id}`)}
+                                                title="View Merchant Details"
                                             >
                                                 <i className="fas fa-eye" />
                                             </button>
-
-                                            <button
-                                                className="btn-icon edit"
-                                                onClick={() => navigate(`/edit-merchant/${row.id}`)}
-                                            >
-                                                <i className="fas fa-edit" />
-                                            </button>
-
-                                            <button
-                                                className="btn-icon delete"
-                                                onClick={() => handleDeleteAccount(row.id)}
-                                            >
-                                                <i className="fas fa-trash-alt" />
-                                            </button>
-
                                         </div>
-
                                     </td>
-
                                 </tr>
-
                             ))
-
                         ) : (
-
                             <tr>
-                                <td colSpan="7" align="center">
-                                    No Merchants Found
+                                <td colSpan="8" align="center">
+                                    No Deleted Merchants Found
                                 </td>
                             </tr>
-
                         )}
-
                     </tbody>
-
                 </table>
 
                 {!loading && filteredMerchants.length > MERCHANTS_PER_PAGE && (
@@ -505,10 +315,7 @@ const handleDeleteAccount = async (id) => {
                         </div>
                     </div>
                 )}
-
             </div>
         </>
-
     )
-
 }

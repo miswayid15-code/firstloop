@@ -1,7 +1,7 @@
 import { useNavigate, useParams, NavLink } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
-import API from '../api.js'
+import API from '../../api.js'
 
 export default function ViewDeletedMerchant() {
     const navigate = useNavigate()
@@ -20,7 +20,7 @@ export default function ViewDeletedMerchant() {
             setLoading(true)
             const response = await API.post('admin/delete-merchant-fetch-id', { id: id })
             const data = response.data || {}
-            
+
             if (data.status === 1 || data.success === true) {
                 const merchant = data.data || {}
                 setMerchantData(merchant)

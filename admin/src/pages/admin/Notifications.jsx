@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
-import API from '../api.js'
+import API from '../../api.js'
 
 const targetGroups = [
     {

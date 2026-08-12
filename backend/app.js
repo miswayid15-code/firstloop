@@ -41,6 +41,7 @@ app.use('/admin', require('./routes/admin/chatRoutes'));
 app.use('/admin', require('./routes/admin/additionalRoute'));
 app.use('/admin', require('./routes/admin/reportRoutes'));
 app.use('/admin', require('./routes/admin/notificationRoute'));
+app.use('/admin', require('./routes/admin/salepersonRoute'));
 
 
 

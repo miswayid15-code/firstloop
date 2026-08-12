@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
-import API from '../api.js'
-import ConfirmDialog from '../components/ConfirmDialog.jsx'
+import API from '../../api.js'
+import ConfirmDialog from '../../components/ConfirmDialog.jsx'
 import ReactQuill from 'react-quill-new'
 import 'react-quill-new/dist/quill.snow.css'
 import { CountrySelect, GetCountries } from 'react-country-state-city'
@@ -271,7 +271,7 @@ export default function Settings() {
 
     const getCountryName = (countryCode) => {
         if (!countryCode) return 'N/A'
-        
+
         // Try finding by ISO-2 or ISO-3 code first (new format, e.g., IN, US)
         const upperCode = String(countryCode).toUpperCase()
         const isoMatch = countriesList.find(
@@ -283,7 +283,7 @@ export default function Settings() {
         const cleanCode = String(countryCode).replace('+', '')
         const matches = countriesList.filter(c => String(c.phone_code) === cleanCode)
         if (matches.length === 0) return countryCode
-        
+
         if (cleanCode === '1') {
             const us = matches.find(c => c.name.toLowerCase().includes('united states'))
             if (us) return us.name
@@ -292,7 +292,7 @@ export default function Settings() {
             const uk = matches.find(c => c.name.toLowerCase().includes('united kingdom'))
             if (uk) return uk.name
         }
-        
+
         return matches[0].name
     }
 
@@ -347,7 +347,7 @@ export default function Settings() {
     const getTemplateData = (templateId, recipientName, recipientEmail) => {
         const name = recipientName || '[Recipient Name]'
         const email = recipientEmail || '[Recipient Email]'
-        
+
         switch (templateId) {
             case 'welcome':
                 return {
@@ -402,10 +402,10 @@ export default function Settings() {
     const handleSelectRecipient = (recipient) => {
         setSelectedRecipient(recipient)
         setRecipientSearch(recipient.name || recipient.bus_name || '')
-        
+
         const rName = recipient.name || recipient.bus_name || ''
         const rEmail = recipient.email || ''
-        
+
         setMailForm(prev => {
             const updated = {
                 ...prev,
@@ -673,7 +673,7 @@ export default function Settings() {
     const handleStatusToggle = async (banner) => {
         const newStatus = banner.status == 1 ? 0 : 1
         setSubmitting(true)
-        
+
         const formData = new FormData()
         formData.append('id', banner.id)
         formData.append('title', banner.title)
@@ -948,7 +948,7 @@ export default function Settings() {
 
     return (
         <>
-            
+
             {/* Navigation Tabs */}
             <div style={{ display: 'flex', gap: 16, borderBottom: '1px solid var(--border)', marginBottom: 24 }}>
                 <button
@@ -1565,7 +1565,7 @@ export default function Settings() {
                             <div className="form-group-classic">
                                 <label className="form-label-classic">
                                     <i className="fas fa-file-alt" style={{ marginRight: 6, color: 'var(--primary)' }}></i>
-                                     Draft Template (Optional)
+                                    Draft Template (Optional)
                                 </label>
                                 <select
                                     className="form-select"
@@ -2234,13 +2234,13 @@ export default function Settings() {
                                             </span>
                                         </div>
                                     </div>
-                                    
+
                                     <hr style={{ border: 'none', borderTop: '1px solid var(--border)', margin: '16px 0' }} />
 
-                                    <div 
+                                    <div
                                         className="quill-content-preview text-content"
-                                        style={{ 
-                                            lineHeight: 1.6, 
+                                        style={{
+                                            lineHeight: 1.6,
                                             color: '#334155',
                                             fontSize: '0.95rem'
                                         }}

@@ -1,11 +1,13 @@
 import { useState, useMemo, useEffect } from 'react'
-import { NavLink, useNavigate, useParams } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
 import { useJsApiLoader } from '@react-google-maps/api'
 import { toast } from 'react-hot-toast'
 
-import PhoneNumberField from '../components/PhoneNumberField'
-import CorporateAddressField from '../components/CorporateAddressField'
-import API from '../api.js';
+import PhoneNumberField from '../../components/PhoneNumberField'
+import CorporateAddressField from '../../components/CorporateAddressField'
+import API from '../../api.js';
+import { useMerchantFormStore } from '../../store/useMerchantFormStore.js'
+import SalePersonHeader from '../../components/SalePersonHeader';
 
 const libraries = ['places']
 
@@ -20,39 +22,10 @@ const defaultCenter = {
     lng: 80.2707
 }
 
-const initialForm = {
-    profilePhoto: null,
-    businessLogo: null,
-    kycDocument: null,
-    ownerName: '',
-    mer_id: '',
-    businessName: '',
-    serviceProvided: '',
-    category: '',
-    email: '',
-    phone: '',
-    country: '',
-    password: '',
-    taxNumber: '',
-    address: '',
-    city: '',
-    state: '',
-    zipcode: '',
-    latitude: '',
-    longitude: '',
-    countryCode: '',
-    status: '1',
-    description: '',
-}
-
-export default function EditMerchant() {
-    const { id } = useParams()
-    const [form, setForm] = useState(initialForm)
-    const [profilePreview, setProfilePreview] = useState('')
-    const [logoPreview, setLogoPreview] = useState('')
+export default function AddMerchant() {
+    const { form, profilePreview, logoPreview, setFormFields, setPreviews, resetForm } = useMerchantFormStore()
     const [autocomplete, setAutocomplete] = useState(null)
     const [categories, setCategories] = useState([])
-    const [loading, setLoading] = useState(true)
     const [errors, setErrors] = useState({})
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [showPassword, setShowPassword] = useState(false)
@@ -88,6 +61,14 @@ export default function EditMerchant() {
     }
 
     const navigate = useNavigate()
+    useEffect(() => {
+        const token = localStorage.getItem("sale_access_token");
+        if (!token || token === "null" || token === "undefined") {
+            localStorage.removeItem("sale_access_token");
+            localStorage.removeItem("saleperson_data");
+            navigate("/saleperson-login");
+        }
+    }, [navigate]);
     const { isLoaded: isMapLoaded, loadError: mapLoadError } = useJsApiLoader({
         id: 'dealora-google-maps',
         googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
@@ -103,11 +84,7 @@ export default function EditMerchant() {
 
     const handleChange = (event) => {
         const { name, value } = event.target
-
-        setForm((prev) => ({
-            ...prev,
-            [name]: value
-        }))
+        setFormFields({ [name]: value })
         if (errors[name]) {
             setErrors((prev) => {
                 const updated = { ...prev }
@@ -124,28 +101,24 @@ export default function EditMerchant() {
 
         const file = files[0]
 
-        setForm((prev) => ({
-            ...prev,
-            [name]: file
-        }))
+        setFormFields({ [name]: file })
 
         if (name === 'profilePhoto') {
-            setProfilePreview(URL.createObjectURL(file))
+            setPreviews({ profilePreview: URL.createObjectURL(file) })
         }
 
         if (name === 'businessLogo') {
-            setLogoPreview(URL.createObjectURL(file))
+            setPreviews({ logoPreview: URL.createObjectURL(file) })
         }
     }
 
     const updateLocationDetails = (lat, lng, placeName = '', countryName = '') => {
         if (!window.google?.maps?.Geocoder) {
-            setForm((prev) => ({
-                ...prev,
+            setFormFields({
                 latitude: String(lat),
                 longitude: String(lng),
-                country: countryName || prev.country
-            }))
+                country: countryName || form.country
+            })
             setErrors((prev) => {
                 const updated = { ...prev }
                 delete updated.latitude
@@ -159,13 +132,12 @@ export default function EditMerchant() {
 
         geocoder.geocode({ location: { lat, lng } }, (results, status) => {
             if (status !== 'OK' || !results || !results[0]) {
-                setForm((prev) => ({
-                    ...prev,
+                setFormFields({
                     latitude: String(lat),
                     longitude: String(lng),
-                    address: placeName || prev.address,
-                    country: countryName || prev.country
-                }))
+                    address: placeName || form.address,
+                    country: countryName || form.country
+                })
                 setErrors((prev) => {
                     const updated = { ...prev }
                     delete updated.latitude
@@ -190,16 +162,15 @@ export default function EditMerchant() {
                 if (types.includes('postal_code')) zipcode = component.long_name
             })
 
-            setForm((prev) => ({
-                ...prev,
-                address: place.formatted_address || placeName || prev.address,
+            setFormFields({
+                address: place.formatted_address || placeName || form.address,
                 city,
                 state,
                 country,
                 zipcode,
                 latitude: String(lat),
                 longitude: String(lng)
-            }))
+            })
             setErrors((prev) => {
                 const updated = { ...prev }
                 if (city) delete updated.city
@@ -266,56 +237,6 @@ export default function EditMerchant() {
         updateLocationDetails(lat, lng)
     }
 
-    // Fetch merchant data for editing
-    const fetchMerchant = async () => {
-        try {
-            const response = await API.post('admin/merchant-fetch-id', { id: id })
-
-            if (response.data.status === 1) {
-                const merchant = response.data.data
-
-                // Pre-fill form with existing data
-                setForm({
-                    profilePhoto: null,
-                    businessLogo: null,
-                    kycDocument: null,
-                    ownerName: merchant.name || '',
-                    mer_id: merchant.id || '',
-                    businessName: merchant.bus_name || '',
-                    serviceProvided: merchant.bus_cat || '',
-                    category: merchant.cat_id?.toString() || '',
-                    email: merchant.email || '',
-                    phone: merchant.phone || '',
-                    country: merchant.country || '',
-                    password: '', // Don't pre-fill password for security
-                    taxNumber: merchant.gst_no || '',
-                    address: merchant.address || '',
-                    city: merchant.city || '',
-                    state: merchant.state || '',
-                    zipcode: merchant.zip_code || '',
-                    latitude: merchant.lat || '',
-                    longitude: merchant.lon || '',
-                    countryCode: merchant.country_code || '',
-                    status: merchant.status?.toString() ?? '1',
-                    description: merchant.description || '',
-                })
-
-                // Set image previews from existing URLs
-                if (merchant.profile_image) {
-                    setProfilePreview(merchant.profile_image)
-                }
-                if (merchant.brand_image) {
-                    setLogoPreview(merchant.brand_image)
-                }
-            }
-        } catch (err) {
-            console.log("Fetch Error:", err.response?.data || err.message)
-            toast.error('Failed to load merchant data')
-        } finally {
-            setLoading(false)
-        }
-    }
-
     const handleSubmit = async (event) => {
         event.preventDefault()
 
@@ -343,7 +264,7 @@ export default function EditMerchant() {
             return
         }
 
-        // if (form.password && form.password.length < 6) {
+        // if (!form.password || form.password.length < 6) {
         //     toast.error('Password must be at least 6 characters long')
         //     highlightFieldError('input[name="password"]')
         //     return
@@ -355,67 +276,152 @@ export default function EditMerchant() {
             return
         }
 
+
+
         try {
             setIsSubmitting(true)
             const formData = new FormData()
 
-            formData.append('mer_id', id)
-            formData.append('name', form.ownerName)
-            formData.append('bus_name', form.businessName)
-            formData.append('bus_cat', form.serviceProvided)
-            formData.append('cat_id', form.category)
-            formData.append('email', form.email)
-            formData.append('phone', form.phone)
-            formData.append('country_code', form.countryCode)
-            formData.append('gst_no', form.taxNumber)
-            formData.append('address', form.address)
-            formData.append('city', form.city)
-            formData.append('state', form.state)
-            formData.append('country', form.country)
-            formData.append('zip_code', form.zipcode)
-            formData.append('lat', form.latitude)
-            formData.append('lon', form.longitude)
-            formData.append('status', form.status)
-            formData.append('description', form.description || '')
+            const salesPersonData = JSON.parse(localStorage.getItem("saleperson_data")) || {};
+            const salesPersonCode = salesPersonData.code || "";
+            formData.append('code', salesPersonCode);
+            formData.append('passlock', salesPersonCode);
+            formData.append('status', 0);
 
-            // Only include password if user entered a new one
-            if (form.password) {
-                formData.append('password', form.password)
+            formData.append(
+                'name',
+                form.ownerName
+            )
+
+            formData.append(
+                'bus_name',
+                form.businessName
+            )
+
+            formData.append(
+                'bus_cat',
+                form.serviceProvided
+            )
+
+            formData.append(
+                'cat_id',
+                form.category
+            )
+
+            formData.append(
+                'email',
+                form.email
+            )
+
+            formData.append(
+                'phone',
+                form.phone
+            )
+
+            formData.append(
+                'country_code',
+                form.countryCode
+            )
+
+            formData.append(
+                'password',
+                form.password
+            )
+
+            formData.append(
+                'gst_no',
+                form.taxNumber
+            )
+
+            formData.append(
+                'address',
+                form.address
+            )
+
+            formData.append(
+                'city',
+                form.city
+            )
+            formData.append(
+                'state',
+                form.state
+            )
+            formData.append(
+                'country',
+                form.country
+            )
+
+            formData.append(
+                'zip_code',
+                form.zipcode
+            )
+
+            formData.append(
+                'lat',
+                form.latitude
+            )
+
+            formData.append(
+                'lon',
+                form.longitude
+            )
+
+            if (form.profilePhoto) {
+                formData.append(
+                    'profile_image',
+                    form.profilePhoto
+                )
             }
 
-            // Only append files if new files are selected
-            if (form.profilePhoto && typeof form.profilePhoto !== 'string') {
-                formData.append('profile_image', form.profilePhoto)
+            if (form.businessLogo) {
+                formData.append(
+                    'brand_image',
+                    form.businessLogo
+                )
             }
 
-            if (form.businessLogo && typeof form.businessLogo !== 'string') {
-                formData.append('brand_image', form.businessLogo)
+            if (form.kycDocument) {
+                formData.append(
+                    'document',
+                    form.kycDocument
+                )
             }
 
-            if (form.kycDocument && typeof form.kycDocument !== 'string') {
-                formData.append('document', form.kycDocument)
-            }
-
-            const response = await API.post('/admin/merchant/register', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
+            formData.append(
+                'description',
+                form.description || ''
+            )
+            console.log('PHONE:', form.phone)
+            console.log('COUNTRY CODE:', form.countryCode)
+            const response = await API.post(
+                '/admin/merchant/register',
+                formData,
+                {
+                    headers: {
+                        'Content-Type':
+                            'multipart/form-data'
+                    }
                 }
-            })
+            )
 
             const data = response.data || {}
 
+            console.log('Merchant Response:', data)
+
             if (data.status === 1 || data.success === true) {
-                toast.success(data.message || 'Merchant updated successfully')
-                setTimeout(() => navigate('/merchants'), 800)
+                toast.success(data.message || 'Merchant added successfully')
+                resetForm()
+                setTimeout(() => navigate('/saleperson-dashboard'), 800)
             } else {
-                const errMsg = data.message || 'Merchant update failed'
+                const errMsg = data.message || 'Merchant registration failed'
                 toast.error(errMsg)
                 focusFieldByErrorMessage(errMsg)
-            }    
-  
+            }
+
         } catch (error) {
-            const apiMessage = error?.response?.data?.message || 'Merchant update failed'
-            console.log('Merchant Update Error:', error.response?.data || error)
+            const apiMessage = error?.response?.data?.message || 'Merchant registration failed'
+
+            console.log('Merchant Add Error:', error.response?.data || error)
             toast.error(apiMessage)
             focusFieldByErrorMessage(apiMessage)
         } finally {
@@ -426,29 +432,38 @@ export default function EditMerchant() {
     useEffect(() => {
         const fetchCategories = async () => {
             try {
-                const response = await API.get('api/category-list')
-                setCategories(response.data.data || response.data)
+                const response = await API.get(
+                    'api/category-list'
+                )
+
+                setCategories(
+                    response.data.data || response.data
+                )
             } catch (error) {
-                console.log('Category Fetch Error:', error.response?.data || error)
+                console.log(
+                    'Category Fetch Error:',
+                    error.response?.data || error
+                )
             }
         }
 
         fetchCategories()
-        fetchMerchant()
-    }, [id])
-
-    if (loading) {
-        return (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
-                <div className="spinner"></div>
-                <p>Loading merchant data...</p>
-            </div>
-        )
-    }
+    }, [])
 
     return (
-        <>
-            
+        <div className="sp-dash-container">
+            <style>{`
+                .sp-dash-container {
+                    min-height: 100vh;
+                    background: var(--firstloop-bg-primary);
+                    font-family: var(--font-primary);
+                    color: var(--text-primary);
+                }
+            `}</style>
+
+            <SalePersonHeader />
+
+            <div style={{ padding: '40px 20px' }}>
             {mapLoadError && (
                 <div className="card" style={{ maxWidth: 1400, margin: '0 auto' }}>
                     Failed to load Google Maps. Please check the Maps API key.
@@ -484,20 +499,20 @@ export default function EditMerchant() {
                                 marginBottom: 8
                             }}
                         >
-                            <NavLink to="/merchants" style={{ color: 'var(--primary)' }}>
-                                Merchants
+                            <NavLink to="/saleperson-dashboard" style={{ color: 'var(--firstloop-primary)' }}>
+                                Dashboard
                             </NavLink>
                             <i className="fas fa-chevron-right" style={{ fontSize: '0.7rem' }} />
-                            <span>Edit Merchant</span>
+                            <span>Register New Merchant</span>
                         </div>
 
                         <div className="flex-between" style={{ gap: 20, flexWrap: 'wrap' }}>
                             <button
                                 type="button"
                                 className="btn btn-secondary"
-                                onClick={() => navigate('/merchants')}
+                                onClick={() => navigate('/saleperson-dashboard')}
                             >
-                                <i className="fas fa-arrow-left" /> Back to Merchants
+                                <i className="fas fa-arrow-left" /> Back to Dashboard
                             </button>
                         </div>
                     </div>
@@ -507,25 +522,25 @@ export default function EditMerchant() {
                             className="form-grid-2col"
                             style={{ marginBottom: 24 }}
                         >
-                            <article className="upload-card">
-                                <div className="upload-card-icon">
+                            <article className="firstloop-upload-card">
+                                <div className="firstloop-upload-card-icon">
                                     {
                                         profilePreview
-                                            ? <img src={profilePreview} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                            ? <img src={profilePreview} alt="Profile" />
                                             : <i className="fas fa-user" />
                                     }
                                 </div>
 
-                                <div className="upload-card-body">
-                                    <h4 className="upload-card-title">
+                                <div className="firstloop-upload-card-body">
+                                    <h4 className="firstloop-upload-card-title">
                                         Merchant Profile Photo
                                     </h4>
 
-                                    <p className="upload-card-text">
+                                    <p className="firstloop-upload-card-text">
                                         Use a clear portrait or logo image to help identify the merchant profile.
                                     </p>
 
-                                    <label className="custom-file-upload">
+                                    <label className="firstloop-custom-file-upload">
                                         <input
                                             type="file"
                                             name="profilePhoto"
@@ -537,31 +552,31 @@ export default function EditMerchant() {
                                         <i className="fas fa-cloud-upload-alt" />
 
                                         <span>
-                                            {form.profilePhoto && typeof form.profilePhoto === 'object' ? form.profilePhoto.name : 'Upload New Profile Photo'}
+                                            Upload Profile Photo
                                         </span>
                                     </label>
 
-                                    <span className="upload-note">
-                                        JPG, PNG up to 1MB. Leave empty to keep current image.
+                                    <span className="firstloop-upload-note">
+                                        JPG, PNG up to 1MB
                                     </span>
                                 </div>
                             </article>
 
-                            <article className="upload-card">
-                                <div className="upload-card-icon upload-card-icon--square">
+                            <article className="firstloop-upload-card">
+                                <div className="firstloop-upload-card-icon firstloop-upload-card-icon--square">
                                     {
                                         logoPreview
-                                            ? <img src={logoPreview} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                            ? <img src={logoPreview} alt="Logo" />
                                             : <i className="fas fa-store" />
                                     }
                                 </div>
 
-                                <div className="upload-card-body">
-                                    <h4 className="upload-card-title">
+                                <div className="firstloop-upload-card-body">
+                                    <h4 className="firstloop-upload-card-title">
                                         Business Brand Logo
                                     </h4>
 
-                                    <p className="upload-card-text">
+                                    <p className="firstloop-upload-card-text">
                                         Add the brand logo that will appear on merchant-facing pages and reports.
                                     </p>
 
@@ -577,12 +592,12 @@ export default function EditMerchant() {
                                         <i className="fas fa-cloud-upload-alt" />
 
                                         <span>
-                                            {form.businessLogo && typeof form.businessLogo === 'object' ? form.businessLogo.name : 'Upload New Brand Logo'}
+                                            Upload Brand Logo
                                         </span>
                                     </label>
 
                                     <span className="upload-note">
-                                        JPG, PNG up to 1MB. Leave empty to keep current image.
+                                        JPG, PNG up to 1MB
                                     </span>
                                 </div>
                             </article>
@@ -638,11 +653,10 @@ export default function EditMerchant() {
                                 countryCode={form.countryCode}
                                 required={true}
                                 onChange={(value, countryCode) =>
-                                    setForm((prev) => ({
-                                        ...prev,
+                                    setFormFields({
                                         phone: value || '',
                                         countryCode: countryCode || ''
-                                    }))
+                                    })
                                 }
                             />
 
@@ -654,11 +668,12 @@ export default function EditMerchant() {
                                     onChange={handleChange}
                                     className="form-control"
                                     placeholder=" "
+                                    required
                                     style={{ paddingRight: '40px' }}
                                 />
 
                                 <label className="form-label">
-                                    New Password (leave blank to keep current)
+                                    Account Password <span style={{ color: '#ef4444' }}>*</span>
                                 </label>
 
                                 <button
@@ -756,56 +771,17 @@ export default function EditMerchant() {
                                 </select>
                             </div>
 
-                            <div className="form-group-classic">
-                                <label className="form-label-classic">
-                                    Status
-                                </label>
-
-                                <select
-                                    name="status"
-                                    value={form.status}
-                                    onChange={handleChange}
-                                    className="form-select"
-                                    required
-                                >
-                                    <option value="1">
-                                        Active
-                                    </option>
-
-                                    <option value="0">
-                                        Inactive
-                                    </option>
-                                </select>
-                            </div>
-
-                            {/* <div className="form-group">
-                                <input
-                                    name="taxNumber"
-                                    type="text"
-                                    value={form.taxNumber}
-                                    onChange={handleChange}
-                                    className="form-control"
-                                    placeholder=" "
-                                />
-
-                                <label className="form-label">
-                                    GST / Tax Number
-                                </label>
-                            </div> */}
-                        </div>
-
-                        <div className="form-row">
-                            <article className="upload-card upload-card--documents" style={{ width: '100%' }}>
-                                <div className="upload-card-icon upload-card-icon--square">
+                            <article className="firstloop-upload-card firstloop-upload-card--documents">
+                                <div className="firstloop-upload-card-icon firstloop-upload-card-icon--square">
                                     <i className="fas fa-file-alt" />
                                 </div>
 
-                                <div className="upload-card-body">
-                                    <h4 className="upload-card-title">
-                                        Upload Supporting Documents
-                                    </h4>
+                                <div className="firstloop-upload-card-body">
+                                     <h4 className="firstloop-upload-card-title">
+                                         Upload Supporting Documents
+                                     </h4>
 
-                                    <p className="upload-card-text">
+                                    <p className="firstloop-upload-card-text">
                                         Upload GST certificate, business license, ID proof, or verification documents.
                                     </p>
 
@@ -821,19 +797,32 @@ export default function EditMerchant() {
                                         <i className="fas fa-cloud-upload-alt" />
 
                                         <span>
-                                            {form.kycDocument && typeof form.kycDocument === 'object'
-                                                ? form.kycDocument.name
-                                                : 'Upload New Document'}
+                                            {
+                                                form.kycDocument
+                                                    ? form.kycDocument.name
+                                                     : 'Choose Document'
+                                            }
                                         </span>
                                     </label>
 
+                                    {
+                                        form.kycDocument && (
+                                            <div className="document-upload-success">
+                                                <i className="fas fa-check-circle"></i>
+                                                <span>
+                                                    Document uploaded successfully
+                                                </span>
+                                            </div>
+                                        )
+                                    }
+
                                     <span className="upload-note">
-                                        PDF, JPG, PNG up to 1MB. Leave empty to keep current document.
+                                        PDF, JPG, PNG up to 1MB
                                     </span>
                                 </div>
                             </article>
                         </div>
-
+                     
                         <div style={{ marginTop: 18, width: '100%' }}>
                             <div className="form-group-classic">
                                 <label className="form-label-classic">
@@ -849,7 +838,6 @@ export default function EditMerchant() {
                                 />
                             </div>
                         </div>
-
                         <div
                             style={{
                                 fontWeight: 700,
@@ -892,7 +880,7 @@ export default function EditMerchant() {
                             <button
                                 type="button"
                                 className="btn btn-secondary"
-                                onClick={() => navigate('/merchants')}
+                                onClick={() => navigate('/saleperson-dashboard')}
                             >
                                 Cancel
                             </button>
@@ -902,12 +890,24 @@ export default function EditMerchant() {
                                 className="btn btn-primary"
                                 disabled={isSubmitting}
                             >
-                                {isSubmitting ? 'Saving...' : 'Update Merchant'}
+                                {isSubmitting ? 'Saving...' : 'Save & Activate'}
                             </button>
                         </div>
                     </form>
                 </div>
             )}
-        </>
+            </div>
+
+            <footer style={{
+                textAlign: 'center',
+                padding: '24px 0 40px',
+                fontSize: '0.78rem',
+                color: 'var(--text-muted)',
+                borderTop: '1px solid rgba(14, 136, 184, 0.08)',
+                marginTop: '40px'
+            }}>
+                <span>&copy; 2026 Minsway Solutions Pvt Ltd. All rights reserved.</span>
+            </footer>
+        </div>
     )
 }

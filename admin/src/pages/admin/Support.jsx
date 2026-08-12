@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'react-hot-toast'
-import API from '../api.js'
+import API from '../../api.js'
 
 const STATUS_MAP = {
     0: { label: 'Open', badge: 'pending' },
@@ -126,7 +126,7 @@ export default function Support() {
     const endCount = Math.min(page * PAGE_SIZE, filtered.length)
     const pageNumbers = Array.from({ length: totalPages }, (_, index) => index + 1)
 
-    const openTickets  = tickets.filter((t) => Number(t.status) === 0).length
+    const openTickets = tickets.filter((t) => Number(t.status) === 0).length
     const resolvedTickets = tickets.filter((t) => Number(t.status) === 1).length
     const closedTickets = tickets.filter((t) => Number(t.status) === 2).length
 

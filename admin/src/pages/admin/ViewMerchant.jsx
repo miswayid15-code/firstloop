@@ -8,10 +8,10 @@ import {
 import { useJsApiLoader } from '@react-google-maps/api'
 import { toast } from 'react-hot-toast'
 
-import ConfirmDialog from '../components/ConfirmDialog.jsx'
-import PhoneNumberField from '../components/PhoneNumberField'
-import CorporateAddressField from '../components/CorporateAddressField'
-import API from '../api.js';
+import ConfirmDialog from '../../components/ConfirmDialog.jsx'
+import PhoneNumberField from '../../components/PhoneNumberField.jsx'
+import CorporateAddressField from '../../components/CorporateAddressField.jsx'
+import API from '../../api.js';
 
 const BRANCHES_PER_PAGE = 6
 const COUPONS_PER_PAGE = 5
@@ -1859,7 +1859,7 @@ export default function ViewMerchant() {
             formData.append('timings', JSON.stringify(addBranchForm.timings || []))
             formData.append('visibility', String(addBranchForm.visibility !== undefined ? addBranchForm.visibility : 0))
             formData.append('age_group', addBranchForm.age_group || 'All Age')
-            
+
             const addCountryIsoVal = getCountryIso(addBranchForm.country) || addBranchForm.country_iso || ''
             formData.append('country_iso', addCountryIsoVal.toUpperCase())
             formData.append('receptionist_id', addBranchForm.receptionist_id || '')
@@ -2078,7 +2078,7 @@ export default function ViewMerchant() {
             formData.append('timings', JSON.stringify(editBranchForm.timings || []))
             formData.append('visibility', String(editBranchForm.visibility !== undefined ? editBranchForm.visibility : 0))
             formData.append('age_group', editBranchForm.age_group || 'All Age')
-            
+
             const editCountryIsoVal = getCountryIso(editBranchForm.country) || editBranchForm.country_iso || ''
             formData.append('country_iso', editCountryIsoVal.toUpperCase())
 
@@ -3999,12 +3999,12 @@ export default function ViewMerchant() {
                                     </td>
                                 </tr>
                             ))
-                            
+
                         ) : unassignedReceptionists.length ? (
                             unassignedReceptionists.map((receptionist) => (
-                                
+
                                 <tr key={receptionist.id}>
-                                    
+
                                     <td>
                                         <div className="table-cell-profile">
                                             <div className="cell-avatar">
@@ -4046,7 +4046,7 @@ export default function ViewMerchant() {
                                     <td>
                                         {getReceptionistPhone(receptionist)}
                                     </td>
-                                    
+
                                     <td>
                                         <span
                                             className={`badge ${receptionist.status == 0
@@ -4535,7 +4535,7 @@ export default function ViewMerchant() {
                                     <label className="form-label">Corporate Email</label>
                                 </div>
 
-                                <PhoneNumberField 
+                                <PhoneNumberField
                                     value={addReceptionistForm.phone}
                                     countryCode={addReceptionistForm.country_code}
                                     required={true}
@@ -5789,7 +5789,7 @@ export default function ViewMerchant() {
                                             country_code: codeVal || ''
                                         }))
                                     }
-                                    // required={true}
+                                // required={true}
                                 />
 
                                 <div className="form-group-classic" style={{ width: '100%' }}>

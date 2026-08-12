@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { NavLink, useNavigate, useParams } from 'react-router-dom'
-import API from '../api.js'
-import { db } from "../firebase";
+import API from '../../api.js'
+import { db } from "../../firebase.js";
 import {
     collection,
     query,
@@ -164,7 +164,7 @@ function RoleBadge({ senderType }) {
 }
 
 function ConversationItem({ conv, isActive, onClick }) {
-    const name = `${conv.customerName || conv.customerId ||''}`
+    const name = `${conv.customerName || conv.customerId || ''}`
     return (
         <div className={`bch-conv-item${isActive ? ' active' : ''}`} onClick={onClick}>
             <div style={{ position: 'relative', flexShrink: 0 }}>
@@ -501,7 +501,7 @@ export default function BranchChat() {
 
     return (
         <>
-                        <style>{`
+            <style>{`
                 /* ─── layout ─── */
                 .bch-page{display:flex;flex-direction:column;height:calc(100vh - 118px);min-height:540px}
                 .bch-shell{display:flex;flex:1;border-radius:20px;overflow:hidden;
@@ -710,12 +710,12 @@ export default function BranchChat() {
                             {/* Header */}
                             <div className="bch-panel-hdr">
                                 <Avatar
-                                    name={`${activeConv.customerName ||activeConv.customerId || ''}`}
+                                    name={`${activeConv.customerName || activeConv.customerId || ''}`}
                                     size={42}
                                 />
 
                                 <div className="bch-panel-name">
-                                    {activeConv.customerName ||activeConv.customerId || ''}
+                                    {activeConv.customerName || activeConv.customerId || ''}
                                 </div>
                                 <div className="bch-panel-actions">
                                     <button className="bch-icon-btn" title="Call" id="bch-call-btn">

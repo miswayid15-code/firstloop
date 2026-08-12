@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
-import API from '../api.js'
-import DecisionDialog from '../components/DecisionDialog.jsx'
+import API from '../../api.js'
+import DecisionDialog from '../../components/DecisionDialog.jsx'
 
 const getAppointmentStatus = (status) => {
     if (status === 1 || status === '1') return 'Approved'
@@ -78,7 +78,7 @@ export default function Appointments() {
                 })
 
                 setAppointments(mapped)
-            } 
+            }
             // else {
             //     setAppointments([])
             //     toast.error(data.message || 'Failed to load appointments')
@@ -218,7 +218,7 @@ export default function Appointments() {
 
     return (
         <>
-            
+
             <div
                 className="flex-between"
                 style={{

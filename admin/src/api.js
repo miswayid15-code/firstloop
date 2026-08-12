@@ -12,35 +12,42 @@ const API = axios.create({
 });
 
 const logoutAndRedirect = (message) => {
-    localStorage.clear();
-    toast.error(message || "Session expired. Please login again.");
-    setTimeout(() => {
-        window.location.href = "/admin";
-    }, 1500);
+    const isSalePerson = window.location.pathname.includes("saleperson");
+    if (isSalePerson) {
+        localStorage.removeItem("sale_access_token");
+        localStorage.removeItem("sale_refresh_token");
+        localStorage.removeItem("saleperson_data");
+        toast.error(message || "Session expired. Please login again.");
+        setTimeout(() => {
+            window.location.href = "/admin/saleperson-login";
+        }, 1500);
+    } else {
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("admin_token");
+        localStorage.removeItem("refresh_token");
+        localStorage.removeItem("admin_data");
+        toast.error(message || "Session expired. Please login again.");
+        setTimeout(() => {
+            window.location.href = "/admin";
+        }, 1500);
+    }
 };
 
 // Request Interceptor
 API.interceptors.request.use(
-
     (config) => {
-
-        const accessToken =
-            localStorage.getItem("access_token") ||
-            localStorage.getItem("admin_token");
+        const isSalePerson = window.location.pathname.includes("saleperson");
+        const accessToken = isSalePerson
+            ? (localStorage.getItem("sale_access_token") || localStorage.getItem("access_token") || localStorage.getItem("admin_token"))
+            : (localStorage.getItem("access_token") || localStorage.getItem("admin_token") || localStorage.getItem("sale_access_token"));
 
         if (accessToken && accessToken !== "null" && accessToken !== "undefined") {
-
-            config.headers.Authorization =
-                `Bearer ${accessToken}`;
-
+            config.headers.Authorization = `Bearer ${accessToken}`;
         }
 
         return config;
-
     },
-
     (error) => Promise.reject(error)
-
 );
 
 // Response Interceptor
@@ -61,15 +68,14 @@ API.interceptors.response.use(
 
             try {
 
-                const refreshToken =
-                    localStorage.getItem("refresh_token");
+                const isSalePerson = window.location.pathname.includes("saleperson");
+                const refreshToken = isSalePerson
+                    ? localStorage.getItem("sale_refresh_token")
+                    : localStorage.getItem("refresh_token");
 
                 if (!refreshToken) {
-
                     logoutAndRedirect("Session expired. Please login again.");
-
                     return Promise.reject(error);
-
                 }
 
                 const refreshResponse = await axios.post(
@@ -82,38 +88,28 @@ API.interceptors.response.use(
                     }
                 );
 
-                const refreshData =
-                    refreshResponse.data;
+                const refreshData = refreshResponse.data;
 
                 if (refreshData.status === 1) {
-
-                    localStorage.setItem(
-                        "access_token",
-                        refreshData.access_token
-                    );
-
-                    if (refreshData.refresh_token) {
-
-                        localStorage.setItem(
-                            "refresh_token",
-                            refreshData.refresh_token
-                        );
-
+                    if (isSalePerson) {
+                        localStorage.setItem("sale_access_token", refreshData.access_token);
+                        if (refreshData.refresh_token) {
+                            localStorage.setItem("sale_refresh_token", refreshData.refresh_token);
+                        }
+                    } else {
+                        localStorage.setItem("access_token", refreshData.access_token);
+                        if (refreshData.refresh_token) {
+                            localStorage.setItem("refresh_token", refreshData.refresh_token);
+                        }
                     }
 
-                    originalRequest.headers.Authorization =
-                        `Bearer ${refreshData.access_token}`;
-
+                    originalRequest.headers.Authorization = `Bearer ${refreshData.access_token}`;
                     return API(originalRequest);
-
                 }
 
                 logoutAndRedirect("Session expired. Please login again.");
-
             } catch (err) {
-
                 logoutAndRedirect("Session expired. Please login again.");
-
                 return Promise.reject(err);
 
             }

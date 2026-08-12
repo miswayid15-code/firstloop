@@ -3,10 +3,10 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { useJsApiLoader } from '@react-google-maps/api'
 import { toast } from 'react-hot-toast'
 
-import PhoneNumberField from '../components/PhoneNumberField'
-import CorporateAddressField from '../components/CorporateAddressField'
-import API from '../api.js';
-import { useMerchantFormStore } from '../store/useMerchantFormStore.js'
+import PhoneNumberField from '../../components/PhoneNumberField.jsx'
+import CorporateAddressField from '../../components/CorporateAddressField.jsx'
+import API from '../../api.js';
+import { useMerchantFormStore } from '../../store/useMerchantFormStore.js'
 
 const libraries = ['places']
 
@@ -43,7 +43,7 @@ export default function AddMerchant() {
     const focusFieldByErrorMessage = (message) => {
         if (!message) return;
         const msg = message.toLowerCase();
-        
+
         if (msg.includes('phone') || msg.includes('mobile')) {
             highlightFieldError('input[name="phone"]');
         } else if (msg.includes('email')) {
@@ -750,9 +750,9 @@ export default function AddMerchant() {
                                 </div>
 
                                 <div className="upload-card-body">
-                                     <h4 className="upload-card-title">
-                                         Upload Supporting Documents
-                                     </h4>
+                                    <h4 className="upload-card-title">
+                                        Upload Supporting Documents
+                                    </h4>
 
                                     <p className="upload-card-text">
                                         Upload GST certificate, business license, ID proof, or verification documents.
@@ -773,7 +773,7 @@ export default function AddMerchant() {
                                             {
                                                 form.kycDocument
                                                     ? form.kycDocument.name
-                                                     : 'Choose Document'
+                                                    : 'Choose Document'
                                             }
                                         </span>
                                     </label>
@@ -795,7 +795,7 @@ export default function AddMerchant() {
                                 </div>
                             </article>
                         </div>
-                     
+
                         <div style={{ marginTop: 18, width: '100%' }}>
                             <div className="form-group-classic">
                                 <label className="form-label-classic">

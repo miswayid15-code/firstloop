@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import API from '../api.js'
+import API from '../../api.js'
 
 // DonutChart component styled exactly like merchant-report branch
 function DonutChart({ segments = [], size = 120, onSliceClick = null, activeId = null, centerLabel = "Total" }) {
@@ -84,12 +84,12 @@ export default function CustomerReports() {
     const [showExport, setShowExport] = useState(false)
     const [customerReportData, setCustomerReportData] = useState([])
     const [loadingCustomerReport, setLoadingCustomerReport] = useState(false)
-    
+
     // Filters matching the API
     const [fromDate, setFromDate] = useState('')
     const [toDate, setToDate] = useState('')
     const [sortBy, setSortBy] = useState('newest')
-    
+
     const [customerSearch, setCustomerSearch] = useState('')
 
     // Pagination State
@@ -397,8 +397,8 @@ export default function CustomerReports() {
                                         paginatedRows.map((row) => (
                                             <tr key={row.customer_id}>
                                                 <td>
-                                                    <strong 
-                                                        style={{ cursor: 'pointer', color: 'var(--primary)', textDecoration: 'underline' }} 
+                                                    <strong
+                                                        style={{ cursor: 'pointer', color: 'var(--primary)', textDecoration: 'underline' }}
                                                         onClick={() => navigate(`/customer-report/${row.customer_id}`)}
                                                     >
                                                         {row.customer_name || 'N/A'}
@@ -444,8 +444,8 @@ export default function CustomerReports() {
                                                     </span>
                                                 </td>
                                                 <td style={{ textAlign: 'right' }}>
-                                                    <button 
-                                                        className="btn btn-icon view" 
+                                                    <button
+                                                        className="btn btn-icon view"
                                                         title="View Detailed Customer Report"
                                                         onClick={() => navigate(`/customer-report/${row.customer_id}`)}
                                                     >
@@ -645,8 +645,8 @@ export default function CustomerReports() {
                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 20 }}>
                                             {[
                                                 { label: 'Bookings', value: activePieCustomer.total_appointments || 0, icon: 'fa-calendar-check', color: '#36D1DC' },
-                                                { label: 'Coupons Used',  value: activePieCustomer.total_coupon_applied || 0,      icon: 'fa-ticket-alt',    color: '#FF4D80' },
-                                                { label: 'Total Actions', value: total,                            icon: 'fa-chart-bar',     color: color },
+                                                { label: 'Coupons Used', value: activePieCustomer.total_coupon_applied || 0, icon: 'fa-ticket-alt', color: '#FF4D80' },
+                                                { label: 'Total Actions', value: total, icon: 'fa-chart-bar', color: color },
                                             ].map(stat => (
                                                 <div
                                                     key={stat.label}
@@ -695,7 +695,7 @@ export default function CustomerReports() {
                                             </div>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                                 <i className="fas fa-info-circle" style={{ color: color, width: 16 }} />
-                                                <strong>Status:</strong> 
+                                                <strong>Status:</strong>
                                                 <span className={`badge ${activePieCustomer.status == 1 ? 'approved' : 'declined'}`} style={{ margin: 0, padding: '2px 8px', fontSize: '0.7rem' }}>
                                                     {activePieCustomer.status == 1 ? 'Active' : 'Disabled'}
                                                 </span>

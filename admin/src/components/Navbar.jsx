@@ -8,6 +8,7 @@ const navItems = [
     { to: '/dashboard', icon: 'fa-chart-pie', label: 'Dashboard' },
     { to: '/merchants', icon: 'fa-store', label: 'Merchants' },
     { to: '/customers', icon: 'fa-users', label: 'Customers' },
+     { to: '/salepersons', icon: 'fa-user-tie', label: 'Sales Persons' },
     { to: '/categories', icon: 'fa-tags', label: 'Categories' },
     { to: '/appointments', icon: 'fa-calendar-check', label: 'Appointments' },
 

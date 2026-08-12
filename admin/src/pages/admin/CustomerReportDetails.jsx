@@ -1,33 +1,24 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import API from '../api.js'
+import API from '../../api.js'
 
 // --- Helpers ---
 const apptStatusMap = {
-    0: { label: 'Pending',   color: '#F59E0B', bg: '#FEF3C7' },
-    1: { label: 'Approved',  color: '#3B82F6', bg: '#DBEAFE' },
+    0: { label: 'Pending', color: '#F59E0B', bg: '#FEF3C7' },
+    1: { label: 'Approved', color: '#3B82F6', bg: '#DBEAFE' },
     2: { label: 'Completed', color: '#10B981', bg: '#D1FAE5' },
     3: { label: 'Cancelled', color: '#EF4444', bg: '#FEE2E2' },
-    4: { label: 'Rejected',  color: '#EF4444', bg: '#FEE2E2' },
+    4: { label: 'Rejected', color: '#EF4444', bg: '#FEE2E2' },
 }
 
 const couponStatusMap = {
-    0: { label: 'Pending',  color: '#F59E0B', bg: '#FEF3C7' },
+    0: { label: 'Pending', color: '#F59E0B', bg: '#FEF3C7' },
     1: { label: 'Redeemed', color: '#10B981', bg: '#D1FAE5' },
 }
 
 function formatDateDisplay(str) {
     if (!str) return '-'
     return new Date(str).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
-}
-
-// Generate a unique color from index using HSL — infinite colors, always distinct
-function branchColor(index, opacity = null) {
-    const hue = (index * 137.508) % 360 // golden angle distribution
-    if (opacity !== null) {
-        return `hsla(${Math.round(hue)}, 65%, 52%, ${opacity})`
-    }
-    return `hsl(${Math.round(hue)}, 65%, 52%)`
 }
 
 function getPageWindow(current, total) {
@@ -156,8 +147,8 @@ function SvgMultiLineChart({ series = [] }) {
     )
 }
 
-// ----- SVG Donut Chart with click interaction -----
-function DonutChart({ segments = [], size = 120, onSliceClick = null, activeId = null, centerLabel = "Total" }) {
+// ----- SVG Donut Chart -----
+function DonutChart({ segments = [], size = 120, centerLabel = "Total" }) {
     const validSegments = segments.filter(s => s.value > 0)
 
     if (!validSegments.length) {
@@ -188,20 +179,11 @@ function DonutChart({ segments = [], size = 120, onSliceClick = null, activeId =
         const largeArc = renderingAngle > Math.PI ? 1 : 0
         const ix1 = cx + r * Math.cos(cumAngle - renderingAngle), iy1 = cy + r * Math.sin(cumAngle - renderingAngle)
         const ix2 = cx + r * Math.cos(cumAngle), iy2 = cy + r * Math.sin(cumAngle)
-        const isActive = activeId === seg.id
-        // Expand active slice outward
-        const expand = isActive ? 6 : 0
-        const midAngle = cumAngle - renderingAngle / 2
-        const dx = expand * Math.cos(midAngle)
-        const dy = expand * Math.sin(midAngle)
         return {
             ...seg,
-            path: `M ${x1 + dx} ${y1 + dy} A ${R} ${R} 0 ${largeArc} 1 ${x2 + dx} ${y2 + dy} L ${ix2 + dx} ${iy2 + dy} A ${r} ${r} 0 ${largeArc} 0 ${ix1 + dx} ${iy1 + dy} Z`,
-            isActive
+            path: `M ${x1} ${y1} A ${R} ${R} 0 ${largeArc} 1 ${x2} ${y2} L ${ix2} ${iy2} A ${r} ${r} 0 ${largeArc} 0 ${ix1} ${iy1} Z`
         }
     })
-
-    const activeSegment = arcs.find(a => a.isActive)
 
     return (
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ overflow: 'visible' }}>
@@ -210,31 +192,19 @@ function DonutChart({ segments = [], size = 120, onSliceClick = null, activeId =
                     key={i} d={a.path}
                     fill={a.color}
                     stroke="var(--bg-surface)"
-                    strokeWidth={a.isActive ? 3.5 : 2}
-                    style={{ cursor: onSliceClick ? 'pointer' : 'default', transition: 'all 0.2s ease', filter: a.isActive ? `drop-shadow(0 0 6px ${a.color}88)` : 'none' }}
-                    onClick={() => onSliceClick && onSliceClick(a.id === activeId ? null : a.id)}
+                    strokeWidth={2}
+                    style={{ transition: 'all 0.2s ease' }}
                 >
                     <title>{a.label}: {a.value}</title>
                 </path>
             ))}
-            {/* Center text */}
-            {activeSegment ? (
-                <>
-                    <text x={cx} y={cy - 6} textAnchor="middle" fontSize="14" fontWeight="800" fill={activeSegment.color}>{activeSegment.value}</text>
-                    <text x={cx} y={cy + 8} textAnchor="middle" fontSize="7.5" fill="var(--text-muted)" fontWeight="700" style={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>{activeSegment.label?.split(' ')[0]}</text>
-                </>
-            ) : (
-                <>
-                    <text x={cx} y={cy - 4} textAnchor="middle" fontSize="16" fontWeight="800" fill="var(--text-primary)">{total}</text>
-                    <text x={cx} y={cy + 10} textAnchor="middle" fontSize="7.5" fill="var(--text-muted)" fontWeight="750" style={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>{centerLabel}</text>
-                </>
-            )}
+            <text x={cx} y={cy - 4} textAnchor="middle" fontSize="14" fontWeight="800" fill="var(--text-primary)">{total}</text>
+            <text x={cx} y={cy + 10} textAnchor="middle" fontSize="7.5" fill="var(--text-muted)" fontWeight="750" style={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>{centerLabel}</text>
         </svg>
     )
 }
 
-// ===== Main Component =====
-export default function ViewMerchReport() {
+export default function CustomerReportDetails() {
     const { id } = useParams()
     const navigate = useNavigate()
 
@@ -245,180 +215,150 @@ export default function ViewMerchReport() {
     const [apptSearch, setApptSearch] = useState('')
     const [couponSearch, setCouponSearch] = useState('')
     const [activeListTab, setActiveListTab] = useState('appointments')
-    const [activePieBranchId, setActivePieBranchId] = useState(null)
-    const [pieMode, setPieMode] = useState('all') // 'all' | 'appointments' | 'coupons'
-    const [selectedGraphBranchId, setSelectedGraphBranchId] = useState('all') // 'all' | branch_id
 
     const [apptPage, setApptPage] = useState(1)
     const [couponPage, setCouponPage] = useState(1)
+    const ITEMS_PER_PAGE = 10
 
-    useEffect(() => {
-        setApptPage(1)
-    }, [apptSearch])
-
-    useEffect(() => {
-        setCouponPage(1)
-    }, [couponSearch])
-
-    useEffect(() => {
-        setApptPage(1)
-        setCouponPage(1)
-    }, [data])
-
-    const formatDateToDMY = (str) => {
-        if (!str) return ''
-        const [y, m, d] = str.split('-')
-        return `${d}-${m}-${y}`
-    }
-
-    const fetchReport = useCallback(async () => {
+    const fetchDetails = useCallback(async () => {
         setLoading(true)
         try {
             const params = {}
-            if (fromDate) params.from_date = formatDateToDMY(fromDate)
-            if (toDate) params.to_date = formatDateToDMY(toDate)
-            const res = await API.get(`admin/merchant-details-report/${id}`, { params })
-            setData(res.data?.status === 1 ? res.data.data : null)
-        } catch (err) {
-            console.error('Error fetching merchant detail report:', err)
+            if (fromDate) params.from_date = fromDate
+            if (toDate) params.to_date = toDate
+
+            const response = await API.get(`admin/customer-details-report/${id}`, { params })
+            if (response.data?.status === 1) {
+                setData(response.data.data)
+            } else {
+                setData(null)
+            }
+        } catch (error) {
+            console.error("Error fetching customer report details:", error)
             setData(null)
         } finally {
             setLoading(false)
         }
     }, [id, fromDate, toDate])
 
-    useEffect(() => { fetchReport() }, [fetchReport])
+    useEffect(() => {
+        fetchDetails()
+    }, [fetchDetails])
+
+    const handleClearFilters = () => {
+        setFromDate('')
+        setToDate('')
+    }
+
+    // Filters for lists
+    const filteredAppts = useMemo(() => {
+        if (!data?.lists?.appointments) return []
+        return data.lists.appointments.filter(appt =>
+            (appt.br_name || '').toLowerCase().includes(apptSearch.toLowerCase()) ||
+            (appt.slot || '').toLowerCase().includes(apptSearch.toLowerCase()) ||
+            (appt.id || '').toString().includes(apptSearch)
+        )
+    }, [data, apptSearch])
+
+    const filteredCoupons = useMemo(() => {
+        if (!data?.lists?.coupon_applied) return []
+        return data.lists.coupon_applied.filter(c =>
+            (c.coupon_code || '').toLowerCase().includes(couponSearch.toLowerCase()) ||
+            (c.Branch?.name || '').toLowerCase().includes(couponSearch.toLowerCase()) ||
+            (c.id || '').toString().includes(couponSearch)
+        )
+    }, [data, couponSearch])
+
+    // Paginated subsets
+    const totalApptPages = Math.ceil(filteredAppts.length / ITEMS_PER_PAGE)
+    const safeApptPage = Math.max(1, Math.min(apptPage, totalApptPages))
+    const paginatedAppts = useMemo(() => {
+        const start = (safeApptPage - 1) * ITEMS_PER_PAGE
+        return filteredAppts.slice(start, start + ITEMS_PER_PAGE)
+    }, [filteredAppts, safeApptPage])
+
+    const totalCouponPages = Math.ceil(filteredCoupons.length / ITEMS_PER_PAGE)
+    const safeCouponPage = Math.max(1, Math.min(couponPage, totalCouponPages))
+    const paginatedCoupons = useMemo(() => {
+        const start = (safeCouponPage - 1) * ITEMS_PER_PAGE
+        return filteredCoupons.slice(start, start + ITEMS_PER_PAGE)
+    }, [filteredCoupons, safeCouponPage])
 
     if (loading) {
         return (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', flexDirection: 'column', gap: 16 }}>
-                <div style={{ width: 48, height: 48, border: '4px solid var(--primary-light)', borderTopColor: 'var(--primary)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                <p style={{ color: 'var(--text-muted)', fontWeight: 500 }}>Loading merchant report...</p>
-                <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '400px', flexDirection: 'column', gap: 16 }}>
+                <i className="fas fa-spinner fa-spin" style={{ fontSize: '2.5rem', color: 'var(--primary)' }} />
+                <span style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-muted)' }}>Loading analytics report...</span>
             </div>
         )
     }
 
     if (!data) {
         return (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', flexDirection: 'column', gap: 12 }}>
-                <i className="fas fa-exclamation-circle" style={{ fontSize: '3rem', color: 'var(--text-muted)' }} />
-                <p style={{ color: 'var(--text-muted)', fontSize: '1rem', fontWeight: 500 }}>No report data found.</p>
-                <button className="btn btn-secondary" onClick={() => navigate('/merchant-reports')}>
-                    <i className="fas fa-arrow-left" /> Back to Reports
-                </button>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '400px', flexDirection: 'column', gap: 16 }}>
+                <i className="fas fa-exclamation-triangle" style={{ fontSize: '2.5rem', color: 'var(--text-muted)' }} />
+                <span style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-muted)' }}>No report data found.</span>
+                <button className="btn btn-primary" onClick={() => navigate('/customer-reports')}>Go Back</button>
             </div>
         )
     }
 
-    // --- Derived ---
-    const summaryCards = [
-        { title: 'Total Branches',     value: data.total_branches,        icon: 'fa-code-branch',   gradient: 'bg-gradient-pink' },
-        { title: 'Total Appointments', value: data.total_appointments,    icon: 'fa-calendar-check', gradient: 'bg-gradient-purple' },
-        { title: 'Coupons Offered',    value: data.total_coupons,         icon: 'fa-ticket-alt',    gradient: 'bg-gradient-blue' },
-        { title: 'Coupons Redeemed',   value: data.total_coupon_redeemed, icon: 'fa-check-double',  gradient: 'bg-gradient-orange' },
-        { title: 'Total Customers',    value: data.total_customers,       icon: 'fa-users',         gradient: 'bg-gradient-teal' },
-        { title: 'Receptionists',      value: data.total_receptionists,   icon: 'fa-user-headset',  gradient: 'bg-gradient-pink' },
-    ]
-
+    // Prep charts data
     const apptBreakdown = [
-        { label: 'Pending',   value: data.total_pending_appointments,   color: '#F59E0B' },
-        { label: 'Approved',  value: data.total_approved_appointments,  color: '#3B82F6' },
-        { label: 'Completed', value: data.total_completed_appointments, color: '#10B981' },
-        { label: 'Cancelled', value: data.total_cancelled_appointments, color: '#EF4444' },
-        { label: 'Rejected',  value: data.total_rejected_appointments,  color: '#8B5CF6' },
+        { label: 'Completed', value: data.completed_appointments || 0, color: '#10B981' },
+        { label: 'Pending', value: data.pending_appointments || 0, color: '#F59E0B' },
+        { label: 'Approved', value: data.approved_appointments || 0, color: '#3B82F6' },
+        { label: 'Cancelled', value: (data.cancelled_appointments || 0) + (data.rejected_appointments || 0), color: '#EF4444' },
     ]
 
     const couponBreakdown = [
-        { label: 'Active',   value: data.total_active_coupons,   color: '#10B981' },
-        { label: 'Inactive', value: data.total_inactive_coupons, color: '#94A3B8' },
-        { label: 'Redeemed', value: data.total_coupon_redeemed,  color: '#8E2DE2' },
+        { label: 'Redeemed', value: data.approved_coupon || 0, color: '#10B981' },
+        { label: 'Pending', value: data.pending_coupon || 0, color: '#F59E0B' },
+        { label: 'Rejected', value: data.rejected_coupon || 0, color: '#EF4444' },
     ]
 
-    // Branch pie segments — dynamic colors via HSL, filtered by pieMode
-    const branchPieSegments = (data.branch_pie || []).map((b, idx) => {
-        let val = 0
-        if (pieMode === 'all') val = b.appointment_count + b.coupon_count
-        else if (pieMode === 'appointments') val = b.appointment_count
-        else if (pieMode === 'coupons') val = b.coupon_count
-
-        return {
-            id: b.branch_id,
-            label: b.branch_name,
-            value: val,
-            color: branchColor(idx),
-            branch: b,
+    const apptSeries = [
+        {
+            label: 'Appointments',
+            color: '#36D1DC',
+            data: data.graphs?.appointments_per_day || []
         }
-    }).filter(s => s.value > 0)
+    ]
 
-    // Graph series — filtered by selectedGraphBranchId dropdown selection
-    const apptSeries = (data.graphs || [])
-        .map((b, i) => ({
-            branch_id: b.branch_id,
-            label: `${b.branch_name} (#${b.branch_id})`,
-            color: branchColor(i),
-            data: b.appointments_per_day || []
-        }))
-        .filter(s => selectedGraphBranchId === 'all' || s.branch_id == selectedGraphBranchId)
+    const couponSeries = [
+        {
+            label: 'Coupons Redeemed',
+            color: '#FF4D80',
+            data: data.graphs?.coupon_applied_per_day || []
+        }
+    ]
 
-    const couponSeries = (data.graphs || [])
-        .map((b, i) => ({
-            branch_id: b.branch_id,
-            label: `${b.branch_name} (#${b.branch_id})`,
-            color: branchColor(i),
-            data: b.coupon_applied_per_day || []
-        }))
-        .filter(s => selectedGraphBranchId === 'all' || s.branch_id == selectedGraphBranchId)
+    const summaryCards = [
+        { title: 'Appointments Booked', value: data.total_appointments, icon: 'fa-calendar-alt', gradient: 'bg-gradient-pink' },
+        { title: 'Coupons Redeemed', value: data.total_coupon_applied, icon: 'fa-ticket-alt', gradient: 'bg-gradient-purple' },
+        { title: 'Completed Visits', value: data.completed_appointments, icon: 'fa-check-circle', gradient: 'bg-gradient-blue' },
+        { title: 'Unused Coupons', value: data.pending_coupon, icon: 'fa-history', gradient: 'bg-gradient-orange' }
+    ]
 
-    const filteredAppts = (data.lists?.appointments || []).filter(a =>
-        (a.Customer?.name || '').toLowerCase().includes(apptSearch.toLowerCase()) ||
-        (a.br_name || '').toLowerCase().includes(apptSearch.toLowerCase())
-    )
-    const filteredCoupons = (data.lists?.coupon_applied || []).filter(c =>
-        (c.Customer?.name || '').toLowerCase().includes(couponSearch.toLowerCase()) ||
-        (c.coupon_code || '').toLowerCase().includes(couponSearch.toLowerCase())
-    )
-
-    const ITEMS_PER_PAGE = 10
-
-    // Appointments pagination calculations
-    const totalApptPages = Math.max(1, Math.ceil(filteredAppts.length / ITEMS_PER_PAGE))
-    const safeApptPage = Math.min(apptPage, totalApptPages)
-    const apptPageStartIndex = (safeApptPage - 1) * ITEMS_PER_PAGE
-    const paginatedAppts = filteredAppts.slice(apptPageStartIndex, apptPageStartIndex + ITEMS_PER_PAGE)
-    const apptStartCount = filteredAppts.length ? apptPageStartIndex + 1 : 0
-    const apptEndCount = Math.min(apptPageStartIndex + ITEMS_PER_PAGE, filteredAppts.length)
-
-    // Coupons pagination calculations
-    const totalCouponPages = Math.max(1, Math.ceil(filteredCoupons.length / ITEMS_PER_PAGE))
-    const safeCouponPage = Math.min(couponPage, totalCouponPages)
-    const couponPageStartIndex = (safeCouponPage - 1) * ITEMS_PER_PAGE
-    const paginatedCoupons = filteredCoupons.slice(couponPageStartIndex, couponPageStartIndex + ITEMS_PER_PAGE)
-    const couponStartCount = filteredCoupons.length ? couponPageStartIndex + 1 : 0
-    const couponEndCount = Math.min(couponPageStartIndex + ITEMS_PER_PAGE, filteredCoupons.length)
-
-    const activePieBranch = activePieBranchId != null
-        ? (data.branch_pie || []).find(b => b.branch_id == activePieBranchId)
-        : null
-
-    const activePieIdx = activePieBranchId != null
-        ? (data.branch_pie || []).findIndex(b => b.branch_id == activePieBranchId)
-        : -1
+    const apptStartCount = (safeApptPage - 1) * ITEMS_PER_PAGE + 1
+    const apptEndCount = Math.min(safeApptPage * ITEMS_PER_PAGE, filteredAppts.length)
+    const couponStartCount = (safeCouponPage - 1) * ITEMS_PER_PAGE + 1
+    const couponEndCount = Math.min(safeCouponPage * ITEMS_PER_PAGE, filteredCoupons.length)
 
     return (
         <div style={{ padding: '4px 0' }}>
             {/* ── Page Header ── */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 16 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                    <button className="btn btn-secondary" style={{ height: 38, padding: '0 14px' }} onClick={() => navigate('/merchant-reports')}>
+                    <button className="btn btn-secondary" style={{ height: 38, padding: '0 14px' }} onClick={() => navigate('/customer-reports')}>
                         <i className="fas fa-arrow-left" />
                     </button>
                     <div>
                         <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.45rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-                            Merchant Analytics Report
+                            Customer Analytics Report
                         </h2>
                         <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginTop: 2 }}>
-                            Detailed performance metrics for <strong style={{ color: 'var(--primary)' }}>{data.business_name || data.owner_name}</strong>
+                            Detailed activity logs and engagement stats for <strong style={{ color: 'var(--primary)' }}>{data.customer_name}</strong>
                         </p>
                     </div>
                 </div>
@@ -434,47 +374,41 @@ export default function ViewMerchReport() {
                             value={toDate} onChange={e => setToDate(e.target.value)} />
                     </div>
                     {(fromDate || toDate) && (
-                        <button className="btn btn-secondary" style={{ height: 38 }} onClick={() => { setFromDate(''); setToDate('') }}>
+                        <button className="btn btn-secondary" style={{ height: 38 }} onClick={handleClearFilters}>
                             <i className="fas fa-times" /> Clear
                         </button>
                     )}
                 </div>
             </div>
 
-            {/* ── Merchant Identity Card ── */}
-            <div className="card" style={{ marginBottom: 24, background: 'linear-gradient(135deg, rgba(255,77,128,0.05) 0%, rgba(91,134,229,0.04) 100%)', borderColor: 'rgba(255,77,128,0.12)' }}>
+            {/* ── Customer Identity Card ── */}
+            <div className="card" style={{ marginBottom: 24, background: 'linear-gradient(135deg, rgba(91,134,229,0.05) 0%, rgba(54,209,220,0.04) 100%)', borderColor: 'rgba(54,209,220,0.12)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
                     <div style={{
                         width: 72, height: 72, borderRadius: 20, flexShrink: 0,
                         background: 'var(--gradient-primary)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontSize: '1.8rem', fontWeight: 700, color: '#fff',
-                        boxShadow: '0 12px 28px rgba(255,77,128,0.28)'
+                        boxShadow: '0 12px 28px rgba(91,134,229,0.28)'
                     }}>
-                        {(data.business_name || data.owner_name || 'M')[0].toUpperCase()}
+                        {(data.customer_name || 'C')[0].toUpperCase()}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                             <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.3rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-                                {data.business_name || '-'}
+                                {data.customer_name}
                             </h3>
                             <span className={`badge ${data.status == 1 ? 'approved' : 'declined'}`} style={{ fontSize: '0.72rem' }}>
-                                {data.status == 1 ? 'Active' : 'Inactive'}
+                                {data.status == 1 ? 'Active' : 'Disabled'}
                             </span>
                         </div>
                         <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', marginTop: 4 }}>
-                            <i className="fas fa-user" style={{ color: 'var(--primary)', marginRight: 6 }} />
-                            Owner: <strong>{data.owner_name}</strong>
-                            <span style={{ margin: '0 12px', color: 'var(--text-muted)' }}>|</span>
-                            <i className="fas fa-tags" style={{ color: 'var(--primary)', marginRight: 6 }} />
-                            {data.cat_name || '-'}
+                            <i className="fas fa-envelope" style={{ color: 'var(--primary)', marginRight: 6 }} />
+                            Email: <strong>{data.email}</strong>
                         </p>
                         <div style={{ display: 'flex', gap: 20, marginTop: 10, flexWrap: 'wrap' }}>
                             <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <i className="fas fa-phone" style={{ color: 'var(--primary)' }} /> {data.phone || '-'}
-                            </span>
-                            <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <i className="fas fa-envelope" style={{ color: 'var(--primary)' }} /> {data.email || '-'}
+                                <i className="fas fa-phone" style={{ color: 'var(--primary)' }} /> {data.full_phone || data.phone || '-'}
                             </span>
                             <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
                                 <i className="fas fa-calendar-alt" style={{ color: 'var(--primary)' }} /> Joined {formatDateDisplay(data.created_at)}
@@ -506,9 +440,9 @@ export default function ViewMerchReport() {
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
                         <div>
                             <h3 className="card-title" style={{ fontSize: '0.95rem' }}>Appointment Breakdown</h3>
-                            <p className="card-subtitle">Status distribution</p>
+                            <p className="card-subtitle">Booking status distribution</p>
                         </div>
-                        <DonutChart size={90} segments={apptBreakdown.map((a, i) => ({ ...a, id: i }))} />
+                        <DonutChart size={90} segments={apptBreakdown} centerLabel="Bookings" />
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                         {apptBreakdown.map((item) => (
@@ -532,9 +466,9 @@ export default function ViewMerchReport() {
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
                         <div>
                             <h3 className="card-title" style={{ fontSize: '0.95rem' }}>Coupon Breakdown</h3>
-                            <p className="card-subtitle">Coupon status distribution</p>
+                            <p className="card-subtitle">Claimed coupons distribution</p>
                         </div>
-                        <DonutChart size={90} segments={couponBreakdown.map((a, i) => ({ ...a, id: i }))} />
+                        <DonutChart size={90} segments={couponBreakdown} centerLabel="Coupons" />
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                         {couponBreakdown.map((item) => (
@@ -543,7 +477,7 @@ export default function ViewMerchReport() {
                                 <span style={{ flex: 1, fontSize: '0.82rem', color: 'var(--text-secondary)' }}>{item.label}</span>
                                 <div style={{ flex: 2, background: 'var(--bg-primary)', borderRadius: 6, height: 6, overflow: 'hidden' }}>
                                     <div style={{
-                                        width: `${data.total_coupons > 0 ? (item.value / data.total_coupons * 100) : 0}%`,
+                                        width: `${data.total_coupon_applied > 0 ? (item.value / data.total_coupon_applied * 100) : 0}%`,
                                         height: '100%', background: item.color, borderRadius: 6, transition: 'width 0.5s ease'
                                     }} />
                                 </div>
@@ -554,113 +488,27 @@ export default function ViewMerchReport() {
                 </div>
             </div>
 
-            {/* ── Branch Performance Pie ── */}
-            {branchPieSegments.length > 0 && (
-                <div className="card" style={{ marginBottom: 24 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
-                        <div>
-                            <h3 className="card-title" style={{ fontSize: '0.95rem' }}>Branch Performance Overview</h3>
-                            <p className="card-subtitle">Click a slice to view branch details</p>
+            {/* ── Daily Activity Trend Charts ── */}
+            <div className="card" style={{ marginBottom: 24 }}>
+                <div style={{ marginBottom: 20 }}>
+                    <h3 className="card-title" style={{ fontSize: '0.95rem' }}>Daily Activity Trend</h3>
+                    <p className="card-subtitle">Interactive trend lines mapping out user bookings and coupon redemptions over time</p>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24 }}>
+                    <div style={{ background: 'var(--bg-primary)', borderRadius: 14, padding: '16px 20px', border: '1px solid rgba(54,209,220,0.08)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary)' }}>Appointments per Day</span>
                         </div>
-                        {/* Interactive Mode Toggle */}
-                        <div style={{ display: 'inline-flex', background: 'var(--bg-primary)', padding: 3, borderRadius: 10, border: '1px solid rgba(0,0,0,0.06)' }}>
-                            {[
-                                { key: 'all',          label: 'All Actions' },
-                                { key: 'appointments', label: 'Appointments' },
-                                { key: 'coupons',      label: 'Coupons' },
-                            ].map(tab => (
-                                <button
-                                    key={tab.key}
-                                    onClick={() => {
-                                        setPieMode(tab.key)
-                                        setActivePieBranchId(null)
-                                    }}
-                                    style={{
-                                        padding: '5px 12px',
-                                        borderRadius: 8,
-                                        fontSize: '0.72rem',
-                                        fontWeight: 700,
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        background: pieMode === tab.key ? 'var(--bg-surface)' : 'transparent',
-                                        color: pieMode === tab.key ? 'var(--primary)' : 'var(--text-muted)',
-                                        boxShadow: pieMode === tab.key ? '0 2px 6px rgba(0,0,0,0.06)' : 'none',
-                                        transition: 'all 0.2s ease'
-                                    }}
-                                >
-                                    {tab.label}
-                                </button>
-                            ))}
-                        </div>
+                        <SvgMultiLineChart series={apptSeries} />
                     </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '24px 0' }}>
-                        <DonutChart
-                            size={280}
-                            segments={branchPieSegments}
-                            onSliceClick={(bid) => setActivePieBranchId(bid)}
-                            activeId={activePieBranchId}
-                            centerLabel={pieMode === 'all' ? 'Actions' : pieMode === 'appointments' ? 'Appts' : 'Coupons'}
-                        />
+                    <div style={{ background: 'var(--bg-primary)', borderRadius: 14, padding: '16px 20px', border: '1px solid rgba(255,77,128,0.08)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary)' }}>Coupon Claims per Day</span>
+                        </div>
+                        <SvgMultiLineChart series={couponSeries} />
                     </div>
                 </div>
-            )}
-
-            {/* ── Daily Activity Charts ── */}
-            {data.graphs && data.graphs.length > 0 && (
-                <div className="card" style={{ marginBottom: 24 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-                            <div>
-                                <h3 className="card-title" style={{ fontSize: '0.95rem' }}>Daily Activity Charts</h3>
-                                <p className="card-subtitle">Daily appointments and coupon claims trend</p>
-                            </div>
-
-                        </div>
-                                                   {/* Branch Selector Dropdown */}
-                            <select
-                                value={selectedGraphBranchId}
-                                onChange={e => setSelectedGraphBranchId(e.target.value)}
-                                className="form-select"
-                                style={{
-                                    width: 170,
-                                    height: 34,
-                                    padding: '0 10px',
-                                    fontSize: '0.75rem',
-                                    fontWeight: 600,
-                                    borderRadius: 8,
-                                    background: 'var(--bg-primary)',
-                                    border: '1px solid rgba(0,0,0,0.08)',
-                                    color: 'var(--text-primary)',
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                <option value="all">All Outlets</option>
-                                {data.graphs.map(b => (
-                                    <option key={b.branch_id} value={b.branch_id}>
-                                        {b.branch_name} (#{b.branch_id})
-                                    </option>
-                                ))}
-                            </select>
-                    
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24 }}>
-                        <div style={{ background: 'var(--bg-primary)', borderRadius: 14, padding: '16px 20px', border: '1px solid rgba(142,45,226,0.08)' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary)' }}>Appointments per Day</span>
-                            </div>
-                            <SvgMultiLineChart series={apptSeries} />
-                        </div>
-                        <div style={{ background: 'var(--bg-primary)', borderRadius: 14, padding: '16px 20px', border: '1px solid rgba(255,77,128,0.08)' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary)' }}>Coupon Claims per Day</span>
-                            </div>
-                            <SvgMultiLineChart series={couponSeries} />
-                        </div>
-                    </div>
-                </div>
-            )}
+            </div>
 
             {/* ── Data Lists ── */}
             <div className="card" style={{ marginBottom: 0 }}>
@@ -668,7 +516,7 @@ export default function ViewMerchReport() {
                     <div className="tab-filters" style={{ marginBottom: 0, padding: 4 }}>
                         {[
                             { key: 'appointments', label: 'Appointments', icon: 'fa-calendar-check', count: data.lists?.appointments?.length || 0 },
-                            { key: 'coupons',      label: 'Coupon Claims', icon: 'fa-ticket-alt',    count: data.lists?.coupon_applied?.length || 0 },
+                            { key: 'coupons', label: 'Coupon Claims', icon: 'fa-ticket-alt', count: data.lists?.coupon_applied?.length || 0 },
                         ].map(tab => (
                             <button
                                 key={tab.key}
@@ -704,10 +552,10 @@ export default function ViewMerchReport() {
                             <thead>
                                 <tr>
                                     <th>#</th>
-                                    <th>Customer</th>
-                                    <th>Branch</th>
+                                    <th>Outlet / Branch</th>
                                     <th>Appt Date</th>
-                                    <th>Slot</th>
+                                    <th>Time Slot</th>
+                                    <th>Approved By</th>
                                     <th>Status</th>
                                     <th>Booked On</th>
                                 </tr>
@@ -718,25 +566,14 @@ export default function ViewMerchReport() {
                                     return (
                                         <tr key={appt.id}>
                                             <td style={{ fontWeight: 600, color: 'var(--text-muted)' }}>#{appt.id}</td>
-                                            <td>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                    <div style={{
-                                                        width: 32, height: 32, borderRadius: 10, flexShrink: 0,
-                                                        background: 'var(--gradient-primary)',
-                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                        color: '#fff', fontWeight: 700, fontSize: '0.8rem'
-                                                     }}>
-                                                        {(appt.Customer?.name || 'C')[0].toUpperCase()}
-                                                    </div>
+                                            <td style={{ fontSize: '0.85rem', fontWeight: 600 }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                    <i className="fas fa-code-branch" style={{ color: 'var(--primary)', fontSize: '0.75rem' }} />
                                                     <div>
-                                                        <strong style={{ fontSize: '0.85rem' }}>{appt.Customer?.name || '-'}</strong>
-                                                        <small style={{ display: 'block', color: 'var(--text-muted)', fontSize: '0.72rem' }}>ID #{appt.cus_id}</small>
+                                                        <strong>{appt.Branch?.name || appt.br_name || 'Outlet'}</strong>
+                                                        {/* <small style={{ display: 'block', color: 'var(--text-muted)', fontSize: '0.7rem' }}>ID #{appt.br_id}</small> */}
                                                     </div>
                                                 </div>
-                                            </td>
-                                            <td style={{ fontSize: '0.82rem', fontWeight: 500, color: 'var(--text-secondary)' }}>
-                                                <i className="fas fa-code-branch" style={{ color: 'var(--primary)', marginRight: 5, fontSize: '0.72rem' }} />
-                                                {appt.br_name || '-'}
                                             </td>
                                             <td style={{ fontWeight: 600, fontSize: '0.85rem' }}>{formatDateDisplay(appt.appointment_date)}</td>
                                             <td>
@@ -749,6 +586,7 @@ export default function ViewMerchReport() {
                                                     <i className="fas fa-clock" style={{ fontSize: '0.68rem' }} /> {appt.slot}
                                                 </span>
                                             </td>
+                                            <td style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{appt.approved_by || '-'}</td>
                                             <td>
                                                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 10px', borderRadius: 8, background: s.bg, color: s.color, fontSize: '0.78rem', fontWeight: 700 }}>
                                                     {s.label}
@@ -809,16 +647,17 @@ export default function ViewMerchReport() {
                     </div>
                 )}
 
-                {/* Coupon Applied Table */}
+                {/* Coupon Claims Table */}
                 {activeListTab === 'coupons' && (
                     <div className="table-wrapper">
                         <table className="data-table">
                             <thead>
                                 <tr>
                                     <th>#</th>
-                                    <th>Customer</th>
+                                    <th>Outlet / Branch</th>
                                     <th>Coupon Code</th>
                                     <th>Discount</th>
+                                    <th>Approved By</th>
                                     <th>Status</th>
                                     <th>Claimed On</th>
                                 </tr>
@@ -829,19 +668,12 @@ export default function ViewMerchReport() {
                                     return (
                                         <tr key={coupon.id}>
                                             <td style={{ fontWeight: 600, color: 'var(--text-muted)' }}>#{coupon.id}</td>
-                                            <td>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                    <div style={{
-                                                        width: 32, height: 32, borderRadius: 10, flexShrink: 0,
-                                                        background: 'linear-gradient(135deg,#36D1DC,#5B86E5)',
-                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                        color: '#fff', fontWeight: 700, fontSize: '0.8rem'
-                                                    }}>
-                                                        {(coupon.Customer?.name || 'C')[0].toUpperCase()}
-                                                    </div>
+                                            <td style={{ fontSize: '0.85rem', fontWeight: 600 }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                    <i className="fas fa-store" style={{ color: 'var(--primary)', fontSize: '0.75rem' }} />
                                                     <div>
-                                                        <strong style={{ fontSize: '0.85rem' }}>{coupon.Customer?.name || '-'}</strong>
-                                                        <small style={{ display: 'block', color: 'var(--text-muted)', fontSize: '0.72rem' }}>ID #{coupon.cus_id}</small>
+                                                        <strong>{coupon.Branch?.name || 'Branch Outlet'}</strong>
+                                                        {/* <small style={{ display: 'block', color: 'var(--text-muted)', fontSize: '0.7rem' }}>ID #{coupon.branch_id}</small> */}
                                                     </div>
                                                 </div>
                                             </td>
@@ -859,6 +691,7 @@ export default function ViewMerchReport() {
                                                 <span style={{ fontWeight: 700, fontSize: '1rem', color: '#10B981' }}>{coupon.percentage}%</span>
                                                 <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginLeft: 4 }}>off</span>
                                             </td>
+                                            <td style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{coupon.approved_by || '-'}</td>
                                             <td>
                                                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 10px', borderRadius: 8, background: s.bg, color: s.color, fontSize: '0.78rem', fontWeight: 700 }}>
                                                     {s.label}
@@ -869,7 +702,7 @@ export default function ViewMerchReport() {
                                     )
                                 }) : (
                                     <tr>
-                                        <td colSpan={6} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+                                        <td colSpan={7} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
                                             <i className="fas fa-ticket-alt" style={{ fontSize: '2rem', opacity: 0.3, display: 'block', marginBottom: 8 }} />
                                             No coupon claims found
                                         </td>
@@ -919,115 +752,6 @@ export default function ViewMerchReport() {
                     </div>
                 )}
             </div>
-
-            {/* ── Branch Details Modal Popup ── */}
-            {activePieBranch && (() => {
-                const color = branchColor(activePieIdx)
-                const brTotal = activePieBranch.appointment_count + activePieBranch.coupon_count
-                const grandTotal = branchPieSegments.reduce((sum, b) => sum + b.value, 0)
-                const sharePercent = grandTotal > 0 ? Math.round((brTotal / grandTotal) * 100) : 0
-
-                return (
-                    <div className="modal active">
-                        <div className="modal-backdrop" onClick={() => setActivePieBranchId(null)} />
-                        <div className="modal-content" style={{ maxWidth: '460px', borderRadius: '20px', border: `1px solid ${branchColor(activePieIdx, 0.25)}`, animation: 'modalScaleIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)', zIndex: 1100 }}>
-                            <style>{`
-                                @keyframes modalScaleIn {
-                                    from { opacity: 0; transform: scale(0.92) translateY(10px); }
-                                    to { opacity: 1; transform: scale(1) translateY(0); }
-                                }
-                            `}</style>
-                            <div className="modal-header" style={{ borderBottom: `1px solid ${branchColor(activePieIdx, 0.15)}`, background: branchColor(activePieIdx, 0.05), padding: '16px 20px' }}>
-                                <h3 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 12, margin: 0 }}>
-                                    <div style={{
-                                        width: 38, height: 38, borderRadius: 12,
-                                        background: color,
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        color: '#fff', fontWeight: 800, fontSize: '1rem',
-                                        boxShadow: `0 4px 12px ${branchColor(activePieIdx, 0.25)}`
-                                    }}>
-                                        {activePieBranch.branch_name?.[0]?.toUpperCase() || 'B'}
-                                    </div>
-                                    <div>
-                                        <div style={{ fontWeight: 750, fontSize: '1.05rem', color: 'var(--text-primary)' }}>{activePieBranch.branch_name}</div>
-                                        <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 500 }}>Branch #{activePieBranch.branch_id}</div>
-                                    </div>
-                                </h3>
-                                <button
-                                    onClick={() => setActivePieBranchId(null)}
-                                    style={{
-                                        background: 'none', border: 'none', cursor: 'pointer',
-                                        color: 'var(--text-muted)', fontSize: '1.1rem', padding: 4,
-                                        transition: 'color 0.2s', display: 'flex', alignItems: 'center'
-                                    }}
-                                    onMouseEnter={(e) => e.currentTarget.style.color = 'var(--primary)'}
-                                    onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
-                                >
-                                    <i className="fas fa-times" />
-                                </button>
-                            </div>
-
-                            <div className="modal-body" style={{ padding: '24px 20px' }}>
-                                {/* Share bar */}
-                                <div style={{ marginBottom: 24 }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>Share of total activity</span>
-                                        <span style={{ fontSize: '0.88rem', fontWeight: 850, color: color }}>{sharePercent}%</span>
-                                    </div>
-                                    <div style={{ height: 10, borderRadius: 5, background: 'var(--bg-hover)', overflow: 'hidden', border: '1px solid rgba(0,0,0,0.03)' }}>
-                                        <div style={{ width: `${sharePercent}%`, height: '100%', background: color, borderRadius: 5, transition: 'width 0.6s cubic-bezier(0.1, 0.8, 0.3, 1)' }} />
-                                    </div>
-                                </div>
-
-                                {/* Stats Grid */}
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 16 }}>
-                                    {[
-                                        { label: 'Appointments', value: activePieBranch.appointment_count, icon: 'fa-calendar-check', color: '#8E2DE2' },
-                                        { label: 'Coupons Used',  value: activePieBranch.coupon_count,      icon: 'fa-ticket-alt',    color: '#FF4D80' },
-                                        { label: 'Total Actions', value: brTotal,                            icon: 'fa-chart-bar',     color: color },
-                                    ].map(stat => (
-                                        <div
-                                            key={stat.label}
-                                            style={{
-                                                textAlign: 'center',
-                                                padding: '16px 8px',
-                                                borderRadius: 14,
-                                                background: `${stat.color}08`,
-                                                border: `1.5px solid ${stat.color}15`,
-                                                transition: 'all 0.2s ease'
-                                            }}
-                                        >
-                                            <div style={{
-                                                width: 32, height: 32, borderRadius: '50%',
-                                                background: `${stat.color}15`, display: 'flex',
-                                                alignItems: 'center', justifyContent: 'center',
-                                                margin: '0 auto 10px auto'
-                                            }}>
-                                                <i className={`fas ${stat.icon}`} style={{ color: stat.color, fontSize: '0.9rem' }} />
-                                            </div>
-                                            <div style={{ fontSize: '1.25rem', fontWeight: 850, color: stat.color }}>{stat.value}</div>
-                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 650, marginTop: 4 }}>{stat.label}</div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="modal-footer" style={{ background: 'var(--bg-primary)', padding: '12px 20px', display: 'flex', justifyContent: 'flex-end', gap: '10px', borderTop: '1px solid rgba(0,0,0,0.03)' }}>
-                                <button 
-                                    className="btn btn-primary" 
-                                    onClick={() => navigate(`/branch-report/${activePieBranch.branch_id}`)} 
-                                    style={{ padding: '8px 16px', fontSize: '0.82rem', height: 36 }}
-                                >
-                                    <i className="fas fa-chart-line" /> View Branch Report
-                                </button>
-                                <button className="btn btn-secondary" onClick={() => setActivePieBranchId(null)} style={{ padding: '8px 16px', fontSize: '0.82rem', height: 36 }}>
-                                    Close Details
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )
-            })()}
         </div>
     )
 }

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import API from '../api.js'
+import API from '../../api.js'
 
 export default function MerchantReports() {
     const navigate = useNavigate()
@@ -285,8 +285,8 @@ export default function MerchantReports() {
                                             <tr key={row.merchant_id}>
                                                 <td>
                                                     <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                        <strong 
-                                                            style={{ cursor: 'pointer', color: 'var(--primary)', textDecoration: 'underline' }} 
+                                                        <strong
+                                                            style={{ cursor: 'pointer', color: 'var(--primary)', textDecoration: 'underline' }}
                                                             onClick={() => navigate(`/merchant-report/${row.merchant_id}`)}
                                                         >
                                                             {row.business_name || row.owner_name || '-'}
@@ -337,8 +337,8 @@ export default function MerchantReports() {
                                                 </td>
                                                 <td>{row.created_at ? new Date(row.created_at).toLocaleDateString() : '-'}</td>
                                                 <td style={{ textAlign: 'right' }}>
-                                                    <button 
-                                                        className="btn btn-icon view" 
+                                                    <button
+                                                        className="btn btn-icon view"
                                                         title="View Detailed Report"
                                                         onClick={() => navigate(`/merchant-report/${row.merchant_id}`)}
                                                     >

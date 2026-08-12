@@ -5,7 +5,7 @@ import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import API from '../api.js'
 
-import logo from '../assets/image/logo.png'
+import logo from "../../assets/image/new_logo.png";
 import dealoraLogo from '../assets/image/Dealora.png'
 
 function Header() {

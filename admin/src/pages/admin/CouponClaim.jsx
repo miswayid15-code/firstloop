@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
-import API from '../api.js'
-import DecisionDialog from '../components/DecisionDialog.jsx'
+import API from '../../api.js'
+import DecisionDialog from '../../components/DecisionDialog.jsx'
 
 const isSuccessResponse = (data) => {
     return data?.status === 1 || data?.status === '1' || data?.success === true || data?.success === 'true'
@@ -244,7 +244,7 @@ export default function CouponClaim() {
 
     return (
         <>
-            
+
             <div
                 className="flex-between"
                 style={{

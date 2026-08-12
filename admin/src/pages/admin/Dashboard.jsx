@@ -7,7 +7,7 @@ import {
 } from 'react-router-dom'
 
 import { toast } from 'react-hot-toast'
-import API from '../api.js';
+import API from '../../api.js';
 
 
 

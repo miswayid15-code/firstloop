@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { NavLink, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
-import ConfirmDialog from '../components/ConfirmDialog.jsx'
-import DecisionDialog from '../components/DecisionDialog.jsx'
-import API from '../api.js'
+import ConfirmDialog from '../../components/ConfirmDialog.jsx'
+import DecisionDialog from '../../components/DecisionDialog.jsx'
+import API from '../../api.js'
 
 const isSuccessResponse = (data) => {
     return data?.status === 1 || data?.status === '1' || data?.success === true || data?.success === 'true'
@@ -208,7 +208,7 @@ export default function ViewBranch() {
 
             const response = await API.get(`admin/branch/id/${encodeURIComponent(id)}`)
             const data = response.data || {}
-// console.log("data",data)
+            // console.log("data",data)
             if (isSuccessResponse(data)) {
                 setBranchData(data.data || null)
                 setCoupons(data.coupon || [])
@@ -896,7 +896,7 @@ export default function ViewBranch() {
                             const isApproved = st === 1;
                             const statusLabel = st === 0 ? 'Pending' : st === 1 ? 'Approved' : 'Rejected';
                             const statusColor = st === 0 ? '#f59e0b' : st === 1 ? '#10b981' : '#ef4444';
-                            
+
                             const showCurrentImage = isApproved ? !!item.image : (item.image && item.image !== item.pending_image);
                             const showPendingImage = !isApproved && !!item.pending_image;
 
@@ -987,7 +987,7 @@ export default function ViewBranch() {
                             const isApproved = st === 1;
                             const statusLabel = st === 0 ? 'Pending' : st === 1 ? 'Approved' : 'Rejected';
                             const statusColor = st === 0 ? '#f59e0b' : st === 1 ? '#10b981' : '#ef4444';
-                            
+
                             const showCurrentImage = isApproved ? !!item.image : (item.image && item.image !== item.pending_image);
                             const showPendingImage = !isApproved && !!item.pending_image;
 

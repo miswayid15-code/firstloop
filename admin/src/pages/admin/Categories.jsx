@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
-import API from '../api.js';
+import API from '../../api.js';
 
 export default function Categories() {
 
@@ -15,13 +15,13 @@ export default function Categories() {
     const [showCategoryView, setShowCategoryView] = useState(false)
     const [selectedCategory, setSelectedCategory] = useState(null)
     const [searchTerm, setSearchTerm] = useState('')
-    
+
     // Form states for add/edit
     const [newCategory, setNewCategory] = useState({
         name: '',
         image: null
     })
-    
+
     const [editCategory, setEditCategory] = useState({
         id: '',
         name: '',
@@ -141,7 +141,7 @@ export default function Categories() {
                 } else {
                     formData.append('image', '')
                 }
-                
+
                 const response = await API.post('admin/create-category', formData, {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 })
@@ -196,7 +196,7 @@ export default function Categories() {
                 } else {
                     formData.append('image', '')
                 }
-                
+
                 const response = await API.post('admin/update-category', formData, {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 })
@@ -222,10 +222,10 @@ export default function Categories() {
         if (!window.confirm(`Are you sure you want to delete this ${activeTab === 'coupon' ? 'coupon ' : ''}category?`)) {
             return
         }
-        
+
         try {
-            const endpoint = activeTab === 'coupon' 
-                ? `admin/delete-coupon-category/${id}` 
+            const endpoint = activeTab === 'coupon'
+                ? `admin/delete-coupon-category/${id}`
                 : `admin/delete-category/${id}`;
             const response = await API.delete(endpoint)
             if (isSuccessResponse(response.data)) {
@@ -274,7 +274,7 @@ export default function Categories() {
 
     return (
         <>
-                        
+
             {/* Tabs for Merchant Categories vs Coupon Categories */}
             <div style={{ display: 'flex', gap: 16, borderBottom: '1px solid var(--border)', marginBottom: 24 }}>
                 <button
@@ -434,7 +434,7 @@ export default function Categories() {
                                                 className={`badge ${category.status === 1
                                                     ? "active"
                                                     : "pending"
-                                                }`}
+                                                    }`}
                                             >
                                                 {category.status === 1 ? "Active" : "Inactive"}
                                             </span>
@@ -525,7 +525,7 @@ export default function Categories() {
                                                 className={`badge ${category.status === 1
                                                     ? "active"
                                                     : "pending"
-                                                }`}
+                                                    }`}
                                             >
                                                 {category.status === 1 ? "Active" : "Inactive"}
                                             </span>
@@ -693,9 +693,9 @@ export default function Categories() {
                                         />
                                         {selectedCategory.image && !editCategory.image && getImageUrl(selectedCategory.image) && (
                                             <div style={{ marginTop: 8 }}>
-                                                <img 
-                                                    src={getImageUrl(selectedCategory.image)} 
-                                                    alt="Current" 
+                                                <img
+                                                    src={getImageUrl(selectedCategory.image)}
+                                                    alt="Current"
                                                     style={{ width: 50, height: 50, borderRadius: 5 }}
                                                 />
                                                 <small style={{ display: 'block', color: 'var(--text-muted)' }}>

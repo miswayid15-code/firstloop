@@ -5,37 +5,43 @@ import AppToaster from './components/AppToaster.jsx';
 import Navbar from './components/Navbar.jsx';
 
 // Admin
-import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import Merchants from './pages/Merchants';
-import DeletedMerchants from './pages/DeletedMerchants';
-import Customers from './pages/Customers';
-import Categories from './pages/Categories';
-import Appointments from './pages/Appointments';
-import MerchantReports from './pages/MerchantReports';
-import CustomerReports from './pages/CustomerReports';
-import CustomerReportDetails from './pages/CustomerReportDetails';
-import ViewMerchReport from './pages/ViewMerchReport';
-import Notifications from './pages/Notifications';
-import NotificationList from './pages/NotificationList';
-import Profile from './pages/Profile';
-import AddMerchant from './pages/AddMerchant';
-import EditMerchant from './pages/EditMerchant';
-import Branches from './pages/Branches';
-import Receptionists from './pages/Receptionists';
-import ViewMerchant from './pages/ViewMerchant';
-import ViewDeletedMerchant from './pages/ViewDeletedMerchant';
-import ViewBranch from './pages/ViewBranch';
-import BranchReport from './pages/BranchReport';
-import BranchChat from './pages/BranchChat';
-import BranchPendingImages from './pages/BranchPendingImages';
-import CouponClaim from './pages/CouponClaim';
-import Settings from './pages/Settings';
-import Support from './pages/Support';
-import ProtectedRoute from './pages/ProtectedRoute';
+import Login from './pages/admin/Login';
+import Dashboard from './pages/admin/Dashboard';
+import Merchants from './pages/admin/Merchants';
+import DeletedMerchants from './pages/admin/DeletedMerchants';
+import Customers from './pages/admin/Customers';
+import SalePersons from './pages/admin/SalePersons';
+import SalePersonMerchants from './pages/admin/SalePersonMerchants';
+import Categories from './pages/admin/Categories';
+import Appointments from './pages/admin/Appointments';
+import MerchantReports from './pages/admin/MerchantReports';
+import CustomerReports from './pages/admin/CustomerReports';
+import CustomerReportDetails from './pages/admin/CustomerReportDetails';
+import ViewMerchReport from './pages/admin/ViewMerchReport';
+import Notifications from './pages/admin/Notifications';
+import NotificationList from './pages/admin/NotificationList';
+import Profile from './pages/admin/Profile';
+import AddMerchant from './pages/admin/AddMerchant';
+import EditMerchant from './pages/admin/EditMerchant';
+import Branches from './pages/admin/Branches';
+import Receptionists from './pages/admin/Receptionists';
+import ViewMerchant from './pages/admin/ViewMerchant';
+import ViewDeletedMerchant from './pages/admin/ViewDeletedMerchant';
+import ViewBranch from './pages/admin/ViewBranch';
+import BranchReport from './pages/admin/BranchReport';
+import BranchChat from './pages/admin/BranchChat';
+import BranchPendingImages from './pages/admin/BranchPendingImages';
+import CouponClaim from './pages/admin/CouponClaim';
+import Settings from './pages/admin/Settings';
+import Support from './pages/admin/Support';
+import ProtectedRoute from './pages/admin/ProtectedRoute';
+import AdminCharts from './pages/admin/AdminCharts';
 import NotFound from './pages/NotFound';
-import AdminCharts from './pages/AdminCharts';
 
+// SALE LOGIN
+import SalePersonLogin from './pages/saleperson/SalePersonLogin.jsx';
+import SalePersonDashboard from './pages/saleperson/SalePersonDashboard.jsx';
+import SalePersonAddMerchant from './pages/saleperson/AddMerchant.jsx';
 
 // Website
 import Header from './component/Header.jsx';
@@ -158,6 +164,9 @@ function AdminLayout() {
 
       <Routes>
         <Route path="/" element={<Login />} />
+        <Route path="saleperson-login" element={<SalePersonLogin />} />
+        <Route path="saleperson-dashboard" element={<SalePersonDashboard />} />
+        <Route path="saleperson-add-merchant" element={<SalePersonAddMerchant />} />
 
         <Route
           element={
@@ -170,6 +179,8 @@ function AdminLayout() {
           <Route path="merchants" element={<Merchants />} />
           <Route path="deleted-merchants" element={<DeletedMerchants />} />
           <Route path="customers" element={<Customers />} />
+                    <Route path="salepersons" element={<SalePersons />} />
+          <Route path="salepersons/:id/merchants" element={<SalePersonMerchants />} />
           <Route path="categories" element={<Categories />} />
           <Route path="appointments" element={<Appointments />} />
           <Route path="coupon-claim" element={<CouponClaim />} />

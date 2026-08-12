@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import API from '../api.js';
+import API from '../../api.js';
 
 export default function BranchPendingImages() {
     const { id } = useParams();
@@ -129,12 +129,12 @@ export default function BranchPendingImages() {
     }
 
     return (
-        <div style={{  margin: '0 auto' }}>
+        <div style={{ margin: '0 auto' }}>
             {/* Header section */}
             <div className="flex-between" style={{ marginBottom: '24px', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <button 
-                        className="btn-icon" 
+                    <button
+                        className="btn-icon"
                         onClick={() => {
                             if (branchData?.merchant_id) {
                                 navigate(`/view-merchant/${branchData.merchant_id}`);
@@ -162,21 +162,21 @@ export default function BranchPendingImages() {
             </div>
 
             {!hasAnyPending ? (
-                <div className="card flex-column" style={{ 
-                    padding: '48px 24px', 
-                    textAlign: 'center', 
-                    alignItems: 'center', 
+                <div className="card flex-column" style={{
+                    padding: '48px 24px',
+                    textAlign: 'center',
+                    alignItems: 'center',
                     justifyContent: 'center',
                     background: 'var(--bg-surface)',
                     borderRadius: 'var(--border-radius-md)',
                     border: 'var(--border-light)',
                     boxShadow: 'var(--shadow-md)'
                 }}>
-                    <div style={{ 
-                        width: '64px', 
-                        height: '64px', 
-                        borderRadius: '50%', 
-                        background: 'var(--status-success-bg)', 
+                    <div style={{
+                        width: '64px',
+                        height: '64px',
+                        borderRadius: '50%',
+                        background: 'var(--status-success-bg)',
                         color: 'var(--status-success)',
                         display: 'flex',
                         alignItems: 'center',
@@ -192,8 +192,8 @@ export default function BranchPendingImages() {
                     <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', maxWidth: '400px', margin: '0 0 24px 0' }}>
                         This branch has no pending profile, gallery, or menu images awaiting verification.
                     </p>
-                    <button 
-                        className="btn btn-primary" 
+                    <button
+                        className="btn btn-primary"
                         onClick={() => {
                             if (branchData?.merchant_id) {
                                 navigate(`/view-merchant/${branchData.merchant_id}`);
@@ -207,10 +207,10 @@ export default function BranchPendingImages() {
                 </div>
             ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-                    
+
                     {/* Section 1: Profile Image */}
                     {hasPendingProfile && (
-                        <div className="card" style={{ 
+                        <div className="card" style={{
                             padding: '24px',
                             background: 'var(--bg-surface)',
                             borderRadius: 'var(--border-radius-md)',
@@ -232,11 +232,11 @@ export default function BranchPendingImages() {
                             </div>
 
                             {branchData.profile_image_status === 2 && branchData.rejected_reason && (
-                                <div style={{ 
-                                    background: 'var(--status-warning-bg)', 
-                                    color: 'var(--status-warning)', 
-                                    padding: '10px 14px', 
-                                    borderRadius: 'var(--border-radius-sm)', 
+                                <div style={{
+                                    background: 'var(--status-warning-bg)',
+                                    color: 'var(--status-warning)',
+                                    padding: '10px 14px',
+                                    borderRadius: 'var(--border-radius-sm)',
                                     fontSize: '0.8rem',
                                     marginBottom: '16px',
                                     fontWeight: 500
@@ -257,13 +257,13 @@ export default function BranchPendingImages() {
                                             <img src={branchData.profile_image} alt="Current profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                         </div>
                                     ) : (
-                                        <div style={{ 
-                                            width: '100%', 
-                                            aspectRatio: '1/1', 
-                                            borderRadius: 'var(--border-radius-sm)', 
-                                            border: '2px dashed var(--border-light)', 
-                                            display: 'flex', 
-                                            alignItems: 'center', 
+                                        <div style={{
+                                            width: '100%',
+                                            aspectRatio: '1/1',
+                                            borderRadius: 'var(--border-radius-sm)',
+                                            border: '2px dashed var(--border-light)',
+                                            display: 'flex',
+                                            alignItems: 'center',
                                             justifyContent: 'center',
                                             color: 'var(--text-muted)',
                                             fontSize: '0.82rem',
@@ -286,7 +286,7 @@ export default function BranchPendingImages() {
                             </div>
 
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '20px', borderTop: '1px solid var(--border-light)', paddingTop: '16px' }}>
-                                <button 
+                                <button
                                     className="btn btn-outline-danger"
                                     onClick={() => openRejectModal('profile', null)}
                                     disabled={verifyingId !== null}
@@ -299,7 +299,7 @@ export default function BranchPendingImages() {
                                 >
                                     <i className="fas fa-times" style={{ marginRight: '6px' }}></i> Reject
                                 </button>
-                                <button 
+                                <button
                                     className="btn btn-primary"
                                     onClick={() => handleVerifyAction('profile', null, 1)}
                                     disabled={verifyingId !== null}
@@ -323,7 +323,7 @@ export default function BranchPendingImages() {
 
                     {/* Section 2: Gallery Images */}
                     {pendingBranchImages.length > 0 && (
-                        <div className="card" style={{ 
+                        <div className="card" style={{
                             padding: '24px',
                             background: 'var(--bg-surface)',
                             borderRadius: 'var(--border-radius-md)',
@@ -340,11 +340,11 @@ export default function BranchPendingImages() {
                                 {pendingBranchImages.map((img) => {
                                     const actionKey = `branch_image-${img.id}`;
                                     return (
-                                        <div key={img.id} style={{ 
-                                            padding: '16px', 
-                                            background: 'var(--bg-primary)', 
-                                            borderRadius: 'var(--border-radius-md)', 
-                                            border: '1px solid var(--border-light)' 
+                                        <div key={img.id} style={{
+                                            padding: '16px',
+                                            background: 'var(--bg-primary)',
+                                            borderRadius: 'var(--border-radius-md)',
+                                            border: '1px solid var(--border-light)'
                                         }}>
                                             <div className="flex-between" style={{ marginBottom: '14px', alignItems: 'center' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -361,11 +361,11 @@ export default function BranchPendingImages() {
                                             </div>
 
                                             {img.image_status === 2 && img.rejected_reason && (
-                                                <div style={{ 
-                                                    background: 'var(--status-warning-bg)', 
-                                                    color: 'var(--status-warning)', 
-                                                    padding: '8px 12px', 
-                                                    borderRadius: 'var(--border-radius-sm)', 
+                                                <div style={{
+                                                    background: 'var(--status-warning-bg)',
+                                                    color: 'var(--status-warning)',
+                                                    padding: '8px 12px',
+                                                    borderRadius: 'var(--border-radius-sm)',
                                                     fontSize: '0.78rem',
                                                     marginBottom: '12px',
                                                     fontWeight: 500
@@ -383,13 +383,13 @@ export default function BranchPendingImages() {
                                                             <img src={img.image} alt="Current gallery" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                                         </div>
                                                     ) : (
-                                                        <div style={{ 
-                                                            width: '100%', 
-                                                            aspectRatio: '1/1', 
-                                                            borderRadius: 'var(--border-radius-sm)', 
-                                                            border: '2px dashed var(--border-light)', 
-                                                            display: 'flex', 
-                                                            alignItems: 'center', 
+                                                        <div style={{
+                                                            width: '100%',
+                                                            aspectRatio: '1/1',
+                                                            borderRadius: 'var(--border-radius-sm)',
+                                                            border: '2px dashed var(--border-light)',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
                                                             justifyContent: 'center',
                                                             color: 'var(--text-muted)',
                                                             fontSize: '0.8rem',
@@ -408,7 +408,7 @@ export default function BranchPendingImages() {
                                             </div>
 
                                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '16px' }}>
-                                                <button 
+                                                <button
                                                     className="btn btn-outline-danger btn-sm"
                                                     onClick={() => openRejectModal('branch_image', img.id)}
                                                     disabled={verifyingId !== null}
@@ -416,7 +416,7 @@ export default function BranchPendingImages() {
                                                 >
                                                     <i className="fas fa-times"></i> Reject
                                                 </button>
-                                                <button 
+                                                <button
                                                     className="btn btn-primary btn-sm"
                                                     onClick={() => handleVerifyAction('branch_image', img.id, 1)}
                                                     disabled={verifyingId !== null}
@@ -438,7 +438,7 @@ export default function BranchPendingImages() {
 
                     {/* Section 3: Menu Images */}
                     {pendingMenuImages.length > 0 && (
-                        <div className="card" style={{ 
+                        <div className="card" style={{
                             padding: '24px',
                             background: 'var(--bg-surface)',
                             borderRadius: 'var(--border-radius-md)',
@@ -455,11 +455,11 @@ export default function BranchPendingImages() {
                                 {pendingMenuImages.map((img) => {
                                     const actionKey = `menu_image-${img.id}`;
                                     return (
-                                        <div key={img.id} style={{ 
-                                            padding: '16px', 
-                                            background: 'var(--bg-primary)', 
-                                            borderRadius: 'var(--border-radius-md)', 
-                                            border: '1px solid var(--border-light)' 
+                                        <div key={img.id} style={{
+                                            padding: '16px',
+                                            background: 'var(--bg-primary)',
+                                            borderRadius: 'var(--border-radius-md)',
+                                            border: '1px solid var(--border-light)'
                                         }}>
                                             <div className="flex-between" style={{ marginBottom: '14px', alignItems: 'center' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -476,11 +476,11 @@ export default function BranchPendingImages() {
                                             </div>
 
                                             {img.image_status === 2 && img.rejected_reason && (
-                                                <div style={{ 
-                                                    background: 'var(--status-warning-bg)', 
-                                                    color: 'var(--status-warning)', 
-                                                    padding: '8px 12px', 
-                                                    borderRadius: 'var(--border-radius-sm)', 
+                                                <div style={{
+                                                    background: 'var(--status-warning-bg)',
+                                                    color: 'var(--status-warning)',
+                                                    padding: '8px 12px',
+                                                    borderRadius: 'var(--border-radius-sm)',
                                                     fontSize: '0.78rem',
                                                     marginBottom: '12px',
                                                     fontWeight: 500
@@ -498,13 +498,13 @@ export default function BranchPendingImages() {
                                                             <img src={img.image} alt="Current menu" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                                         </div>
                                                     ) : (
-                                                        <div style={{ 
-                                                            width: '100%', 
-                                                            aspectRatio: '1/1', 
-                                                            borderRadius: 'var(--border-radius-sm)', 
-                                                            border: '2px dashed var(--border-light)', 
-                                                            display: 'flex', 
-                                                            alignItems: 'center', 
+                                                        <div style={{
+                                                            width: '100%',
+                                                            aspectRatio: '1/1',
+                                                            borderRadius: 'var(--border-radius-sm)',
+                                                            border: '2px dashed var(--border-light)',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
                                                             justifyContent: 'center',
                                                             color: 'var(--text-muted)',
                                                             fontSize: '0.8rem',
@@ -523,7 +523,7 @@ export default function BranchPendingImages() {
                                             </div>
 
                                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '16px' }}>
-                                                <button 
+                                                <button
                                                     className="btn btn-outline-danger btn-sm"
                                                     onClick={() => openRejectModal('menu_image', img.id)}
                                                     disabled={verifyingId !== null}
@@ -531,7 +531,7 @@ export default function BranchPendingImages() {
                                                 >
                                                     <i className="fas fa-times"></i> Reject
                                                 </button>
-                                                <button 
+                                                <button
                                                     className="btn btn-primary btn-sm"
                                                     onClick={() => handleVerifyAction('menu_image', img.id, 1)}
                                                     disabled={verifyingId !== null}
@@ -581,8 +581,8 @@ export default function BranchPendingImages() {
                             <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
                                 Reject {getRejectTitle()}
                             </h3>
-                            <button 
-                                className="btn-icon" 
+                            <button
+                                className="btn-icon"
                                 onClick={() => setRejectModal({ open: false, type: '', imageId: null, reason: '' })}
                                 style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)' }}
                             >
@@ -613,15 +613,15 @@ export default function BranchPendingImages() {
                         </div>
 
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-                            <button 
-                                className="btn btn-outline" 
+                            <button
+                                className="btn btn-outline"
                                 onClick={() => setRejectModal({ open: false, type: '', imageId: null, reason: '' })}
                                 style={{ padding: '8px 16px', fontSize: '0.82rem' }}
                             >
                                 Cancel
                             </button>
-                            <button 
-                                className="btn btn-primary" 
+                            <button
+                                className="btn btn-primary"
                                 onClick={submitRejection}
                                 style={{ background: 'var(--status-danger)', borderColor: 'var(--status-danger)', padding: '8px 16px', fontSize: '0.82rem' }}
                             >
