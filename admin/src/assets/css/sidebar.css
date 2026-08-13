@@ -133,6 +133,12 @@
     box-shadow: 0 8px 20px -6px rgba(233, 30, 99, 0.4);
 }
 
+[data-role="firstloop"] .sidebar-item.active,
+[data-theme="firstloop"] .sidebar-item.active,
+.firstloop-theme .sidebar-item.active {
+    box-shadow: 0 8px 20px -6px rgba(14, 136, 184, 0.4);
+}
+
 .sidebar-item.active:hover {
     transform: none;
     color: var(--text-light);
@@ -154,6 +160,12 @@
     border-radius: 20px;
     box-shadow: 0 2px 8px rgba(233, 30, 99, 0.2);
     transition: var(--transition-smooth);
+}
+
+[data-role="firstloop"] .sidebar-badge,
+[data-theme="firstloop"] .sidebar-badge,
+.firstloop-theme .sidebar-badge {
+    box-shadow: 0 2px 8px rgba(14, 136, 184, 0.2);
 }
 
 .sidebar-item.active .sidebar-badge {

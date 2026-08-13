@@ -30,6 +30,7 @@ module.exports = (sequelize, DataTypes) => {
     city: DataTypes.STRING,
     state: DataTypes.STRING,
     zip_code: DataTypes.STRING,
+    code: DataTypes.STRING,
     country_code: DataTypes.STRING,
     country: DataTypes.STRING,
 
@@ -82,6 +83,10 @@ module.exports = (sequelize, DataTypes) => {
     Merchant.belongsTo(models.Category, {
       foreignKey: 'cat_id',
       targetKey: 'id'
+    });
+    Merchant.belongsTo(models.SalePerson, {
+      foreignKey: 'code',
+      targetKey: 'code',
     });
     Merchant.hasMany(models.UserNotificationToken, {
       foreignKey: "user_id",

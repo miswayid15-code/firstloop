@@ -28,6 +28,9 @@ import Receptionists from './pages/admin/Receptionists';
 import ViewMerchant from './pages/admin/ViewMerchant';
 import ViewDeletedMerchant from './pages/admin/ViewDeletedMerchant';
 import ViewBranch from './pages/admin/ViewBranch';
+import ViewFlBranch from './pages/admin/ViewFlBranch';
+import FpCustomerDetails from './pages/admin/FpCustomerDetails';
+import CardDesigns from './pages/admin/CardDesigns';
 import BranchReport from './pages/admin/BranchReport';
 import BranchChat from './pages/admin/BranchChat';
 import BranchPendingImages from './pages/admin/BranchPendingImages';
@@ -197,6 +200,10 @@ function AdminLayout() {
           <Route path="view-merchant/:id" element={<ViewMerchant />} />
           <Route path="view-deleted-merchant/:id" element={<ViewDeletedMerchant />} />
           <Route path="view-branch/:id" element={<ViewBranch />} />
+          <Route path="view-fl-branch" element={<ViewFlBranch />} />
+          <Route path="view-fl-branch/:id" element={<ViewFlBranch />} />
+          <Route path="fp-customer_details" element={<FpCustomerDetails />} />
+          <Route path="fp-customer_details/:id" element={<FpCustomerDetails />} />
           <Route path="branch-report/:id" element={<BranchReport />} />
           <Route path="branch-chat/:id" element={<BranchChat />} />
           <Route path="admin-chat/:id" element={<AdminCharts />} />
@@ -205,6 +212,8 @@ function AdminLayout() {
           <Route path="receptionists" element={<Receptionists />} />
           <Route path="settings" element={<Settings />} />
           <Route path="banners" element={<Settings />} />
+          <Route path="card-designs" element={<CardDesigns />} />
+        
           <Route path="support" element={<Support />} />
         </Route>
 

@@ -66,6 +66,14 @@ export default function Login() {
           "admin_data",
           JSON.stringify(data.data)
         );
+         sessionStorage.setItem(
+           "role",
+           "firstpass"
+         );
+         localStorage.setItem(
+           "role",
+           "firstpass"
+         );
 
         toast.success("Login Success 🚀");
 

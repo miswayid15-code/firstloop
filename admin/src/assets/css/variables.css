@@ -119,3 +119,35 @@
       --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       --transition-bounce: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
    }
+
+   /* FirstLoop Theme Overrides - applied when role is 'firstloop' */
+   :root[data-role="firstloop"],
+   :root[data-theme="firstloop"],
+   body[data-role="firstloop"],
+   body[data-theme="firstloop"],
+   [data-role="firstloop"],
+   [data-theme="firstloop"],
+   .firstloop-theme {
+      --primary: var(--firstloop-primary, #0E88B8);
+      --primary-hover: #0B6E96;
+      --primary-light: var(--firstloop-primary-light, #E6F2FA);
+      --primary-glow: rgba(14, 136, 184, 0.15);
+
+      --secondary: var(--firstloop-secondary, #0E88B8);
+      --accent: #4CC7E8;
+
+      --gradient-primary: var(--firstloop-gradient-primary, linear-gradient(135deg, #4CC7E8 0%, #00A6D6 50%, #0E88B8 100%));
+      --gradient-soft: linear-gradient(135deg, #F0F8FF 0%, #E6F2FA 100%);
+      --gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.80) 0%, rgba(230, 242, 250, 0.55) 100%);
+
+      --bg-primary: var(--firstloop-bg-primary, #f6fafc);
+      --bg-hover: #E6F2FA;
+
+      --border-glass: 1px solid rgba(14, 136, 184, 0.08);
+      --border-light: 1px solid #D0E4F0;
+
+      --shadow-sm: 0 4px 12px rgba(14, 136, 184, 0.04);
+      --shadow-md: 0 8px 24px -4px rgba(14, 136, 184, 0.08);
+      --shadow-lg: 0 16px 36px -8px rgba(14, 136, 184, 0.10);
+      --shadow-premium: 0 20px 48px -12px rgba(14, 136, 184, 0.14);
+   }

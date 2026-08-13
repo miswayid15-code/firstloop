@@ -102,7 +102,13 @@ module.exports = (sequelize, DataTypes) => {
     );
 
     SalePerson.associate = (models) => {
-        // Add associations here if required
+
+        SalePerson.hasMany(models.Merchant, {
+            foreignKey: 'code',
+            sourceKey: 'code',
+            as: 'merchants'
+        });
+
     };
 
     return SalePerson;

@@ -28,14 +28,27 @@
     box-shadow: 0 4px 14px rgba(233, 30, 99, 0.25);
 }
 
+[data-role="firstloop"] .btn-primary,
+[data-theme="firstloop"] .btn-primary,
+.firstloop-theme .btn-primary {
+    box-shadow: 0 4px 14px rgba(14, 136, 184, 0.25);
+}
+
 .firstloop-btn-primary {
     background: var(--firstloop-gradient-primary);
     color: var(--text-light);
-        box-shadow: 0 4px 14px #96e4f4;
+    box-shadow: 0 4px 14px #96e4f4;
 }
 .btn-primary:hover {
     box-shadow: 0 8px 20px rgba(233, 30, 99, 0.4);
 }
+
+[data-role="firstloop"] .btn-primary:hover,
+[data-theme="firstloop"] .btn-primary:hover,
+.firstloop-theme .btn-primary:hover {
+    box-shadow: 0 8px 20px rgba(14, 136, 184, 0.4);
+}
+
 .firstloop-btn-primary:hover {
     box-shadow: 0 4px 14px #32ceee;
 }
@@ -58,7 +71,7 @@
 .firstloop-btn-secondary:hover {
     background: var(--bg-hover);
     color: var(--firstloop-primary);
-    border-color: rgba(255, 77, 128, 0.15);
+    border-color: rgba(14, 136, 184, 0.25);
 }
 
 .btn-light-pink {

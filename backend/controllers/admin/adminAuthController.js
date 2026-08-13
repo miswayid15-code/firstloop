@@ -4,7 +4,7 @@ const { Sequelize } = require("sequelize");
 const { Op } = require('sequelize');
 const {
     RefreshToken,
-    admins, Merchant, Branch, Receptionist, Coupon, CouponApplied, Category
+    admins, Merchant, Branch, Receptionist, Coupon, CouponApplied, Category,SalePerson
 } = require('../../models');
 const { formatIST } = require('../../helpers/dateHelper.js');
 exports.login = async (req, res) => {
@@ -471,7 +471,8 @@ exports.fetchmerchant = async (req, res) => {
                         'visibility',
                         'age_group',
                         'lat',
-                        'lon'
+                        'lon',
+                       
                     ],
 
                     required: false,
@@ -517,6 +518,14 @@ exports.fetchmerchant = async (req, res) => {
 
 
 
+                },{
+                    model: SalePerson,
+                    required: false,
+                     attributes: [
+                        'id',
+                        'name',
+                        'code'
+                    ]
                 }
 
 

@@ -12,43 +12,91 @@ const API = axios.create({
 });
 
 const logoutAndRedirect = (message) => {
-    const isSalePerson = window.location.pathname.includes("saleperson");
+
+    const isSalePerson =
+        window.location.pathname.includes("saleperson");
+
     if (isSalePerson) {
+
         localStorage.removeItem("sale_access_token");
         localStorage.removeItem("sale_refresh_token");
         localStorage.removeItem("saleperson_data");
-        toast.error(message || "Session expired. Please login again.");
+
+        toast.error(
+            message || "Session expired. Please login again."
+        );
+
         setTimeout(() => {
             window.location.href = "/admin/saleperson-login";
         }, 1500);
+
     } else {
+
         localStorage.removeItem("access_token");
         localStorage.removeItem("admin_token");
         localStorage.removeItem("refresh_token");
         localStorage.removeItem("admin_data");
-        toast.error(message || "Session expired. Please login again.");
+
+        // Remove FirstPass / FirstLoop role
+        localStorage.removeItem("role");
+
+        toast.error(
+            message || "Session expired. Please login again."
+        );
+
         setTimeout(() => {
             window.location.href = "/admin";
         }, 1500);
     }
 };
 
+
 // Request Interceptor
 API.interceptors.request.use(
     (config) => {
-        const isSalePerson = window.location.pathname.includes("saleperson");
-        const accessToken = isSalePerson
-            ? (localStorage.getItem("sale_access_token") || localStorage.getItem("access_token") || localStorage.getItem("admin_token"))
-            : (localStorage.getItem("access_token") || localStorage.getItem("admin_token") || localStorage.getItem("sale_access_token"));
 
-        if (accessToken && accessToken !== "null" && accessToken !== "undefined") {
-            config.headers.Authorization = `Bearer ${accessToken}`;
+        const isSalePerson =
+            window.location.pathname.includes("saleperson");
+
+        const accessToken = isSalePerson
+            ? (
+                localStorage.getItem("sale_access_token") ||
+                localStorage.getItem("access_token") ||
+                localStorage.getItem("admin_token")
+            )
+            : (
+                localStorage.getItem("access_token") ||
+                localStorage.getItem("admin_token") ||
+                localStorage.getItem("sale_access_token")
+            );
+
+        if (
+            accessToken &&
+            accessToken !== "null" &&
+            accessToken !== "undefined"
+        ) {
+            config.headers.Authorization =
+                `Bearer ${accessToken}`;
         }
+
+
+        // Add role ONLY for Admin
+        if (!isSalePerson) {
+
+            const role =
+                localStorage.getItem("role");
+
+            if (role) {
+                config.headers["X-Role"] = role;
+            }
+        }
+
 
         return config;
     },
     (error) => Promise.reject(error)
 );
+
 
 // Response Interceptor
 API.interceptors.response.use(
@@ -68,56 +116,113 @@ API.interceptors.response.use(
 
             try {
 
-                const isSalePerson = window.location.pathname.includes("saleperson");
+                const isSalePerson =
+                    window.location.pathname.includes("saleperson");
+
                 const refreshToken = isSalePerson
                     ? localStorage.getItem("sale_refresh_token")
                     : localStorage.getItem("refresh_token");
 
+
                 if (!refreshToken) {
-                    logoutAndRedirect("Session expired. Please login again.");
+
+                    logoutAndRedirect(
+                        "Session expired. Please login again."
+                    );
+
                     return Promise.reject(error);
                 }
 
+
                 const refreshResponse = await axios.post(
+
                     `${import.meta.env.VITE_API_URL}/admin/refresh-token`,
+
                     {},
+
                     {
                         headers: {
-                            Authorization: `Bearer ${refreshToken}`
+                            Authorization:
+                                `Bearer ${refreshToken}`
                         }
                     }
                 );
 
-                const refreshData = refreshResponse.data;
+
+                const refreshData =
+                    refreshResponse.data;
+
 
                 if (refreshData.status === 1) {
+
                     if (isSalePerson) {
-                        localStorage.setItem("sale_access_token", refreshData.access_token);
+
+                        localStorage.setItem(
+                            "sale_access_token",
+                            refreshData.access_token
+                        );
+
                         if (refreshData.refresh_token) {
-                            localStorage.setItem("sale_refresh_token", refreshData.refresh_token);
+
+                            localStorage.setItem(
+                                "sale_refresh_token",
+                                refreshData.refresh_token
+                            );
                         }
+
                     } else {
-                        localStorage.setItem("access_token", refreshData.access_token);
+
+                        localStorage.setItem(
+                            "access_token",
+                            refreshData.access_token
+                        );
+
                         if (refreshData.refresh_token) {
-                            localStorage.setItem("refresh_token", refreshData.refresh_token);
+
+                            localStorage.setItem(
+                                "refresh_token",
+                                refreshData.refresh_token
+                            );
                         }
                     }
 
-                    originalRequest.headers.Authorization = `Bearer ${refreshData.access_token}`;
+
+                    originalRequest.headers.Authorization =
+                        `Bearer ${refreshData.access_token}`;
+
+
+                    // Add role ONLY for Admin
+                    if (!isSalePerson) {
+
+                        const role =
+                            localStorage.getItem("role");
+
+                        if (role) {
+                            originalRequest.headers["X-Role"] =
+                                role;
+                        }
+                    }
+
+
                     return API(originalRequest);
                 }
 
-                logoutAndRedirect("Session expired. Please login again.");
+
+                logoutAndRedirect(
+                    "Session expired. Please login again."
+                );
+
             } catch (err) {
-                logoutAndRedirect("Session expired. Please login again.");
+
+                logoutAndRedirect(
+                    "Session expired. Please login again."
+                );
+
                 return Promise.reject(err);
-
             }
-
         }
 
         return Promise.reject(error);
-
     }
 
 );

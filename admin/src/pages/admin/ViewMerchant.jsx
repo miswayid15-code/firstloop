@@ -12,6 +12,9 @@ import ConfirmDialog from '../../components/ConfirmDialog.jsx'
 import PhoneNumberField from '../../components/PhoneNumberField.jsx'
 import CorporateAddressField from '../../components/CorporateAddressField.jsx'
 import API from '../../api.js';
+import FirstPassLogo from '../../assets/img/FirstPass-logo.png';
+import FirstLoopLogo from '../../assets/img/first-loop_logo.png';
+import fl_logo from '../../assets/img/firstloop-favicon.png';
 
 const BRANCHES_PER_PAGE = 6
 const COUPONS_PER_PAGE = 5
@@ -20,7 +23,7 @@ const libraries = ['places']
 
 const mapContainerStyle = {
     width: '100%',
-    height: '320px',
+    height: '320px',    
     borderRadius: '14px'
 }
 
@@ -181,6 +184,9 @@ export default function ViewMerchant() {
     const { id } = useParams()
 
     const [search, setSearch] = useState('')
+        const [activeRole, setActiveRole] = useState(
+        sessionStorage.getItem("role") || localStorage.getItem("role") || "firstpass"
+    );
 
     const highlightFieldError = (selector) => {
         setTimeout(() => {
@@ -548,7 +554,7 @@ export default function ViewMerchant() {
 
             )
 
-            // console.log("merchant data", response.data)
+            console.log("merchant data", response.data)
 
             if (isSuccessResponse(response.data)) {
 
@@ -3215,6 +3221,38 @@ export default function ViewMerchant() {
                                             {formatDisplayDate(merchantData?.createdAt)}
                                         </p>
                                     </div>
+                                    {merchantData?.SalePerson && (
+                                        <div>
+                                            <small className="merchant-sub-label">
+                                                Sale Person
+                                            </small>
+
+                                            <p className="merchant-subtext">
+                                                {activeRole === "firstloop" ? (
+                                                    <NavLink
+                                                        to={`/salepersons?id=${merchantData.SalePerson.id}`}
+                                                        style={{
+                                                            color: 'var(--primary)',
+                                                            fontWeight: '600',
+                                                            textDecoration: 'underline',
+                                                            display: 'inline-flex',
+                                                            alignItems: 'center',
+                                                            gap: '4px'
+                                                        }}
+                                                    >
+                                                        {merchantData.SalePerson.name}
+                                                        {merchantData.SalePerson.code ? ` (${merchantData.SalePerson.code})` : ''}
+                                                        <i className="fas fa-external-link-alt" style={{ fontSize: '0.65rem', marginLeft: '2px' }} />
+                                                    </NavLink>
+                                                ) : (
+                                                    <span>
+                                                        {merchantData.SalePerson.name}
+                                                        {merchantData.SalePerson.code ? ` (${merchantData.SalePerson.code})` : ''}
+                                                    </span>
+                                                )}
+                                            </p>
+                                        </div>
+                                    )}
 
                                     <div style={{ gridColumn: '1 / -1' }}>
                                         <small className="merchant-sub-label">
@@ -3334,7 +3372,7 @@ export default function ViewMerchant() {
                                             )}
                                         </div>
                                     </div>
-
+                                  
                                 </div>
 
                             </div>
@@ -3801,6 +3839,25 @@ export default function ViewMerchant() {
                                                 justifyContent: 'flex-end'
                                             }}
                                         >
+{activeRole === "firstloop" && (
+    <button
+        type="button"
+        className="btn-icon view"
+        title="View Branch"
+        onClick={() => navigate(`/view-fl-branch/${branch.id}`)}
+    >
+        <img
+            src={fl_logo}
+            alt="FirstLoop"
+            style={{
+                width: "20px",
+                height: "20px",
+                objectFit: "contain"
+            }}
+        />
+    </button>
+)}
+
                                             <button
                                                 className="btn-icon view"
                                                 title="View Branch"

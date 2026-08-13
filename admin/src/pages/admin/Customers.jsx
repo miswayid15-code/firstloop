@@ -7,7 +7,7 @@ import { toast } from 'react-hot-toast'
 import PhoneNumberField from '../../components/PhoneNumberField.jsx'
 import CorporateAddressField from '../../components/CorporateAddressField.jsx'
 import API from '../../api.js';
-
+import fl_logo from '../../assets/img/firstloop-favicon.png';
 const formatTime = (value) => {
     if (!value) {
         return '-'
@@ -76,6 +76,9 @@ export default function Customers() {
     const [search, setSearch] = useState(searchParam)
     const [customerPage, setCustomerPage] = useState(1)
     const [loading, setLoading] = useState(true)
+        const [activeRole, setActiveRole] = useState(
+        sessionStorage.getItem("role") || localStorage.getItem("role") || "firstpass"
+    );
 
     const [editCustomerForm, setEditCustomerForm] = useState({
         name: '',
@@ -950,14 +953,28 @@ export default function Customers() {
                                     </td>
                                     <td>
                                         <div className="action-group" style={{ justifyContent: 'flex-end' }}>
+                                            {activeRole === "firstloop" && (
+    <button
+        type="button"
+        className="btn-icon view"
+        title="View Customer Details"
+        onClick={() => navigate(`/fp-customer_details/${row.id}`)}
+    >
+        <img
+            src={fl_logo}
+            alt="FirstLoop"
+            style={{
+                width: "20px",
+                height: "20px",
+                objectFit: "contain"
+            }}
+        />
+    </button>
+)}
                                             <button
                                                 className="btn-icon view"
                                                 title="View Customer Details"
-                                                onClick={() => {
-                                                    setSelectedCustomer(row)
-                                                    setShowCustomerView(true)
-                                                    fetchCustomerDetails(row.id)
-                                                }}
+                                                onClick={() => navigate(`/fp-customer_details/${row.id}`)}
                                             >
                                                 <i className="fas fa-eye" />
                                             </button>

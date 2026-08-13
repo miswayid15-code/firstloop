@@ -602,7 +602,7 @@ export default function SalePersonDashboard() {
 
                         <div className="sp-kpi-card">
                             <div>
-                                <div className="sp-kpi-label">Your Referral Code</div>
+                                <div className="sp-kpi-label">Sales Person Code</div>
                                 <div className="sp-code-area">
                                     <span className="sp-code-text">{salesPerson.code}</span>
                                     <button className="sp-code-copy-btn" onClick={copyToClipboard} title="Copy Referral Code">
