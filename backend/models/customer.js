@@ -33,6 +33,11 @@ module.exports = (sequelize, DataTypes) => {
       country: DataTypes.STRING,
       country_code: DataTypes.STRING,
       zip_code: DataTypes.STRING,
+      email_accept: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0
+      },
 
       status: {
         type: DataTypes.INTEGER,

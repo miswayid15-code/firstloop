@@ -38,6 +38,7 @@ exports.list = async (req, res) => {
                 'id',
                 'name',
                 'email',
+                'email_accept',
                 'phone',
                 'dob',
                 'profile_image',

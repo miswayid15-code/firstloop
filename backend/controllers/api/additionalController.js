@@ -347,6 +347,16 @@ exports.customer_verify_otp = async (req, res) => {
 
         // Delete OTP after successful verification
         await record.destroy();
+        await Customer.update(
+            {
+                email_accept: 1
+            },
+            {
+                where: {
+                    email: email
+                }
+            }
+        );
 
         return res.json({
             status: 1,

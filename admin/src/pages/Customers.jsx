@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useSearchParams,useNavigate } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 
 import { useJsApiLoader } from '@react-google-maps/api'
 import { toast } from 'react-hot-toast'
@@ -63,7 +63,7 @@ const getStatusLabel = (status) => {
 }
 
 export default function Customers() {
-        const navigate = useNavigate()
+    const navigate = useNavigate()
     const [searchParams] = useSearchParams()
     const customerIdParam = searchParams.get('id')
     const searchParam = searchParams.get('search') || ''
@@ -122,7 +122,7 @@ export default function Customers() {
     const focusFieldByErrorMessage = (message) => {
         if (!message) return;
         const msg = message.toLowerCase();
-        
+
         if (msg.includes('phone') || msg.includes('mobile')) {
             highlightFieldError('.modal.active input[name="phone"]');
         } else if (msg.includes('email')) {
@@ -843,7 +843,7 @@ export default function Customers() {
 
     return (
         <>
-            
+
             <div className="flex-between" style={{ marginBottom: 24, gap: 20, flexWrap: 'wrap' }}>
                 <div className="flex-row gap-md" style={{ flex: 1, flexWrap: 'nowrap' }}>
                     <div className="search-wrapper" style={{ marginBottom: 0, maxWidth: 360, flex: 1, minWidth: 200 }}>
@@ -925,7 +925,27 @@ export default function Customers() {
                                         </div>
                                     </td>
                                     <td>{`${row.country_code || ''}${row.phone || ''}`}</td>
-                                    <td>{row.email}</td>
+                                    <td>
+                                        {row.email}
+                                        {row.email_accept == 1 ? (
+                                            <i
+                                                className="fas fa-check-circle"
+                                                style={{ color: '#22c55e', fontSize: '0.85rem', marginLeft: '5px' }}
+                                                title="Verified"
+                                            />
+                                        ) : (
+                                            <span
+                                                style={{
+                                                    color: '#f59e0b',
+                                                    fontSize: '0.85rem',
+                                                    marginLeft: '5px'
+                                                }}
+                                                title="Pending"
+                                            >
+                                                <i className="fas fa-clock" />
+                                            </span>
+                                        )}
+                                    </td>
                                     <td>{formatDate(row.dob)}</td>
                                     <td>{formatDate(row.createdAt)}</td>
                                     <td>
@@ -950,7 +970,7 @@ export default function Customers() {
                                     </td>
                                     <td>
                                         <div className="action-group" style={{ justifyContent: 'flex-end' }}>
-                                                                                        <button
+                                            <button
                                                 className="btn-icon view"
                                                 title="View Customer Details"
                                                 onClick={() => {
@@ -964,8 +984,8 @@ export default function Customers() {
                                             <button
                                                 className="btn-icon view"
                                                 title="Send Charts"
-                                                 onClick={() => navigate(`/admin-chat/${row.id}`)}
-                                                                                             style={{
+                                                onClick={() => navigate(`/admin-chat/${row.id}`)}
+                                                style={{
                                                     background: 'linear-gradient(135deg, rgba(233,30,140,0.12) 0%, rgba(233,30,140,0.06) 100%)',
                                                     color: '#e91e8c',
                                                     border: '1.5px solid rgba(233,30,140,0.22)'
@@ -1328,192 +1348,192 @@ export default function Customers() {
                                     </div>
                                 ) : (
                                     <form>
-                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, marginBottom: 18 }}>
-                                        <div
-                                            style={{
-                                                width: 90,
-                                                height: 90,
-                                                borderRadius: '50%',
-                                                border: '2px solid var(--primary)',
-                                                overflow: 'hidden',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                background: 'var(--bg-hover)',
-                                                fontSize: '2rem',
-                                                color: 'var(--primary)'
-                                            }}
-                                        >
-                                            {editCustomerForm.profileImagePreview ? (
-                                                <img
-                                                    src={editCustomerForm.profileImagePreview}
-                                                    alt="Profile"
-                                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                                />
-                                            ) : (
-                                                <i className="fas fa-user" />
-                                            )}
-                                        </div>
-
-                                        <label className="btn btn-sm-action-secondary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', fontSize: '0.85rem' }}>
-                                            <i className="fas fa-camera" />
-                                            {editCustomerForm.profile_image ? 'Change Photo' : 'Upload Profile Photo'}
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                onChange={handleEditCustomerProfileImageChange}
-                                                hidden
-                                            />
-                                        </label>
-
-                                        <small style={{ color: 'var(--text-muted)', fontSize: '0.74rem' }}>
-                                            Upload a profile image for the customer. JPG, PNG supported.
-                                        </small>
-                                    </div>
-
-                                    <div className="form-row">
-                                        <div className="form-group">
-                                            <input
-                                                type="text"
-                                                id="edit-cust-name"
-                                                name="name"
-                                                className="form-control"
-                                                placeholder=" "
-                                                value={editCustomerForm.name}
-                                                onChange={handleEditCustomerChange}
-                                                required
-                                            />
-                                            <label htmlFor="edit-cust-name" className="form-label">
-                                                Full Name <span style={{ color: '#ef4444' }}>*</span>
-                                            </label>
-                                        </div>
-
-                                        <div className="form-group">
-                                            <input
-                                                type="email"
-                                                id="edit-cust-email"
-                                                name="email"
-                                                className="form-control"
-                                                placeholder=" "
-                                                value={editCustomerForm.email}
-                                                onChange={handleEditCustomerChange}
-                                                required
-                                            />
-                                            <label htmlFor="edit-cust-email" className="form-label">
-                                                Email Address <span style={{ color: '#ef4444' }}>*</span>
-                                            </label>
-                                        </div>
-                                    </div>
-
-                                    <div className="form-row">
-                                        <PhoneNumberField
-                                            value={editCustomerForm.phone}
-                                            countryCode={editCustomerForm.country_code ? String(editCustomerForm.country_code) : ''}
-                                            onChange={handleEditCustomerPhoneChange}
-                                        />
-
-                                        <div className="form-group-classic">
-                                            <label className="form-label-classic">Gender</label>
-                                            <select
-                                                name="gender"
-                                                className="form-select"
-                                                value={editCustomerForm.gender}
-                                                onChange={handleEditCustomerChange}
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, marginBottom: 18 }}>
+                                            <div
+                                                style={{
+                                                    width: 90,
+                                                    height: 90,
+                                                    borderRadius: '50%',
+                                                    border: '2px solid var(--primary)',
+                                                    overflow: 'hidden',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    background: 'var(--bg-hover)',
+                                                    fontSize: '2rem',
+                                                    color: 'var(--primary)'
+                                                }}
                                             >
-                                                <option value="">Select gender</option>
-                                                <option value="1">Male</option>
-                                                <option value="2">Female</option>
-                                                <option value="3">Others</option>
-                                            </select>
+                                                {editCustomerForm.profileImagePreview ? (
+                                                    <img
+                                                        src={editCustomerForm.profileImagePreview}
+                                                        alt="Profile"
+                                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                    />
+                                                ) : (
+                                                    <i className="fas fa-user" />
+                                                )}
+                                            </div>
+
+                                            <label className="btn btn-sm-action-secondary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', fontSize: '0.85rem' }}>
+                                                <i className="fas fa-camera" />
+                                                {editCustomerForm.profile_image ? 'Change Photo' : 'Upload Profile Photo'}
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={handleEditCustomerProfileImageChange}
+                                                    hidden
+                                                />
+                                            </label>
+
+                                            <small style={{ color: 'var(--text-muted)', fontSize: '0.74rem' }}>
+                                                Upload a profile image for the customer. JPG, PNG supported.
+                                            </small>
                                         </div>
-                                    </div>
 
-                                    <div className="form-row">
-                                         <div className="form-group" style={{ position: 'relative' }}>
-                                             <input
-                                                 type={showEditPassword ? "text" : "password"}
-                                                 id="edit-cust-password"
-                                                 name="password"
-                                                 className="form-control"
-                                                 placeholder=" "
-                                                 value={editCustomerForm.password}
-                                                 onChange={handleEditCustomerChange}
-                                                 required
-                                                 style={{ paddingRight: '40px' }}
-                                             />
-                                             <label className="form-label">Password <span style={{ color: '#ef4444' }}>*</span></label>
-                                             <button
-                                                 type="button"
-                                                 onClick={() => setShowEditPassword(!showEditPassword)}
-                                                 style={{
-                                                     position: 'absolute',
-                                                     right: '12px',
-                                                     top: '50%',
-                                                     transform: 'translateY(-50%)',
-                                                     background: 'none',
-                                                     border: 'none',
-                                                     cursor: 'pointer',
-                                                     color: 'var(--text-secondary)',
-                                                     padding: 0,
-                                                     display: 'flex',
-                                                     alignItems: 'center',
-                                                     justifyContent: 'center',
-                                                     zIndex: 10
-                                                 }}
-                                             >
-                                                 <i className={showEditPassword ? "fas fa-eye-slash" : "fas fa-eye"}></i>
-                                             </button>
-                                         </div>
+                                        <div className="form-row">
+                                            <div className="form-group">
+                                                <input
+                                                    type="text"
+                                                    id="edit-cust-name"
+                                                    name="name"
+                                                    className="form-control"
+                                                    placeholder=" "
+                                                    value={editCustomerForm.name}
+                                                    onChange={handleEditCustomerChange}
+                                                    required
+                                                />
+                                                <label htmlFor="edit-cust-name" className="form-label">
+                                                    Full Name <span style={{ color: '#ef4444' }}>*</span>
+                                                </label>
+                                            </div>
 
-                                        <div className="form-group-classic">
-                                            <label className="form-label-classic">Date of Birth</label>
-                                            <input
-                                                type="date"
-                                                name="dob"
-                                                className="form-control"
-                                                value={editCustomerForm.dob || selectedCustomer.dob || ''}
-                                                onChange={handleEditCustomerChange}
-                                                required
-                                                style={{ padding: '8px 12px', height: 40 }}
+                                            <div className="form-group">
+                                                <input
+                                                    type="email"
+                                                    id="edit-cust-email"
+                                                    name="email"
+                                                    className="form-control"
+                                                    placeholder=" "
+                                                    value={editCustomerForm.email}
+                                                    onChange={handleEditCustomerChange}
+                                                    required
+                                                />
+                                                <label htmlFor="edit-cust-email" className="form-label">
+                                                    Email Address <span style={{ color: '#ef4444' }}>*</span>
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div className="form-row">
+                                            <PhoneNumberField
+                                                value={editCustomerForm.phone}
+                                                countryCode={editCustomerForm.country_code ? String(editCustomerForm.country_code) : ''}
+                                                onChange={handleEditCustomerPhoneChange}
                                             />
+
+                                            <div className="form-group-classic">
+                                                <label className="form-label-classic">Gender</label>
+                                                <select
+                                                    name="gender"
+                                                    className="form-select"
+                                                    value={editCustomerForm.gender}
+                                                    onChange={handleEditCustomerChange}
+                                                >
+                                                    <option value="">Select gender</option>
+                                                    <option value="1">Male</option>
+                                                    <option value="2">Female</option>
+                                                    <option value="3">Others</option>
+                                                </select>
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    <div style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border)', paddingBottom: 6, marginBottom: 12 }}>
-                                        Address
-                                    </div>
+                                        <div className="form-row">
+                                            <div className="form-group" style={{ position: 'relative' }}>
+                                                <input
+                                                    type={showEditPassword ? "text" : "password"}
+                                                    id="edit-cust-password"
+                                                    name="password"
+                                                    className="form-control"
+                                                    placeholder=" "
+                                                    value={editCustomerForm.password}
+                                                    onChange={handleEditCustomerChange}
+                                                    required
+                                                    style={{ paddingRight: '40px' }}
+                                                />
+                                                <label className="form-label">Password <span style={{ color: '#ef4444' }}>*</span></label>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowEditPassword(!showEditPassword)}
+                                                    style={{
+                                                        position: 'absolute',
+                                                        right: '12px',
+                                                        top: '50%',
+                                                        transform: 'translateY(-50%)',
+                                                        background: 'none',
+                                                        border: 'none',
+                                                        cursor: 'pointer',
+                                                        color: 'var(--text-secondary)',
+                                                        padding: 0,
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        zIndex: 10
+                                                    }}
+                                                >
+                                                    <i className={showEditPassword ? "fas fa-eye-slash" : "fas fa-eye"}></i>
+                                                </button>
+                                            </div>
 
-                                    {customerMapLoadError && (
-                                        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                                            Failed to load Google Maps. Please check the Maps API key.
-                                        </p>
-                                    )}
+                                            <div className="form-group-classic">
+                                                <label className="form-label-classic">Date of Birth</label>
+                                                <input
+                                                    type="date"
+                                                    name="dob"
+                                                    className="form-control"
+                                                    value={editCustomerForm.dob || selectedCustomer.dob || ''}
+                                                    onChange={handleEditCustomerChange}
+                                                    required
+                                                    style={{ padding: '8px 12px', height: 40 }}
+                                                />
+                                            </div>
+                                        </div>
 
-                                    {!customerMapLoadError && !isCustomerMapLoaded && (
-                                        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                                            Loading map...
-                                        </p>
-                                    )}
+                                        <div style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border)', paddingBottom: 6, marginBottom: 12 }}>
+                                            Address
+                                        </div>
 
-                                    {isCustomerMapLoaded && (
-                                        <CorporateAddressField
-                                            form={editCustomerForm}
-                                            onInputChange={handleEditCustomerChange}
-                                            onAutocompleteLoad={handleEditCustomerAutocompleteLoad}
-                                            onPlaceChanged={handleCustomerPlaceChanged}
-                                            onMapClick={(event) => {
-                                                if (event.latLng) {
-                                                    handleCustomerMarkerDragEnd(event)
-                                                }
-                                            }}
-                                            onMarkerDragEnd={handleCustomerMarkerDragEnd}
-                                            center={customerMapCenter}
-                                            mapContainerStyle={{ width: '100%', height: '320px' }}
-                                            required={true}
-                                        />
-                                    )}
+                                        {customerMapLoadError && (
+                                            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                                                Failed to load Google Maps. Please check the Maps API key.
+                                            </p>
+                                        )}
 
-                                </form>
+                                        {!customerMapLoadError && !isCustomerMapLoaded && (
+                                            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                                                Loading map...
+                                            </p>
+                                        )}
+
+                                        {isCustomerMapLoaded && (
+                                            <CorporateAddressField
+                                                form={editCustomerForm}
+                                                onInputChange={handleEditCustomerChange}
+                                                onAutocompleteLoad={handleEditCustomerAutocompleteLoad}
+                                                onPlaceChanged={handleCustomerPlaceChanged}
+                                                onMapClick={(event) => {
+                                                    if (event.latLng) {
+                                                        handleCustomerMarkerDragEnd(event)
+                                                    }
+                                                }}
+                                                onMarkerDragEnd={handleCustomerMarkerDragEnd}
+                                                center={customerMapCenter}
+                                                mapContainerStyle={{ width: '100%', height: '320px' }}
+                                                required={true}
+                                            />
+                                        )}
+
+                                    </form>
                                 )}
 
                             </div>
