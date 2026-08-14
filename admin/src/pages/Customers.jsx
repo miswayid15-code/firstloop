@@ -927,10 +927,15 @@ export default function Customers() {
                                     <td>{`${row.country_code || ''}${row.phone || ''}`}</td>
                                     <td>
                                         {row.email}
-                                        {row.email_accept == 1 ? (
+
+                                        {Number(row.email_accept) === 1 ? (
                                             <i
                                                 className="fas fa-check-circle"
-                                                style={{ color: '#22c55e', fontSize: '0.85rem', marginLeft: '5px' }}
+                                                style={{
+                                                    color: '#22c55e',
+                                                    fontSize: '0.85rem',
+                                                    marginLeft: '5px'
+                                                }}
                                                 title="Verified"
                                             />
                                         ) : (
