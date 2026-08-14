@@ -1006,6 +1006,7 @@ exports.fetch_list = async (req, res) => {
                 'id',
                 'name',
                 'email',
+                'email_accept',
                 'phone',
                 'country_code',
                 'dob',
