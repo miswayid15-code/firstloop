@@ -154,6 +154,7 @@ export default function StampCardBuilderModal({
 
     return (
         <div
+            className="builder-modal-overlay"
             style={{
                 position: 'fixed',
                 top: 0,
@@ -166,10 +167,11 @@ export default function StampCardBuilderModal({
                 alignItems: 'center',
                 justifyContent: 'center',
                 zIndex: 9999,
-                padding: 20
+                padding: 14
             }}
         >
             <div
+                className="builder-modal-content"
                 style={{
                     background: '#FFFFFF',
                     borderRadius: 20,
@@ -183,13 +185,13 @@ export default function StampCardBuilderModal({
                 }}
             >
                 {/* Builder Header */}
-                <div style={{ padding: '18px 28px', background: '#F8FAFC', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ padding: '18px 20px', background: '#F8FAFC', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--firstloop-primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--firstloop-primary)', fontSize: '1.1rem' }}>
                             <i className="fas fa-stamp" />
                         </div>
                         <div>
-                            <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
                                 {stampForm.id ? 'Edit Stamp Card' : 'Create Stamp Card'} - Dynamic Stamp Count
                             </h3>
                             <small style={{ color: 'var(--text-muted)' }}>
@@ -207,7 +209,7 @@ export default function StampCardBuilderModal({
                 </div>
 
                 {/* Top Card Design API Picker Carousel */}
-                <div style={{ padding: '14px 28px', background: '#FFFFFF', borderBottom: '1px solid #F1F5F9' }}>
+                <div style={{ padding: '12px 20px', background: '#FFFFFF', borderBottom: '1px solid #F1F5F9' }}>
                     <small style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: 8 }}>
                         SELECT CARD DESIGN BACKGROUND IMAGE (API: admin/card-design/list)
                     </small>
@@ -244,9 +246,9 @@ export default function StampCardBuilderModal({
                 </div>
 
                 {/* Modal Body Grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', flex: 1, overflowY: 'auto' }}>
+                <div className="card-builder-modal-grid">
                     {/* LEFT PANEL: FORM CONTROLS */}
-                    <div style={{ padding: 28, borderRight: '1px solid #F1F5F9', overflowY: 'auto' }}>
+                    <div className="builder-left-panel" style={{ padding: 24, borderRight: '1px solid #F1F5F9', overflowY: 'auto' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                             {/* 1. Card Title, Brand & Stamp Count Input */}
                             <div>
@@ -266,7 +268,7 @@ export default function StampCardBuilderModal({
                                         />
                                     </div>
 
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+                                    <div className="card-builder-form-trio">
                                         <div>
                                             <label style={{ fontSize: '0.8rem', fontWeight: 600, marginBottom: 4, display: 'block' }}>Brand Name</label>
                                             <input
@@ -572,7 +574,7 @@ export default function StampCardBuilderModal({
                     </div>
 
                     {/* RIGHT PANEL: LIVE STAMP CARD PREVIEW */}
-                    <div style={{ padding: 28, background: '#F8FAFC', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                    <div className="builder-right-panel" style={{ padding: 24, background: '#F8FAFC', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                         <small style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 16 }}>
                             LIVE CARD PREVIEW
                         </small>
@@ -592,6 +594,12 @@ export default function StampCardBuilderModal({
                             }}
                         >
                             <div style={{ position: 'relative', zIndex: 2 }}>
+                                {/* ALERT NOTICE BADGE: 2 STAMPS ONLY REMAINING & EXPIRES IN 30 DAYS */}
+                                <div style={{ background: 'rgba(0, 0, 0, 0.25)', backdropFilter: 'blur(4px)', padding: '5px 10px', borderRadius: 8, fontSize: '0.72rem', fontWeight: 800, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10, border: '1px solid rgba(255,255,255,0.3)' }}>
+                                    <i className="fas fa-exclamation-circle" style={{ color: '#FDE047', fontSize: '0.8rem' }} />
+                                    <span>Alert: 2 stamps only remaining &bull; Expired in 30 days</span>
+                                </div>
+
                                 <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
                                     {/* Left Side */}
                                     <div style={{ flex: 1, minWidth: 0 }}>

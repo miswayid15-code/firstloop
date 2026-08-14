@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { NavLink, useParams, useNavigate, useSearchParams } from 'react-router-dom'
+import { NavLink, useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import logo from '../../assets/img/firstloop-favicon.png'
 import flLogo from '../../assets/img/firstloop-favicon.png'
 import qrImg from '../../assets/img/qr-img.png'
@@ -224,8 +224,9 @@ export default function FpCustomerDetails() {
         }
     }, [searchParams])
 
-    // Card History Modal State
+    // Card History & Preview Modal States
     const [historyModalCard, setHistoryModalCard] = useState(null)
+    const [previewModalCard, setPreviewModalCard] = useState(null)
 
     // Filter Stamp Cards by Branch
     const filteredStampCards = useMemo(() => {
@@ -245,12 +246,15 @@ export default function FpCustomerDetails() {
         border: `2px solid ${card.borderColor || 'rgba(255,255,255,0.4)'}`
     })
 
+    const location = useLocation()
+    const backPath = location.pathname.startsWith('/merchant') ? '/merchant/customers' : '/customers'
+
     return (
         <div style={{ paddingBottom: 40 }}>
             {/* Header & Breadcrumbs */}
             <div style={{ marginBottom: 20 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 500, marginBottom: 8 }}>
-                    <NavLink to="/customers" style={{ color: 'var(--firstloop-primary)' }}>
+                    <NavLink to={backPath} style={{ color: 'var(--firstloop-primary)' }}>
                         Customers
                     </NavLink>
                     <i className="fas fa-chevron-right" style={{ fontSize: '0.7rem' }} />
@@ -259,7 +263,9 @@ export default function FpCustomerDetails() {
 
                 <div className="flex-between" style={{ gap: 20, flexWrap: 'wrap' }}>
                     <div>
-
+                        <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.4rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
+                            Customer Profile: {customer.name}
+                        </h2>
                         <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 6 }}>
                             Multi-branch Stamp Cards, Membership Passes, and Complete Transaction History logs.
                         </p>
@@ -268,7 +274,7 @@ export default function FpCustomerDetails() {
                     <button
                         type="button"
                         className="btn firstloop-btn-secondary"
-                        onClick={() => navigate('/customers')}
+                        onClick={() => navigate(backPath)}
                         style={{ padding: '9px 18px', borderRadius: 10, fontSize: '0.85rem' }}
                     >
                         <i className="fas fa-arrow-left" style={{ marginRight: 6 }} />
@@ -478,15 +484,26 @@ export default function FpCustomerDetails() {
                                         {card.usageNote}
                                     </div>
 
-                                    <button
-                                        type="button"
-                                        className="btn firstloop-btn-primary"
-                                        onClick={() => setHistoryModalCard({ ...card, type: 'stamp' })}
-                                        style={{ padding: '6px 12px', fontSize: '0.78rem', borderRadius: 8, display: 'inline-flex', alignItems: 'center', gap: 4, flexShrink: 0 }}
-                                    >
-                                        <i className="fas fa-history" />
-                                        <span>View History</span>
-                                    </button>
+                                    <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                                        <button
+                                            type="button"
+                                            className="btn firstloop-btn-secondary"
+                                            onClick={() => setPreviewModalCard({ ...card, type: 'stamp' })}
+                                            style={{ padding: '6px 12px', fontSize: '0.78rem', borderRadius: 8, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                                        >
+                                            <i className="fas fa-eye" />
+                                            <span>Preview</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="btn firstloop-btn-primary"
+                                            onClick={() => setHistoryModalCard({ ...card, type: 'stamp' })}
+                                            style={{ padding: '6px 12px', fontSize: '0.78rem', borderRadius: 8, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                                        >
+                                            <i className="fas fa-history" />
+                                            <span>View History</span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -596,15 +613,26 @@ export default function FpCustomerDetails() {
                                         <span>{mem.expiryNotice}</span>
                                     </div>
 
-                                    <button
-                                        type="button"
-                                        className="btn"
-                                        onClick={() => setHistoryModalCard({ ...mem, type: 'membership' })}
-                                        style={{ padding: '6px 12px', fontSize: '0.78rem', borderRadius: 8, background: '#D97706', color: '#FFF', fontWeight: 700, border: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, flexShrink: 0 }}
-                                    >
-                                        <i className="fas fa-history" />
-                                        <span>View History</span>
-                                    </button>
+                                    <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                                        <button
+                                            type="button"
+                                            className="btn firstloop-btn-secondary"
+                                            onClick={() => setPreviewModalCard({ ...mem, type: 'membership' })}
+                                            style={{ padding: '6px 12px', fontSize: '0.78rem', borderRadius: 8, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                                        >
+                                            <i className="fas fa-eye" />
+                                            <span>Preview</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="btn"
+                                            onClick={() => setHistoryModalCard({ ...mem, type: 'membership' })}
+                                            style={{ padding: '6px 12px', fontSize: '0.78rem', borderRadius: 8, background: '#D97706', color: '#FFF', fontWeight: 700, border: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                                        >
+                                            <i className="fas fa-history" />
+                                            <span>View History</span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -761,6 +789,204 @@ export default function FpCustomerDetails() {
                                 style={{ padding: '8px 20px', borderRadius: 8, fontSize: '0.85rem' }}
                             >
                                 Close History Log
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* PASS PREVIEW MODAL */}
+            {previewModalCard && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'rgba(15, 23, 42, 0.75)',
+                        backdropFilter: 'blur(6px)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 9999,
+                        padding: 20
+                    }}
+                >
+                    <div style={{ background: '#FFFFFF', borderRadius: 20, maxWidth: 440, width: '100%', padding: 24, boxShadow: '0 20px 40px rgba(0,0,0,0.3)', position: 'relative' }}>
+                        <button
+                            type="button"
+                            onClick={() => setPreviewModalCard(null)}
+                            style={{ position: 'absolute', right: 16, top: 16, background: 'none', border: 'none', fontSize: '1.2rem', color: 'var(--text-muted)', cursor: 'pointer' }}
+                        >
+                            &times;
+                        </button>
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: 16 }}>
+                            {previewModalCard.type === 'membership' ? 'Membership Pass Preview' : 'Stamp Card Pass Preview'}
+                        </h3>
+
+                        {/* Pass Canvas */}
+                        <div
+                            style={{
+                                width: '100%',
+                                borderRadius: 20,
+                                ...getCardStyle(previewModalCard),
+                                color: previewModalCard.textColor || '#FFFFFF',
+                                padding: 18,
+                                boxShadow: '0 14px 30px -6px rgba(0,0,0,0.22)',
+                                minHeight: 210
+                            }}
+                        >
+                            {previewModalCard.type === 'membership' ? (
+                                <div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                            <div style={{ width: 34, height: 34, borderRadius: 10, background: '#FFFFFF', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                <img src={previewModalCard.brandLogo || flLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                            </div>
+                                            <span style={{ fontSize: '1.05rem', fontWeight: 800, color: 'inherit' }}>
+                                                {previewModalCard.brandName || 'FirstLoop'}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 10 }}>
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'inherit' }}>
+                                                {previewModalCard.name}
+                                            </div>
+                                            <div style={{ fontSize: '0.82rem', opacity: 0.9, marginTop: 4, fontWeight: 700 }}>
+                                                {previewModalCard.cardholderName || 'Sophia Reynolds'}
+                                            </div>
+
+                                            <div style={{ marginTop: 12, borderTop: '1px solid rgba(255,255,255,0.25)', paddingTop: 8 }}>
+                                                <small style={{ fontSize: '0.65rem', textTransform: 'uppercase', opacity: 0.85 }}>Valid Thru</small>
+                                                <div style={{ fontSize: '0.88rem', fontWeight: 800, color: 'inherit' }}>
+                                                    {previewModalCard.validThru || '03/25'}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
+                                            <RealQRCode size={92} />
+                                            <small style={{ fontSize: '0.6rem', fontWeight: 700, marginTop: 4, textTransform: 'uppercase', opacity: 0.9 }}>SCAN PASS</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div>
+                                    <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                                                <div style={{ width: 26, height: 26, borderRadius: 8, background: '#FFF', padding: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                    <img src={logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                                </div>
+                                                <span style={{ fontSize: '0.92rem', fontWeight: 800, color: 'inherit' }}>
+                                                    {previewModalCard.brandName || 'FirstLoop'}
+                                                </span>
+                                            </div>
+
+                                            <div style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: 10 }}>
+                                                {previewModalCard.title}
+                                            </div>
+
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 6, maxWidth: 220 }}>
+                                                {Array.from({ length: previewModalCard.total || 8 }).map((_, i) => (
+                                                    <div
+                                                        key={i}
+                                                        style={{
+                                                            width: 36,
+                                                            height: 36,
+                                                            borderRadius: '50%',
+                                                            border: `2px solid ${previewModalCard.stampBorderColor || '#FFFFFF'}`,
+                                                            background: i < (previewModalCard.collected || 0) ? 'rgba(255, 255, 255, 0.85)' : previewModalCard.stampBgColor || 'rgba(255, 255, 255, 0.3)',
+                                                            color: i < (previewModalCard.collected || 0) ? '#EF0003' : previewModalCard.stampTextColor || 'inherit',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            fontSize: '0.82rem',
+                                                            fontWeight: 800
+                                                        }}
+                                                    >
+                                                        {i < (previewModalCard.collected || 0) ? <i className="fas fa-check" /> : i + 1}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
+                                            <RealQRCode size={84} />
+                                            <small style={{ fontSize: '0.58rem', fontWeight: 800, marginTop: 4, letterSpacing: '0.5px' }}>
+                                                SCAN TO STAMP
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 4, fontSize: '0.65rem', opacity: 0.9, marginTop: 10, fontWeight: 700 }}>
+                                <span>powered by</span>
+                                <img src={flLogo} alt="FirstLoop" style={{ height: 12 }} />
+                                <span>FirstLoop</span>
+                            </div>
+                        </div>
+
+                        {/* Share & Download Action Buttons */}
+                        <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+                            <a
+                                href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`Check out my ${previewModalCard.name || previewModalCard.title || 'FirstLoop'} Pass! Access your digital loyalty card here: ${window.location.href}`)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn"
+                                style={{
+                                    flex: 1,
+                                    padding: '10px 14px',
+                                    borderRadius: 10,
+                                    background: '#25D366',
+                                    color: '#FFFFFF',
+                                    fontWeight: 700,
+                                    fontSize: '0.85rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: 8,
+                                    textDecoration: 'none',
+                                    border: 'none',
+                                    boxShadow: '0 4px 12px rgba(37, 211, 102, 0.25)'
+                                }}
+                            >
+                                <i className="fab fa-whatsapp" style={{ fontSize: '1.1rem' }} />
+                                <span>Share to WhatsApp</span>
+                            </a>
+
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const cardName = (previewModalCard.name || previewModalCard.title || 'digital-pass').toLowerCase().replace(/\s+/g, '-')
+                                    const link = document.createElement('a')
+                                    link.href = qrImg
+                                    link.download = `${cardName}-pass.png`
+                                    document.body.appendChild(link)
+                                    link.click()
+                                    document.body.removeChild(link)
+                                    alert(`Downloading ${previewModalCard.name || previewModalCard.title} Digital Pass...`)
+                                }}
+                                className="btn firstloop-btn-primary"
+                                style={{
+                                    flex: 1,
+                                    padding: '10px 14px',
+                                    borderRadius: 10,
+                                    fontWeight: 700,
+                                    fontSize: '0.85rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: 8,
+                                    boxShadow: '0 4px 12px rgba(14, 136, 184, 0.25)'
+                                }}
+                            >
+                                <i className="fas fa-download" style={{ fontSize: '0.95rem' }} />
+                                <span>Download Card</span>
                             </button>
                         </div>
                     </div>

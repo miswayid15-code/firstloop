@@ -46,6 +46,23 @@ import SalePersonLogin from './pages/saleperson/SalePersonLogin.jsx';
 import SalePersonDashboard from './pages/saleperson/SalePersonDashboard.jsx';
 import SalePersonAddMerchant from './pages/saleperson/AddMerchant.jsx';
 
+// Merchant UI
+import MerchantLayout from './pages/merchant/MerchantLayout.jsx';
+import MerchantLogin from './pages/merchant/MerchantLogin.jsx';
+import MerchantDashboard from './pages/merchant/MerchantDashboard.jsx';
+import MerchantCustomerList from './pages/merchant/CustomerList.jsx';
+import MerchantCardList from './pages/merchant/CardList.jsx';
+import MerchantBranchList from './pages/merchant/BranchList.jsx';
+import MerchantBranchReceptionists from './pages/merchant/BranchReceptionists.jsx';
+import MerchantReportsView from './pages/merchant/MerchantReports.jsx';
+
+// Receptionist UI
+import ReceptionistLayout from './pages/receptionist/ReceptionistLayout.jsx';
+import ReceptionistLogin from './pages/receptionist/ReceptionistLogin.jsx';
+import ReceptionistDashboard from './pages/receptionist/ReceptionistDashboard.jsx';
+import ReceptionistCustomerList from './pages/receptionist/ReceptionistCustomerList.jsx';
+import CardCheckInPayment from './pages/receptionist/CardCheckInPayment.jsx';
+
 // Website
 import Header from './component/Header.jsx';
 import Footer from './component/Footer.jsx';
@@ -171,6 +188,33 @@ function AdminLayout() {
         <Route path="saleperson-dashboard" element={<SalePersonDashboard />} />
         <Route path="saleperson-add-merchant" element={<SalePersonAddMerchant />} />
 
+        {/* Merchant UI Routes */}
+        <Route path="merchant/login" element={<MerchantLogin />} />
+        <Route path="merchant-login" element={<MerchantLogin />} />
+
+        <Route path="merchant" element={<MerchantLayout />}>
+          <Route index element={<Navigate to="/merchant/dashboard" replace />} />
+          <Route path="dashboard" element={<MerchantDashboard />} />
+          <Route path="customers" element={<MerchantCustomerList />} />
+          <Route path="customers/:id" element={<FpCustomerDetails />} />
+          <Route path="cards" element={<MerchantCardList />} />
+          <Route path="branches" element={<MerchantBranchList />} />
+          <Route path="branches/:id" element={<ViewFlBranch />} />
+          <Route path="branches/:branchId/receptionists" element={<MerchantBranchReceptionists />} />
+          <Route path="reports" element={<MerchantReportsView />} />
+        </Route>
+
+        {/* Receptionist UI Routes */}
+        <Route path="receptionist/login" element={<ReceptionistLogin />} />
+        <Route path="receptionist-login" element={<ReceptionistLogin />} />
+
+        <Route path="receptionist" element={<ReceptionistLayout />}>
+          <Route index element={<Navigate to="/receptionist/dashboard" replace />} />
+          <Route path="dashboard" element={<ReceptionistDashboard />} />
+          <Route path="customers" element={<ReceptionistCustomerList />} />
+          <Route path="checkin" element={<CardCheckInPayment />} />
+        </Route>
+
         <Route
           element={
             <ProtectedRoute>
@@ -225,7 +269,7 @@ function AdminLayout() {
 
 export default function App() {
   const location = useLocation();
-  const isAdmin = window.location.pathname.startsWith('/admin');
+  const isAdmin = window.location.pathname.startsWith('/admin') || window.location.pathname.startsWith('/merchant');
 
   return (
     <>
