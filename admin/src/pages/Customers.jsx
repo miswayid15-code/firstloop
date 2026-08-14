@@ -926,7 +926,7 @@ export default function Customers() {
                                     </td>
                                     <td>{`${row.country_code || ''}${row.phone || ''}`}</td>
                                     <td>
-                                        {row.email}  -- {row.email_accept}
+                                        {row.email} 
 
                                         {Number(row.email_accept) === 1 ? (
                                             <i
