@@ -104,6 +104,8 @@ export default function CardDesigns() {
                 formData.append('image', addForm.image)
             }
 
+
+            
             const response = await API.post('admin/card-design/create', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data'
