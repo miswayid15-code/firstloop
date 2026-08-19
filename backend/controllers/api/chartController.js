@@ -709,43 +709,62 @@ exports.sendCustomerNotification = async (req, res) => {
         if (!cus) {
             return res.json({
                 status: 0,
-                message: "customer is not found"
+                message: "Customer is not found"
             });
         }
-
-
 
         const customerToken = await UserNotificationToken.findOne({
             where: {
                 user_id: cus.id,
-                user_type: "customer"
+                user_type: "customer",
+                is_active: 1
             }
         });
+
+        if (!customerToken) {
+            return res.json({
+                status: 0,
+                message: "Customer notification token not found"
+            });
+        }
+
+        if (!customerToken.token) {
+            return res.json({
+                status: 0,
+                message: "Customer notification token is empty"
+            });
+        }
 
         const notification = {
             title: "New Chat Message",
             body: "You have received a new chat message"
         };
 
-        if (customerToken?.token) {
-            try {
-                await sendPushNotification({
-                    token: customerToken.token,
-                    ...notification,
-                    data: {
-                        type: "chat",
-                        ch_id: String(ch_id || ""),
-                        branch_id: String(branch.id)
-                    }
-                });
-            } catch (err) {
-                console.log(
-                    "Merchant Push Notification Error:",
-                    err
-                );
-            }
-        }
+        try {
+            await sendPushNotification({
+                token: customerToken.token,
 
+                ...notification,
+
+                data: {
+                    type: "chat",
+                    ch_id: String(ch_id || ""),
+                    customer_id: String(cus.id)
+                }
+            });
+
+        } catch (err) {
+            console.log(
+                "Customer Push Notification Error:",
+                err
+            );
+
+            return res.json({
+                status: 0,
+                message: "Failed to send customer notification",
+                error: err.message
+            });
+        }
 
         return res.json({
             status: 1,
