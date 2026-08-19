@@ -464,7 +464,20 @@ const uploadSnapshot = await uploadBytes(storageRef, selectedImage);
             console.log("AdminChat - Updating parent chat document values:", parentUpdatePayload)
             await updateDoc(chatDocRef, parentUpdatePayload)
 
-            // 4. Reset inputs
+            // 4. Trigger Customer Notification API
+            try {
+                const cusId = chatData?.customerId || parseInt(id, 10)
+                const chId = chatData?.ch_id || chatId
+                await API.post('chats/send-cus-notifications', {
+                    cus_id: cusId,
+                    ch_id: chId
+                })
+                console.log("AdminChat - Customer notification API called successfully:", { cus_id: cusId, ch_id: chId })
+            } catch (notifErr) {
+                console.error("AdminChat - Failed to send customer notification:", notifErr)
+            }
+
+            // 5. Reset inputs
             setInputText('')
             clearSelectedImage()
             if (inputRef.current) {
