@@ -580,46 +580,14 @@ exports.sendBranchMessage = async (req, res) => {
 
 exports.sendNotification = async (req, res) => {
     try {
-
-        console.log("==============================================");
-        console.log("🚀 SEND NOTIFICATION STARTED");
-        console.log("==============================================");
-
-        // ==========================================
-        // REQUEST
-        // ==========================================
-
-        console.log("📥 Request body:", req.body);
-
         const { br_id, ch_id } = req.body;
 
-        console.log("📌 br_id:", br_id);
-        console.log("📌 ch_id:", ch_id);
-
-        // ==========================================
-        // VALIDATION
-        // ==========================================
-
         if (!br_id) {
-
-            console.log("❌ Branch ID is missing");
-
             return res.json({
                 status: 0,
                 message: "branch id is required"
             });
         }
-
-        console.log("✅ Branch ID validation passed");
-
-
-        // ==========================================
-        // GET BRANCH
-        // ==========================================
-
-        console.log("----------------------------------------------");
-        console.log("🔍 Finding branch...");
-        console.log("Branch ID:", br_id);
 
         const branch = await Branch.findOne({
             where: {
@@ -629,30 +597,12 @@ exports.sendNotification = async (req, res) => {
             }
         });
 
-        console.log("📦 Branch result:", branch);
-
         if (!branch) {
-
-            console.log("❌ Branch not found");
-
             return res.json({
                 status: 0,
                 message: "Branch not found"
             });
         }
-
-        console.log("✅ Branch found");
-        console.log("Branch ID:", branch.id);
-        console.log("Merchant ID:", branch.merchant_id);
-
-
-        // ==========================================
-        // GET RECEPTIONIST
-        // ==========================================
-
-        console.log("----------------------------------------------");
-        console.log("🔍 Finding receptionist...");
-        console.log("Branch ID:", branch.id);
 
         const receptionist = await Receptionist.findOne({
             where: {
@@ -662,201 +612,38 @@ exports.sendNotification = async (req, res) => {
             }
         });
 
-        console.log(
-            "📦 Receptionist result:",
-            receptionist
-        );
-
-        if (receptionist) {
-
-            console.log("✅ Receptionist found");
-            console.log(
-                "Receptionist ID:",
-                receptionist.id
-            );
-
-        } else {
-
-            console.log(
-                "⚠️ No active receptionist found"
-            );
-        }
-
-
-        // ==========================================
-        // GET MERCHANT TOKEN
-        // ==========================================
-
-        console.log("----------------------------------------------");
-        console.log("🔍 Finding merchant notification token...");
-
-        console.log(
-            "Merchant ID:",
-            branch.merchant_id
-        );
-
-        const merchantToken =
-            await UserNotificationToken.findOne({
-                where: {
-                    user_id: branch.merchant_id,
-                    user_type: "merchant"
-                }
-            });
-
-        console.log(
-            "📦 Merchant token result:",
-            merchantToken
-        );
-
-        if (merchantToken) {
-
-            console.log(
-                "✅ Merchant notification token record found"
-            );
-
-            console.log(
-                "Merchant token exists:",
-                !!merchantToken.token
-            );
-
-            console.log(
-                "Merchant token length:",
-                merchantToken.token
-                    ? merchantToken.token.length
-                    : 0
-            );
-
-        } else {
-
-            console.log(
-                "❌ Merchant notification token NOT FOUND"
-            );
-        }
-
-
-        // ==========================================
-        // NOTIFICATION DATA
-        // ==========================================
-
-        console.log("----------------------------------------------");
-        console.log("📝 Creating notification...");
+        const merchantToken = await UserNotificationToken.findOne({
+            where: {
+                user_id: branch.merchant_id,
+                user_type: "merchant"
+            }
+        });
 
         const notification = {
             title: "New Chat Message",
             body: "You have received a new chat message"
         };
 
-        console.log(
-            "Notification:",
-            notification
-        );
-
-
-        // ==========================================
-        // SEND TO MERCHANT
-        // ==========================================
-
-        console.log("----------------------------------------------");
-        console.log("📤 MERCHANT NOTIFICATION");
-
         if (merchantToken?.token) {
-
-            console.log(
-                "✅ Merchant token available"
-            );
-
-            const merchantPayload = {
-                token: merchantToken.token,
-
-                ...notification,
-
-                data: {
-                    type: "chat",
-                    ch_id: String(ch_id || ""),
-                    branch_id: String(branch.id)
-                }
-            };
-
-            console.log(
-                "Merchant notification payload:",
-                {
-                    ...merchantPayload,
-                    token: "***TOKEN***"
-                }
-            );
-
             try {
-
-                console.log(
-                    "⏳ Calling sendPushNotification for merchant..."
-                );
-
-                const merchantResponse =
-                    await sendPushNotification(
-                        merchantPayload
-                    );
-
-                console.log(
-                    "✅ Merchant notification sent"
-                );
-
-                console.log(
-                    "Merchant response:",
-                    merchantResponse
-                );
-
+                await sendPushNotification({
+                    token: merchantToken.token,
+                    ...notification,
+                    data: {
+                        type: "chat",
+                        ch_id: String(ch_id || ""),
+                        branch_id: String(branch.id)
+                    }
+                });
             } catch (err) {
-
                 console.log(
-                    "❌ Merchant Push Notification Error"
-                );
-
-                console.log(
-                    "Error message:",
-                    err.message
-                );
-
-                console.log(
-                    "Full error:",
+                    "Merchant Push Notification Error:",
                     err
                 );
-
-                console.log(
-                    "Stack:",
-                    err.stack
-                );
             }
-
-        } else {
-
-            console.log(
-                "⚠️ Merchant notification skipped"
-            );
-
-            console.log(
-                "Reason: Merchant token not available"
-            );
         }
 
-
-        // ==========================================
-        // RECEPTIONIST TOKEN
-        // ==========================================
-
-        console.log("----------------------------------------------");
-        console.log("🔍 RECEPTIONIST NOTIFICATION");
-
         if (receptionist) {
-
-            console.log(
-                "Finding receptionist notification token..."
-            );
-
-            console.log(
-                "Receptionist ID:",
-                receptionist.id
-            );
-
             const receptionToken =
                 await UserNotificationToken.findOne({
                     where: {
@@ -865,139 +652,25 @@ exports.sendNotification = async (req, res) => {
                     }
                 });
 
-            console.log(
-                "📦 Receptionist token result:",
-                receptionToken
-            );
-
-            if (receptionToken) {
-
-                console.log(
-                    "✅ Receptionist token record found"
-                );
-
-                console.log(
-                    "Receptionist token exists:",
-                    !!receptionToken.token
-                );
-
-                console.log(
-                    "Receptionist token length:",
-                    receptionToken.token
-                        ? receptionToken.token.length
-                        : 0
-                );
-
-            } else {
-
-                console.log(
-                    "❌ Receptionist token NOT FOUND"
-                );
-            }
-
-
-            // ==========================================
-            // SEND TO RECEPTIONIST
-            // ==========================================
-
             if (receptionToken?.token) {
-
-                console.log(
-                    "📤 Sending notification to receptionist..."
-                );
-
-                const receptionistPayload = {
-                    token: receptionToken.token,
-
-                    ...notification,
-
-                    data: {
-                        type: "chat",
-                        ch_id: String(ch_id || ""),
-                        branch_id: String(branch.id)
-                    }
-                };
-
-                console.log(
-                    "Receptionist notification payload:",
-                    {
-                        ...receptionistPayload,
-                        token: "***TOKEN***"
-                    }
-                );
-
                 try {
-
-                    console.log(
-                        "⏳ Calling sendPushNotification for receptionist..."
-                    );
-
-                    const receptionistResponse =
-                        await sendPushNotification(
-                            receptionistPayload
-                        );
-
-                    console.log(
-                        "✅ Receptionist notification sent"
-                    );
-
-                    console.log(
-                        "Receptionist response:",
-                        receptionistResponse
-                    );
-
+                    await sendPushNotification({
+                        token: receptionToken.token,
+                        ...notification,
+                        data: {
+                            type: "chat",
+                            ch_id: String(ch_id || ""),
+                            branch_id: String(branch.id)
+                        }
+                    });
                 } catch (err) {
-
                     console.log(
-                        "❌ Receptionist Push Notification Error"
-                    );
-
-                    console.log(
-                        "Error message:",
-                        err.message
-                    );
-
-                    console.log(
-                        "Full error:",
+                        "Receptionist Push Notification Error:",
                         err
                     );
-
-                    console.log(
-                        "Stack:",
-                        err.stack
-                    );
                 }
-
-            } else {
-
-                console.log(
-                    "⚠️ Receptionist notification skipped"
-                );
-
-                console.log(
-                    "Reason: Receptionist token not available"
-                );
             }
-
-        } else {
-
-            console.log(
-                "⚠️ Receptionist notification skipped"
-            );
-
-            console.log(
-                "Reason: Receptionist not found"
-            );
         }
-
-
-        // ==========================================
-        // COMPLETED
-        // ==========================================
-
-        console.log("==============================================");
-        console.log("✅ SEND NOTIFICATION COMPLETED");
-        console.log("==============================================");
 
         return res.json({
             status: 1,
@@ -1005,27 +678,82 @@ exports.sendNotification = async (req, res) => {
         });
 
     } catch (err) {
+        console.log("Error:", err);
 
-        console.log("==============================================");
-        console.log("❌ SEND NOTIFICATION MAIN ERROR");
-        console.log("==============================================");
+        return res.json({
+            status: 0,
+            message: err.message
+        });
+    }
+};
 
-        console.log(
-            "Error message:",
-            err.message
-        );
+exports.sendCustomerNotification = async (req, res) => {
+    try {
+        const { cus_id, ch_id } = req.body;
 
-        console.log(
-            "Full error:",
-            err
-        );
+        if (!cus_id) {
+            return res.json({
+                status: 0,
+                message: "Customer id is required"
+            });
+        }
 
-        console.log(
-            "Stack:",
-            err.stack
-        );
+        const cus = await Customer.findOne({
+            where: {
+                id: cus_id,
+                status: 1,
+                del_status: 0
+            }
+        });
 
-        console.log("==============================================");
+        if (!cus) {
+            return res.json({
+                status: 0,
+                message: "customer is not found"
+            });
+        }
+
+
+
+        const customerToken = await UserNotificationToken.findOne({
+            where: {
+                user_id: cus.id,
+                user_type: "customer"
+            }
+        });
+
+        const notification = {
+            title: "New Chat Message",
+            body: "You have received a new chat message"
+        };
+
+        if (customerToken?.token) {
+            try {
+                await sendPushNotification({
+                    token: customerToken.token,
+                    ...notification,
+                    data: {
+                        type: "chat",
+                        ch_id: String(ch_id || ""),
+                        branch_id: String(branch.id)
+                    }
+                });
+            } catch (err) {
+                console.log(
+                    "Merchant Push Notification Error:",
+                    err
+                );
+            }
+        }
+
+
+        return res.json({
+            status: 1,
+            message: "Notification sent successfully"
+        });
+
+    } catch (err) {
+        console.log("Error:", err);
 
         return res.json({
             status: 0,
