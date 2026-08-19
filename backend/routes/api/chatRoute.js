@@ -60,7 +60,6 @@ router.post(
 router.post(
     '/send-cus-notifications',
     auth('customer'),
-    checkCustomer,
     controller.sendCustomerNotification
 );
 module.exports = router;
