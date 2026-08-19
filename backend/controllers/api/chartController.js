@@ -1,6 +1,6 @@
 
-const { sendPushNotification } = require("../../helpers/notificationHelper");
-const { db, admin ,bucket} = require('../../config/firebase');
+const { sendPushNotification ,getNotificationTemplate} = require("../../helpers/notificationHelper");
+const { db, admin, bucket } = require('../../config/firebase');
 const multer = require("multer");
 const { v4: uuidv4 } = require("uuid");
 const fs = require("fs");
@@ -85,7 +85,7 @@ exports.createChat = async (req, res) => {
                     lastMessageAt:
                         admin.firestore.FieldValue.serverTimestamp()
 
-                });                                                                                                                         
+                });
 
         return res.json({
 
@@ -569,6 +569,139 @@ exports.sendBranchMessage = async (req, res) => {
 
         // console.log("========== ERROR ==========");
         console.error(err);
+
+        return res.json({
+            status: 0,
+            message: err.message
+        });
+    }
+};
+
+
+exports.sendNotification = async (req, res) => {
+    try {
+        const { br_id } = req.body;
+
+        if (!br_id) {
+            return res.json({
+                status: 0,
+                message: "branch id is required"
+            });
+        }
+
+        // Get branch
+        const branch = await Branch.findOne({
+            where: {
+                id: br_id,
+                status: 1,
+                del_status: 0
+            }
+        });
+
+        if (!branch) {
+            return res.json({
+                status: 0,
+                message: "Branch not found"
+            });
+        }
+
+        // Get receptionist
+        const receptionist = await Receptionist.findOne({
+            where: {
+                branch_id: branch.id,
+                status: 1,
+                del_status: 0
+            }
+        });
+
+        // Get merchant token
+        const merchantToken = await UserNotificationToken.findOne({
+            where: {
+                user_id: branch.merchant_id,
+                user_type: "merchant"
+            }
+        });
+
+        // Notification data
+        const notification = {
+            title: "New Chat Message",
+            body: "You have received a new chat message"
+        };
+
+        // Send notification to merchant
+        if (merchantToken?.token) {
+            try {
+                await sendPushNotification({
+                    token: merchantToken.token,
+
+                    ...notification,
+
+                    data: {
+                        type: "chat",
+                        ch_id: String(ch_id),
+                        branch_id: String(branch.id)
+                    }
+                });
+
+                console.log(
+                    "Merchant notification sent successfully"
+                );
+
+            } catch (err) {
+                console.log(
+                    "Merchant Push Notification Error:",
+                    err
+                );
+            }
+        }
+
+        // Send notification to receptionist
+        if (receptionist) {
+
+            const receptionToken =
+                await UserNotificationToken.findOne({
+                    where: {
+                        user_id: receptionist.id,
+                        user_type: "receptionist"
+                    }
+                });
+
+            if (receptionToken?.token) {
+                try {
+
+                    await sendPushNotification({
+                        token: receptionToken.token,
+
+                        ...notification,
+
+                        data: {
+                            type: "chat",
+                            ch_id: String(ch_id),
+                            branch_id: String(branch.id)
+                        }
+                    });
+
+                    console.log(
+                        "Receptionist notification sent successfully"
+                    );
+
+                } catch (err) {
+                    console.log(
+                        "Receptionist Push Notification Error:",
+                        err
+                    );
+                }
+            }
+        }
+
+        return res.json({
+            status: 1,
+            message: "Notification sent successfully"
+        });
+
+    } catch (err) {
+
+        console.log("Error:", err);
 
         return res.json({
             status: 0,

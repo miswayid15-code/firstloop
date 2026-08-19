@@ -49,4 +49,12 @@ router.post(
     checkMerchantOrReceptionist,
     controller.sendBranchMessage
 );
+
+
+router.post(
+    '/send-notification',
+    auth('customer'),
+    checkCustomer,
+    controller.sendNotification
+);
 module.exports = router;
