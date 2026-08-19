@@ -702,7 +702,7 @@ exports.sendCustomerNotification = async (req, res) => {
             where: {
                 id: cus_id,
                 status: 1,
-                del_status: 0
+                del_status: false
             }
         });
 
@@ -735,36 +735,16 @@ exports.sendCustomerNotification = async (req, res) => {
             });
         }
 
-        const notification = {
+        await sendPushNotification({
+            token: customerToken.token,
             title: "New Chat Message",
-            body: "You have received a new chat message"
-        };
-
-        try {
-            await sendPushNotification({
-                token: customerToken.token,
-
-                ...notification,
-
-                data: {
-                    type: "chat",
-                    ch_id: String(ch_id || ""),
-                    customer_id: String(cus.id)
-                }
-            });
-
-        } catch (err) {
-            console.log(
-                "Customer Push Notification Error:",
-                err
-            );
-
-            return res.json({
-                status: 0,
-                message: "Failed to send customer notification",
-                error: err.message
-            });
-        }
+            body: "You have received a new chat message",
+            data: {
+                type: "chat",
+                ch_id: String(ch_id || ""),
+                customer_id: String(cus.id)
+            }
+        });
 
         return res.json({
             status: 1,
