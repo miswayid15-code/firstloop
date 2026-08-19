@@ -702,7 +702,7 @@ exports.sendCustomerNotification = async (req, res) => {
             where: {
                 id: cus_id,
                 status: 1,
-                del_status: false
+                del_status: 0
             }
         });
 
