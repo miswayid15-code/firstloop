@@ -468,7 +468,7 @@ const uploadSnapshot = await uploadBytes(storageRef, selectedImage);
             try {
                 const cusId = chatData?.customerId || parseInt(id, 10)
                 const chId = chatData?.ch_id || chatId
-                await API.post('chats/send-cus-notifications', {
+                await API.post('api/chats/send-cus-notifications', {
                     cus_id: cusId,
                     ch_id: chId
                 })
