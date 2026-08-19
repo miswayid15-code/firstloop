@@ -52,7 +52,7 @@ router.post(
 
 
 router.post(
-    '/send-notification',
+    '/send-notifications',
     auth('customer'),
     checkCustomer,
     controller.sendNotification

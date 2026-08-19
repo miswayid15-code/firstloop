@@ -580,16 +580,47 @@ exports.sendBranchMessage = async (req, res) => {
 
 exports.sendNotification = async (req, res) => {
     try {
-        const { br_id } = req.body;
+
+        console.log("==============================================");
+        console.log("🚀 SEND NOTIFICATION STARTED");
+        console.log("==============================================");
+
+        // ==========================================
+        // REQUEST
+        // ==========================================
+
+        console.log("📥 Request body:", req.body);
+
+        const { br_id, ch_id } = req.body;
+
+        console.log("📌 br_id:", br_id);
+        console.log("📌 ch_id:", ch_id);
+
+        // ==========================================
+        // VALIDATION
+        // ==========================================
 
         if (!br_id) {
+
+            console.log("❌ Branch ID is missing");
+
             return res.json({
                 status: 0,
                 message: "branch id is required"
             });
         }
 
-        // Get branch
+        console.log("✅ Branch ID validation passed");
+
+
+        // ==========================================
+        // GET BRANCH
+        // ==========================================
+
+        console.log("----------------------------------------------");
+        console.log("🔍 Finding branch...");
+        console.log("Branch ID:", br_id);
+
         const branch = await Branch.findOne({
             where: {
                 id: br_id,
@@ -598,14 +629,31 @@ exports.sendNotification = async (req, res) => {
             }
         });
 
+        console.log("📦 Branch result:", branch);
+
         if (!branch) {
+
+            console.log("❌ Branch not found");
+
             return res.json({
                 status: 0,
                 message: "Branch not found"
             });
         }
 
-        // Get receptionist
+        console.log("✅ Branch found");
+        console.log("Branch ID:", branch.id);
+        console.log("Merchant ID:", branch.merchant_id);
+
+
+        // ==========================================
+        // GET RECEPTIONIST
+        // ==========================================
+
+        console.log("----------------------------------------------");
+        console.log("🔍 Finding receptionist...");
+        console.log("Branch ID:", branch.id);
+
         const receptionist = await Receptionist.findOne({
             where: {
                 branch_id: branch.id,
@@ -614,49 +662,200 @@ exports.sendNotification = async (req, res) => {
             }
         });
 
-        // Get merchant token
-        const merchantToken = await UserNotificationToken.findOne({
-            where: {
-                user_id: branch.merchant_id,
-                user_type: "merchant"
-            }
-        });
+        console.log(
+            "📦 Receptionist result:",
+            receptionist
+        );
 
-        // Notification data
+        if (receptionist) {
+
+            console.log("✅ Receptionist found");
+            console.log(
+                "Receptionist ID:",
+                receptionist.id
+            );
+
+        } else {
+
+            console.log(
+                "⚠️ No active receptionist found"
+            );
+        }
+
+
+        // ==========================================
+        // GET MERCHANT TOKEN
+        // ==========================================
+
+        console.log("----------------------------------------------");
+        console.log("🔍 Finding merchant notification token...");
+
+        console.log(
+            "Merchant ID:",
+            branch.merchant_id
+        );
+
+        const merchantToken =
+            await UserNotificationToken.findOne({
+                where: {
+                    user_id: branch.merchant_id,
+                    user_type: "merchant"
+                }
+            });
+
+        console.log(
+            "📦 Merchant token result:",
+            merchantToken
+        );
+
+        if (merchantToken) {
+
+            console.log(
+                "✅ Merchant notification token record found"
+            );
+
+            console.log(
+                "Merchant token exists:",
+                !!merchantToken.token
+            );
+
+            console.log(
+                "Merchant token length:",
+                merchantToken.token
+                    ? merchantToken.token.length
+                    : 0
+            );
+
+        } else {
+
+            console.log(
+                "❌ Merchant notification token NOT FOUND"
+            );
+        }
+
+
+        // ==========================================
+        // NOTIFICATION DATA
+        // ==========================================
+
+        console.log("----------------------------------------------");
+        console.log("📝 Creating notification...");
+
         const notification = {
             title: "New Chat Message",
             body: "You have received a new chat message"
         };
 
-        // Send notification to merchant
+        console.log(
+            "Notification:",
+            notification
+        );
+
+
+        // ==========================================
+        // SEND TO MERCHANT
+        // ==========================================
+
+        console.log("----------------------------------------------");
+        console.log("📤 MERCHANT NOTIFICATION");
+
         if (merchantToken?.token) {
+
+            console.log(
+                "✅ Merchant token available"
+            );
+
+            const merchantPayload = {
+                token: merchantToken.token,
+
+                ...notification,
+
+                data: {
+                    type: "chat",
+                    ch_id: String(ch_id || ""),
+                    branch_id: String(branch.id)
+                }
+            };
+
+            console.log(
+                "Merchant notification payload:",
+                {
+                    ...merchantPayload,
+                    token: "***TOKEN***"
+                }
+            );
+
             try {
-                await sendPushNotification({
-                    token: merchantToken.token,
-
-                    ...notification,
-
-                    data: {
-                        type: "chat",
-                        ch_id: String(ch_id),
-                        branch_id: String(branch.id)
-                    }
-                });
 
                 console.log(
-                    "Merchant notification sent successfully"
+                    "⏳ Calling sendPushNotification for merchant..."
+                );
+
+                const merchantResponse =
+                    await sendPushNotification(
+                        merchantPayload
+                    );
+
+                console.log(
+                    "✅ Merchant notification sent"
+                );
+
+                console.log(
+                    "Merchant response:",
+                    merchantResponse
                 );
 
             } catch (err) {
+
                 console.log(
-                    "Merchant Push Notification Error:",
+                    "❌ Merchant Push Notification Error"
+                );
+
+                console.log(
+                    "Error message:",
+                    err.message
+                );
+
+                console.log(
+                    "Full error:",
                     err
                 );
+
+                console.log(
+                    "Stack:",
+                    err.stack
+                );
             }
+
+        } else {
+
+            console.log(
+                "⚠️ Merchant notification skipped"
+            );
+
+            console.log(
+                "Reason: Merchant token not available"
+            );
         }
 
-        // Send notification to receptionist
+
+        // ==========================================
+        // RECEPTIONIST TOKEN
+        // ==========================================
+
+        console.log("----------------------------------------------");
+        console.log("🔍 RECEPTIONIST NOTIFICATION");
+
         if (receptionist) {
+
+            console.log(
+                "Finding receptionist notification token..."
+            );
+
+            console.log(
+                "Receptionist ID:",
+                receptionist.id
+            );
 
             const receptionToken =
                 await UserNotificationToken.findOne({
@@ -666,33 +865,139 @@ exports.sendNotification = async (req, res) => {
                     }
                 });
 
+            console.log(
+                "📦 Receptionist token result:",
+                receptionToken
+            );
+
+            if (receptionToken) {
+
+                console.log(
+                    "✅ Receptionist token record found"
+                );
+
+                console.log(
+                    "Receptionist token exists:",
+                    !!receptionToken.token
+                );
+
+                console.log(
+                    "Receptionist token length:",
+                    receptionToken.token
+                        ? receptionToken.token.length
+                        : 0
+                );
+
+            } else {
+
+                console.log(
+                    "❌ Receptionist token NOT FOUND"
+                );
+            }
+
+
+            // ==========================================
+            // SEND TO RECEPTIONIST
+            // ==========================================
+
             if (receptionToken?.token) {
+
+                console.log(
+                    "📤 Sending notification to receptionist..."
+                );
+
+                const receptionistPayload = {
+                    token: receptionToken.token,
+
+                    ...notification,
+
+                    data: {
+                        type: "chat",
+                        ch_id: String(ch_id || ""),
+                        branch_id: String(branch.id)
+                    }
+                };
+
+                console.log(
+                    "Receptionist notification payload:",
+                    {
+                        ...receptionistPayload,
+                        token: "***TOKEN***"
+                    }
+                );
+
                 try {
 
-                    await sendPushNotification({
-                        token: receptionToken.token,
+                    console.log(
+                        "⏳ Calling sendPushNotification for receptionist..."
+                    );
 
-                        ...notification,
-
-                        data: {
-                            type: "chat",
-                            ch_id: String(ch_id),
-                            branch_id: String(branch.id)
-                        }
-                    });
+                    const receptionistResponse =
+                        await sendPushNotification(
+                            receptionistPayload
+                        );
 
                     console.log(
-                        "Receptionist notification sent successfully"
+                        "✅ Receptionist notification sent"
+                    );
+
+                    console.log(
+                        "Receptionist response:",
+                        receptionistResponse
                     );
 
                 } catch (err) {
+
                     console.log(
-                        "Receptionist Push Notification Error:",
+                        "❌ Receptionist Push Notification Error"
+                    );
+
+                    console.log(
+                        "Error message:",
+                        err.message
+                    );
+
+                    console.log(
+                        "Full error:",
                         err
                     );
+
+                    console.log(
+                        "Stack:",
+                        err.stack
+                    );
                 }
+
+            } else {
+
+                console.log(
+                    "⚠️ Receptionist notification skipped"
+                );
+
+                console.log(
+                    "Reason: Receptionist token not available"
+                );
             }
+
+        } else {
+
+            console.log(
+                "⚠️ Receptionist notification skipped"
+            );
+
+            console.log(
+                "Reason: Receptionist not found"
+            );
         }
+
+
+        // ==========================================
+        // COMPLETED
+        // ==========================================
+
+        console.log("==============================================");
+        console.log("✅ SEND NOTIFICATION COMPLETED");
+        console.log("==============================================");
 
         return res.json({
             status: 1,
@@ -701,7 +1006,26 @@ exports.sendNotification = async (req, res) => {
 
     } catch (err) {
 
-        console.log("Error:", err);
+        console.log("==============================================");
+        console.log("❌ SEND NOTIFICATION MAIN ERROR");
+        console.log("==============================================");
+
+        console.log(
+            "Error message:",
+            err.message
+        );
+
+        console.log(
+            "Full error:",
+            err
+        );
+
+        console.log(
+            "Stack:",
+            err.stack
+        );
+
+        console.log("==============================================");
 
         return res.json({
             status: 0,
