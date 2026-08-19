@@ -717,7 +717,6 @@ exports.sendCustomerNotification = async (req, res) => {
             where: {
                 user_id: cus.id,
                 user_type: "customer",
-                is_active: 1
             }
         });
 
