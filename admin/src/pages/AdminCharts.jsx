@@ -76,7 +76,7 @@ const ROLE_CONFIG = {
 }
 import { getAuth } from "firebase/auth";
 
-console.log("currentUser",getAuth().currentUser);
+// console.log("currentUser",getAuth().currentUser);
 /* ═══════════════════════════════════════════════════════
    HELPERS
    ═══════════════════════════════════════════════════════ */
@@ -315,12 +315,12 @@ export default function AdminCharts() {
     const fetchCustomer = async () => {
         try {
             setCustomerLoading(true)
-            console.log("AdminChat - Fetching customer details for ID:", id)
+            // console.log("AdminChat - Fetching customer details for ID:", id)
             const response = await API.post('admin/customer/details', { id })
             if (response.data?.status === 1 && response.data.data?.length > 0) {
                 const customer = response.data.data[0]
                 setCustomerData(customer)
-                console.log("AdminChat - Customer details loaded successfully:", customer)
+                // console.log("AdminChat - Customer details loaded successfully:", customer)
             } else {
                 console.warn("AdminChat - Unexpected customer details response:", response.data)
             }
@@ -340,7 +340,7 @@ export default function AdminCharts() {
             try {
                 initializingChatRef.current = true
                 setChatLoading(true)
-                console.log("AdminChat - Querying Firestore for existing admin chat with customer ID:", id)
+                // console.log("AdminChat - Querying Firestore for existing admin chat with customer ID:", id)
 
                 const chatsRef = collection(db, "chats")
                 const q = query(
@@ -355,7 +355,7 @@ export default function AdminCharts() {
                     // Chat document already exists
                     const chatDoc = querySnapshot.docs[0]
                     const data = chatDoc.data()
-                    console.log("AdminChat - Found existing admin chat document with auto-generated ID:", chatDoc.id, data)
+                    // console.log("AdminChat - Found existing admin chat document with auto-generated ID:", chatDoc.id, data)
                     setChatData({ id: chatDoc.id, ...data })
                 } else {
                     // Create new direct admin chat document with auto-generated ID
@@ -371,10 +371,10 @@ export default function AdminCharts() {
                         lastMessageBy: "admin"
                     }
 
-                    console.log("AdminChat - No existing admin chat found. Creating direct admin chat in Firestore...", newChatPayload)
+                    // console.log("AdminChat - No existing admin chat found. Creating direct admin chat in Firestore...", newChatPayload)
                     const docRef = await addDoc(chatsRef, newChatPayload)
                     setChatData({ id: docRef.id, ...newChatPayload })
-                    console.log("AdminChat - Created new admin chat document with ID:", docRef.id)
+                    // console.log("AdminChat - Created new admin chat document with ID:", docRef.id)
                 }
             } catch (error) {
                 console.error("AdminChat - Error during findOrCreateChat session:", error)
@@ -393,7 +393,7 @@ export default function AdminCharts() {
         const chatId = chatData?.id
         if (!chatId) return
 
-        console.log("AdminChat - Listening to messages for chatId:", chatId)
+        // console.log("AdminChat - Listening to messages for chatId:", chatId)
         const q = query(
             collection(db, "chats", chatId, "messages"),
             orderBy("timestamp", "asc")
@@ -404,7 +404,7 @@ export default function AdminCharts() {
                 id: doc.id,
                 ...doc.data()
             }))
-            console.log(`AdminChat - Messages loaded from Firestore. Count: ${msgs.length}. Path: chats/${chatId}/messages`)
+            // console.log(`AdminChat - Messages loaded from Firestore. Count: ${msgs.length}. Path: chats/${chatId}/messages`)
             setMessages(msgs)
         }, (error) => {
             console.error("AdminChat - Error streaming messages from Firestore:", error)
@@ -449,7 +449,7 @@ const uploadSnapshot = await uploadBytes(storageRef, selectedImage);
                 timestamp: serverTimestamp()
             }
 
-            console.log("AdminChat - Saving message directly to subcollection: chats/" + chatId + "/messages", messagePayload)
+            // console.log("AdminChat - Saving message directly to subcollection: chats/" + chatId + "/messages", messagePayload)
             const messagesRef = collection(db, "chats", chatId, "messages")
             await addDoc(messagesRef, messagePayload)
 
@@ -461,7 +461,7 @@ const uploadSnapshot = await uploadBytes(storageRef, selectedImage);
                 lastMessageBy: "admin"
             }
 
-            console.log("AdminChat - Updating parent chat document values:", parentUpdatePayload)
+            // console.log("AdminChat - Updating parent chat document values:", parentUpdatePayload)
             await updateDoc(chatDocRef, parentUpdatePayload)
 
             // 4. Trigger Customer Notification API
@@ -472,7 +472,7 @@ const uploadSnapshot = await uploadBytes(storageRef, selectedImage);
                     cus_id: cusId,
                     ch_id: chId
                 })
-                console.log("AdminChat - Customer notification API called successfully:", { cus_id: cusId, ch_id: chId })
+                // console.log("AdminChat - Customer notification API called successfully:", { cus_id: cusId, ch_id: chId })
             } catch (notifErr) {
                 console.error("AdminChat - Failed to send customer notification:", notifErr)
             }
