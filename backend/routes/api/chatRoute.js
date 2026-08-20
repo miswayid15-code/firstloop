@@ -59,7 +59,7 @@ router.post(
 );
 router.post(
     '/send-cus-notifications',
-    auth(''),
+    auth(),
     checkMerchantOrReceptionist,
     controller.sendCustomerNotification
 );

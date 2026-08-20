@@ -3,7 +3,7 @@ const { Merchant, Receptionist } = require('../models');
 module.exports = async (req, res, next) => {
 
     try {
-
+console.log("req.user",req.user)
         if (req.user.user_type === 'merchant') {
 
             const merchant = await Merchant.findByPk(req.user.id);
@@ -52,7 +52,7 @@ module.exports = async (req, res, next) => {
 
         return res.json({
             status: 0,
-            message: "Invalid user type"
+            message: "Invalid user type                 "
         });
 
     } catch (error) {
