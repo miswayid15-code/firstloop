@@ -55,6 +55,7 @@ import HowItWorks from './page/HowItWorks.jsx';
 import DeleteAccount from './page/DeleteAccount.jsx';
 import UnderConstruction from './page/UnderConstruction.jsx';
 import CustomerApp from './page/CustomerApp.jsx';
+import FirstLoopComingSoon from './page/FirstLoopComingSoon.jsx';
 
 function ScrollToTopAndAnimate() {
   const { pathname } = useLocation();
@@ -90,7 +91,7 @@ function ScrollToTopAndAnimate() {
 
 function WebsiteLayout() {
   const { pathname } = useLocation();
-  const hideHeaderFooter = ['/under-construction', '/delete-account', '/data-policy', '/conditions', '/customer-app'].includes(pathname);
+  const hideHeaderFooter = ['/under-construction', '/delete-account', '/data-policy', '/conditions', '/customer-app', '/firstloop-coming-soon', '/firstloop'].includes(pathname);
 
   const [loading, setLoading] = useState(!hideHeaderFooter);
   const [fade, setFade] = useState(false);
@@ -141,6 +142,8 @@ function WebsiteLayout() {
           <Route path="/delete-account" element={<DeleteAccount />} />
           <Route path="/under-construction" element={<UnderConstruction />} />
           <Route path="/customer-app" element={<CustomerApp />} />
+          <Route path="/firstloop-coming-soon" element={<FirstLoopComingSoon />} />
+          <Route path="/firstloop" element={<FirstLoopComingSoon />} />
         </Routes>
       </main>
 
@@ -158,6 +161,8 @@ function AdminLayout() {
 
       <Routes>
         <Route path="/" element={<Login />} />
+        <Route path="firstloop-coming-soon" element={<FirstLoopComingSoon />} />
+        <Route path="firstloop" element={<FirstLoopComingSoon />} />
 
         <Route
           element={
