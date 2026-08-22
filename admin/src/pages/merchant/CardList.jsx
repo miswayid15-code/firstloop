@@ -2,9 +2,43 @@ import { useState, useEffect, useMemo } from 'react'
 import { INITIAL_STAMP_CARDS, INITIAL_MEMBERSHIP_CARDS } from './mockMerchantData'
 import flLogo from '../../assets/img/firstloop-favicon.png'
 import qrImg from '../../assets/img/qr-img.png'
+import axios from 'axios'
 import API from '../../api.js'
 import StampCardBuilderModal from '../../components/StampCardBuilderModal.jsx'
 import MembershipCardBuilderModal from '../../components/MembershipCardBuilderModal.jsx'
+
+const DEFAULT_CARD_DESIGNS = [
+    {
+        id: 'cd-def-1',
+        name: 'Aurora Cyan',
+        image: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&q=80&w=400',
+        status: 1
+    },
+    {
+        id: 'cd-def-2',
+        name: 'Crimson Wave',
+        image: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&q=80&w=400',
+        status: 1
+    },
+    {
+        id: 'cd-def-3',
+        name: 'Midnight Gold',
+        image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=400',
+        status: 1
+    },
+    {
+        id: 'cd-def-4',
+        name: 'Emerald Luxe',
+        image: 'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?auto=format&fit=crop&q=80&w=400',
+        status: 1
+    },
+    {
+        id: 'cd-def-5',
+        name: 'Royal Purple',
+        image: 'https://images.unsplash.com/photo-1550684847-75bdda21cc95?auto=format&fit=crop&q=80&w=400',
+        status: 1
+    }
+]
 
 // Real QR Code Component matching view-fl-branch
 const RealQRCode = ({ size = 80 }) => (
@@ -57,6 +91,20 @@ export default function CardList() {
 
     // Fetch Card Designs from API (admin/card-design/list) like ViewFlBranch
     useEffect(() => {
+
+        fetchCardDesignsFromApi()
+    }, [])
+const formatImageUrl = (img) => {
+    if (!img) return ''
+    if (img.startsWith('http://') || img.startsWith('https://') || img.startsWith('data:')) {
+        return img
+    }
+    const baseUrl = import.meta.env.VITE_API_URL || ''
+    const cleanBase = baseUrl.replace(/\/+$/, '')
+    const cleanImg = String(img).replace(/^\/+/, '')
+    return `${cleanBase}/${cleanImg}`
+}
+
         const fetchCardDesignsFromApi = async () => {
             try {
                 const response = await API.post('admin/card-design/list')
@@ -65,12 +113,9 @@ export default function CardList() {
                     setCardDesignsApi(activeDesigns)
                 }
             } catch (err) {
-                console.log('Using default card design templates:', err?.message || err)
+                console.error('Error fetching card designs API:', err)
             }
         }
-        fetchCardDesignsFromApi()
-    }, [])
-
     // Filtered lists
     const filteredStampCards = useMemo(() => {
         return stampCards.filter(sc =>
@@ -354,10 +399,7 @@ export default function CardList() {
                                     }}
                                 >
                                     {/* ALERT NOTICE BADGE: 2 STAMPS ONLY REMAINING & EXPIRED IN 30 DAYS */}
-                                    <div style={{ background: 'rgba(0, 0, 0, 0.22)', backdropFilter: 'blur(4px)', padding: '4px 8px', borderRadius: 6, fontSize: '0.68rem', fontWeight: 800, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, border: '1px solid rgba(255,255,255,0.25)' }}>
-                                        <i className="fas fa-exclamation-circle" style={{ color: '#FDE047', fontSize: '0.75rem' }} />
-                                        <span>Alert: 2 stamps only remaining &bull; Expired in 30 days</span>
-                                    </div>
+                                
 
                                     <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
                                         <div style={{ flex: 1, minWidth: 0 }}>
@@ -506,10 +548,7 @@ export default function CardList() {
                                 >
                                     <div style={{ position: 'relative', zIndex: 2 }}>
                                         {/* ALERT NOTICE BADGE: EXPIRED IN 30 DAYS */}
-                                        <div style={{ background: 'rgba(0, 0, 0, 0.22)', backdropFilter: 'blur(4px)', padding: '4px 8px', borderRadius: 6, fontSize: '0.68rem', fontWeight: 800, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, border: '1px solid rgba(255,255,255,0.25)' }}>
-                                            <i className="fas fa-clock" style={{ color: '#FDE047', fontSize: '0.75rem' }} />
-                                            <span>Alert: VIP Pass Active &bull; Expired in 30 days</span>
-                                        </div>
+                                     
 
                                         {/* Header Row */}
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>

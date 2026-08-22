@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
+import { toast } from 'react-hot-toast'
 import { MOCK_MERCHANT_PROFILE } from './mockMerchantData'
 import flLogo from '../../assets/img/firstloop-favicon.png'
-
+import API from '../../api.js';
 export default function MerchantLayout() {
     const navigate = useNavigate()
     const location = useLocation()
@@ -16,10 +17,24 @@ export default function MerchantLayout() {
         document.body.setAttribute('data-theme', 'firstloop')
     }, [])
 
-    const handleLogout = () => {
-        sessionStorage.removeItem('merchant_user')
-        localStorage.removeItem('merchant_user')
-        navigate('/merchant/login')
+    const handleLogout = async () => {
+        const response = await API.post(
+            "firstloop/merchant/logout"
+        );
+        console.log(response);
+        if (response.data.status == 1) {
+            localStorage.removeItem('mer_access_token')
+            localStorage.removeItem('mer_refresh_token')
+            localStorage.removeItem('merchant_data')
+
+
+            toast.success('Logged out successfully 👋')
+            navigate('/merchant/login', { replace: true })
+        }
+        else{
+            toast.error('Network issues')
+        }
+
     }
 
     const menuItems = [
@@ -92,16 +107,13 @@ export default function MerchantLayout() {
                         {/* Profile Summary Badge */}
                         <div style={{ padding: '12px 16px', background: 'rgba(14, 136, 184, 0.04)', borderBottom: '1px solid rgba(14, 136, 184, 0.08)', display: 'flex', alignItems: 'center', gap: 10 }}>
                             <div style={{ width: 34, height: 34, borderRadius: 8, background: '#FFFFFF', border: '2px solid var(--firstloop-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                                <img src={MOCK_MERCHANT_PROFILE.logo} alt="Merchant" style={{ width: '80%', height: '80%', objectFit: 'contain' }} />
+                                <img src={flLogo} alt="Merchant" style={{ width: '80%', height: '80%', objectFit: 'contain' }} />
                             </div>
                             <div style={{ overflow: 'hidden' }}>
                                 <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                                     {MOCK_MERCHANT_PROFILE.name}
                                 </div>
-                                <div style={{ fontSize: '0.68rem', color: 'var(--status-success)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
-                                    <i className="fas fa-check-circle" style={{ fontSize: '0.65rem' }} />
-                                    <span>{MOCK_MERCHANT_PROFILE.plan}</span>
-                                </div>
+
                             </div>
                         </div>
 
@@ -202,9 +214,9 @@ export default function MerchantLayout() {
 
                         <NavLink to="/merchant/dashboard" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
                             <img src={flLogo} alt="Logo" style={{ width: 26, height: 26, objectFit: 'contain' }} />
-                            <span style={{ fontSize: '0.98rem', fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-heading)' }}>
+                            {/* <span style={{ fontSize: '0.98rem', fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-heading)' }}>
                                 {MOCK_MERCHANT_PROFILE.name}
-                            </span>
+                            </span> */}
                         </NavLink>
                     </div>
 

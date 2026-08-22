@@ -68,4 +68,11 @@ app.use('/api', require('./routes/api/customerRoute'));
 app.use('/api', require('./routes/api/additionalRoute'));
 app.use('/api/chats', require('./routes/api/chatRoute'));
 
+
+
+
+app.use('/firstloop/merchant/', require('./routes/firstloop/merchantRoutes'));
+app.use('/firstloop/reception/', require('./routes/firstloop/ReceptionistRoutes'));
+
+
 module.exports = app;

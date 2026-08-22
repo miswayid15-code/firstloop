@@ -39,6 +39,7 @@ import Settings from './pages/admin/Settings';
 import Support from './pages/admin/Support';
 import ProtectedRoute from './pages/admin/ProtectedRoute';
 import AdminCharts from './pages/admin/AdminCharts';
+import FirstLoopComingSoon from './pages/admin/FirstLoopComingSoon';
 import NotFound from './pages/NotFound';
 
 // SALE LOGIN
@@ -53,6 +54,7 @@ import MerchantDashboard from './pages/merchant/MerchantDashboard.jsx';
 import MerchantCustomerList from './pages/merchant/CustomerList.jsx';
 import MerchantCardList from './pages/merchant/CardList.jsx';
 import MerchantBranchList from './pages/merchant/BranchList.jsx';
+import MerchantViewBranch from './pages/merchant/ViewFlBranch.jsx';
 import MerchantBranchReceptionists from './pages/merchant/BranchReceptionists.jsx';
 import MerchantReportsView from './pages/merchant/MerchantReports.jsx';
 
@@ -116,7 +118,7 @@ function ScrollToTopAndAnimate() {
 
 function WebsiteLayout() {
   const { pathname } = useLocation();
-  const hideHeaderFooter = ['/under-construction', '/delete-account', '/data-policy', '/conditions', '/customer-app'].includes(pathname);
+  const hideHeaderFooter = ['/under-construction', '/delete-account', '/data-policy', '/conditions', '/customer-app', '/firstloop-coming-soon', '/firstloop'].includes(pathname);
 
   const [loading, setLoading] = useState(!hideHeaderFooter);
   const [fade, setFade] = useState(false);
@@ -167,6 +169,8 @@ function WebsiteLayout() {
           <Route path="/delete-account" element={<DeleteAccount />} />
           <Route path="/under-construction" element={<UnderConstruction />} />
           <Route path="/customer-app" element={<CustomerApp />} />
+          <Route path="/firstloop-coming-soon" element={<FirstLoopComingSoon />} />
+          <Route path="/firstloop" element={<FirstLoopComingSoon />} />
         </Routes>
       </main>
 
@@ -187,6 +191,8 @@ function AdminLayout() {
         <Route path="saleperson-login" element={<SalePersonLogin />} />
         <Route path="saleperson-dashboard" element={<SalePersonDashboard />} />
         <Route path="saleperson-add-merchant" element={<SalePersonAddMerchant />} />
+        <Route path="firstloop-coming-soon" element={<FirstLoopComingSoon />} />
+        <Route path="firstloop" element={<FirstLoopComingSoon />} />
 
         {/* Merchant UI Routes */}
         <Route path="merchant/login" element={<MerchantLogin />} />
@@ -199,7 +205,7 @@ function AdminLayout() {
           <Route path="customers/:id" element={<FpCustomerDetails />} />
           <Route path="cards" element={<MerchantCardList />} />
           <Route path="branches" element={<MerchantBranchList />} />
-          <Route path="branches/:id" element={<ViewFlBranch />} />
+          <Route path="branches/:id" element={<MerchantViewBranch />} />
           <Route path="branches/:branchId/receptionists" element={<MerchantBranchReceptionists />} />
           <Route path="reports" element={<MerchantReportsView />} />
         </Route>
@@ -257,7 +263,6 @@ function AdminLayout() {
           <Route path="settings" element={<Settings />} />
           <Route path="banners" element={<Settings />} />
           <Route path="card-designs" element={<CardDesigns />} />
-        
           <Route path="support" element={<Support />} />
         </Route>
 

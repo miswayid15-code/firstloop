@@ -1,24 +1,77 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
+import { toast } from "react-hot-toast"
 import {
-    MOCK_MERCHANT_PROFILE,
-    INITIAL_BRANCHES,
-    INITIAL_STAMP_CARDS,
-    INITIAL_MEMBERSHIP_CARDS,
-    INITIAL_CUSTOMERS,
     INITIAL_REPORTS_LOGS
 } from './mockMerchantData'
+import API from '../../api.js';
+let merchant = {};
+try {
+    const rawMerchant = localStorage.getItem("merchant_data");
+
+    if (rawMerchant && rawMerchant !== "null" && rawMerchant !== "undefined") {
+        merchant = JSON.parse(rawMerchant) || {};
+
+    }
+} catch (e) {
+    console.error("Error parsing merchant_data:", e);
+}
+// console.log("merchant",localStorage)
 import flLogo from '../../assets/img/firstloop-favicon.png'
 import qrImg from '../../assets/img/qr-img.png'
 
 export default function MerchantDashboard() {
     const navigate = useNavigate()
-    const [branches] = useState(INITIAL_BRANCHES)
-    const [stampCards] = useState(INITIAL_STAMP_CARDS)
-    const [membershipCards] = useState(INITIAL_MEMBERSHIP_CARDS)
-    const [customers] = useState(INITIAL_CUSTOMERS)
+    const [dashboard, setDashboard] = useState(null);
+
+    const fetchDashboard = async () => {
+        try {
+
+            const response = await API.post(
+                "firstloop/merchant/dashboard"
+            );
+
+            // console.log("Dashboard Response:", response.data);
+
+            if (response.data?.status === 1) {
+
+                setDashboard(
+                    response.data.data || {}
+                );
+
+            } else {
+
+                toast.error(
+                    response.data?.message ||
+                    "Failed to fetch dashboard"
+                );
+            }
+
+        } catch (error) {
+
+            // console.log(
+            //     "Dashboard Fetch Error:",
+            //     error.response?.data || error
+            // );
+
+            toast.error(
+                error.response?.data?.message ||
+                "Something went wrong"
+            );
+        }
+    };
+
+
+    useEffect(() => {
+
+        fetchDashboard();
+
+    }, []);
+
     const [logs] = useState(INITIAL_REPORTS_LOGS)
 
+    const displayName = merchant?.user_name || merchant?.email || 'Merchant'
+    // console.log("displayName",displayName)
     return (
         <div style={{ paddingBottom: 40 }}>
             {/* WELCOME BANNER HEADER */}
@@ -38,17 +91,8 @@ export default function MerchantDashboard() {
                 }}
             >
                 <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                        <span style={{ background: 'rgba(255, 255, 255, 0.2)', padding: '3px 10px', borderRadius: 12, fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
-                            Merchant Overview
-                        </span>
-                        <span style={{ fontSize: '0.8rem', opacity: 0.9 }}>
-                            ID: {MOCK_MERCHANT_PROFILE.id}
-                        </span>
-                    </div>
-
                     <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.6rem', fontWeight: 800, margin: 0 }}>
-                        Welcome back, {MOCK_MERCHANT_PROFILE.name}!
+                        Welcome back, {displayName}!
                     </h1>
                     <p style={{ fontSize: '0.88rem', opacity: 0.95, marginTop: 4, maxWidth: 600 }}>
                         Here is your live loyalty performance, stamp card issuance, membership tier activity, and branch operational status.
@@ -110,7 +154,16 @@ export default function MerchantDashboard() {
                             <i className="fas fa-store" />
                         </div>
                     </div>
-                    <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: 8 }}>{branches.length} Locations</div>
+                    <div
+                        style={{
+                            fontSize: '1.6rem',
+                            fontWeight: 800,
+                            color: 'var(--text-primary)',
+                            marginTop: 8
+                        }}
+                    >
+                        {dashboard?.active_br || 0} Locations
+                    </div>
                     <small style={{ fontSize: '0.72rem', color: 'var(--status-success)', fontWeight: 600, marginTop: 4, display: 'block' }}>
                         <i className="fas fa-check" style={{ marginRight: 4 }} /> All branches open
                     </small>
@@ -123,7 +176,7 @@ export default function MerchantDashboard() {
                             <i className="fas fa-users" />
                         </div>
                     </div>
-                    <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: 8 }}>{customers.length * 125} Members</div>
+                    <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: 8 }}>{dashboard?.active_cus || 0} Members</div>
                     <small style={{ fontSize: '0.72rem', color: '#059669', fontWeight: 600, marginTop: 4, display: 'block' }}>
                         <i className="fas fa-arrow-up" style={{ marginRight: 4 }} /> +18.4% this month
                     </small>
@@ -136,9 +189,9 @@ export default function MerchantDashboard() {
                             <i className="fas fa-stamp" />
                         </div>
                     </div>
-                    <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: 8 }}>{stampCards.length} Active Passes</div>
+                    <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: 8 }}>{dashboard?.active_st_cr || 0} Active Passes</div>
                     <small style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 4, display: 'block' }}>
-                        2,596 total stamps issued
+                        {dashboard?.active_st_cr || 0} total stamps issued
                     </small>
                 </div>
 
@@ -149,134 +202,14 @@ export default function MerchantDashboard() {
                             <i className="fas fa-crown" />
                         </div>
                     </div>
-                    <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: 8 }}>{membershipCards.length} Tiers</div>
+                    <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: 8 }}>{dashboard?.active_mem_cr || 0} Tiers</div>
                     <small style={{ fontSize: '0.72rem', color: '#D97706', fontWeight: 600, marginTop: 4, display: 'block' }}>
-                        502 Tier Cardholders
+                        {dashboard?.active_mem_cr || 0} Tier Cardholders
                     </small>
                 </div>
             </div>
 
-            {/* QUICK ACTIONS & CARDS OVERVIEW ROW */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24, marginBottom: 28 }}>
-                {/* Active Loyalty Cards Showcase */}
-                <div className="card" style={{ padding: 20, borderRadius: 18, border: '1px solid rgba(14, 136, 184, 0.12)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                        <div>
-                            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
-                                Active Loyalty Cards Preview
-                            </h3>
-                            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 2 }}>
-                                Reference design from `view-fl-branch` UI system
-                            </p>
-                        </div>
-                        <NavLink to="/merchant/cards" style={{ fontSize: '0.8rem', color: 'var(--firstloop-primary)', fontWeight: 700, textDecoration: 'none' }}>
-                            Manage All Cards &rarr;
-                        </NavLink>
-                    </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                        {stampCards.slice(0, 2).map((sc) => (
-                            <div
-                                key={sc.id}
-                                style={{
-                                    borderRadius: 16,
-                                    background: sc.bgColor || 'var(--firstloop-primary)',
-                                    color: sc.textColor || '#FFF',
-                                    padding: 14,
-                                    boxShadow: '0 6px 18px rgba(0,0,0,0.12)',
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center'
-                                }}
-                            >
-                                <div>
-                                    <div style={{ fontSize: '0.72rem', opacity: 0.9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                        STAMP CARD ({sc.total_stamps} STAMPS)
-                                    </div>
-                                    <h4 style={{ fontSize: '0.95rem', fontWeight: 800, margin: '2px 0', color: 'inherit' }}>
-                                        {sc.title}
-                                    </h4>
-                                    <div style={{ fontSize: '0.78rem', opacity: 0.9 }}>
-                                        Reward: {sc.reward}
-                                    </div>
-                                </div>
-                                <div style={{ textAlign: 'right' }}>
-                                    <span style={{ background: 'rgba(255,255,255,0.25)', color: '#FFF', fontSize: '0.7rem', fontWeight: 800, padding: '4px 8px', borderRadius: 8 }}>
-                                        {sc.active_members} Members
-                                    </span>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Branch Locations Performance Summary */}
-                <div className="card" style={{ padding: 20, borderRadius: 18, border: '1px solid rgba(14, 136, 184, 0.12)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                        <div>
-                            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
-                                Branch Locations Overview
-                            </h3>
-                            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 2 }}>
-                                Operational status and receptionist counts
-                            </p>
-                        </div>
-                        <NavLink to="/merchant/branches" style={{ fontSize: '0.8rem', color: 'var(--firstloop-primary)', fontWeight: 700, textDecoration: 'none' }}>
-                            View Branches &rarr;
-                        </NavLink>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                        {branches.map((b) => (
-                            <div
-                                key={b.id}
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    padding: '12px 14px',
-                                    borderRadius: 12,
-                                    background: 'var(--firstloop-primary-light)',
-                                    border: '1px solid rgba(14, 136, 184, 0.12)'
-                                }}
-                            >
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                    <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--firstloop-primary)', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>
-                                        <i className="fas fa-store-alt" style={{ fontSize: '0.85rem' }} />
-                                    </div>
-                                    <div>
-                                        <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                                            {b.name}
-                                        </div>
-                                        <small style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                                            Manager: {b.manager} &bull; {b.city}
-                                        </small>
-                                    </div>
-                                </div>
-
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                    <NavLink
-                                        to={`/merchant/branches/${b.id}/receptionists`}
-                                        style={{
-                                            padding: '4px 10px',
-                                            borderRadius: 8,
-                                            background: '#FFFFFF',
-                                            color: 'var(--firstloop-primary)',
-                                            fontSize: '0.75rem',
-                                            fontWeight: 700,
-                                            textDecoration: 'none',
-                                            border: '1px solid rgba(14, 136, 184, 0.3)'
-                                        }}
-                                    >
-                                        <i className="fas fa-user-friends" style={{ marginRight: 4 }} />
-                                        {b.receptionistsCount} Receptionists
-                                    </NavLink>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
 
             {/* RECENT CUSTOMER STAMP & REDEMPTION TRANSACTIONS */}
             <div className="card" style={{ padding: 20, borderRadius: 18, border: '1px solid rgba(14, 136, 184, 0.12)' }}>

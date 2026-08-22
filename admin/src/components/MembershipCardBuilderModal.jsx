@@ -182,9 +182,7 @@ export default function MembershipCardBuilderModal({
 
                 {/* Top Card Design API Picker */}
                 <div style={{ padding: '12px 20px', background: '#FFFFFF', borderBottom: '1px solid #F1F5F9' }}>
-                    <small style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: 8 }}>
-                        SELECT CARD DESIGN BACKGROUND IMAGE (API: admin/card-design/list)
-                    </small>
+                  
                     <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 4 }}>
                         {cardDesigns.length > 0 && cardDesigns.map(design => (
                             <div
@@ -422,10 +420,7 @@ export default function MembershipCardBuilderModal({
                         >
                             <div style={{ position: 'relative', zIndex: 2 }}>
                                 {/* ALERT NOTICE BADGE: EXPIRES IN 30 DAYS */}
-                                <div style={{ background: 'rgba(0, 0, 0, 0.25)', backdropFilter: 'blur(4px)', padding: '5px 10px', borderRadius: 8, fontSize: '0.72rem', fontWeight: 800, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10, border: '1px solid rgba(255,255,255,0.3)' }}>
-                                    <i className="fas fa-clock" style={{ color: '#FDE047', fontSize: '0.8rem' }} />
-                                    <span>Alert: VIP Pass Active &bull; Expired in 30 days</span>
-                                </div>
+                            
 
                                 {/* Header Row */}
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>

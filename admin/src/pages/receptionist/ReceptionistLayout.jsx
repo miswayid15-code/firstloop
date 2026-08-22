@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
+import { toast } from 'react-hot-toast'
+import API from '../../api.js'
 import { MOCK_RECEPTIONIST_PROFILE } from './mockReceptionistData'
 
 export default function ReceptionistLayout() {
@@ -7,9 +9,57 @@ export default function ReceptionistLayout() {
     const location = useLocation()
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
-    const handleLogout = () => {
-        if (window.confirm('Are you sure you want to log out of Receptionist Terminal?')) {
-            navigate('/merchant/login')
+    const handleLogout = async () => {
+
+
+        try {
+            let response = null
+            try {
+                response = await API.post('firstloop/reception/logout', {}, { skipAuthRedirect: true })
+            } catch (err1) {
+                try {
+                    response = await API.post('firstloop/merchant/logout', {}, { skipAuthRedirect: true })
+                } catch (err2) {
+                    response = null
+                }
+            }
+
+            if (response?.data?.status === 1 || response?.data?.status === "1" || response?.data?.success) {
+                toast.success(response.data.message || 'Logged out of Receptionist Terminal 👋')
+            } else if (response?.data?.message) {
+                toast.error(response.data.message)
+            } else {
+                toast.success('Logged out of Receptionist Terminal 👋')
+            }
+        } catch (error) {
+            const errMsg = error?.response?.data?.message || 'Logout failed'
+            toast.error(errMsg)
+        } finally {
+            localStorage.removeItem('rec_access_token')
+            localStorage.removeItem('rec_refresh_token')
+            localStorage.removeItem('receptionist_token')
+            localStorage.removeItem('receptionist_data')
+            localStorage.removeItem('rec_data')
+            localStorage.removeItem('user_id')
+            localStorage.removeItem('user_repId')
+
+            localStorage.removeItem('mer_access_token')
+            localStorage.removeItem('mer_refresh_token')
+            localStorage.removeItem('merchant_data')
+
+            sessionStorage.removeItem('rec_access_token')
+            sessionStorage.removeItem('rec_refresh_token')
+            sessionStorage.removeItem('receptionist_token')
+            sessionStorage.removeItem('receptionist_data')
+            sessionStorage.removeItem('rec_data')
+            sessionStorage.removeItem('user_id')
+            sessionStorage.removeItem('user_repId')
+
+            sessionStorage.removeItem('mer_access_token')
+            sessionStorage.removeItem('mer_refresh_token')
+            sessionStorage.removeItem('merchant_data')
+
+            navigate('/receptionist/login', { replace: true })
         }
     }
 

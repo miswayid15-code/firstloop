@@ -135,30 +135,36 @@ export default function Merchants() {
     }, [merchantPage, safeMerchantPage])
 
     const fetchMerchants = async () => {
-
         try {
-
-            const response = await API.get('admin/merchant-list')
-
-            // console.log(response.data)
-
-            if (response.data.status === 1) {
-
-                setMerchants(response.data.data)
-
+            setLoading(true)
+            let response
+            try {
+                response = await API.get('admin/merchant-list')
+            } catch (getErr) {
+                try {
+                    response = await API.post('admin/merchant-list')
+                } catch (postErr) {
+                    response = await API.get('admin/merchant-lists')
+                }
             }
 
+            console.log('Merchants Response:', response?.data)
+
+            if (response?.data && (response.data.status === 1 || response.data.status === "1" || response.data.success)) {
+                const list = response.data.data || response.data.merchants || response.data.merchant || []
+                setMerchants(Array.isArray(list) ? list : [])
+            } else if (Array.isArray(response?.data)) {
+                setMerchants(response.data)
+            } else {
+                setMerchants([])
+                toast.error(response?.data?.message || 'Failed to fetch merchants')
+            }
         } catch (error) {
-
-            // console.log(error)
+            console.error('Fetch Merchants Error:', error)
             toast.error('Failed to fetch merchants')
-
         } finally {
-
             setLoading(false)
-
         }
-
     }
 
     const openView = (merchant) => {

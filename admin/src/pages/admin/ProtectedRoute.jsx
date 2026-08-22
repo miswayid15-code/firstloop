@@ -55,7 +55,9 @@ export default function ProtectedRoute({ children }) {
         "/card-designs",
         "/salepersons",
         "/view-fl-branch",
-        "/fp-customer_details"
+        "/fp-customer_details",
+        "/firstloop-coming-soon",
+        "/firstloop"
     ];
 
     // =====================================================
@@ -70,10 +72,12 @@ export default function ProtectedRoute({ children }) {
     };
 
     // =====================================================
-    // FIRSTLOOP ACCESS
+    // FIRSTLOOP ACCESS - Coming Soon Only
     // =====================================================
-    if (role === "firstloop" && !isPathMatch(firstLoopAllowedPaths)) {
-        return <Navigate to="/dashboard" replace />;
+    if (role === "firstloop") {
+        if (location.pathname !== "/firstloop-coming-soon" && location.pathname !== "/firstloop") {
+            return <Navigate to="/firstloop-coming-soon" replace />;
+        }
     }
 
     // =====================================================

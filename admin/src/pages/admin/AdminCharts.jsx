@@ -76,7 +76,7 @@ const ROLE_CONFIG = {
 }
 import { getAuth } from "firebase/auth";
 
-console.log("currentUser", getAuth().currentUser);
+// console.log("currentUser", getAuth().currentUser);
 /* ═══════════════════════════════════════════════════════
    HELPERS
    ═══════════════════════════════════════════════════════ */
