@@ -210,16 +210,7 @@ function AdminLayout() {
 
 export default function App() {
   const location = useLocation();
-
   const isAdmin = window.location.pathname.startsWith('/admin');
-
-  const isFirstLoopDomain =
-    window.location.hostname === 'firstloop.co.in' ||
-    window.location.hostname === 'www.firstloop.co.in';
-
-  if (isFirstLoopDomain) {
-    return <FirstLoopComingSoon />;
-  }
 
   return (
     <>
