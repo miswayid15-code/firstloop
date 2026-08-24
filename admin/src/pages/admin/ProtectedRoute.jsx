@@ -74,11 +74,11 @@ export default function ProtectedRoute({ children }) {
     // =====================================================
     // FIRSTLOOP ACCESS - Coming Soon Only
     // =====================================================
-    if (role === "firstloop") {
-        if (location.pathname !== "/firstloop-coming-soon" && location.pathname !== "/firstloop") {
-            return <Navigate to="/firstloop-coming-soon" replace />;
-        }
-    }
+    // if (role === "firstloop") {
+    //     if (location.pathname !== "/firstloop-coming-soon" && location.pathname !== "/firstloop") {
+    //         return <Navigate to="/firstloop-coming-soon" replace />;
+    //     }
+    // }
 
     // =====================================================
     // FIRSTPASS ACCESS
