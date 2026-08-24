@@ -1076,7 +1076,11 @@ exports.home = async (req, res) => {
 
         const lat = req.body?.lat || req.query?.lat || null;
         const lon = req.body?.lon || req.query?.lon || null;
-        const cat_id = req.body?.cat_id || req.query?.cat_id || null;
+        let cat_id = req.body?.cat_id ?? req.query?.cat_id ?? null;
+
+        if (cat_id !== null && cat_id !== undefined && cat_id !== '') {
+            cat_id = Number(cat_id);
+        }
         let choose_country = req.body?.ch_code || req.query?.ch_code || null;
         if (choose_country) {
             choose_country = choose_country?.trim().toUpperCase();
@@ -1183,15 +1187,15 @@ exports.home = async (req, res) => {
             branches.map(async (branch) => {
 
                 const item = branch.toJSON();
-        const coupon_count = await Coupon.count({
-            where: {
-                status: 1,
-                del_status: 0,
-                branch_ids: {
-                    [Op.contains]: [Number(branch.id)]
-                }
-            }
-        });
+                const coupon_count = await Coupon.count({
+                    where: {
+                        status: 1,
+                        del_status: 0,
+                        branch_ids: {
+                            [Op.contains]: [Number(branch.id)]
+                        }
+                    }
+                });
 
                 item.coupon_count = coupon_count;
 
