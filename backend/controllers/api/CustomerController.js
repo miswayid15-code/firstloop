@@ -1131,26 +1131,32 @@ exports.home = async (req, res) => {
                 country_iso: choose_country
             },
 
-            include: [{
-                model: Merchant,
-                required: true,
-                attributes: ['id', 'brand_image'],
-                where: {
-                    status: 1,
-                    del_status: 0,
-                      ...(cat_id ? { cat_id: cat_id } : {})
-                }, include: [
-                    {
-                        model: Category,
-                        required: true,
-                        attributes: ['id', 'name'],
-                        where: {
-                            status: 1,
-                            del_status: 0
+            include: [
+                {
+                    model: Coupon,
+                    required: true,
+                    attributes: ['id'],
+                },
+                {
+                    model: Merchant,
+                    required: true,
+                    attributes: ['id', 'brand_image'],
+                    where: {
+                        status: 1,
+                        del_status: 0,
+                        ...(cat_id ? { cat_id: cat_id } : {})
+                    }, include: [
+                        {
+                            model: Category,
+                            required: true,
+                            attributes: ['id', 'name'],
+                            where: {
+                                status: 1,
+                                del_status: 0
+                            }
                         }
-                    }
-                ]
-            }],
+                    ]
+                }],
             attributes: [
                 'id',
                 'name',
@@ -1182,6 +1188,17 @@ exports.home = async (req, res) => {
             branches.map(async (branch) => {
 
                 const item = branch.toJSON();
+                const couponCount = await Coupon.count({
+                    where: {
+                        status: 1,
+                        del_status: 0,
+                        branch_ids: {
+                            [Op.contains]: [branch.id]
+                        }
+                    }
+                });
+
+                item.coupon_count = couponCount;
 
                 item.category = item.Merchant?.Category || null;
                 const city = item.city?.trim();
