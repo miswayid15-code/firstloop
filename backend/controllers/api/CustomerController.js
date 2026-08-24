@@ -39,7 +39,7 @@ exports.register = async (req, res) => {
     // console.log("========== CUSTOMER REGISTER START ==========");
 
     try {
-        console.log("REQ BODY:", req.body);
+        // console.log("REQ BODY:", req.body);
         const {
             name,
             email,
@@ -1076,6 +1076,7 @@ exports.home = async (req, res) => {
 
         const lat = req.body?.lat || req.query?.lat || null;
         const lon = req.body?.lon || req.query?.lon || null;
+        const cat_id = req.body?.cat_id || req.query?.cat_id || null;
         let choose_country = req.body?.ch_code || req.query?.ch_code || null;
         if (choose_country) {
             choose_country = choose_country?.trim().toUpperCase();
@@ -1136,7 +1137,8 @@ exports.home = async (req, res) => {
                 attributes: ['id', 'brand_image'],
                 where: {
                     status: 1,
-                    del_status: 0
+                    del_status: 0,
+                      ...(cat_id ? { cat_id: cat_id } : {})
                 }, include: [
                     {
                         model: Category,
@@ -4137,6 +4139,21 @@ exports.get_brach_by_coupon = async (req, res) => {
     }
 };
 
+
+// exports.categories_br_list =async(req,res)=>{
+//     try{
+//         const{ cat_id,lat}=req.body;
+
+//     }
+//     catch(err){
+//                console.log("GET BRANCH BY COUPON ERROR:", err);
+
+//         return res.json({
+//             status: 0,
+//             message: err.message
+//         }); 
+//     }
+// }
 exports.send_test = async (req, res) => {
     try {
         const refId = await generateRefId("Test Branch");
