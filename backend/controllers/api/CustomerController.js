@@ -1133,11 +1133,6 @@ exports.home = async (req, res) => {
 
             include: [
                 {
-                    model: Coupon,
-                    required: true,
-                    attributes: ['id'],
-                },
-                {
                     model: Merchant,
                     required: true,
                     attributes: ['id', 'brand_image'],
@@ -1188,17 +1183,17 @@ exports.home = async (req, res) => {
             branches.map(async (branch) => {
 
                 const item = branch.toJSON();
-                const couponCount = await Coupon.count({
-                    where: {
-                        status: 1,
-                        del_status: 0,
-                        branch_ids: {
-                            [Op.contains]: [branch.id]
-                        }
-                    }
-                });
+        const coupon_count = await Coupon.count({
+            where: {
+                status: 1,
+                del_status: 0,
+                branch_ids: {
+                    [Op.contains]: [Number(branch.id)]
+                }
+            }
+        });
 
-                item.coupon_count = couponCount;
+                item.coupon_count = coupon_count;
 
                 item.category = item.Merchant?.Category || null;
                 const city = item.city?.trim();
