@@ -1,6 +1,42 @@
 import { useState, useEffect } from 'react'
 import flLogo from '../assets/img/firstloop-favicon.png'
 import qrImg from '../assets/img/qr-img.png'
+import axios from 'axios'
+import API from '../api.js'
+
+// Default Card Designs Fallback List
+const DEFAULT_CARD_DESIGNS = [
+    {
+        id: 'cd-def-1',
+        name: 'Aurora Cyan',
+        image: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&q=80&w=400',
+        status: 1
+    },
+    {
+        id: 'cd-def-2',
+        name: 'Crimson Wave',
+        image: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&q=80&w=400',
+        status: 1
+    },
+    {
+        id: 'cd-def-3',
+        name: 'Midnight Gold',
+        image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=400',
+        status: 1
+    },
+    {
+        id: 'cd-def-4',
+        name: 'Emerald Luxe',
+        image: 'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?auto=format&fit=crop&q=80&w=400',
+        status: 1
+    },
+    {
+        id: 'cd-def-5',
+        name: 'Royal Purple',
+        image: 'https://images.unsplash.com/photo-1550684847-75bdda21cc95?auto=format&fit=crop&q=80&w=400',
+        status: 1
+    }
+]
 
 // --- QR Code Component ---
 const RealQRCode = ({ size = 80 }) => (
@@ -26,6 +62,18 @@ const formatValidity = (val) => {
     return str
 }
 
+// Format Image URL helper
+const formatImageUrl = (img) => {
+    if (!img) return ''
+    if (img.startsWith('http://') || img.startsWith('https://') || img.startsWith('data:') || img.startsWith('blob:')) {
+        return img
+    }
+    const baseUrl = import.meta.env.VITE_API_URL || ''
+    const cleanBase = baseUrl.replace(/\/+$/, '')
+    const cleanImg = String(img).replace(/^\/+/, '')
+    return `${cleanBase}/${cleanImg}`
+}
+
 export default function MembershipCardBuilderModal({
     isOpen,
     cardData = null,
@@ -33,6 +81,7 @@ export default function MembershipCardBuilderModal({
     onSave,
     onClose
 }) {
+    const [fetchedDesigns, setFetchedDesigns] = useState([])
     const [membershipForm, setMembershipForm] = useState({
         id: null,
         name: '',
@@ -48,8 +97,87 @@ export default function MembershipCardBuilderModal({
         isDefault: false
     })
 
+    // Self-contained API call to fetch card designs if not provided via props
+    useEffect(() => {
+        if (isOpen) {
+            if (!cardDesigns || cardDesigns.length === 0) {
+                fetchCardDesignsFromApi()
+            }
+        }
+    }, [isOpen, cardDesigns])
+
+    const fetchCardDesignsFromApi = async () => {
+        try {
+            const adminToken = localStorage.getItem('access_token') || localStorage.getItem('admin_token')
+            const role = localStorage.getItem('role') || 'firstpass'
+
+            let response = null
+
+            // 1. Try with Admin token
+            if (adminToken && adminToken !== 'null' && adminToken !== 'undefined') {
+                try {
+                    response = await API.post('admin/card-design/list', {}, {
+                        skipAuthRedirect: true,
+                        headers: { Authorization: `Bearer ${adminToken}`, 'X-Role': role }
+                    })
+                } catch (e) {}
+            }
+
+            // 2. Try unauthenticated axios POST with X-Role header
+            if (!response?.data || (response.data.status !== 1 && response.data.status !== "1")) {
+                try {
+                    response = await axios.post(`${import.meta.env.VITE_API_URL}/admin/card-design/list`, {}, {
+                        headers: { 'X-Role': role, 'Content-Type': 'application/json' }
+                    })
+                } catch (e) {}
+            }
+
+            // 3. Try standard API.post
+            if (!response?.data || (response.data.status !== 1 && response.data.status !== "1")) {
+                try {
+                    response = await API.post('admin/card-design/list', {}, { skipAuthRedirect: true })
+                } catch (e) {}
+            }
+
+            // 4. Try firstloop merchant route
+            if (!response?.data || (response.data.status !== 1 && response.data.status !== "1")) {
+                try {
+                    response = await API.post('firstloop/merchant/card-design/list', {}, { skipAuthRedirect: true })
+                } catch (e) {}
+            }
+
+            if (response?.data && (response.data.status === 1 || response.data.status === '1' || response.data.success)) {
+                const rawList = response.data.data || response.data.card_designs || response.data.designs || []
+                const list = Array.isArray(rawList) ? rawList : []
+
+                const formattedDesigns = list
+                    .filter(item => Number(item.status) === 1 || item.status === '1' || item.status === undefined)
+                    .map(item => ({
+                        id: item.id || item._id,
+                        name: item.name || item.title || 'Card Design',
+                        image: formatImageUrl(item.image || item.card_image || item.image_url || item.path),
+                        status: Number(item.status)
+                    }))
+
+                if (formattedDesigns.length > 0) {
+                    setFetchedDesigns(formattedDesigns)
+                    return
+                }
+            }
+
+            setFetchedDesigns(DEFAULT_CARD_DESIGNS.map(d => ({ ...d, image: formatImageUrl(d.image) })))
+        } catch (err) {
+            console.error('Error fetching card designs in MembershipCardBuilderModal:', err)
+            setFetchedDesigns(DEFAULT_CARD_DESIGNS.map(d => ({ ...d, image: formatImageUrl(d.image) })))
+        }
+    }
+
+    const availableDesigns = cardDesigns && cardDesigns.length > 0 ? cardDesigns : fetchedDesigns
+
     // Sync form state when modal opens or cardData changes
     useEffect(() => {
+        if (!isOpen) return
+
         if (cardData) {
             let valMonths = 12
             if (cardData.validityMonths) {
@@ -80,15 +208,15 @@ export default function MembershipCardBuilderModal({
                 brandLogo: flLogo,
                 validityMonths: 12,
                 bgColor: '#D97706',
-                bgImage: cardDesigns.length > 0 ? cardDesigns[0].image : null,
-                cardDesignId: cardDesigns.length > 0 ? cardDesigns[0].id : null,
+                bgImage: availableDesigns.length > 0 ? availableDesigns[0].image : null,
+                cardDesignId: availableDesigns.length > 0 ? availableDesigns[0].id : null,
                 textColor: '#FFFFFF',
                 borderColor: '#F59E0B',
-                preset: cardDesigns.length > 0 ? cardDesigns[0].name : 'Custom',
+                preset: availableDesigns.length > 0 ? availableDesigns[0].name : 'Custom',
                 isDefault: false
             })
         }
-    }, [cardData, cardDesigns, isOpen])
+    }, [cardData, availableDesigns, isOpen])
 
     if (!isOpen) return null
 
@@ -97,8 +225,9 @@ export default function MembershipCardBuilderModal({
         const style = {
             border: `2px solid ${form.borderColor || 'rgba(255,255,255,0.4)'}`
         }
-        if (form.bgImage) {
-            style.backgroundImage = `url(${form.bgImage})`
+        const bgImg = form.bgImage || (form.cardDesignId ? availableDesigns.find(d => String(d.id) === String(form.cardDesignId))?.image : null)
+        if (bgImg) {
+            style.backgroundImage = `url(${formatImageUrl(bgImg)})`
             style.backgroundSize = 'cover'
             style.backgroundPosition = 'center'
             style.backgroundRepeat = 'no-repeat'
@@ -111,8 +240,11 @@ export default function MembershipCardBuilderModal({
     const handleMembershipLogoUpload = (e) => {
         const file = e.target.files[0]
         if (file) {
-            const previewUrl = URL.createObjectURL(file)
-            setMembershipForm(prev => ({ ...prev, brandLogo: previewUrl }))
+            const reader = new FileReader()
+            reader.onloadend = () => {
+                setMembershipForm(prev => ({ ...prev, brandLogo: reader.result }))
+            }
+            reader.readAsDataURL(file)
         }
     }
 
@@ -184,34 +316,37 @@ export default function MembershipCardBuilderModal({
                 <div style={{ padding: '12px 20px', background: '#FFFFFF', borderBottom: '1px solid #F1F5F9' }}>
                   
                     <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 4 }}>
-                        {cardDesigns.length > 0 && cardDesigns.map(design => (
-                            <div
-                                key={design.id}
-                                onClick={() => setMembershipForm(prev => ({
-                                    ...prev,
-                                    cardDesignId: design.id,
-                                    bgImage: design.image,
-                                    preset: design.name
-                                }))}
-                                style={{
-                                    minWidth: 120,
-                                    height: 54,
-                                    borderRadius: 10,
-                                    backgroundImage: `url(${design.image})`,
-                                    backgroundSize: 'cover',
-                                    backgroundPosition: 'center',
-                                    border: membershipForm.bgImage === design.image ? '3px solid #D97706' : '2px solid #E2E8F0',
-                                    cursor: 'pointer',
-                                    position: 'relative',
-                                    boxShadow: membershipForm.bgImage === design.image ? '0 4px 12px rgba(217, 119, 6, 0.4)' : 'none',
-                                    overflow: 'hidden'
-                                }}
-                            >
-                                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(0,0,0,0.65)', color: '#FFF', fontSize: '0.65rem', fontWeight: 700, padding: '2px 4px', textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden', textAlign: 'center' }}>
-                                    {design.name}
+                        {availableDesigns.length > 0 && availableDesigns.map(design => {
+                            const isSelected = membershipForm.cardDesignId === design.id || membershipForm.bgImage === design.image
+                            return (
+                                <div
+                                    key={design.id}
+                                    onClick={() => setMembershipForm(prev => ({
+                                        ...prev,
+                                        cardDesignId: design.id,
+                                        bgImage: design.image,
+                                        preset: design.name
+                                    }))}
+                                    style={{
+                                        minWidth: 120,
+                                        height: 54,
+                                        borderRadius: 10,
+                                        backgroundImage: `url(${formatImageUrl(design.image)})`,
+                                        backgroundSize: 'cover',
+                                        backgroundPosition: 'center',
+                                        border: isSelected ? '3px solid #D97706' : '2px solid #E2E8F0',
+                                        cursor: 'pointer',
+                                        position: 'relative',
+                                        boxShadow: isSelected ? '0 4px 12px rgba(217, 119, 6, 0.4)' : 'none',
+                                        overflow: 'hidden'
+                                    }}
+                                >
+                                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(0,0,0,0.65)', color: '#FFF', fontSize: '0.65rem', fontWeight: 700, padding: '2px 4px', textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden', textAlign: 'center' }}>
+                                        {design.name}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            )
+                        })}
                     </div>
                 </div>
 
@@ -464,7 +599,7 @@ export default function MembershipCardBuilderModal({
                                 <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 5, fontSize: '0.65rem', opacity: 0.9, fontWeight: 600, marginTop: 6 }}>
                                     <span>powered by</span>
                                     <img src={flLogo} alt="FirstLoop" style={{ height: 14, objectFit: 'contain' }} />
-                                    <strong style={{ color: 'inherit' }}>FirstLoop</strong>
+                                    <strong style={{ color: 'inherit' }}>firstloop.co.in</strong>
                                 </div>
                             </div>
                         </div>

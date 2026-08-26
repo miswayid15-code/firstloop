@@ -83,9 +83,9 @@ export default function ProtectedRoute({ children }) {
     // =====================================================
     // FIRSTPASS ACCESS
     // =====================================================
-    if (role === "firstpass" && isPathMatch(firstLoopOnlyPaths)) {
-        return <Navigate to="/dashboard" replace />;
-    }
+    // if (role === "firstpass" && isPathMatch(firstLoopOnlyPaths)) {
+    //     return <Navigate to="/dashboard" replace />;
+    // }
 
     return children;
 }

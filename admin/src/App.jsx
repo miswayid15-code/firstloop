@@ -31,6 +31,7 @@ import ViewBranch from './pages/admin/ViewBranch';
 import ViewFlBranch from './pages/admin/ViewFlBranch';
 import FpCustomerDetails from './pages/admin/FpCustomerDetails';
 import CardDesigns from './pages/admin/CardDesigns';
+import CardPreview from './pages/admin/CardPreview';
 import BranchReport from './pages/admin/BranchReport';
 import BranchChat from './pages/admin/BranchChat';
 import BranchPendingImages from './pages/admin/BranchPendingImages';
@@ -41,6 +42,7 @@ import ProtectedRoute from './pages/admin/ProtectedRoute';
 import AdminCharts from './pages/admin/AdminCharts';
 import FirstLoopComingSoon from './pages/admin/FirstLoopComingSoon';
 import NotFound from './pages/NotFound';
+
 
 // SALE LOGIN
 import SalePersonLogin from './pages/saleperson/SalePersonLogin.jsx';
@@ -118,7 +120,7 @@ function ScrollToTopAndAnimate() {
 
 function WebsiteLayout() {
   const { pathname } = useLocation();
-  const hideHeaderFooter = ['/under-construction', '/delete-account', '/data-policy', '/conditions', '/customer-app', '/firstloop-coming-soon', '/firstloop'].includes(pathname);
+  const hideHeaderFooter = ['/under-construction', '/delete-account', '/data-policy', '/conditions', '/customer-app', '/firstloop-coming-soon', '/firstloop'].includes(pathname) || pathname.startsWith('/card-preview');
 
   const [loading, setLoading] = useState(!hideHeaderFooter);
   const [fade, setFade] = useState(false);
@@ -171,6 +173,7 @@ function WebsiteLayout() {
           <Route path="/customer-app" element={<CustomerApp />} />
           <Route path="/firstloop-coming-soon" element={<FirstLoopComingSoon />} />
           <Route path="/firstloop" element={<FirstLoopComingSoon />} />
+          <Route path="/card-preview/:id" element={<CardPreview />} />
         </Routes>
       </main>
 
@@ -188,6 +191,7 @@ function AdminLayout() {
 
       <Routes>
         <Route path="/" element={<Login />} />
+        <Route path="card-preview/:id" element={<CardPreview />} />
         <Route path="saleperson-login" element={<SalePersonLogin />} />
         <Route path="saleperson-dashboard" element={<SalePersonDashboard />} />
         <Route path="saleperson-add-merchant" element={<SalePersonAddMerchant />} />

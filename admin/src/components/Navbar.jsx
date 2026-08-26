@@ -361,7 +361,7 @@ export default function Navbar() {
                                 onClick={() => {
                                     sessionStorage.setItem("role", "firstloop");
                                     localStorage.setItem("role", "firstloop");
-                                    window.location.href = "/firstloop-coming-soon";
+                                    window.location.reload();
                                 }}
                             >
                                 <span className="product-icon firstloop-icon">

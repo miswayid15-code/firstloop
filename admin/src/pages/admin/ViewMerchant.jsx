@@ -7,6 +7,7 @@ import {
 } from 'react-router-dom'
 import { useJsApiLoader } from '@react-google-maps/api'
 import { toast } from 'react-hot-toast'
+import html2canvas from 'html2canvas'
 
 import ConfirmDialog from '../../components/ConfirmDialog.jsx'
 import PhoneNumberField from '../../components/PhoneNumberField.jsx'
@@ -15,6 +16,77 @@ import API from '../../api.js';
 import FirstPassLogo from '../../assets/img/FirstPass-logo.png';
 import FirstLoopLogo from '../../assets/img/first-loop_logo.png';
 import fl_logo from '../../assets/img/firstloop-favicon.png';
+import StampCardBuilderModal from '../../components/StampCardBuilderModal.jsx'
+import MembershipCardBuilderModal from '../../components/MembershipCardBuilderModal.jsx'
+import qrImg from '../../assets/img/qr-img.png'
+
+const INITIAL_MEMBERSHIP_CARDS = [
+    {
+        id: 'mc-201',
+        name: 'Gold Elite Membership',
+        cardholderName: 'Sarah Jenkins',
+        brandName: 'FirstLoop Elite',
+        brandLogo: fl_logo,
+        validityMonths: '03/25',
+        tier: 'Gold',
+        bgColor: '#D97706',
+        bgImage: null,
+        textColor: '#FFFFFF',
+        borderColor: '#F59E0B',
+        preset: 'Gold Tier',
+        isDefault: true,
+        minSpend: '$250 / year',
+        activeMembers: 128,
+        perks: [
+            '15% Instant Discount on All Items',
+            'Priority Queue & Reserved Seating',
+            'Free Birthday Gift & $10 Voucher',
+            'Exclusive Double Stamp Days'
+        ],
+        status: 'Active'
+    },
+    {
+        id: 'mc-202',
+        name: 'Platinum Black VIP Pass',
+        cardholderName: 'Alex Mercer',
+        brandName: 'VIP Club',
+        brandLogo: fl_logo,
+        validityMonths: '03/25',
+        tier: 'Platinum',
+        bgColor: '#1E293B',
+        bgImage: null,
+        textColor: '#FFFFFF',
+        borderColor: '#64748B',
+        preset: 'Midnight',
+        isDefault: false,
+        minSpend: '$500 / year',
+        activeMembers: 64,
+        perks: [
+            '25% Discount on All Premium Products',
+            'Dedicated Concierge & Account Assistant',
+            'Complimentary Valet Parking',
+            'Free Monthly Tasting Pass'
+        ],
+        status: 'Active'
+    }
+]
+
+const getCardStyle = (card) => {
+    if (!card) return {}
+    const style = {
+        border: `2px solid ${card.borderColor || card.border_color || 'rgba(255,255,255,0.4)'}`
+    }
+    const bgImg = card.bgImage || card.background_image
+    if (bgImg && bgImg !== 'none' && bgImg !== 'null' && bgImg !== 'undefined') {
+        style.backgroundImage = `url(${formatImageUrl(bgImg)})`
+        style.backgroundSize = 'cover'
+        style.backgroundPosition = 'center'
+        style.backgroundRepeat = 'no-repeat'
+    } else {
+        style.backgroundColor = card.bgColor || card.background_color || '#0E88B8'
+    }
+    return style
+}
 
 const BRANCHES_PER_PAGE = 6
 const COUPONS_PER_PAGE = 5
@@ -33,18 +105,74 @@ const defaultCenter = {
 }
 
 const getRelativeImagePath = (value) => {
-    if (!value) {
-        return ''
+    if (!value) return ''
+    let str = String(value).trim()
+
+    if (str.startsWith('data:') || str.startsWith('blob:')) {
+        return str
     }
 
-    if (!String(value).startsWith('http')) {
-        return String(value).replace(/^\/+/, '')
+    const uploadsMatch = str.match(/(uploads\/.*)/i)
+    if (uploadsMatch) {
+        return uploadsMatch[1]
     }
 
+    while (str.includes('http://') || str.includes('https://')) {
+        const lastHttp = str.lastIndexOf('http://')
+        const lastHttps = str.lastIndexOf('https://')
+        const idx = Math.max(lastHttp, lastHttps)
+        try {
+            const url = new URL(str.substring(idx))
+            str = url.pathname
+        } catch (e) {
+            str = str.replace(/^https?:\/\/[^/]+/i, '')
+        }
+    }
+
+    return str.replace(/^\/+/, '')
+}
+
+const formatImageUrl = (img) => {
+    if (!img) return ''
+    let str = String(img).trim()
+
+    if (str.startsWith('data:') || str.startsWith('blob:')) {
+        return str
+    }
+
+    const rel = getRelativeImagePath(str)
+    if (!rel) return ''
+
+    const baseUrl = import.meta.env.VITE_API_URL || ''
+    const cleanBase = baseUrl.replace(/\/+$/, '')
+    const cleanImg = rel.replace(/^\/+/, '')
+    return cleanBase ? `${cleanBase}/${cleanImg}` : cleanImg
+}
+
+const handleDownloadCard = async (elementId, fileNameTitle) => {
     try {
-        return new URL(value).pathname.replace(/^\/+/, '')
-    } catch {
-        return String(value).replace(/^https?:\/\/[^/]+\//, '').replace(/^\/+/, '')
+        const element = document.getElementById(elementId)
+        if (!element) {
+            toast.error('Card element not found')
+            return
+        }
+
+        const canvas = await html2canvas(element, {
+            useCORS: true,
+            allowTaint: true,
+            scale: 2,
+            backgroundColor: null
+        })
+
+        const image = canvas.toDataURL('image/png')
+        const link = document.createElement('a')
+        link.href = image
+        link.download = `${(fileNameTitle || 'digital-card').toLowerCase().replace(/[^a-z0-9]+/g, '-')}.png`
+        link.click()
+        toast.success('Card image downloaded successfully!')
+    } catch (err) {
+        console.error('Download card error:', err)
+        toast.error('Failed to download card image')
     }
 }
 
@@ -187,6 +315,242 @@ export default function ViewMerchant() {
         const [activeRole, setActiveRole] = useState(
         sessionStorage.getItem("role") || localStorage.getItem("role") || "firstpass"
     );
+
+    const [stampCards, setStampCards] = useState([])
+    const [membershipCards, setMembershipCards] = useState(INITIAL_MEMBERSHIP_CARDS)
+    const [stampSearch, setStampSearch] = useState('')
+    const [membershipSearch, setMembershipSearch] = useState('')
+
+    const [cardDesignsApi, setCardDesignsApi] = useState([])
+    const [stampBuilderOpen, setStampBuilderOpen] = useState(false)
+    const [selectedEditStampCard, setSelectedEditStampCard] = useState(null)
+    const [selectedStampCard, setSelectedStampCard] = useState(null)
+
+    const [membershipBuilderOpen, setMembershipBuilderOpen] = useState(false)
+    const [selectedEditMembershipCard, setSelectedEditMembershipCard] = useState(null)
+    const [selectedMembership, setSelectedMembership] = useState(null)
+
+    useEffect(() => {
+        const fetchCardDesignsFromApi = async () => {
+            try {
+                const response = await API.post('admin/card-design/list')
+                if (response.data && response.data.status === 1) {
+                    const activeDesigns = (response.data.data || []).filter(item => Number(item.status) === 1)
+                    setCardDesignsApi(activeDesigns)
+                }
+            } catch (err) {
+                console.error('Error fetching card designs API:', err)
+            }
+        }
+        fetchCardDesignsFromApi()
+    }, [])
+
+    const fetchStampCards = async () => {
+        const mId = id || merchantData?.id;
+        if (!mId) return;
+
+        try {
+            const response = await API.post('firstloop/merchant/fetch-stamp-card', {
+                mer_id: Number(mId)
+            });
+
+            console.log('Fetch Stamp Card Response:', response?.data);
+
+            if (
+                response?.data?.status === 1
+            ) {
+                const rawList = response.data.data || response.data.stamp_cards || response.data.cards || [];
+                const list = Array.isArray(rawList) ? rawList : [];
+
+                const formatted = list.map(item => ({
+                    id: item.id || item._id,
+                    title: item.title || 'Stamp Pass',
+                    brandName: item.brand_name || merchantData?.bus_name || 'Merchant',
+                    brandLogo: item.brand_image ? getRelativeImagePath(item.brand_image) : null,
+                    total_stamps: Number(item.number_of_stamps) || 8,
+                    reward: item.reward || 'Special Gift',
+                    active_members: item.active_members || 0,
+                    expiry: item.expiry || '2026-12-31',
+                    status: 'Active',
+                    bgColor: item.background_color || '#0E88B8',
+                    bgImage: item.background_image ? getRelativeImagePath(item.background_image) : null,
+                    textColor: item.text_color || '#FFFFFF',
+                    borderColor: item.border_color || '#00A6D6',
+                    stampBgColor: item.stamp_background || 'rgba(255, 255, 255, 0.3)',
+                    stampBorderColor: item.stamp_border_color || '#FFFFFF',
+                    stampTextColor: item.stamp_text_color || '#FFFFFF',
+                    stamp_radius: Number(item.stamp_radius ?? 50),
+                    preset: 'Custom',
+                    branch_ids: Array.isArray(item.branch_ids)
+                        ? item.branch_ids.map(Number)
+                        : (item.branch_id ? [Number(item.branch_id)] : []),
+                    levelRewards: Array.isArray(item.stamp_levels) ? item.stamp_levels.map((lvl, idx) => ({
+                        stamp: lvl.stamp_number || idx + 1,
+                        reward: lvl.reward_text || (lvl.reward_type === '2' ? 'Discount' : 'Free Item'),
+                        type: lvl.reward_type === '2' ? 'Discount' : lvl.reward_type === '3' ? 'Paid' : 'Free',
+                        discountVal: lvl.reward_type === '2' ? parseInt(lvl.reward_text) || 10 : 0,
+                        icon: 'fa-gift',
+                        amt: Number(lvl.amt) || 0
+                    })) : Array.from({ length: Number(item.number_of_stamps) || 8 }).map((_, i) => ({
+                        stamp: i + 1,
+                        reward: `Stamp #${i + 1}`,
+                        type: 'Free',
+                        discountVal: 0,
+                        icon: 'fa-gift',
+                        amt: 0
+                    }))
+                }));
+
+                if (formatted.length > 0) {
+                    setStampCards(formatted);
+                }
+            }
+        } catch (err) {
+            console.error('Error fetching stamp cards from API:', err);
+        }
+    };
+
+    useEffect(() => {
+        if (id) {
+            fetchStampCards();
+        }
+    }, [id]);
+
+    const handleOpenCreateStampCard = () => {
+        setSelectedEditStampCard(null)
+        setStampBuilderOpen(true)
+    }
+
+    const handleOpenEditStampCard = (card) => {
+        setSelectedEditStampCard(card)
+        setStampBuilderOpen(true)
+    }
+
+    const handleSaveStampCard = (savedForm) => {
+        fetchStampCards();
+        const count = Number(savedForm?.total_stamps) || 8
+        const levelRewards = savedForm?.levelRewards || Array.from({ length: count }).map((_, i) => ({
+            stamp: i + 1,
+            reward: i === count - 1 ? (savedForm?.reward || 'Free Item') : `Stamp #${i + 1}`,
+            type: i === count - 1 ? 'Free' : 'Free',
+            discountVal: 0,
+            icon: savedForm?.icon || 'fa-gift'
+        }))
+
+        if (savedForm?.id) {
+            setStampCards(prev => prev.map(item => item.id === savedForm.id ? {
+                ...item,
+                title: savedForm.title,
+                brandName: savedForm.brandName,
+                brandLogo: savedForm.brandLogo,
+                total_stamps: count,
+                reward: savedForm.reward,
+                expiry: savedForm.expiry,
+                bgColor: savedForm.bgColor,
+                bgImage: savedForm.bgImage,
+                textColor: savedForm.textColor,
+                borderColor: savedForm.borderColor,
+                stampBgColor: savedForm.stampBgColor,
+                stampBorderColor: savedForm.stampBorderColor,
+                stampTextColor: savedForm.stampTextColor,
+                preset: savedForm.preset,
+                levelRewards
+            } : item))
+        } else {
+            const newCard = {
+                id: `sc-${Date.now()}`,
+                title: savedForm.title || 'New Digital Stamp Pass',
+                brandName: savedForm.brandName || merchantData?.bus_name || 'Merchant',
+                brandLogo: savedForm.brandLogo || fl_logo,
+                total_stamps: count,
+                reward: savedForm.reward || 'Special Gift',
+                active_members: 0,
+                expiry: savedForm.expiry || '2026-12-31',
+                status: 'Active',
+                icon: savedForm.icon || 'fa-stamp',
+                bgColor: savedForm.bgColor || '#EF0003',
+                bgImage: savedForm.bgImage || null,
+                textColor: savedForm.textColor || '#FFFFFF',
+                borderColor: savedForm.borderColor || '#FF3B3B',
+                stampBgColor: savedForm.stampBgColor || 'rgba(255, 255, 255, 0.3)',
+                stampBorderColor: savedForm.stampBorderColor || '#FFFFFF',
+                stampTextColor: savedForm.stampTextColor || '#FFFFFF',
+                preset: savedForm.preset || 'Wave Red',
+                stamps_given: 0,
+                rewards_claimed: 0,
+                levelRewards
+            }
+            setStampCards(prev => [newCard, ...prev])
+        }
+        setStampBuilderOpen(false)
+    }
+
+    const handleOpenCreateMembership = () => {
+        setSelectedEditMembershipCard(null)
+        setMembershipBuilderOpen(true)
+    }
+
+    const handleOpenEditMembership = (mem) => {
+        setSelectedEditMembershipCard(mem)
+        setMembershipBuilderOpen(true)
+    }
+
+    const handleSaveMembershipCard = (savedForm) => {
+        if (savedForm.id) {
+            setMembershipCards(prev => prev.map(item => item.id === savedForm.id ? {
+                ...item,
+                name: savedForm.name,
+                cardholderName: savedForm.cardholderName,
+                brandName: savedForm.brandName,
+                brandLogo: savedForm.brandLogo,
+                validityMonths: savedForm.validityMonths,
+                tier: savedForm.tier,
+                bgColor: savedForm.bgColor,
+                bgImage: savedForm.bgImage,
+                textColor: savedForm.textColor,
+                borderColor: savedForm.borderColor,
+                preset: savedForm.preset,
+                minSpend: savedForm.minSpend,
+                perks: savedForm.perks
+            } : item))
+        } else {
+            const newMem = {
+                id: `mc-${Date.now()}`,
+                name: savedForm.name || 'New Tier Membership',
+                cardholderName: savedForm.cardholderName || 'Member Name',
+                brandName: savedForm.brandName || merchantData?.bus_name || 'FirstLoop',
+                brandLogo: savedForm.brandLogo || fl_logo,
+                validityMonths: savedForm.validityMonths || '12 Months',
+                tier: savedForm.tier || 'Silver',
+                bgColor: savedForm.bgColor || '#1E293B',
+                bgImage: savedForm.bgImage || null,
+                textColor: savedForm.textColor || '#FFFFFF',
+                borderColor: savedForm.borderColor || '#64748B',
+                preset: savedForm.preset || 'Midnight',
+                isDefault: false,
+                minSpend: savedForm.minSpend || 'New Membership',
+                activeMembers: 0,
+                perks: savedForm.perks || ['Instant Member Benefits'],
+                status: 'Active'
+            }
+            setMembershipCards(prev => [newMem, ...prev])
+        }
+        setMembershipBuilderOpen(false)
+    }
+
+    const filteredStampCards = useMemo(() => {
+        return stampCards.filter(sc =>
+            sc.title.toLowerCase().includes(stampSearch.toLowerCase()) ||
+            (sc.reward && sc.reward.toLowerCase().includes(stampSearch.toLowerCase()))
+        )
+    }, [stampCards, stampSearch])
+
+    const filteredMemberships = useMemo(() => {
+        return membershipCards.filter(mc =>
+            mc.name.toLowerCase().includes(membershipSearch.toLowerCase()) ||
+            (mc.tier && mc.tier.toLowerCase().includes(membershipSearch.toLowerCase()))
+        )
+    }, [membershipCards, membershipSearch])
 
     const highlightFieldError = (selector) => {
         setTimeout(() => {
@@ -3441,6 +3805,34 @@ export default function ViewMerchant() {
 
                             </div>
 
+                            {activeRole === "firstloop" && (
+                                <>
+                                    <div className="merchant-stat-item">
+
+                                        <span className="merchant-stat-val">
+                                            {stampCards.length}
+                                        </span>
+
+                                        <span className="merchant-stat-lbl">
+                                            Stamp Cards
+                                        </span>
+
+                                    </div>
+
+                                    <div className="merchant-stat-item">
+
+                                        <span className="merchant-stat-val">
+                                            {membershipCards.length}
+                                        </span>
+
+                                        <span className="merchant-stat-lbl">
+                                            Membership Cards
+                                        </span>
+
+                                    </div>
+                                </>
+                            )}
+
                         </div>
                     </>
                 )}
@@ -3966,6 +4358,342 @@ export default function ViewMerchant() {
                 )}
 
             </div>
+
+            {activeRole === "firstloop" && (
+                <>
+                    {/* STAMP CARDS SECTION - VISUAL CARD LIST VIEW */}
+                    <div className="card" style={{ marginBottom: 28, padding: 15, marginTop: 28 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, marginBottom: 20 }}>
+                            <div>
+                                <h3 style={{ fontSize: '1.15rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-primary)' }}>
+                                    <i className="fas fa-stamp" style={{ color: 'var(--firstloop-primary)' }} />
+                                    Stamp Cards ({filteredStampCards.length})
+                                </h3>
+                                <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: 4 }}>
+                                    Digital stamp cards featuring dynamic stamp count (max 10) and a clean QR Code image.
+                                </p>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                                <button
+                                    type="button"
+                                    className="btn firstloop-btn-primary"
+                                    onClick={handleOpenCreateStampCard}
+                                    style={{ padding: '8px 14px', fontSize: '0.82rem', borderRadius: 8, display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                                >
+                                    <i className="fas fa-plus-circle" />
+                                    <span>+ Create Stamp Card</span>
+                                </button>
+
+                                <div style={{ position: 'relative', width: 220 }}>
+                                    <i className="fas fa-search" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.8rem' }} />
+                                    <input
+                                        type="text"
+                                        className="form-control"
+                                        placeholder="Search Stamp Cards..."
+                                        value={stampSearch}
+                                        onChange={(e) => setStampSearch(e.target.value)}
+                                        style={{ paddingLeft: 34, height: 38, fontSize: '0.85rem', borderRadius: 8 }}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Stamp Cards Grid */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 380px))', gap: 24 }}>
+                            {filteredStampCards.map((card) => (
+                                <div
+                                    key={card.id}
+                                    style={{
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: 12,
+                                        maxWidth: 380,
+                                        width: '100%'
+                                    }}
+                                >
+                                    {/* DIGITAL STAMP CARD CANVAS */}
+                                    <div
+                                        style={{
+                                            width: '100%',
+                                            maxWidth: 380,
+                                            borderRadius: 20,
+                                            ...getCardStyle(card),
+                                            color: card.textColor || '#FFFFFF',
+                                            padding: 15,
+                                            boxShadow: '0 14px 30px -6px rgba(0,0,0,0.22)',
+                                            position: 'relative',
+                                            minHeight: 220
+                                        }}
+                                    >
+                                        <div style={{ position: 'relative', zIndex: 2 }}>
+                                            <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                                                {/* LEFT SIDE: Brand, Title & Stamp Circles */}
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                                                        <div style={{ width: 26, height: 26, borderRadius: 8, background: '#FFFFFF', padding: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}>
+                                                            <img src={formatImageUrl(card.brandLogo) || fl_logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                                        </div>
+                                                        <span style={{ fontSize: '0.95rem', fontWeight: 800, color: 'inherit' }}>
+                                                            {card.brandName || merchantData?.bus_name || 'Merchant'}
+                                                        </span>
+                                                    </div>
+
+                                                    <div style={{ fontSize: '0.78rem', opacity: 0.9, marginBottom: 10, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                                                        <strong>{card.title}</strong>
+                                                    </div>
+
+                                                    {/* Stamp Circles Grid */}
+                                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 6, maxWidth: 220 }}>
+                                                        {Array.from({ length: Number(card.total_stamps || 8) }).map((_, i) => {
+                                                            const rewardItem = card.levelRewards ? card.levelRewards[i] : null
+                                                            let iconMarkup = i + 1
+
+                                                            if (rewardItem) {
+                                                                if (rewardItem.type === 'Free') {
+                                                                    iconMarkup = <i className="fas fa-gift" style={{ fontSize: '0.8rem' }} />
+                                                                } else if (rewardItem.type === 'Discount') {
+                                                                    iconMarkup = <span style={{ fontSize: '0.65rem', fontWeight: 800 }}>{rewardItem.discountVal || 10}%</span>
+                                                                } else if (rewardItem.type === 'Paid' && rewardItem.icon) {
+                                                                    iconMarkup = <i className={`fas ${rewardItem.icon}`} style={{ fontSize: '0.8rem' }} />
+                                                                }
+                                                            }
+
+                                                            return (
+                                                                <div
+                                                                    key={i}
+                                                                    style={{
+                                                                        width: 36,
+                                                                        height: 36,
+                                                                        borderRadius: `${card.stamp_radius ?? card.stampRadius ?? 50}%`,
+                                                                        border: `2px solid ${card.stampBorderColor || '#FFFFFF'}`,
+                                                                        background: card.stampBgColor || 'rgba(255, 255, 255, 0.3)',
+                                                                        color: card.stampTextColor || 'inherit',
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        justifyContent: 'center',
+                                                                        fontSize: '0.85rem',
+                                                                        fontWeight: 800,
+                                                                        flexShrink: 0
+                                                                    }}
+                                                                >
+                                                                    {iconMarkup}
+                                                                </div>
+                                                            )
+                                                        })}
+                                                    </div>
+                                                </div>
+
+                                                {/* RIGHT SIDE: QR CODE */}
+                                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                                    <img
+                                                        src={qrImg}
+                                                        alt="QR Code"
+                                                        style={{ width: 86, height: 86, objectFit: 'contain', flexShrink: 0 }}
+                                                    />
+                                                    <small style={{ fontSize: '0.6rem', fontWeight: 700, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.5px', opacity: 0.9 }}>
+                                                        SCAN TO STAMP
+                                                    </small>
+                                                </div>
+                                            </div>
+
+                                            {/* BOTTOM RIGHT ALIGNED POWERED BY BADGE WITH FIRSTLOOP LOGO */}
+                                            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 5, fontSize: '0.65rem', opacity: 0.9, fontWeight: 600, marginTop: 10, lineHeight: 1 }}>
+                                                <span style={{ lineHeight: 1, display: 'inline-flex', alignItems: 'center' }}>powered by</span>
+                                                <img src={fl_logo} alt="FirstLoop" style={{ height: 13, width: 'auto', display: 'inline-block', verticalAlign: 'middle', objectFit: 'contain', margin: '0 1px' }} />
+                                                <strong style={{ color: 'inherit', lineHeight: 1, display: 'inline-flex', alignItems: 'center' }}>firstloop.co.in</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Card Item Action Bar */}
+                                    <div style={{ display: 'flex', gap: 10, padding: '0 4px' }}>
+                                        <button
+                                            type="button"
+                                            className="btn firstloop-btn-primary"
+                                            onClick={() => handleOpenEditStampCard(card)}
+                                            style={{ flex: 1, padding: '8px 14px', fontSize: '0.82rem', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                                        >
+                                            <i className="fas fa-edit" />
+                                            <span>Edit Card Design</span>
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            className="btn firstloop-btn-secondary"
+                                            onClick={() => setSelectedStampCard(card)}
+                                            style={{ padding: '8px 14px', fontSize: '0.82rem', borderRadius: 8 }}
+                                        >
+                                            <i className="fas fa-eye" />
+                                            <span>Preview</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* MEMBERSHIP CARDS SECTION - VISUAL PASS LIST VIEW WITH LARGE MIDDLE QR CODE */}
+                    <div className="card" style={{ marginBottom: 28, padding: 15 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, marginBottom: 20 }}>
+                            <div>
+                                <h3 style={{ fontSize: '1.15rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-primary)' }}>
+                                    <i className="fas fa-id-card" style={{ color: '#D97706' }} />
+                                    Membership Cards ({filteredMemberships.length})
+                                </h3>
+                                <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: 4 }}>
+                                    Digital membership passes with custom brand logo and large middle QR code layout.
+                                </p>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                                <button
+                                    type="button"
+                                    className="btn"
+                                    onClick={handleOpenCreateMembership}
+                                    style={{ padding: '8px 14px', fontSize: '0.82rem', borderRadius: 8, background: '#D97706', color: '#FFFFFF', fontWeight: 700, border: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                                >
+                                    <i className="fas fa-plus-circle" />
+                                    <span>+ Create Membership Card</span>
+                                </button>
+
+                                <div style={{ position: 'relative', width: 220 }}>
+                                    <i className="fas fa-search" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.8rem' }} />
+                                    <input
+                                        type="text"
+                                        className="form-control"
+                                        placeholder="Search Membership Tiers..."
+                                        value={membershipSearch}
+                                        onChange={(e) => setMembershipSearch(e.target.value)}
+                                        style={{ paddingLeft: 34, height: 38, fontSize: '0.85rem', borderRadius: 8 }}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Membership Cards Grid */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 380px))', gap: 24 }}>
+                            {filteredMemberships.map((mem) => (
+                                <div
+                                    key={mem.id}
+                                    style={{
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: 12,
+                                        maxWidth: 380,
+                                        width: '100%'
+                                    }}
+                                >
+                                    {/* DIGITAL MEMBERSHIP PASS CANVAS WITH LARGE MIDDLE QR CODE */}
+                                    <div
+                                        style={{
+                                            width: '100%',
+                                            maxWidth: 380,
+                                            borderRadius: 20,
+                                            ...getCardStyle(mem),
+                                            color: mem.textColor || '#FFFFFF',
+                                            padding: 22,
+                                            boxShadow: '0 14px 30px -6px rgba(0,0,0,0.22)',
+                                            position: 'relative',
+                                            minHeight: 210
+                                        }}
+                                    >
+                                        <div style={{ position: 'relative', zIndex: 2 }}>
+                                            {/* Header Row */}
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                    <div style={{ width: 34, height: 34, borderRadius: 10, background: '#FFFFFF', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}>
+                                                        <img src={mem.brandLogo || fl_logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                                    </div>
+                                                    <span style={{ fontSize: '1.05rem', fontWeight: 800, color: 'inherit' }}>
+                                                        {mem.brandName || merchantData?.bus_name || 'FirstLoop'}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {/* Middle Section: Left Info + Right Large Middle QR Code */}
+                                            <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 10 }}>
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'inherit' }}>
+                                                        {mem.name}
+                                                    </div>
+                                                    <div style={{ fontSize: '0.82rem', opacity: 0.9, marginTop: 4, fontWeight: 700 }}>
+                                                        {mem.cardholderName || 'Member Pass'}
+                                                    </div>
+
+                                                    <div style={{ marginTop: 12, borderTop: '1px solid rgba(255,255,255,0.25)', paddingTop: 8 }}>
+                                                        <small style={{ fontSize: '0.65rem', textTransform: 'uppercase', opacity: 0.85 }}>
+                                                            Valid Thru
+                                                        </small>
+                                                        <div style={{ fontSize: '0.88rem', fontWeight: 800, color: 'inherit' }}>
+                                                            {mem.validityMonths || '03/25'}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Large Centered Middle QR Code */}
+                                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                                    <img
+                                                        src={qrImg}
+                                                        alt="QR Code"
+                                                        style={{ width: 92, height: 92, objectFit: 'contain', flexShrink: 0 }}
+                                                    />
+                                                    <small style={{ fontSize: '0.6rem', fontWeight: 700, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.5px', opacity: 0.9 }}>
+                                                        SCAN PASS
+                                                    </small>
+                                                </div>
+                                            </div>
+
+                                            {/* Bottom Right Logo Badge */}
+                                            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 5, fontSize: '0.65rem', opacity: 0.9, fontWeight: 600, marginTop: 6, lineHeight: 1 }}>
+                                                <span style={{ lineHeight: 1, display: 'inline-flex', alignItems: 'center' }}>powered by</span>
+                                                <img src={fl_logo} alt="FirstLoop" style={{ height: 13, width: 'auto', display: 'inline-block', verticalAlign: 'middle', objectFit: 'contain', margin: '0 1px' }} />
+                                                <strong style={{ color: 'inherit', lineHeight: 1, display: 'inline-flex', alignItems: 'center' }}>firstloop.co.in</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Membership Action Bar */}
+                                    <div style={{ display: 'flex', gap: 10, padding: '0 4px' }}>
+                                        <button
+                                            type="button"
+                                            className="btn"
+                                            onClick={() => handleOpenEditMembership(mem)}
+                                            style={{
+                                                flex: 1,
+                                                padding: '8px 14px',
+                                                fontSize: '0.82rem',
+                                                borderRadius: 8,
+                                                background: 'rgba(217, 119, 6, 0.12)',
+                                                color: '#D97706',
+                                                fontWeight: 700,
+                                                border: 'none',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                gap: 6
+                                            }}
+                                        >
+                                            <i className="fas fa-edit" />
+                                            <span>Edit Pass Design</span>
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            className="btn firstloop-btn-secondary"
+                                            onClick={() => setSelectedMembership(mem)}
+                                            style={{ padding: '8px 14px', fontSize: '0.82rem', borderRadius: 8 }}
+                                        >
+                                            <i className="fas fa-eye" />
+                                            <span>Preview</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </>
+            )}
 
             <div
                 className="flex-between"
@@ -7118,6 +7846,324 @@ export default function ViewMerchant() {
                                 ) : (
                                     <><i className="fas fa-check" style={{ marginRight: 6 }} />Save Changes</>
                                 )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* REUSABLE STAMP CARD BUILDER MODAL COMPONENT */}
+            <StampCardBuilderModal
+                isOpen={stampBuilderOpen}
+                cardData={selectedEditStampCard}
+                cardDesigns={cardDesignsApi}
+                merchantId={id || merchantData?.id}
+                branches={branchesData}
+                onSave={handleSaveStampCard}
+                onClose={() => setStampBuilderOpen(false)}
+            />
+
+            {/* REUSABLE MEMBERSHIP CARD BUILDER MODAL COMPONENT */}
+            <MembershipCardBuilderModal
+                isOpen={membershipBuilderOpen}
+                cardData={selectedEditMembershipCard}
+                cardDesigns={cardDesignsApi}
+                onSave={handleSaveMembershipCard}
+                onClose={() => setMembershipBuilderOpen(false)}
+            />
+
+            {/* PREVIEW MODAL 1: STAMP CARD */}
+            {selectedStampCard && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'rgba(15, 23, 42, 0.7)',
+                        backdropFilter: 'blur(5px)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 9999,
+                        padding: 20
+                    }}
+                >
+                    <div
+                        style={{
+                            background: '#FFFFFF',
+                            borderRadius: 24,
+                            maxWidth: 460,
+                            width: '100%',
+                            overflow: 'hidden',
+                            boxShadow: '0 25px 50px rgba(0,0,0,0.3)',
+                            animation: 'fadeIn 0.2s ease'
+                        }}
+                    >
+                        {/* Digital Card Canvas View */}
+                        <div style={{ padding: 15, background: '#F8FAFC', display: 'flex', justifyContent: 'center' }}>
+                            <div
+                                id="stamp-card-preview-canvas"
+                                style={{
+                                    width: '100%',
+                                    maxWidth: 380,
+                                    borderRadius: 20,
+                                    ...getCardStyle(selectedStampCard),
+                                    color: selectedStampCard.textColor || '#FFFFFF',
+                                    padding: 22,
+                                    boxShadow: '0 16px 36px -8px rgba(0,0,0,0.25)',
+                                    position: 'relative',
+                                    minHeight: 230
+                                }}
+                            >
+                                <div style={{ position: 'relative', zIndex: 2 }}>
+                                    <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                                        {/* Left Side */}
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                                                <div style={{ width: 26, height: 26, borderRadius: 8, background: '#FFFFFF', padding: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}>
+                                                    <img src={formatImageUrl(selectedStampCard.brandLogo) || fl_logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                                </div>
+                                                <span style={{ fontSize: '0.95rem', fontWeight: 800, color: 'inherit' }}>
+                                                    {selectedStampCard.brandName || merchantData?.bus_name || 'Merchant'}
+                                                </span>
+                                            </div>
+
+                                            <div style={{ fontSize: '0.78rem', opacity: 0.9, marginBottom: 12 }}>
+                                                <strong>{selectedStampCard.title}</strong>
+                                            </div>
+
+                                            {/* Stamp Circles Grid */}
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 6, maxWidth: 220 }}>
+                                                {Array.from({ length: Number(selectedStampCard.total_stamps || 8) }).map((_, i) => {
+                                                    const rewardItem = selectedStampCard.levelRewards ? selectedStampCard.levelRewards[i] : null
+                                                    let iconMarkup = i + 1
+
+                                                    if (rewardItem) {
+                                                        if (rewardItem.type === 'Free') {
+                                                            iconMarkup = <i className="fas fa-gift" style={{ fontSize: '0.8rem' }} />
+                                                        } else if (rewardItem.type === 'Discount') {
+                                                            iconMarkup = <span style={{ fontSize: '0.65rem', fontWeight: 800 }}>{rewardItem.discountVal || 10}%</span>
+                                                        } else if (rewardItem.type === 'Paid' && rewardItem.icon) {
+                                                            iconMarkup = <i className={`fas ${rewardItem.icon}`} style={{ fontSize: '0.8rem' }} />
+                                                        }
+                                                    }
+
+                                                    return (
+                                                        <div
+                                                            key={i}
+                                                            style={{
+                                                                width: 36,
+                                                                height: 36,
+                                                                borderRadius: `${selectedStampCard.stamp_radius ?? selectedStampCard.stampRadius ?? 50}%`,
+                                                                border: `2px solid ${selectedStampCard.stampBorderColor || '#FFFFFF'}`,
+                                                                background: selectedStampCard.stampBgColor || 'rgba(255, 255, 255, 0.3)',
+                                                                color: selectedStampCard.stampTextColor || 'inherit',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                fontSize: '0.85rem',
+                                                                fontWeight: 800,
+                                                                flexShrink: 0
+                                                            }}
+                                                        >
+                                                            {iconMarkup}
+                                                        </div>
+                                                    )
+                                                })}
+                                            </div>
+                                        </div>
+
+                                        {/* Right Side: QR CODE */}
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                            <img src={qrImg} alt="QR Code" style={{ width: 88, height: 88, objectFit: 'contain', flexShrink: 0 }} />
+                                            <small style={{ fontSize: '0.6rem', fontWeight: 700, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.5px', opacity: 0.9 }}>
+                                                SCAN TO STAMP
+                                            </small>
+                                        </div>
+                                    </div>
+
+                                    {/* BOTTOM RIGHT ALIGNED POWERED BY BADGE WITH FIRSTLOOP LOGO */}
+                                    <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 5, fontSize: '0.65rem', opacity: 0.9, fontWeight: 600, marginTop: 10, lineHeight: 1 }}>
+                                        <span style={{ lineHeight: 1, display: 'inline-flex', alignItems: 'center' }}>powered by</span>
+                                        <img src={fl_logo} alt="FirstLoop" style={{ height: 13, width: 'auto', display: 'inline-block', verticalAlign: 'middle', objectFit: 'contain', margin: '0 1px' }} />
+                                        <strong style={{ color: 'inherit', lineHeight: 1, display: 'inline-flex', alignItems: 'center' }}>firstloop.co.in</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Modal Action Bar */}
+                        <div style={{ padding: '16px 20px', background: '#FFFFFF', borderTop: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                            <button
+                                type="button"
+                                className="btn"
+                                onClick={() => {
+                                    const shareUrl = `${window.location.origin}/card-preview/${selectedStampCard.id}`
+                                    const brand = selectedStampCard.brandName || merchantData?.bus_name || 'Merchant'
+                                    const title = selectedStampCard.title || 'Digital Stamp Card'
+                                    const stamps = Number(selectedStampCard.total_stamps) || 8
+                                    const message = `🎉 *${brand}* - ${title}\n⭐ Collect ${stamps} stamps to claim special rewards!\n\n👉 *View Card:* ${shareUrl}`
+                                    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`, '_blank')
+                                }}
+                                style={{ background: '#25D366', color: '#FFFFFF', fontWeight: 700, borderRadius: 8, padding: '9px 16px', fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', gap: 6, border: 'none' }}
+                            >
+                                <i className="fab fa-whatsapp" style={{ fontSize: '1.1rem' }} />
+                                <span>Share to WhatsApp</span>
+                            </button>
+
+                            <button
+                                type="button"
+                                className="btn firstloop-btn-primary"
+                                onClick={() => handleDownloadCard('stamp-card-preview-canvas', selectedStampCard.title)}
+                                style={{ borderRadius: 8, padding: '9px 16px', fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                            >
+                                <i className="fas fa-download" />
+                                <span>Download Card</span>
+                            </button>
+
+                            <button
+                                type="button"
+                                className="btn firstloop-btn-secondary"
+                                onClick={() => setSelectedStampCard(null)}
+                                style={{ borderRadius: 8, padding: '9px 16px', fontSize: '0.82rem' }}
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* PREVIEW MODAL 2: MEMBERSHIP CARD WITH LARGE MIDDLE QR CODE */}
+            {selectedMembership && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'rgba(15, 23, 42, 0.7)',
+                        backdropFilter: 'blur(5px)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 9999,
+                        padding: 20
+                    }}
+                >
+                    <div
+                        style={{
+                            background: '#FFFFFF',
+                            borderRadius: 24,
+                            maxWidth: 440,
+                            width: '100%',
+                            overflow: 'hidden',
+                            boxShadow: '0 25px 50px rgba(0,0,0,0.3)',
+                            animation: 'fadeIn 0.2s ease'
+                        }}
+                    >
+                        {/* Digital Pass Canvas View */}
+                        <div style={{ padding: 15, background: '#F8FAFC', display: 'flex', justifyContent: 'center' }}>
+                            <div
+                                id="membership-pass-preview-canvas"
+                                style={{
+                                    width: '100%',
+                                    maxWidth: 370,
+                                    borderRadius: 20,
+                                    ...getCardStyle(selectedMembership),
+                                    color: selectedMembership.textColor || '#FFFFFF',
+                                    padding: 22,
+                                    boxShadow: '0 16px 36px -8px rgba(0,0,0,0.25)',
+                                    position: 'relative',
+                                    minHeight: 210
+                                }}
+                            >
+                                <div style={{ position: 'relative', zIndex: 2 }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                            <div style={{ width: 34, height: 34, borderRadius: 10, background: '#FFFFFF', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}>
+                                                <img src={selectedMembership.brandLogo || fl_logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                            </div>
+                                            <span style={{ fontSize: '1.05rem', fontWeight: 800, color: 'inherit' }}>
+                                                {selectedMembership.brandName || merchantData?.bus_name || 'FirstLoop'}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Middle Section: Left Info + Right Large Middle QR Code */}
+                                    <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 10 }}>
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'inherit' }}>
+                                                {selectedMembership.name}
+                                            </div>
+                                            <div style={{ fontSize: '0.82rem', opacity: 0.9, marginTop: 4, fontWeight: 700 }}>
+                                                {selectedMembership.cardholderName || 'Member Pass'}
+                                            </div>
+
+                                            <div style={{ marginTop: 12, borderTop: '1px solid rgba(255,255,255,0.25)', paddingTop: 8 }}>
+                                                <small style={{ fontSize: '0.65rem', textTransform: 'uppercase', opacity: 0.85 }}>
+                                                    Valid Thru
+                                                </small>
+                                                <div style={{ fontSize: '0.88rem', fontWeight: 800, color: 'inherit' }}>
+                                                    {selectedMembership.validityMonths || '03/25'}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Large Centered Middle QR Code */}
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                            <img src={qrImg} alt="QR Code" style={{ width: 92, height: 92, objectFit: 'contain', flexShrink: 0 }} />
+                                            <small style={{ fontSize: '0.6rem', fontWeight: 700, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.5px', opacity: 0.9 }}>
+                                                SCAN PASS
+                                            </small>
+                                        </div>
+                                    </div>
+
+                                    {/* Bottom Right Logo Badge */}
+                                    <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 5, fontSize: '0.65rem', opacity: 0.9, fontWeight: 600, marginTop: 6, lineHeight: 1 }}>
+                                        <span style={{ lineHeight: 1, display: 'inline-flex', alignItems: 'center' }}>powered by</span>
+                                        <img src={fl_logo} alt="FirstLoop" style={{ height: 13, width: 'auto', display: 'inline-block', verticalAlign: 'middle', objectFit: 'contain', margin: '0 1px' }} />
+                                        <strong style={{ color: 'inherit', lineHeight: 1, display: 'inline-flex', alignItems: 'center' }}>firstloop.co.in</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Modal Action Bar */}
+                        <div style={{ padding: '16px 20px', background: '#FFFFFF', borderTop: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                            <button
+                                type="button"
+                                className="btn"
+                                onClick={() => {
+                                    const text = encodeURIComponent(`Check out our Digital Membership Pass "${selectedMembership.name}"!`)
+                                    window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank')
+                                }}
+                                style={{ background: '#25D366', color: '#FFFFFF', fontWeight: 700, borderRadius: 8, padding: '9px 16px', fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', gap: 6, border: 'none' }}
+                            >
+                                <i className="fab fa-whatsapp" style={{ fontSize: '1.1rem' }} />
+                                <span>Share to WhatsApp</span>
+                            </button>
+
+                            <button
+                                type="button"
+                                className="btn firstloop-btn-primary"
+                                onClick={() => handleDownloadCard('membership-pass-preview-canvas', selectedMembership.name)}
+                                style={{ borderRadius: 8, padding: '9px 16px', fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                            >
+                                <i className="fas fa-download" />
+                                <span>Download Pass</span>
+                            </button>
+
+                            <button
+                                type="button"
+                                className="btn firstloop-btn-secondary"
+                                onClick={() => setSelectedMembership(null)}
+                                style={{ borderRadius: 8, padding: '9px 16px', fontSize: '0.82rem' }}
+                            >
+                                Close
                             </button>
                         </div>
                     </div>

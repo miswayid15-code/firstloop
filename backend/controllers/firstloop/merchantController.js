@@ -1,4 +1,4 @@
-const { Merchant, Coupon, RefreshToken, Branch, Receptionist, MerchantFp, BranchTiming, UserNotificationToken, CouponApplied, Notification } = require('../../models');
+const { Merchant, Coupon, RefreshToken, Branch, Receptionist, MerchantFp, BranchTiming, UserNotificationToken, CouponApplied, Notification, Stampcard, StampLevel, customerCard } = require('../../models');
 const bcrypt = require('bcryptjs');
 const { parsePhoneNumber } = require('libphonenumber-js');
 const jwt = require('jsonwebtoken');
@@ -210,7 +210,7 @@ exports.dashboard = async (req, res) => {
     try {
 
         const merchant_id = req.user?.id;
-        
+
 
         /* ---------------------------------------
            Validate Merchant ID
@@ -300,14 +300,14 @@ exports.dashboard = async (req, res) => {
             message: err.message
         });
     }
-};  
+};
 exports.fetch_list = async (req, res) => {
 
     try {
 
         const merchant_id = req.user.id;
 
-        const baseUrl = process.env.APP_URL;
+       
 
         const branches = await Branch.findAll({
 
@@ -318,7 +318,7 @@ exports.fetch_list = async (req, res) => {
 
             include: [{
                 model: Receptionist,
-                attributes: ['id', 'name','email','country_code','phone','rep_id','ref_name']
+                attributes: ['id', 'name', 'email', 'country_code', 'phone', 'rep_id', 'ref_name']
             }],
 
             attributes: [
@@ -454,7 +454,7 @@ exports.branch_id = async (req, res) => {
             });
         }
 
-        const baseUrl = process.env.APP_URL;
+       
         const data = branch.toJSON();
 
         const profileImagePath =
@@ -479,6 +479,673 @@ exports.branch_id = async (req, res) => {
         return res.json({
             status: 0,
             message: err.message
+        });
+    }
+};
+
+
+exports.stamp_card = async (req, res) => {
+    try {
+        console.log("========== STAMP CARD API START ==========");
+        console.log("[STAMP CARD] Method:", req.method);
+        console.log("[STAMP CARD] URL:", req.originalUrl);
+        console.log("[STAMP CARD] Merchant ID:", req.body?.merchant_id);
+        console.log("[STAMP CARD] Card ID:", req.body?.id);
+
+        console.log("[STAMP CARD] Request body:", {
+            ...req.body,
+            stamp_levels:
+                typeof req.body?.stamp_levels === "string"
+                    ? req.body.stamp_levels
+                    : req.body?.stamp_levels
+        });
+
+        console.log(
+            "[STAMP CARD] Uploaded files:",
+            Array.isArray(req.files)
+                ? req.files.map(file => ({
+                    fieldname: file.fieldname,
+                    originalname: file.originalname,
+                    filename: file.filename,
+                    path: file.path,
+                    mimetype: file.mimetype,
+                    size: file.size
+                }))
+                : req.files
+        );
+        let {
+            id,
+            title,
+            brand_name,
+            branch_ids,
+            number_of_stamps,
+            background_image,
+            background_color,
+            text_color,
+            border_color,
+            stamp_radius,
+            stamp_background,
+            stamp_border_color,
+            stamp_text_color,
+            stamp_levels
+        } = req.body;
+
+        const merchant_id = req.body.merchant_id;
+
+        if (!merchant_id) {
+            return res.status(401).json({
+                status: 0,
+                msg: "Merchant authentication required"
+            });
+        }
+
+        // ---------------------------------------
+        // BASIC VALIDATION
+        // ---------------------------------------
+        // ---------------------------------------
+
+
+        if (typeof branch_ids === "string") {
+            try {
+                branch_ids = JSON.parse(branch_ids);
+            } catch (error) {
+                return res.status(400).json({
+                    status: 0,
+                    msg: "Invalid branch_ids JSON"
+                });
+            }
+        }
+
+        if (!Array.isArray(branch_ids)) {
+            return res.status(400).json({
+                status: 0,
+                msg: "Branch IDs are required"
+            });
+        }
+
+        branch_ids = branch_ids
+            .map(Number)
+            .filter(id => Number.isInteger(id) && id > 0);
+
+        if (!branch_ids.length) {
+            return res.status(400).json({
+                status: 0,
+                msg: "At least one valid branch ID is required"
+            });
+        }
+        if (!title || !String(title).trim()) {
+            return res.status(400).json({
+                status: 0,
+                msg: "Card title is required"
+            });
+        }
+
+        if (
+            !number_of_stamps ||
+            Number(number_of_stamps) <= 0
+        ) {
+            return res.status(400).json({
+                status: 0,
+                msg: "Number of stamps is required"
+            });
+        }
+
+        number_of_stamps = Number(number_of_stamps);
+
+        // ---------------------------------------
+        // PARSE STAMP LEVELS
+        // ---------------------------------------
+
+        if (typeof stamp_levels === "string") {
+            try {
+                stamp_levels = JSON.parse(stamp_levels);
+            } catch (error) {
+                return res.status(400).json({
+                    status: 0,
+                    msg: "Invalid stamp_levels JSON"
+                });
+            }
+        }
+
+        if (!Array.isArray(stamp_levels)) {
+            return res.status(400).json({
+                status: 0,
+                msg: "Stamp levels are required"
+            });
+        }
+
+        if (stamp_levels.length !== number_of_stamps) {
+            return res.status(400).json({
+                status: 0,
+                msg: "Stamp levels must match the number of stamps"
+            });
+        }
+
+        // ---------------------------------------
+        // FIND EXISTING CARD IF ID PROVIDED
+        // ---------------------------------------
+
+        let stampcard = null;
+
+        if (id) {
+
+            stampcard = await Stampcard.findOne({
+                where: {
+                    id: id,
+                    merchant_id: merchant_id
+                }
+            });
+
+            if (!stampcard) {
+                return res.status(404).json({
+                    status: 0,
+                    msg: "Stamp card not found"
+                });
+            }
+        }
+
+        // ---------------------------------------
+        // BRAND IMAGE
+        // ---------------------------------------
+
+        const brandImageFile = Array.isArray(req.files)
+            ? req.files.find(f => f.fieldname === 'brand_image' || f.fieldname === 'brand_logo' || f.fieldname === 'image')
+            : (req.files?.brand_image?.[0] || null);
+
+        let brand_image = req.body.brand_image || stampcard?.brand_image || null;
+
+        // Only change image when a new image is uploaded
+        if (brandImageFile) {
+            brand_image = `uploads/merchant/brand/${brandImageFile.filename}`;
+        }
+
+        // ---------------------------------------
+        // BACKGROUND IMAGE
+        // ---------------------------------------
+
+        const bgImageFile = Array.isArray(req.files)
+            ? req.files.find(f => f.fieldname === 'background_image' || f.fieldname === 'card_image')
+            : (req.files?.background_image?.[0] || null);
+
+        if (bgImageFile) {
+            background_image = `uploads/merchant/${bgImageFile.filename}`;
+        } else {
+            background_image =
+                background_image
+                    ? String(background_image).trim()
+                    : (stampcard?.background_image || null);
+        }
+
+        // ---------------------------------------
+        // VALIDATE STAMP LEVELS
+        // ---------------------------------------
+
+        for (let i = 0; i < stamp_levels.length; i++) {
+
+            const level = stamp_levels[i];
+
+            // Stamp number
+            if (
+                Number(level.stamp_number) !== i + 1
+            ) {
+                return res.status(400).json({
+                    status: 0,
+                    msg: `Invalid stamp number at level ${i + 1}`
+                });
+            }
+
+            // Reward type
+            if (
+                !["1", "2", "3"].includes(
+                    String(level.reward_type)
+                )
+            ) {
+                return res.status(400).json({
+                    status: 0,
+                    msg: `Invalid reward type for stamp ${i + 1}`
+                });
+            }
+
+            // -----------------------------------
+            // FREE
+            // -----------------------------------
+
+            if (String(level.reward_type) === "1") {
+
+                level.reward_text = null;
+                level.category_id = null;
+                level.amt = 0;
+            }
+
+            // -----------------------------------
+            // DISCOUNT
+            // -----------------------------------
+
+            if (String(level.reward_type) === "2") {
+
+                if (
+                    level.reward_text === undefined ||
+                    level.reward_text === null ||
+                    String(level.reward_text).trim() === ""
+                ) {
+                    return res.status(400).json({
+                        status: 0,
+                        msg: `Discount value is required for stamp ${i + 1}`
+                    });
+                }
+
+                level.reward_text =
+                    String(level.reward_text).trim();
+
+                level.category_id = null;
+                    level.amt =
+        level.amt !== undefined &&
+        level.amt !== null &&
+        level.amt !== ""
+            ? Number(level.amt)
+            : 0;
+            }
+
+            // -----------------------------------
+            // PAID
+            // -----------------------------------
+
+            if (String(level.reward_type) === "3") {
+
+                if (
+                    !level.reward_text ||
+                    String(level.reward_text).trim() === ""
+                ) {
+                    return res.status(400).json({
+                        status: 0,
+                        msg: `Reward text is required for stamp ${i + 1}`
+                    });
+                }
+
+                if (!level.category_id) {
+                    return res.status(400).json({
+                        status: 0,
+                        msg: `Category is required for stamp ${i + 1}`
+                    });
+                }
+
+                level.reward_text =
+                    String(level.reward_text).trim();
+
+                level.category_id =
+                    Number(level.category_id);
+               level.amt =
+        level.amt !== undefined &&
+        level.amt !== null &&
+        level.amt !== ""
+            ? Number(level.amt)
+            : 0;
+            }
+        }
+
+        // ---------------------------------------
+        // CARD DATA
+        // ---------------------------------------
+
+        const cardData = {
+
+            title:
+                String(title).trim(),
+            branch_ids: branch_ids,
+            brand_name:
+                brand_name
+                    ? String(brand_name).trim()
+                    : null,
+
+            brand_image,
+
+            number_of_stamps,
+
+            background_image,
+
+            background_color:
+                background_color || null,
+
+            text_color:
+                text_color || null,
+
+            border_color:
+                border_color || null,
+
+            stamp_radius:
+                stamp_radius !== undefined &&
+                    stamp_radius !== null &&
+                    stamp_radius !== ""
+                    ? Number(stamp_radius)
+                    : 50,
+
+            stamp_background:
+                stamp_background || null,
+
+            stamp_border_color:
+                stamp_border_color || null,
+
+            stamp_text_color:
+                stamp_text_color || null,
+
+            status: 1
+        };
+
+        // ---------------------------------------
+        // CREATE
+        // ---------------------------------------
+
+        if (!stampcard) {
+
+            stampcard = await Stampcard.create({
+                merchant_id,
+                ...cardData
+            });
+
+        }
+
+        // ---------------------------------------
+        // UPDATE
+        // ---------------------------------------
+
+        else {
+
+            await stampcard.update(cardData);
+
+            // Remove old levels
+            await StampLevel.destroy({
+                where: {
+                    merchant_card_id: stampcard.id
+                }
+            });
+        }
+
+        // ---------------------------------------
+        // CREATE STAMP LEVELS
+        // ---------------------------------------
+
+        const levels = stamp_levels.map(level => ({
+            merchant_card_id: stampcard.id,
+
+            stamp_number:
+                Number(level.stamp_number),
+
+            reward_type:
+                String(level.reward_type),
+
+            reward_text:
+                level.reward_text || null,
+
+            category_id:
+                level.category_id || null,
+            amt:
+                level.amt || 0,
+
+            status: 1
+        }));
+
+        await StampLevel.bulkCreate(levels);
+
+        // ---------------------------------------
+        // RESPONSE
+        // ---------------------------------------
+
+        return res.status(200).json({
+            status: 1,
+
+            msg: id
+                ? "Stamp card updated successfully"
+                : "Stamp card created successfully",
+
+            data: {
+                merchant_card_id: stampcard.id,
+                title: stampcard.title,
+                number_of_stamps:
+                    stampcard.number_of_stamps
+            }
+        });
+
+    } catch (err) {
+
+        console.error(
+            "stamp_card error:",
+            err
+        );
+
+        return res.status(500).json({
+            status: 0,
+            msg: "Error while processing!",
+            error: err.message
+        });
+    }
+};
+
+exports.fetch_stamp_card = async (req, res) => {
+    try {
+
+        const merchant_id = req.body.mer_id;
+
+        if (!merchant_id) {
+            return res.status(401).json({
+                status: 0,
+                msg: "Merchant authentication required"
+            });
+        }
+
+        const where = {
+            merchant_id
+        };
+
+        // ---------------------------------------
+        // FETCH ALL CARDS OF MERCHANT
+        // ---------------------------------------
+
+        const stampcards = await Stampcard.findAll({
+            where,
+
+            include: [
+                {
+                    model: StampLevel,
+                    as: "StampLevels",
+                    required: false,
+                    where: {
+                        status: 1
+                    },
+                    attributes: [
+                        "id",
+                        "stamp_number",
+                        "reward_type",
+                        "reward_text",
+                        "category_id",
+                        "status"
+                    ]
+                }
+            ],
+
+            order: [
+                ["id", "DESC"],
+                [
+                    {
+                        model: StampLevel,
+                        as: "StampLevels"
+                    },
+                    "stamp_number",
+                    "ASC"
+                ]
+            ]
+        });
+
+        // ---------------------------------------
+        // NO CARDS
+        // ---------------------------------------
+
+        if (!stampcards.length) {
+            return res.status(200).json({
+                status: 1,
+                msg: "No stamp cards found",
+                data: []
+            });
+        }
+
+
+
+        // ---------------------------------------
+        // FORMAT DATA
+        // ---------------------------------------
+
+        const data = stampcards.map(card => {
+
+            const cardData = card.toJSON();
+
+            return {
+                ...cardData,
+
+                brand_image: cardData.brand_image
+                    ? baseUrl + '/' + cardData.brand_image
+                    : null,
+
+                background_image:
+                    cardData.background_image? baseUrl + '/' + cardData.background_image
+                    :null,
+            };
+        });
+
+        // ---------------------------------------
+        // RESPONSE
+        // ---------------------------------------
+
+        return res.status(200).json({
+            status: 1,
+            msg: "Stamp cards fetched successfully",
+            data
+        });
+
+    } catch (err) {
+
+        console.error(
+            "fetch_stamp_card error:",
+            err
+        );
+
+        return res.status(500).json({
+            status: 0,
+            msg: "Error while processing!",
+            error: err.message
+        });
+    }
+};
+
+exports.fetch_stamp_id = async (req, res) => {
+    try {
+
+        const card_id = req.body.id;
+
+        if (!card_id) {
+            return res.status(401).json({
+                status: 0,
+                msg: "Card id Is required"
+            });
+        }
+
+        const where = {
+            id: card_id
+        };
+
+        // ---------------------------------------
+        // FETCH ALL CARDS OF MERCHANT
+        // ---------------------------------------
+
+        const stampcards = await Stampcard.findAll({
+            where,
+
+            include: [
+                {
+                    model: StampLevel,
+                    as: "StampLevels",
+                    required: false,
+                    where: {
+                        status: 1
+                    },
+                    attributes: [
+                        "id",
+                        "stamp_number",
+                        "reward_type",
+                        "reward_text",
+                        "category_id",
+                        "status"
+                    ]
+                }
+            ],
+
+            order: [
+                ["id", "DESC"],
+                [
+                    {
+                        model: StampLevel,
+                        as: "StampLevels"
+                    },
+                    "stamp_number",
+                    "ASC"
+                ]
+            ]
+        });
+
+        // ---------------------------------------
+        // NO CARDS
+        // ---------------------------------------
+
+        if (!stampcards.length) {
+            return res.status(200).json({
+                status: 1,
+                msg: "No stamp cards found",
+                data: []
+            });
+        }
+
+
+
+        // ---------------------------------------
+        // FORMAT DATA
+        // ---------------------------------------
+
+        const data = stampcards.map(card => {
+
+            const cardData = card.toJSON();
+
+            return {
+                ...cardData,
+
+                brand_image: cardData.brand_image
+                    ? baseUrl + '/' + cardData.brand_image
+                    : null,
+
+                background_image:
+                     cardData.background_image? baseUrl + '/' + cardData.background_image
+                    :null,
+            };
+        });
+
+        // ---------------------------------------
+        // RESPONSE
+        // ---------------------------------------
+
+        return res.status(200).json({
+            status: 1,
+            msg: "Stamp cards details fetched successfully",
+            data
+        });
+
+    } catch (err) {
+
+        console.error(
+            "fetch_stamp_card error:",
+            err
+        );
+
+        return res.status(500).json({
+            status: 0,
+            msg: "Error while processing!",
+            error: err.message
         });
     }
 };

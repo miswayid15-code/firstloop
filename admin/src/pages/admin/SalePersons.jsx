@@ -188,6 +188,7 @@ export default function SalePersons() {
     const fetchSalePersons = async () => {
         try {
             const response = await API.post('admin/saleperson/list')
+            console.log('response', response.data)
             if (response.data.status === 1) {
                 setSalePersons(response.data.data)
             } else {

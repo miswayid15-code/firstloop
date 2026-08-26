@@ -5,8 +5,26 @@ const app = express();
 
 app.use(cors());
 
+const stampCardBodyLimit = '25mb';
+
+app.use(
+    '/firstloop/merchant/create_stamp_card',
+    express.json({ limit: stampCardBodyLimit }),
+    express.urlencoded({ extended: true, limit: stampCardBodyLimit })
+);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use((err, req, res, next) => {
+    if (err?.type === 'entity.too.large') {
+        return res.status(413).json({
+            status: 0,
+            message: 'Request body is too large'
+        });
+    }
+
+    next(err);
+});
 app.use((req, res, next) => {
     req.language =
         req.headers["accept-language"] ||

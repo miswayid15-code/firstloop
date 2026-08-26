@@ -46,5 +46,22 @@ router.post(
     controller.refreshAccessToken
 );
 
-
+router.post(
+    '/create_stamp_card',
+    auth(),
+          (req, res, next) => {
+    req.uploadFolder = 'merchant';
+    next();
+  },
+    upload,
+    controller.stamp_card
+);
+router.post(
+    '/fetch-stamp-card',
+    controller.fetch_stamp_card
+);
+router.post(
+    '/fetch-stamp-card-details',
+    controller.fetch_stamp_id
+);
 module.exports = router;

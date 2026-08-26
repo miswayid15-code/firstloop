@@ -472,7 +472,7 @@ export default function FpCustomerDetails() {
                                         <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 5, fontSize: '0.65rem', opacity: 0.9, fontWeight: 600, marginTop: 10 }}>
                                             <span>powered by</span>
                                             <img src={flLogo} alt="FirstLoop" style={{ height: 14, objectFit: 'contain' }} />
-                                            <strong style={{ color: 'inherit' }}>FirstLoop</strong>
+                                            <strong style={{ color: 'inherit' }}>firstloop.co.in</strong>
                                         </div>
                                     </div>
                                 </div>
@@ -601,7 +601,7 @@ export default function FpCustomerDetails() {
                                         <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 5, fontSize: '0.65rem', opacity: 0.9, fontWeight: 600, marginTop: 6 }}>
                                             <span>powered by</span>
                                             <img src={flLogo} alt="FirstLoop" style={{ height: 14, objectFit: 'contain' }} />
-                                            <strong style={{ color: 'inherit' }}>FirstLoop</strong>
+                                            <strong style={{ color: 'inherit' }}>firstloop.co.in</strong>
                                         </div>
                                     </div>
                                 </div>
@@ -927,7 +927,7 @@ export default function FpCustomerDetails() {
                             <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 4, fontSize: '0.65rem', opacity: 0.9, marginTop: 10, fontWeight: 700 }}>
                                 <span>powered by</span>
                                 <img src={flLogo} alt="FirstLoop" style={{ height: 12 }} />
-                                <span>FirstLoop</span>
+                                <span>firstloop.co.in</span>
                             </div>
                         </div>
 

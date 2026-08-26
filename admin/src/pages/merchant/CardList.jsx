@@ -7,38 +7,38 @@ import API from '../../api.js'
 import StampCardBuilderModal from '../../components/StampCardBuilderModal.jsx'
 import MembershipCardBuilderModal from '../../components/MembershipCardBuilderModal.jsx'
 
-const DEFAULT_CARD_DESIGNS = [
-    {
-        id: 'cd-def-1',
-        name: 'Aurora Cyan',
-        image: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&q=80&w=400',
-        status: 1
-    },
-    {
-        id: 'cd-def-2',
-        name: 'Crimson Wave',
-        image: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&q=80&w=400',
-        status: 1
-    },
-    {
-        id: 'cd-def-3',
-        name: 'Midnight Gold',
-        image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=400',
-        status: 1
-    },
-    {
-        id: 'cd-def-4',
-        name: 'Emerald Luxe',
-        image: 'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?auto=format&fit=crop&q=80&w=400',
-        status: 1
-    },
-    {
-        id: 'cd-def-5',
-        name: 'Royal Purple',
-        image: 'https://images.unsplash.com/photo-1550684847-75bdda21cc95?auto=format&fit=crop&q=80&w=400',
-        status: 1
-    }
-]
+// const DEFAULT_CARD_DESIGNS = [
+//     {
+//         id: 'cd-def-1',
+//         name: 'Aurora Cyan',
+//         image: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&q=80&w=400',
+//         status: 1
+//     },
+//     {
+//         id: 'cd-def-2',
+//         name: 'Crimson Wave',
+//         image: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&q=80&w=400',
+//         status: 1
+//     },
+//     {
+//         id: 'cd-def-3',
+//         name: 'Midnight Gold',
+//         image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=400',
+//         status: 1
+//     },
+//     {
+//         id: 'cd-def-4',
+//         name: 'Emerald Luxe',
+//         image: 'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?auto=format&fit=crop&q=80&w=400',
+//         status: 1
+//     },
+//     {
+//         id: 'cd-def-5',
+//         name: 'Royal Purple',
+//         image: 'https://images.unsplash.com/photo-1550684847-75bdda21cc95?auto=format&fit=crop&q=80&w=400',
+//         status: 1
+//     }
+// ]
 
 // Real QR Code Component matching view-fl-branch
 const RealQRCode = ({ size = 80 }) => (
@@ -62,6 +62,17 @@ const formatValidity = (val) => {
         return `${str} Month${Number(str) > 1 ? 's' : ''}`
     }
     return str
+}
+
+const formatImageUrl = (img) => {
+    if (!img) return ''
+    if (img.startsWith('http://') || img.startsWith('https://') || img.startsWith('data:') || img.startsWith('blob:')) {
+        return img
+    }
+    const baseUrl = import.meta.env.VITE_API_URL || ''
+    const cleanBase = baseUrl.replace(/\/+$/, '')
+    const cleanImg = String(img).replace(/^\/+/, '')
+    return `${cleanBase}/${cleanImg}`
 }
 
 export default function CardList() {
@@ -91,31 +102,75 @@ export default function CardList() {
 
     // Fetch Card Designs from API (admin/card-design/list) like ViewFlBranch
     useEffect(() => {
-
         fetchCardDesignsFromApi()
     }, [])
-const formatImageUrl = (img) => {
-    if (!img) return ''
-    if (img.startsWith('http://') || img.startsWith('https://') || img.startsWith('data:')) {
-        return img
-    }
-    const baseUrl = import.meta.env.VITE_API_URL || ''
-    const cleanBase = baseUrl.replace(/\/+$/, '')
-    const cleanImg = String(img).replace(/^\/+/, '')
-    return `${cleanBase}/${cleanImg}`
-}
 
-        const fetchCardDesignsFromApi = async () => {
-            try {
-                const response = await API.post('admin/card-design/list')
-                if (response.data && response.data.status === 1) {
-                    const activeDesigns = (response.data.data || []).filter(item => Number(item.status) === 1)
-                    setCardDesignsApi(activeDesigns)
-                }
-            } catch (err) {
-                console.error('Error fetching card designs API:', err)
+    const fetchCardDesignsFromApi = async () => {
+        try {
+            const adminToken = localStorage.getItem('access_token') || localStorage.getItem('admin_token')
+            const role = localStorage.getItem('role') || 'firstpass'
+
+            let response = null
+
+            // 1. Try with Admin token if available
+            if (adminToken && adminToken !== 'null' && adminToken !== 'undefined') {
+                try {
+                    response = await API.post('admin/card-design/list', {}, {
+                        skipAuthRedirect: true,
+                        headers: { Authorization: `Bearer ${adminToken}`, 'X-Role': role }
+                    })
+                } catch (e) {}
             }
+
+            // 2. Try unauthenticated axios POST with X-Role header
+            if (!response?.data || (response.data.status !== 1 && response.data.status !== "1")) {
+                try {
+                    response = await axios.post(`${import.meta.env.VITE_API_URL}/admin/card-design/list`, {}, {
+                        headers: { 'X-Role': role, 'Content-Type': 'application/json' }
+                    })
+                } catch (e) {}
+            }
+
+            // 3. Try standard API.post
+            if (!response?.data || (response.data.status !== 1 && response.data.status !== "1")) {
+                try {
+                    response = await API.post('admin/card-design/list', {}, { skipAuthRedirect: true })
+                } catch (e) {}
+            }
+
+            // 4. Try firstloop merchant route
+            if (!response?.data || (response.data.status !== 1 && response.data.status !== "1")) {
+                try {
+                    response = await API.post('firstloop/merchant/card-design/list', {}, { skipAuthRedirect: true })
+                } catch (e) {}
+            }
+
+            if (response?.data && (response.data.status === 1 || response.data.status === '1' || response.data.success)) {
+                const rawList = response.data.data || response.data.card_designs || response.data.designs || []
+                const list = Array.isArray(rawList) ? rawList : []
+
+                const formattedDesigns = list
+                    .filter(item => Number(item.status) === 1 || item.status === '1' || item.status === undefined)
+                    .map(item => ({
+                        id: item.id || item._id,
+                        name: item.name || item.title || 'Card Design',
+                        image: formatImageUrl(item.image || item.card_image || item.image_url || item.path),
+                        status: Number(item.status)
+                    }))
+
+                if (formattedDesigns.length > 0) {
+                    setCardDesignsApi(formattedDesigns)
+                    return
+                }
+            }
+
+            setCardDesignsApi(DEFAULT_CARD_DESIGNS.map(d => ({ ...d, image: formatImageUrl(d.image) })))
+        } catch (err) {
+            console.error('Error fetching card designs from API:', err)
+            setCardDesignsApi(DEFAULT_CARD_DESIGNS.map(d => ({ ...d, image: formatImageUrl(d.image) })))
         }
+    }
+
     // Filtered lists
     const filteredStampCards = useMemo(() => {
         return stampCards.filter(sc =>
@@ -131,13 +186,14 @@ const formatImageUrl = (img) => {
         )
     }, [membershipCards, membershipSearch])
 
-    // Card Style Helper (supports bgImage and bgColor like ViewFlBranch)
+    // Card Style Helper (supports bgImage, cardDesignId and bgColor)
     const getCardStyle = (card) => {
         const style = {
             border: `2px solid ${card.borderColor || 'rgba(255,255,255,0.4)'}`
         }
-        if (card.bgImage) {
-            style.backgroundImage = `url(${card.bgImage})`
+        const bgImg = card.bgImage || (card.cardDesignId ? cardDesignsApi.find(d => String(d.id) === String(card.cardDesignId))?.image : null)
+        if (bgImg) {
+            style.backgroundImage = `url(${formatImageUrl(bgImg)})`
             style.backgroundSize = 'cover'
             style.backgroundPosition = 'center'
             style.backgroundRepeat = 'no-repeat'
@@ -468,7 +524,7 @@ const formatImageUrl = (img) => {
                                     <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 4, fontSize: '0.65rem', opacity: 0.9, marginTop: 10, fontWeight: 700 }}>
                                         <span>powered by</span>
                                         <img src={flLogo} alt="FirstLoop" style={{ height: 12 }} />
-                                        <span>FirstLoop</span>
+                                        <span>firstloop.co.in</span>
                                     </div>
                                 </div>
 
@@ -592,7 +648,7 @@ const formatImageUrl = (img) => {
                                         <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 5, fontSize: '0.65rem', opacity: 0.9, fontWeight: 600, marginTop: 6 }}>
                                             <span>powered by</span>
                                             <img src={flLogo} alt="FirstLoop" style={{ height: 14, objectFit: 'contain' }} />
-                                            <strong style={{ color: 'inherit' }}>FirstLoop</strong>
+                                            <strong style={{ color: 'inherit' }}>firstloop.co.in</strong>
                                         </div>
                                     </div>
                                 </div>
@@ -754,7 +810,7 @@ const formatImageUrl = (img) => {
                             <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 4, fontSize: '0.65rem', opacity: 0.9, marginTop: 10, fontWeight: 700 }}>
                                 <span>powered by</span>
                                 <img src={flLogo} alt="FirstLoop" style={{ height: 12 }} />
-                                <span>FirstLoop</span>
+                                <span>firstloop.co.in</span>
                             </div>
                         </div>
 

@@ -33,7 +33,10 @@ const getAppType = () => {
         path === "/saleperson-login" ||
         path === "/saleperson-dashboard" ||
         path === "/saleperson-add-merchant" ||
-        path.startsWith("/admin/saleperson")
+        path.startsWith("/saleperson-") ||
+        path.startsWith("/admin/saleperson-") ||
+        path.startsWith("/admin/saleperson/") ||
+        path === "/admin/saleperson"
     ) {
         return "saleperson";
     }
@@ -42,7 +45,10 @@ const getAppType = () => {
         path.startsWith("/receptionist/") ||
         path === "/receptionist" ||
         path === "/receptionist-login" ||
-        path.startsWith("/admin/receptionist")
+        path.startsWith("/receptionist-") ||
+        path.startsWith("/admin/receptionist-") ||
+        path.startsWith("/admin/receptionist/") ||
+        path === "/admin/receptionist"
     ) {
         return "receptionist";
     }
