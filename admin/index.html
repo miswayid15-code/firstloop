@@ -7,7 +7,133 @@
     <!-- ============================================================
          PATH DETECTION: Set page meta based on /admin vs website
     ============================================================ -->
+<script>
+(function () {
+    const pathname = window.location.pathname;
 
+    let pageType = 'website';
+    let cardId = null;
+
+    // Card preview routes
+    if (
+        pathname.startsWith('/admin/card-preview/') ||
+        pathname.startsWith('/card-preview/')
+    ) {
+        pageType = 'card';
+        cardId = pathname.split('/').pop();
+    }
+
+    // Admin routes
+    else if (pathname.startsWith('/admin')) {
+        pageType = 'admin';
+    }
+
+    /*
+     * ============================================================
+     * CARD PREVIEW
+     * /admin/card-preview/10
+     * /card-preview/10
+     * ============================================================
+     */
+    if (pageType === 'card') {
+
+        document.write('<title>Digital Stamp Card</title>');
+
+        document.write(
+            '<meta name="description" content="Collect stamps to earn exclusive rewards!">'
+        );
+
+        document.write(
+            '<meta name="robots" content="index, follow">'
+        );
+
+        document.write(
+            '<meta property="og:type" content="website">'
+        );
+
+        document.write(
+            '<meta property="og:title" content="Digital Stamp Card">'
+        );
+
+        document.write(
+            '<meta property="og:description" content="Collect stamps to earn exclusive rewards!">'
+        );
+
+        document.write(
+            '<meta property="og:url" content="' + window.location.href + '">'
+        );
+
+        document.write(
+            '<meta name="twitter:card" content="summary_large_image">'
+        );
+
+        console.log('Page Type:', pageType);
+        console.log('Card ID:', cardId);
+
+        return;
+    }
+
+    /*
+     * ============================================================
+     * ADMIN
+     * ============================================================
+     */
+    if (pageType === 'admin') {
+
+        document.write('<title>FirstPass Admin Panel</title>');
+
+        document.write(
+            '<meta name="description" content="FirstPass Admin Panel">'
+        );
+
+        document.write(
+            '<meta name="robots" content="noindex, nofollow">'
+        );
+
+        console.log('Page Type:', pageType);
+
+        return;
+    }
+
+    /*
+     * ============================================================
+     * WEBSITE
+     * ============================================================
+     */
+    document.write(
+        '<title>First Pass – Shop Smart, Save More</title>'
+    );
+
+    document.write(
+        '<meta name="description" content="First Pass is the all-in-one business management platform that helps you shop smart and save more.">'
+    );
+
+    document.write(
+        '<meta name="robots" content="index, follow">'
+    );
+
+    document.write(
+        '<meta property="og:type" content="website">'
+    );
+
+    document.write(
+        '<meta property="og:title" content="First Pass – Shop Smart, Save More">'
+    );
+
+    document.write(
+        '<meta property="og:description" content="The all-in-one business management platform. Discover deals, redeem coupons and grow your success.">'
+    );
+
+    document.write(
+        '<meta property="og:image" content="/asset/images/img/new-logo.png">'
+    );
+
+    document.write(
+        '<meta name="twitter:card" content="summary_large_image">'
+    );
+
+})();
+</script>
     <!-- Favicon -->
     <link rel="shortcut icon" href="/asset/images/img/fs.png">
     <link rel="apple-touch-icon-precomposed" href="/asset/images/img/fs.png">
