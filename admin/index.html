@@ -9,14 +9,9 @@
     ============================================================ -->
     <script>
         (function () {
-            var path = window.location.pathname;
-            var isCardPreview = path.includes('/card-preview');
-            var isAdmin = path.startsWith('/admin') && !isCardPreview;
+            var isAdmin = window.location.pathname.startsWith('/admin');
 
-            if (isCardPreview) {
-                document.write('<title>Digital Card Preview</title>');
-                document.write('<meta name="robots" content="noindex, follow">');
-            } else if (isAdmin) {
+            if (isAdmin) {
                 /* ---- ADMIN PANEL META ---- */
                 document.write('<title>FirstPass Admin Panel</title>');
                 document.write('<meta name="description" content="FirstPass Admin Panel – Securely manage merchants, customers, appointments, coupons, reports, notifications and all platform settings from one central dashboard.">');

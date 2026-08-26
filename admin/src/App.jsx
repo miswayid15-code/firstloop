@@ -278,19 +278,7 @@ function AdminLayout() {
 
 export default function App() {
   const location = useLocation();
-  const isCardPreview = location.pathname.includes('/card-preview');
-
-  if (isCardPreview) {
-    return (
-      <Routes>
-        <Route path="/card-preview/:id" element={<CardPreview />} />
-        <Route path="/admin/card-preview/:id" element={<CardPreview />} />
-        <Route path="*" element={<CardPreview />} />
-      </Routes>
-    );
-  }
-
-  const isAdmin = location.pathname.startsWith('/admin') || location.pathname.startsWith('/merchant');
+  const isAdmin = window.location.pathname.startsWith('/admin') || window.location.pathname.startsWith('/merchant');
 
   return (
     <>
