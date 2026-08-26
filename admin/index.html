@@ -9,7 +9,16 @@
     ============================================================ -->
     <script>
         (function () {
-            var isAdmin = window.location.pathname.startsWith('/admin');
+            var pathname = window.location.pathname;
+            var isCardPreview = pathname.includes('card-preview');
+
+            if (isCardPreview) {
+                /* Card preview has its own dedicated card meta tags */
+                document.write('<title>Digital Stamp Card</title>');
+                return;
+            }
+
+            var isAdmin = pathname.startsWith('/admin');
 
             if (isAdmin) {
                 /* ---- ADMIN PANEL META ---- */
