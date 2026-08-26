@@ -8003,8 +8003,26 @@ export default function ViewMerchant() {
                                     const brand = selectedStampCard.brandName || merchantData?.bus_name || 'Merchant'
                                     const title = selectedStampCard.title || 'Digital Stamp Card'
                                     const stamps = Number(selectedStampCard.total_stamps) || 8
-                                    const imgVal = selectedStampCard.bgImage || selectedStampCard.background_image || selectedStampCard.brandLogo || selectedStampCard.brand_image || ''
-                                    const shareUrl = `${window.location.origin}/share/card/${selectedStampCard.id}?title=${encodeURIComponent(title)}&brand=${encodeURIComponent(brand)}&img=${encodeURIComponent(imgVal)}`
+                                    const bg = selectedStampCard.bgImage || selectedStampCard.background_image || ''
+                                    const logo = selectedStampCard.brandLogo || selectedStampCard.brand_image || ''
+                                    const bgcolor = selectedStampCard.bgColor || selectedStampCard.background_color || '#0E88B8'
+                                    const textcolor = selectedStampCard.textColor || selectedStampCard.text_color || '#FFFFFF'
+                                    const border = selectedStampCard.borderColor || selectedStampCard.border_color || '#00A6D6'
+                                    const radius = String(selectedStampCard.stamp_radius ?? 50)
+
+                                    const cardParams = new URLSearchParams({
+                                        title,
+                                        brand,
+                                        stamps: String(stamps),
+                                        bg,
+                                        logo,
+                                        bgcolor,
+                                        textcolor,
+                                        border,
+                                        radius
+                                    }).toString()
+
+                                    const shareUrl = `${window.location.origin}/share/card/${selectedStampCard.id}?${cardParams}`
                                     const message = `🎉 *${brand}* - ${title}\n⭐ Collect ${stamps} stamps to claim special rewards!\n\n👉 *View Card:* ${shareUrl}`
                                     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`, '_blank')
                                 }}

@@ -9,45 +9,69 @@ export default async function handler(req) {
         const { searchParams } = new URL(req.url);
         const id = searchParams.get('id');
 
-        if (!id) {
-            return new Response('Missing card ID', { status: 400 });
-        }
+        let brandName = searchParams.get('brand') || '';
+        let title = searchParams.get('title') || '';
+        let totalStamps = Number(searchParams.get('stamps')) || 8;
+        let bgColor = searchParams.get('bgcolor') || '#0E88B8';
+        let textColor = searchParams.get('textcolor') || '#FFFFFF';
+        let borderColor = searchParams.get('border') || '#00A6D6';
+        let stampBgColor = searchParams.get('stampbg') || 'rgba(255, 255, 255, 0.35)';
+        let stampBorderColor = searchParams.get('stampborder') || '#FFFFFF';
+        let stampTextColor = searchParams.get('stampcolor') || '#FFFFFF';
+        let stampRadius = Number(searchParams.get('radius') ?? 50);
+        let bgImage = searchParams.get('bg') || '';
+        let brandLogo = searchParams.get('logo') || '';
 
         const apiBaseUrl = process.env.VITE_API_URL || process.env.BACKEND_URL || 'https://dealora-7st9.onrender.com';
         const cleanApiUrl = apiBaseUrl.replace(/\/+$/, '');
 
-        const response = await fetch(`${cleanApiUrl}/firstloop/merchant/fetch-stamp-card-details`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: Number(id) })
-        });
+        // If query parameters are not supplied, attempt fetch with quick timeout
+        if (!brandName && id) {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 2000);
 
-        const data = await response.json();
-        const item = data?.data?.[0];
+                const response = await fetch(`${cleanApiUrl}/firstloop/merchant/fetch-stamp-card-details`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: Number(id) }),
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
 
-        if (!item) {
-            return new Response('Card not found', { status: 404 });
+                const data = await response.json();
+                const item = data?.data?.[0];
+
+                if (item) {
+                    brandName = item.brand_name || 'Merchant';
+                    title = item.title || 'Stamp Pass';
+                    totalStamps = Number(item.number_of_stamps) || 8;
+                    bgColor = item.background_color || '#0E88B8';
+                    textColor = item.text_color || '#FFFFFF';
+                    borderColor = item.border_color || '#00A6D6';
+                    stampBgColor = item.stamp_background || 'rgba(255, 255, 255, 0.35)';
+                    stampBorderColor = item.stamp_border_color || '#FFFFFF';
+                    stampTextColor = item.stamp_text_color || '#FFFFFF';
+                    stampRadius = Number(item.stamp_radius ?? 50);
+                    bgImage = item.background_image || '';
+                    brandLogo = item.brand_image || '';
+                }
+            } catch (e) {
+                console.error('Fetch card details error:', e?.message || e);
+            }
         }
 
-        const brandName = item.brand_name || 'Merchant';
-        const title = item.title || 'Stamp Pass';
-        const totalStamps = Number(item.number_of_stamps) || 8;
-        const bgColor = item.background_color || '#0E88B8';
-        const textColor = item.text_color || '#FFFFFF';
-        const borderColor = item.border_color || '#00A6D6';
-        const stampBgColor = item.stamp_background || 'rgba(255, 255, 255, 0.3)';
-        const stampBorderColor = item.stamp_border_color || '#FFFFFF';
-        const stampTextColor = item.stamp_text_color || '#FFFFFF';
-        const stampRadius = Number(item.stamp_radius ?? 50);
+        brandName = brandName || 'FirstLoop Merchant';
+        title = title || 'Digital Stamp Pass';
 
-        let bgImage = item.background_image || '';
-        if (bgImage && !bgImage.startsWith('http')) {
-            bgImage = `${cleanApiUrl}/${bgImage.replace(/^\/+/, '')}`;
+        if (bgImage && !bgImage.startsWith('http') && !bgImage.startsWith('//')) {
+            const m = bgImage.match(/(uploads\/.*)/i);
+            bgImage = m && m[1] ? `${cleanApiUrl}/${m[1].replace(/^\/+/, '')}` : `${cleanApiUrl}/${bgImage.replace(/^\/+/, '')}`;
         }
 
-        let brandLogo = item.brand_image || '';
-        if (brandLogo && !brandLogo.startsWith('http')) {
-            brandLogo = `${cleanApiUrl}/${brandLogo.replace(/^\/+/, '')}`;
+        if (brandLogo && !brandLogo.startsWith('http') && !brandLogo.startsWith('//')) {
+            const m = brandLogo.match(/(uploads\/.*)/i);
+            brandLogo = m && m[1] ? `${cleanApiUrl}/${m[1].replace(/^\/+/, '')}` : `${cleanApiUrl}/${brandLogo.replace(/^\/+/, '')}`;
         }
 
         const stampsArray = Array.from({ length: totalStamps });
@@ -61,14 +85,14 @@ export default async function handler(req) {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        backgroundColor: '#F8FAFC',
-                        padding: 20,
+                        backgroundColor: '#0F172A',
+                        padding: 24,
                     }}
                 >
                     <div
                         style={{
-                            width: 760,
-                            height: 420,
+                            width: 752,
+                            height: 412,
                             borderRadius: 28,
                             backgroundColor: bgColor,
                             border: `4px solid ${borderColor}`,
@@ -81,25 +105,26 @@ export default async function handler(req) {
                             flexDirection: 'column',
                             justifyContent: 'space-between',
                             position: 'relative',
-                            boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+                            boxShadow: '0 25px 50px rgba(0,0,0,0.5)',
                         }}
                     >
-                        {/* Top: Header & Main Row */}
+                        {/* Top: Brand Header & Stamps */}
                         <div style={{ display: 'flex', width: '100%', justifyContent: 'space-between' }}>
                             {/* Left Side: Brand Logo, Name, Title, and Stamps */}
-                            <div style={{ display: 'flex', flexDirection: 'column', width: 480 }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', width: 490 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
                                     {brandLogo ? (
                                         <div
                                             style={{
                                                 width: 44,
                                                 height: 44,
-                                                borderRadius: 10,
+                                                borderRadius: 12,
                                                 backgroundColor: '#FFFFFF',
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
                                                 padding: 4,
+                                                boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
                                             }}
                                         >
                                             <img
@@ -119,7 +144,7 @@ export default async function handler(req) {
                                 </span>
 
                                 {/* Stamp Circles Grid */}
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, width: 480 }}>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, width: 490 }}>
                                     {stampsArray.map((_, i) => (
                                         <div
                                             key={i}
@@ -135,6 +160,7 @@ export default async function handler(req) {
                                                 justifyContent: 'center',
                                                 fontSize: 20,
                                                 fontWeight: 800,
+                                                boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
                                             }}
                                         >
                                             🎁
@@ -149,16 +175,17 @@ export default async function handler(req) {
                                     style={{
                                         width: 135,
                                         height: 135,
-                                        borderRadius: 14,
+                                        borderRadius: 16,
                                         backgroundColor: '#FFFFFF',
                                         padding: 8,
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
+                                        boxShadow: '0 8px 20px rgba(0,0,0,0.2)',
                                     }}
                                 >
                                     <img
-                                        src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=FIRSTLOOP-PASS"
+                                        src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=FIRSTLOOP-CARD"
                                         alt="QR"
                                         style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                                     />
@@ -187,7 +214,7 @@ export default async function handler(req) {
             }
         );
     } catch (err) {
-        console.error('Error generating card image:', err);
+        console.error('Error in card-image API:', err);
         return new Response('Error generating image', { status: 500 });
     }
 }
