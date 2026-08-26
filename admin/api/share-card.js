@@ -30,7 +30,6 @@ export default async function handler(req, res) {
         
         // Dynamically generated complete card visual image
         const cardImageUrl = `${frontendBase}/api/card-image?id=${id}`;
-
         const fullTitle = `${brandName} - ${title}`;
 
         res.setHeader('Content-Type', 'text/html; charset=utf-8');

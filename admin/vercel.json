@@ -1,11 +1,19 @@
 {
   "rewrites": [
     {
+      "source": "/api/card-image",
+      "destination": "/api/card-image.js"
+    },
+    {
       "source": "/share/card/:id",
       "destination": "/api/share-card?id=:id"
     },
     {
       "source": "/share/stamp/:id",
+      "destination": "/api/share-card?id=:id"
+    },
+    {
+      "source": "/card-preview/:id",
       "destination": "/api/share-card?id=:id"
     },
     {

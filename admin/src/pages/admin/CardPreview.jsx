@@ -172,8 +172,8 @@ export default function CardPreview() {
         const brand = stampSelected.brandName || 'Merchant'
         const title = stampSelected.title || 'Digital Stamp Card'
         const fullTitle = `${brand} - ${title}`
-        const description = `Collect ${stampSelected.total_stamps || 8} stamps to earn exclusive rewards!`
-        const fullImageUrl = formatImageUrl(stampSelected.brandLogo || stampSelected.bgImage)
+        const origin = typeof window !== 'undefined' ? window.location.origin : ''
+        const fullImageUrl = `${origin}/api/card-image?id=${stampSelected.id}`
         const currentUrl = typeof window !== 'undefined' ? window.location.href : ''
 
         // 1. Change Document Title
@@ -216,7 +216,7 @@ export default function CardPreview() {
     const card = stampSelected
     const cardTitle = `${card?.brandName || 'Merchant'} - ${card?.title || 'Digital Stamp Card'}`
     const cardDesc = `Collect ${card?.total_stamps || 8} stamps to earn exclusive rewards!`
-    const cardImageUrl = card ? formatImageUrl(card.brandLogo || card.bgImage) : ''
+    const cardImageUrl = card && typeof window !== 'undefined' ? `${window.location.origin}/api/card-image?id=${card.id}` : ''
     const currentUrl = typeof window !== 'undefined' ? window.location.href : ''
 
     if (loading) {
