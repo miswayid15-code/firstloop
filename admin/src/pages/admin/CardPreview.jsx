@@ -165,31 +165,52 @@ export default function CardPreview() {
         }
     }, [id])
 
-    // Dynamic Meta Tags for Open Graph and WhatsApp link previews
+    // Dynamic Meta Tags: Check if tag exists in document.head, if so change it, otherwise create it
     useEffect(() => {
         if (!stampSelected) return
+
         const brand = stampSelected.brandName || 'Merchant'
         const title = stampSelected.title || 'Digital Stamp Card'
-        document.title = `${brand} - ${title}`
+        const fullTitle = `${brand} - ${title}`
+        const description = `Collect ${stampSelected.total_stamps || 8} stamps to earn exclusive rewards!`
+        const fullImageUrl = formatImageUrl(stampSelected.brandLogo || stampSelected.bgImage)
+        const currentUrl = typeof window !== 'undefined' ? window.location.href : ''
 
-        const updateMeta = (prop, content) => {
+        // 1. Change Document Title
+        document.title = fullTitle
+
+        // 2. Helper to find in document.head and change content
+        const setOrUpdateMeta = (selector, attrKey, attrValue, content) => {
             if (!content) return
-            let el = document.querySelector(`meta[property="${prop}"]`) || document.querySelector(`meta[name="${prop}"]`)
-            if (!el) {
+            let el = document.head.querySelector(selector)
+            if (el) {
+                el.setAttribute('content', content)
+            } else {
                 el = document.createElement('meta')
-                el.setAttribute('property', prop)
+                el.setAttribute(attrKey, attrValue)
+                el.setAttribute('content', content)
                 document.head.appendChild(el)
             }
-            el.setAttribute('content', content)
         }
 
-        const fullImageUrl = formatImageUrl(stampSelected.brandLogo || stampSelected.bgImage)
-        updateMeta('og:title', `${brand} - ${title}`)
-        updateMeta('og:description', `Collect ${stampSelected.total_stamps || 8} stamps to earn exclusive rewards!`)
-        updateMeta('og:image', fullImageUrl)
-        updateMeta('og:url', window.location.href)
-        updateMeta('twitter:card', 'summary_large_image')
-        updateMeta('twitter:image', fullImageUrl)
+        // Standard Meta
+        setOrUpdateMeta('meta[name="description"]', 'name', 'description', description)
+
+        // Open Graph Meta (WhatsApp, Facebook, LinkedIn)
+        setOrUpdateMeta('meta[property="og:type"]', 'property', 'og:type', 'website')
+        setOrUpdateMeta('meta[property="og:site_name"]', 'property', 'og:site_name', 'FirstLoop')
+        setOrUpdateMeta('meta[property="og:title"]', 'property', 'og:title', fullTitle)
+        setOrUpdateMeta('meta[property="og:description"]', 'property', 'og:description', description)
+        setOrUpdateMeta('meta[property="og:image"]', 'property', 'og:image', fullImageUrl)
+        setOrUpdateMeta('meta[property="og:image:secure_url"]', 'property', 'og:image:secure_url', fullImageUrl)
+        setOrUpdateMeta('meta[property="og:image:alt"]', 'property', 'og:image:alt', fullTitle)
+        setOrUpdateMeta('meta[property="og:url"]', 'property', 'og:url', currentUrl)
+
+        // Twitter Card Meta
+        setOrUpdateMeta('meta[name="twitter:card"]', 'name', 'twitter:card', 'summary_large_image')
+        setOrUpdateMeta('meta[name="twitter:title"]', 'name', 'twitter:title', fullTitle)
+        setOrUpdateMeta('meta[name="twitter:description"]', 'name', 'twitter:description', description)
+        setOrUpdateMeta('meta[name="twitter:image"]', 'name', 'twitter:image', fullImageUrl)
     }, [stampSelected])
 
     const card = stampSelected
