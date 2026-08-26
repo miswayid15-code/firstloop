@@ -8000,7 +8000,7 @@ export default function ViewMerchant() {
                                 type="button"
                                 className="btn"
                                 onClick={() => {
-                                    const shareUrl = `${window.location.origin}/card-preview/${selectedStampCard.id}`
+                                    const shareUrl = `${window.location.origin}/share/card/${selectedStampCard.id}`
                                     const brand = selectedStampCard.brandName || merchantData?.bus_name || 'Merchant'
                                     const title = selectedStampCard.title || 'Digital Stamp Card'
                                     const stamps = Number(selectedStampCard.total_stamps) || 8

@@ -1,6 +1,14 @@
 {
   "rewrites": [
     {
+      "source": "/share/card/:id",
+      "destination": "/api/share-card?id=:id"
+    },
+    {
+      "source": "/share/stamp/:id",
+      "destination": "/api/share-card?id=:id"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
