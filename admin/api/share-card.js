@@ -28,11 +28,32 @@ export default async function handler(req, res) {
         const totalStamps = Number(item?.number_of_stamps) || 8;
         const description = `Collect ${totalStamps} stamps to earn exclusive rewards!`;
         
-        let imageUrl = item?.brand_image || item?.background_image || '';
-        if (imageUrl && !imageUrl.startsWith('http')) {
-            imageUrl = `${cleanApiUrl}/${imageUrl.replace(/^\/+/, '')}`;
-        }
-        if (!imageUrl) {
+        const getRelativePath = (path) => {
+            if (!path || typeof path !== 'string') return '';
+            let str = path.trim();
+            const match = str.match(/(uploads\/.*)/i);
+            if (match && match[1]) return match[1].replace(/^\/+/, '');
+            if (str.startsWith('http')) {
+                try {
+                    const url = new URL(str);
+                    return url.pathname.replace(/^\/+/, '');
+                } catch (e) {
+                    return str.replace(/^https?:\/\/[^/]+/i, '').replace(/^\/+/, '');
+                }
+            }
+            return str.replace(/^\/+/, '');
+        };
+
+        // Prioritize full card design/background image for rich WhatsApp banner preview
+        const rawImg = item?.background_image || item?.brand_image || '';
+        const relImg = getRelativePath(rawImg);
+        
+        let imageUrl = '';
+        if (relImg) {
+            imageUrl = `${cleanApiUrl}/${relImg}`;
+        } else if (rawImg.startsWith('http')) {
+            imageUrl = rawImg;
+        } else {
             imageUrl = `${frontendBase}/asset/images/img/new-logo.png`;
         }
 
