@@ -8,39 +8,84 @@
          PATH DETECTION: Set page meta based on /admin vs website
     ============================================================ -->
 <script>
-(function () {
-    const pathname = window.location.pathname;
+    (function () {
+        var pathname = window.location.pathname;
 
-    let pageType = 'website';
-    let cardId = null;
+        /*
+         * ============================================================
+         * CARD PREVIEW
+         * Route: /admin/card-preview/:id
+         * ============================================================
+         */
+        var isCardPreview = pathname.startsWith('/admin/card-preview/');
 
-    // Card preview routes
-    if (
-        pathname.startsWith('/admin/card-preview/') ||
-        pathname.startsWith('/card-preview/')
-    ) {
-        pageType = 'card';
-        cardId = pathname.split('/').pop();
-    }
+        if (isCardPreview) {
+            document.write('<title>Digital Stamp Card</title>');
 
-    // Admin routes
-    else if (pathname.startsWith('/admin')) {
-        pageType = 'admin';
-    }
+            document.write(
+                '<meta name="description" content="Collect stamps to earn exclusive rewards!">'
+            );
 
-    /*
-     * ============================================================
-     * CARD PREVIEW
-     * /admin/card-preview/10
-     * /card-preview/10
-     * ============================================================
-     */
-    if (pageType === 'card') {
+            document.write(
+                '<meta property="og:type" content="website">'
+            );
 
-        document.write('<title>Digital Stamp Card</title>');
+            document.write(
+                '<meta property="og:title" content="Digital Stamp Card">'
+            );
+
+            document.write(
+                '<meta property="og:description" content="Collect stamps to earn exclusive rewards!">'
+            );
+
+            document.write(
+                '<meta property="og:image" content="/asset/images/img/fs.png">'
+            );
+
+            document.write(
+                '<meta property="og:url" content="' + window.location.href + '">'
+            );
+
+            document.write(
+                '<meta name="twitter:card" content="summary_large_image">'
+            );
+
+            return;
+        }
+
+        /*
+         * ============================================================
+         * ADMIN PANEL
+         * ============================================================
+         */
+        var isAdmin = pathname.startsWith('/admin');
+
+        if (isAdmin) {
+            document.write('<title>FirstPass Admin Panel</title>');
+            document.write(
+                '<meta name="description" content="FirstPass Admin Panel – Securely manage merchants, customers, appointments, coupons, reports, notifications and all platform settings from one central dashboard.">'
+            );
+            document.write('<meta name="author" content="FirstPass">');
+            document.write('<meta name="robots" content="noindex, nofollow">');
+
+            return;
+        }
+
+        /*
+         * ============================================================
+         * WEBSITE
+         * ============================================================
+         */
+        document.write(
+            '<title>First Pass – Shop Smart, Save More</title>'
+        );
 
         document.write(
-            '<meta name="description" content="Collect stamps to earn exclusive rewards!">'
+            '<meta name="description" content="First Pass is the all-in-one business management platform that helps you shop smart and save more.">'
+        );
+
+        document.write(
+            '<meta name="author" content="Minsway Solutions Pvt Ltd">'
         );
 
         document.write(
@@ -52,87 +97,21 @@
         );
 
         document.write(
-            '<meta property="og:title" content="Digital Stamp Card">'
+            '<meta property="og:title" content="First Pass – Shop Smart, Save More">'
         );
 
         document.write(
-            '<meta property="og:description" content="Collect stamps to earn exclusive rewards!">'
+            '<meta property="og:description" content="The all-in-one business management platform. Discover deals, redeem coupons and grow your success.">'
         );
 
         document.write(
-            '<meta property="og:url" content="' + window.location.href + '">'
+            '<meta property="og:image" content="/asset/images/img/new-logo.png">'
         );
 
         document.write(
             '<meta name="twitter:card" content="summary_large_image">'
         );
-
-        console.log('Page Type:', pageType);
-        console.log('Card ID:', cardId);
-
-        return;
-    }
-
-    /*
-     * ============================================================
-     * ADMIN
-     * ============================================================
-     */
-    if (pageType === 'admin') {
-
-        document.write('<title>FirstPass Admin Panel</title>');
-
-        document.write(
-            '<meta name="description" content="FirstPass Admin Panel">'
-        );
-
-        document.write(
-            '<meta name="robots" content="noindex, nofollow">'
-        );
-
-        console.log('Page Type:', pageType);
-
-        return;
-    }
-
-    /*
-     * ============================================================
-     * WEBSITE
-     * ============================================================
-     */
-    document.write(
-        '<title>First Pass – Shop Smart, Save More</title>'
-    );
-
-    document.write(
-        '<meta name="description" content="First Pass is the all-in-one business management platform that helps you shop smart and save more.">'
-    );
-
-    document.write(
-        '<meta name="robots" content="index, follow">'
-    );
-
-    document.write(
-        '<meta property="og:type" content="website">'
-    );
-
-    document.write(
-        '<meta property="og:title" content="First Pass – Shop Smart, Save More">'
-    );
-
-    document.write(
-        '<meta property="og:description" content="The all-in-one business management platform. Discover deals, redeem coupons and grow your success.">'
-    );
-
-    document.write(
-        '<meta property="og:image" content="/asset/images/img/new-logo.png">'
-    );
-
-    document.write(
-        '<meta name="twitter:card" content="summary_large_image">'
-    );
-
-})();
+    })();
 </script>
     <!-- Favicon -->
     <link rel="shortcut icon" href="/asset/images/img/fs.png">
