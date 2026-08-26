@@ -307,7 +307,7 @@ exports.fetch_list = async (req, res) => {
 
         const merchant_id = req.user.id;
 
-       
+
 
         const branches = await Branch.findAll({
 
@@ -454,7 +454,7 @@ exports.branch_id = async (req, res) => {
             });
         }
 
-       
+
         const data = branch.toJSON();
 
         const profileImagePath =
@@ -465,7 +465,8 @@ exports.branch_id = async (req, res) => {
         data.profile_image = profileImagePath
             ? `${baseUrl}/${profileImagePath.replace(/\\/g, '/')}`
             : null;
-
+data.stamp_card=0;
+data.member_card=0;
 
         // Counts
         return res.json({
@@ -738,12 +739,12 @@ exports.stamp_card = async (req, res) => {
                     String(level.reward_text).trim();
 
                 level.category_id = null;
-                    level.amt =
-        level.amt !== undefined &&
-        level.amt !== null &&
-        level.amt !== ""
-            ? Number(level.amt)
-            : 0;
+                level.amt =
+                    level.amt !== undefined &&
+                        level.amt !== null &&
+                        level.amt !== ""
+                        ? Number(level.amt)
+                        : 0;
             }
 
             // -----------------------------------
@@ -774,12 +775,12 @@ exports.stamp_card = async (req, res) => {
 
                 level.category_id =
                     Number(level.category_id);
-               level.amt =
-        level.amt !== undefined &&
-        level.amt !== null &&
-        level.amt !== ""
-            ? Number(level.amt)
-            : 0;
+                level.amt =
+                    level.amt !== undefined &&
+                        level.amt !== null &&
+                        level.amt !== ""
+                        ? Number(level.amt)
+                        : 0;
             }
         }
 
@@ -1005,8 +1006,8 @@ exports.fetch_stamp_card = async (req, res) => {
                     : null,
 
                 background_image:
-                    cardData.background_image? baseUrl + '/' + cardData.background_image
-                    :null,
+                    cardData.background_image ? baseUrl + '/' + cardData.background_image
+                        : null,
             };
         });
 
@@ -1035,6 +1036,122 @@ exports.fetch_stamp_card = async (req, res) => {
     }
 };
 
+
+exports.fetch_branch_stamp_card = async (req, res) => {
+    try {
+
+        const branch_id = req.body.branch_id;
+
+        if (!branch_id) {
+            return res.status(401).json({
+                status: 0,
+                msg: "Branch id required"
+            });
+        }
+        const where = {
+            branch_ids: {
+                [Op.contains]: [Number(branch_id)]
+            }
+        };
+
+        // ---------------------------------------
+        // FETCH ALL CARDS OF MERCHANT
+        // ---------------------------------------
+
+        const stampcards = await Stampcard.findAll({
+            where,
+
+            include: [
+                {
+                    model: StampLevel,
+                    as: "StampLevels",
+                    required: false,
+                    where: {
+                        status: 1
+                    },
+                    attributes: [
+                        "id",
+                        "stamp_number",
+                        "reward_type",
+                        "reward_text",
+                        "category_id",
+                        "status"
+                    ]
+                }
+            ],
+
+            order: [
+                ["id", "DESC"],
+                [
+                    {
+                        model: StampLevel,
+                        as: "StampLevels"
+                    },
+                    "stamp_number",
+                    "ASC"
+                ]
+            ]
+        });
+
+        // ---------------------------------------
+        // NO CARDS
+        // ---------------------------------------
+
+        if (!stampcards.length) {
+            return res.status(200).json({
+                status: 1,
+                msg: "No stamp cards found",
+                data: []
+            });
+        }
+
+
+
+        // ---------------------------------------
+        // FORMAT DATA
+        // ---------------------------------------
+
+        const data = stampcards.map(card => {
+
+            const cardData = card.toJSON();
+
+            return {
+                ...cardData,
+
+                brand_image: cardData.brand_image
+                    ? baseUrl + '/' + cardData.brand_image
+                    : null,
+
+                background_image:
+                    cardData.background_image ? baseUrl + '/' + cardData.background_image
+                        : null,
+            };
+        });
+
+        // ---------------------------------------
+        // RESPONSE
+        // ---------------------------------------
+
+        return res.status(200).json({
+            status: 1,
+            msg: "Stamp cards fetched successfully",
+            data
+        });
+
+    } catch (err) {
+
+        console.error(
+            "fetch_stamp_card error:",
+            err
+        );
+
+        return res.status(500).json({
+            status: 0,
+            msg: "Error while processing!",
+            error: err.message
+        });
+    }
+};
 exports.fetch_stamp_id = async (req, res) => {
     try {
 
@@ -1120,8 +1237,8 @@ exports.fetch_stamp_id = async (req, res) => {
                     : null,
 
                 background_image:
-                     cardData.background_image? baseUrl + '/' + cardData.background_image
-                    :null,
+                    cardData.background_image ? baseUrl + '/' + cardData.background_image
+                        : null,
             };
         });
 

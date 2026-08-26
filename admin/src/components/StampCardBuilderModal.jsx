@@ -116,16 +116,23 @@ export default function StampCardBuilderModal({
     cardData = null,
     cardDesigns = [],
     merchantId = null,
+    merchantData = null,
+    brandName = '',
+    brandImage = null,
+    brandLogo = null,
     branches = [],
     onSave,
     onClose
 }) {
+    const fallbackBrandName = brandName || merchantData?.brand_name || merchantData?.bus_name || 'Elite Branch'
+    const fallbackBrandLogo = brandImage || brandLogo || merchantData?.brand_image || merchantData?.profile_image || logo
+
     const [fetchedDesigns, setFetchedDesigns] = useState([])
     const [stampForm, setStampForm] = useState({
         id: null,
         title: '',
-        brandName: 'Elite Branch',
-        brandLogo: logo,
+        brandName: fallbackBrandName,
+        brandLogo: fallbackBrandLogo,
         brandLogoFile: null,
         total_stamps: 8,
         reward: 'Free Gift or Beverage',
@@ -198,87 +205,27 @@ export default function StampCardBuilderModal({
                 stampForm.mer_id ||
                 stampForm.merchant_id ||
                 cardData?.merchant_id ||
-                cardData?.mer_id;
+                cardData?.mer_id ||
+                25;
 
-            if (!targetMerchantId) {
-                toast.error('Merchant ID not found');
-                return;
-            }
-
-            // Validate title
-            if (!stampForm.title?.trim()) {
-                toast.error('Please enter a Stamp Card Title');
-                return;
-            }
-
-            // Validate stamp count
-            const numberOfStamps = Number(stampForm.total_stamps);
-
-            if (numberOfStamps < 1 || numberOfStamps > 10) {
-                toast.error('Number of stamps must be between 1 and 10');
-                return;
-            }
-
-            // Convert frontend levelRewards to API stamp_levels
-            const stampLevels = Array.from({ length: numberOfStamps }).map((_, index) => {
-                const reward = stampForm.levelRewards?.[index] || {};
-
-                let rewardType = '1';
-                let rewardText = '';
-
-                // Free
-                if (reward.type === 'Free') {
-                    rewardType = '1';
-                    rewardText = reward.reward || '';
-                }
-
-                // Discount
-                else if (reward.type === 'Discount') {
-                    rewardType = '2';
-                    rewardText =
-                        reward.reward ||
-                        `${reward.discountVal || 0}%`;
-                }
-
-                // Paid Perk
-                else if (reward.type === 'Paid') {
-                    rewardType = '3';
-                    rewardText = reward.reward || '';
-                }
-
-                const level = {
-                    stamp_number: index + 1,
-                    reward_type: rewardType,
-                    amt: Number(reward.amt) || 0
-                };
-
-                // Add reward_text only when available
-                if (rewardText) {
-                    level.reward_text = rewardText;
-                }
-
-                // Add category_id if you have one
-                if (reward.category_id) {
-                    level.category_id = Number(reward.category_id);
-                }
-
-                return level;
-            });
-
+            // Build FormData payload
             const formData = new FormData();
-
+            
+            // If editing an existing card, include the card ID
             if (stampForm.id) {
                 formData.append('id', Number(stampForm.id));
             }
+
+            // Core required fields
             formData.append('merchant_id', Number(targetMerchantId));
+            formData.append('branch_ids', JSON.stringify(stampForm.branch_ids || []));
+            formData.append('title', stampForm.title || '');
+            formData.append('brand_name', stampForm.brandName || 'Elite Branch');
+            formData.append('number_of_stamps', Number(stampForm.total_stamps || 8));
 
-            const branchIds = Array.isArray(stampForm.branch_ids) ? stampForm.branch_ids.map(Number) : [];
-            formData.append('branch_ids', JSON.stringify(branchIds));
-
-            formData.append('title', stampForm.title.trim());
-            formData.append('brand_name', stampForm.brandName || '');
-
-            // Attach original File object if selected, otherwise clean relative path if existing
+            // Brand image / logo:
+            // 1) If user picked a new file, append File object as 'brand_image'
+            // 2) If editing with existing image, sanitize to relative path (e.g. uploads/...) to avoid double domain prefix
             if (stampForm.brandLogoFile) {
                 formData.append('brand_image', stampForm.brandLogoFile);
             } else if (stampForm.brandLogo && typeof stampForm.brandLogo === 'string' && !stampForm.brandLogo.startsWith('blob:')) {
@@ -288,15 +235,11 @@ export default function StampCardBuilderModal({
                 }
             }
 
-            formData.append('number_of_stamps', numberOfStamps);
-
+            // Background & style fields
             if (stampForm.bgImage) {
                 const relBgImage = getRelativeImagePath(stampForm.bgImage);
-                if (relBgImage) {
-                    formData.append('background_image', relBgImage);
-                }
+                formData.append('background_image', relBgImage || stampForm.bgImage);
             }
-
             formData.append('background_color', stampForm.bgColor || '#0E88B8');
             formData.append('text_color', stampForm.textColor || '#FFFFFF');
             formData.append('border_color', stampForm.borderColor || '#00A6D6');
@@ -304,8 +247,22 @@ export default function StampCardBuilderModal({
             formData.append('stamp_background', stampForm.stampBgColor || 'rgba(255, 255, 255, 0.3)');
             formData.append('stamp_border_color', stampForm.stampBorderColor || '#FFFFFF');
             formData.append('stamp_text_color', stampForm.stampTextColor || '#FFFFFF');
-            formData.append('stamp_levels', JSON.stringify(stampLevels));
 
+            // Stamp reward levels array JSON string
+            const levelsPayload = (stampForm.levelRewards || []).map((lvl, idx) => ({
+                stamp_number: idx + 1,
+                reward_type: lvl.type === 'Discount' ? '2' : (lvl.type === 'Paid' ? '3' : '1'),
+                amt: Number(lvl.amt || (lvl.type === 'Discount' ? lvl.discountVal : 0) || 0),
+                reward_text: lvl.reward || (lvl.type === 'Discount' ? `${lvl.discountVal || 10}% Off` : `Stamp #${idx + 1}`)
+            }));
+            formData.append('stamp_levels', JSON.stringify(levelsPayload));
+
+            // Optional card design id
+            if (stampForm.cardDesignId) {
+                formData.append('card_design_id', Number(stampForm.cardDesignId));
+            }
+
+            // API Call: Always post multipart/form-data
             const response = await API.post(
                 'firstloop/merchant/create_stamp_card',
                 formData,
@@ -316,37 +273,23 @@ export default function StampCardBuilderModal({
                 }
             );
 
-            // console.log('Create Stamp Card Response:', response?.data);
+            console.log('Stamp Card API Response:', response?.data);
 
-            if (
-                response?.data?.status === 1
-            ) {
-                toast.success(response?.data?.message || 'Stamp card created successfully');
-
-                // Send saved data to parent if required
+            if (response?.data?.status === 1 || response?.data?.success) {
+                toast.success(response?.data?.message || response?.data?.msg || 'Stamp Card saved successfully!');
                 if (onSave) {
-                    onSave({
-                        ...stampForm,
-                        id: response?.data?.data?.id || response?.data?.id || null
-                    });
+                    onSave(stampForm);
                 }
-
                 onClose();
             } else {
                 toast.error(
                     response?.data?.message ||
                     response?.data?.msg ||
-                    'Failed to create stamp card'
+                    'Failed to save stamp card'
                 );
             }
-
         } catch (err) {
-            console.error('Create Stamp Card Error:', err);
-
-            console.error(
-                'API Error Response:',
-                err?.response?.data
-            );
+            console.error('Error creating stamp card:', err);
 
             toast.error(
                 err?.response?.data?.message ||
@@ -359,6 +302,7 @@ export default function StampCardBuilderModal({
             // Optional loading handling can be added here
         }
     };
+
     const availableDesigns = cardDesigns && cardDesigns.length > 0 ? cardDesigns : fetchedDesigns
 
     // Sync form state when modal opens or cardData changes
@@ -370,8 +314,8 @@ export default function StampCardBuilderModal({
             setStampForm({
                 id: cardData.id,
                 title: cardData.title || '',
-                brandName: cardData.brandName || 'Elite Branch',
-                brandLogo: cardData.brandLogo || logo,
+                brandName: cardData.brandName || cardData.brand_name || fallbackBrandName,
+                brandLogo: cardData.brandLogo || cardData.brand_image || fallbackBrandLogo,
                 brandLogoFile: null,
                 total_stamps: count,
                 reward: cardData.reward || '',
@@ -410,8 +354,8 @@ export default function StampCardBuilderModal({
             setStampForm({
                 id: null,
                 title: '',
-                brandName: 'Elite Branch',
-                brandLogo: logo,
+                brandName: fallbackBrandName,
+                brandLogo: fallbackBrandLogo,
                 brandLogoFile: null,
                 total_stamps: 8,
                 reward: 'Free Beverage or Meal Pass',
@@ -435,7 +379,7 @@ export default function StampCardBuilderModal({
                 }))
             })
         }
-    }, [cardData, availableDesigns, isOpen, branches])
+    }, [cardData, availableDesigns, isOpen, branches, fallbackBrandName, fallbackBrandLogo])
 
     if (!isOpen) return null
 

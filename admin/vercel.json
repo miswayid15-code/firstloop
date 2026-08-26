@@ -1,18 +1,6 @@
 {
   "rewrites": [
     {
-      "source": "/card-preview-image/:id",
-      "destination": "/api/card-preview-image?id=:id"
-    },
-    {
-      "source": "/card-preview/:id",
-      "destination": "/api/card-preview?id=:id"
-    },
-    {
-      "source": "/share/card/:id",
-      "destination": "/api/card-preview?id=:id"
-    },
-    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

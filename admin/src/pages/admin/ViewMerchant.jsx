@@ -7858,6 +7858,9 @@ export default function ViewMerchant() {
                 cardData={selectedEditStampCard}
                 cardDesigns={cardDesignsApi}
                 merchantId={id || merchantData?.id}
+                merchantData={merchantData}
+                brandName={merchantData?.brand_name || merchantData?.bus_name}
+                brandImage={merchantData?.brand_image || merchantData?.profile_image}
                 branches={branchesData}
                 onSave={handleSaveStampCard}
                 onClose={() => setStampBuilderOpen(false)}

@@ -37,8 +37,8 @@ router.post(
 );
 router.post(
     '/branch_details/:id',
-    auth('merchant'),
-    checkMerchant,
+    // auth('merchant'),
+    // checkMerchant,
     controller.branch_id
 );
 router.post(
@@ -59,6 +59,10 @@ router.post(
 router.post(
     '/fetch-stamp-card',
     controller.fetch_stamp_card
+);
+router.post(
+    '/fetch-br-stamp-card',
+    controller.fetch_branch_stamp_card
 );
 router.post(
     '/fetch-stamp-card-details',
