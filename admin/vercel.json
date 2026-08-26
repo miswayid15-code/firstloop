@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/card-preview-image/:id",
+      "destination": "/api/card-preview-image?id=:id"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
