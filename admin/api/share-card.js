@@ -1,5 +1,5 @@
 export default async function handler(req, res) {
-    const { id } = req.query;
+    const { id, title: qTitle, brand: qBrand, img: qImg } = req.query;
 
     const host = req.headers['x-forwarded-host'] || req.headers.host || 'dealora-azure.vercel.app';
     const proto = req.headers['x-forwarded-proto'] || 'https';
@@ -10,32 +10,62 @@ export default async function handler(req, res) {
         return res.redirect(302, frontendBase);
     }
 
-    try {
-        const apiBaseUrl = process.env.VITE_API_URL || process.env.BACKEND_URL || 'https://dealora-7st9.onrender.com';
-        const cleanApiUrl = apiBaseUrl.replace(/\/+$/, '');
+    let brandName = qBrand || '';
+    let title = qTitle || '';
+    let imageUrl = qImg || '';
+    const description = `Collect stamps to earn exclusive rewards!`;
 
-        const response = await fetch(`${cleanApiUrl}/firstloop/merchant/fetch-stamp-card-details`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: Number(id) })
-        });
+    const apiBaseUrl = process.env.VITE_API_URL || process.env.BACKEND_URL || 'https://dealora-7st9.onrender.com';
+    const cleanApiUrl = apiBaseUrl.replace(/\/+$/, '');
 
-        const data = await response.json();
-        const item = data?.data?.[0];
+    // If query params are missing, fetch from API as fallback
+    if (!brandName || !title || !imageUrl) {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 2500);
 
-        const brandName = item?.brand_name || 'FirstLoop Merchant';
-        const title = item?.title || 'Digital Stamp Card';
-        const totalStamps = Number(item?.number_of_stamps) || 8;
-        const description = `Collect ${totalStamps} stamps to earn exclusive rewards!`;
-        
-        // Dynamically generated complete card visual image
-        const cardImageUrl = `${frontendBase}/api/card-image?id=${id}`;
-        const fullTitle = `${brandName} - ${title}`;
+            const response = await fetch(`${cleanApiUrl}/firstloop/merchant/fetch-stamp-card-details`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: Number(id) }),
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
 
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate');
+            const data = await response.json();
+            const item = data?.data?.[0];
+            if (item) {
+                brandName = brandName || item.brand_name || 'Merchant';
+                title = title || item.title || 'Stamp Pass';
+                imageUrl = imageUrl || item.background_image || item.brand_image || '';
+            }
+        } catch (e) {
+            console.error('API Fetch Fallback error:', e?.message || e);
+        }
+    }
 
-        return res.status(200).send(`<!DOCTYPE html>
+    brandName = brandName || 'FirstLoop Merchant';
+    title = title || 'Digital Stamp Card';
+
+    // Format absolute image URL
+    if (imageUrl) {
+        // Strip duplicate http if present
+        const uploadsMatch = imageUrl.match(/(uploads\/.*)/i);
+        if (uploadsMatch && uploadsMatch[1]) {
+            imageUrl = `${cleanApiUrl}/${uploadsMatch[1].replace(/^\/+/, '')}`;
+        } else if (!imageUrl.startsWith('http') && !imageUrl.startsWith('//')) {
+            imageUrl = `${cleanApiUrl}/${imageUrl.replace(/^\/+/, '')}`;
+        }
+    } else {
+        imageUrl = `${frontendBase}/asset/images/img/new-logo.png`;
+    }
+
+    const fullTitle = `${brandName} - ${title}`;
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=3600');
+
+    return res.status(200).send(`<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
@@ -48,11 +78,8 @@ export default async function handler(req, res) {
     <meta property="og:site_name" content="FirstLoop">
     <meta property="og:title" content="${fullTitle}">
     <meta property="og:description" content="${description}">
-    <meta property="og:image" content="${cardImageUrl}">
-    <meta property="og:image:secure_url" content="${cardImageUrl}">
-    <meta property="og:image:type" content="image/png">
-    <meta property="og:image:width" content="800">
-    <meta property="og:image:height" content="460">
+    <meta property="og:image" content="${imageUrl}">
+    <meta property="og:image:secure_url" content="${imageUrl}">
     <meta property="og:image:alt" content="${fullTitle}">
     <meta property="og:url" content="${targetPreviewUrl}">
 
@@ -60,7 +87,7 @@ export default async function handler(req, res) {
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="${fullTitle}">
     <meta name="twitter:description" content="${description}">
-    <meta name="twitter:image" content="${cardImageUrl}">
+    <meta name="twitter:image" content="${imageUrl}">
 
     <!-- Browser redirect to the interactive card preview -->
     <meta http-equiv="refresh" content="0;url=${targetPreviewUrl}">
@@ -79,8 +106,4 @@ export default async function handler(req, res) {
     </script>
 </body>
 </html>`);
-    } catch (err) {
-        console.error('Error in share-card API:', err);
-        return res.redirect(302, targetPreviewUrl);
-    }
 }

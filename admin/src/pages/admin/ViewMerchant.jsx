@@ -8000,10 +8000,11 @@ export default function ViewMerchant() {
                                 type="button"
                                 className="btn"
                                 onClick={() => {
-                                    const shareUrl = `${window.location.origin}/share/card/${selectedStampCard.id}`
                                     const brand = selectedStampCard.brandName || merchantData?.bus_name || 'Merchant'
                                     const title = selectedStampCard.title || 'Digital Stamp Card'
                                     const stamps = Number(selectedStampCard.total_stamps) || 8
+                                    const imgVal = selectedStampCard.bgImage || selectedStampCard.background_image || selectedStampCard.brandLogo || selectedStampCard.brand_image || ''
+                                    const shareUrl = `${window.location.origin}/share/card/${selectedStampCard.id}?title=${encodeURIComponent(title)}&brand=${encodeURIComponent(brand)}&img=${encodeURIComponent(imgVal)}`
                                     const message = `🎉 *${brand}* - ${title}\n⭐ Collect ${stamps} stamps to claim special rewards!\n\n👉 *View Card:* ${shareUrl}`
                                     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`, '_blank')
                                 }}
