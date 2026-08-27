@@ -3,13 +3,13 @@ const router = express.Router();
 const upload = require('../../middleware/upload');
 
 const auth = require('../../middleware/auth');
-const controller = require('../../controllers/admin/MemshipController');
+const controller = require('../../controllers/admin/DesignCardsController');
 
 const checkAdmin = require('../../middleware/checkAdmin');
 
 
 
-router.post('/list', auth('admin'), checkAdmin, controller.list);
+router.post('/list',controller.list);
 // router.post('/saleperson/deleted-list', auth('admin'), checkAdmin, controller.delete_list);
 
 router.post(

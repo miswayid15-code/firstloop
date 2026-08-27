@@ -1,8 +1,8 @@
 'use strict';
 
 module.exports = (sequelize, DataTypes) => {
-    const MembershipCard = sequelize.define(
-        'MembershipCard',
+    const DesignCards = sequelize.define(
+        'DesignCards',
         {
             id: {
                 type: DataTypes.INTEGER,
@@ -33,10 +33,10 @@ module.exports = (sequelize, DataTypes) => {
             }
         },
         {
-            tableName: 'MembershipCards',
+            tableName: 'DesignCards',
             timestamps: true
         }
     );
 
-    return MembershipCard;
+    return DesignCards;
 };

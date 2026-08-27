@@ -199,21 +199,20 @@ export default function BranchList() {
                 <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                     <button
                         type="button"
-                        className="btn btn-outline-secondary btn-sm"
+                        className="btn btn-secondary"
+                        onClick={() => navigate(-1)}
+                    >
+                        <i className="fas fa-arrow-left" />
+                        {' '}Back
+                    </button>
+                    <button
+                        type="button"
+                        className="btn btn-secondary"
                         onClick={fetchBranches}
                         disabled={loading}
-                        style={{
-                            borderRadius: 10,
-                            padding: "8px 14px",
-                            fontSize: "0.82rem",
-                            fontWeight: 600,
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 6
-                        }}
                     >
                         <i className={`fas fa-sync-alt ${loading ? "fa-spin" : ""}`} />
-                        Refresh
+                        {' '}Refresh
                     </button>
                 </div>
             </div>

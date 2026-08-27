@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 
 const controller =
-require('../../controllers/firstloop/merchantController');
+    require('../../controllers/firstloop/merchantController');
 
 const upload = require('../../middleware/upload');
 
@@ -25,7 +25,7 @@ router.post(
 );
 router.post(
     '/branch-list',
-        auth('merchant'),
+    auth('merchant'),
     checkMerchant,
     controller.fetch_list
 );
@@ -49,10 +49,10 @@ router.post(
 router.post(
     '/create_stamp_card',
     auth(),
-          (req, res, next) => {
-    req.uploadFolder = 'merchant';
-    next();
-  },
+    (req, res, next) => {
+        req.uploadFolder = 'merchant';
+        next();
+    },
     upload,
     controller.stamp_card
 );
@@ -67,5 +67,26 @@ router.post(
 router.post(
     '/fetch-stamp-card-details',
     controller.fetch_stamp_id
+);
+router.post('/fetch-id', auth('merchant'),
+    checkMerchant, controller.fetchmerchant);
+
+router.post(
+    '/create_membership_card',
+    auth(),
+    (req, res, next) => {
+        req.uploadFolder = 'merchant';
+        next();
+    },
+    upload,
+    controller.membership_card
+);
+router.post(
+    '/fetch-membership-card',
+    controller.fetch_membership_card
+);
+router.post(
+    '/fetch-br-membership-card',
+    controller.fetch_branch_membership_card
 );
 module.exports = router;

@@ -6,6 +6,7 @@ import axios from 'axios'
 import API from '../../api.js'
 import StampCardBuilderModal from '../../components/StampCardBuilderModal.jsx'
 import MembershipCardBuilderModal from '../../components/MembershipCardBuilderModal.jsx'
+import StampCardPreviewModal from '../../components/StampCardPreviewModal.jsx'
 
 // const DEFAULT_CARD_DESIGNS = [
 //     {
@@ -53,8 +54,34 @@ const RealQRCode = ({ size = 80 }) => (
         }}
     />
 )
+const getRelativeImagePath = (value) => {
+    if (!value) return ''
+    let str = String(value).trim()
 
-// Helper: Format validity months for pass display (e.g. 12 -> 12 Months)
+    if (str.startsWith('data:') || str.startsWith('blob:')) {
+        return str
+    }
+
+    const uploadsMatch = str.match(/(uploads\/.*)/i)
+    if (uploadsMatch) {
+        return uploadsMatch[1]
+    }
+
+    while (str.includes('http://') || str.includes('https://')) {
+        const lastHttp = str.lastIndexOf('http://')
+        const lastHttps = str.lastIndexOf('https://')
+        const idx = Math.max(lastHttp, lastHttps)
+        try {
+            const url = new URL(str.substring(idx))
+            str = url.pathname
+        } catch (e) {
+            str = str.replace(/^https?:\/\/[^/]+/i, '')
+        }
+    }
+
+    return str.replace(/^\/+/, '')
+}
+
 const formatValidity = (val) => {
     if (!val) return '12 Months'
     const str = String(val).trim()
@@ -66,85 +93,78 @@ const formatValidity = (val) => {
 
 const formatImageUrl = (img) => {
     if (!img) return ''
-    if (img.startsWith('http://') || img.startsWith('https://') || img.startsWith('data:') || img.startsWith('blob:')) {
-        return img
+    let str = String(img).trim()
+
+    if (str.startsWith('data:') || str.startsWith('blob:')) {
+        return str
     }
+
+    if (str.startsWith('http://') || str.startsWith('https://')) {
+        return str
+    }
+
     const baseUrl = import.meta.env.VITE_API_URL || ''
     const cleanBase = baseUrl.replace(/\/+$/, '')
-    const cleanImg = String(img).replace(/^\/+/, '')
-    return `${cleanBase}/${cleanImg}`
+    const cleanImg = getRelativeImagePath(str).replace(/^\/+/, '')
+    return cleanBase ? `${cleanBase}/${cleanImg}` : `/${cleanImg}`
 }
 
 export default function CardList() {
-    // Tab State: 'stamps' | 'memberships'
+
     const [activeTab, setActiveTab] = useState('stamps')
 
     // Dynamic Lists State
-    const [stampCards, setStampCards] = useState(INITIAL_STAMP_CARDS)
+    const [stampCards, setStampCards] = useState([])
     const [membershipCards, setMembershipCards] = useState(INITIAL_MEMBERSHIP_CARDS)
     const [cardDesignsApi, setCardDesignsApi] = useState([])
 
-    // Search States
     const [stampSearch, setStampSearch] = useState('')
-    const [membershipSearch, setMembershipSearch] = useState('')
+  
+    const getStoredMerchant = () => {
+        try {
+            const raw = localStorage.getItem("merchant_data")
+            if (raw && raw !== "null" && raw !== "undefined") {
+                const parsed = JSON.parse(raw)
+                return parsed?.merchant_data || parsed || null
+            }
+        } catch (e) {
+            console.error("Error parsing merchant_data:", e)
+        }
+        return null
+    }
 
-    // Modals Preview States
-    const [selectedStampCard, setSelectedStampCard] = useState(null)
-    const [selectedMembership, setSelectedMembership] = useState(null)
+    const initialMerchant = getStoredMerchant()
+    const initialMerId = initialMerchant?.id || initialMerchant?.user_id || initialMerchant?.merchant_id || initialMerchant?.mer_id || null
 
-    // Stamp Card Builder Modal State (reusable component)
+    const [merchantData, setMerchantData] = useState(initialMerchant)
+    const [branchesData, setBranchesData] = useState(null)
+    const [loading, setLoading] = useState(false)
+    const [selectedCategoryId, setSelectedCategoryId] = useState(null)
+    const [merId, setMerId] = useState(initialMerId)
+
     const [stampBuilderOpen, setStampBuilderOpen] = useState(false)
     const [selectedEditStampCard, setSelectedEditStampCard] = useState(null)
-
-    // Membership Card Builder Modal State (reusable component)
+    const [selectedStampCard, setSelectedStampCard] = useState(null)
     const [membershipBuilderOpen, setMembershipBuilderOpen] = useState(false)
+    const [membershipSearch, setMembershipSearch] = useState('')
     const [selectedEditMembershipCard, setSelectedEditMembershipCard] = useState(null)
+    const [selectedMembership, setSelectedMembership] = useState(null)
 
-    // Fetch Card Designs from API (admin/card-design/list) like ViewFlBranch
     useEffect(() => {
         fetchCardDesignsFromApi()
+        const targetId = initialMerId
+        if (targetId) {
+            fetchStampCards(targetId)
+            fetchMerchant(targetId)
+        } else {
+            fetchStampCards()
+            fetchMerchant()
+        }
     }, [])
 
     const fetchCardDesignsFromApi = async () => {
         try {
-            const adminToken = localStorage.getItem('access_token') || localStorage.getItem('admin_token')
-            const role = localStorage.getItem('role') || 'firstpass'
-
-            let response = null
-
-            // 1. Try with Admin token if available
-            if (adminToken && adminToken !== 'null' && adminToken !== 'undefined') {
-                try {
-                    response = await API.post('admin/card-design/list', {}, {
-                        skipAuthRedirect: true,
-                        headers: { Authorization: `Bearer ${adminToken}`, 'X-Role': role }
-                    })
-                } catch (e) {}
-            }
-
-            // 2. Try unauthenticated axios POST with X-Role header
-            if (!response?.data || (response.data.status !== 1 && response.data.status !== "1")) {
-                try {
-                    response = await axios.post(`${import.meta.env.VITE_API_URL}/admin/card-design/list`, {}, {
-                        headers: { 'X-Role': role, 'Content-Type': 'application/json' }
-                    })
-                } catch (e) {}
-            }
-
-            // 3. Try standard API.post
-            if (!response?.data || (response.data.status !== 1 && response.data.status !== "1")) {
-                try {
-                    response = await API.post('admin/card-design/list', {}, { skipAuthRedirect: true })
-                } catch (e) {}
-            }
-
-            // 4. Try firstloop merchant route
-            if (!response?.data || (response.data.status !== 1 && response.data.status !== "1")) {
-                try {
-                    response = await API.post('firstloop/merchant/card-design/list', {}, { skipAuthRedirect: true })
-                } catch (e) {}
-            }
-
+            const response = await API.post('admin/card-design/list')
             if (response?.data && (response.data.status === 1 || response.data.status === '1' || response.data.success)) {
                 const rawList = response.data.data || response.data.card_designs || response.data.designs || []
                 const list = Array.isArray(rawList) ? rawList : []
@@ -171,6 +191,134 @@ export default function CardList() {
         }
     }
 
+    const fetchMerchant = async (targetId) => {
+        const idToFetch = targetId || merId || initialMerId
+        try {
+            setLoading(true)
+
+            let response = null
+            if (idToFetch) {
+                try {
+                    response = await API.post('firstloop/merchant/fetch-id', { id: idToFetch })
+                } catch (e) {
+                    console.log(e)
+                }
+            }
+
+            // Fallback to merchant branch list if admin fetch is not accessible
+            if (!response?.data || (response.data.status !== 1 && response.data.status !== '1')) {
+                try {
+                    const branchRes = await API.post('firstloop/merchant/branch-list')
+                    if (branchRes?.data?.status === 1 || branchRes?.data?.status === '1') {
+                        const branches = Array.isArray(branchRes.data.data) ? branchRes.data.data : []
+                        setBranchesData(branches)
+                    }
+                } catch (e) {}
+            }
+
+            console.log("merchant data", response?.data)
+
+            if (response?.data && (response.data.status === 1 || response.data.status === '1' || response.data.success)) {
+                const merchant = response.data.data
+                if (merchant && typeof merchant === 'object' && !Array.isArray(merchant)) {
+                    setMerchantData(merchant)
+
+                    setSelectedCategoryId(
+                        merchant.cat_id?.toString() || ''
+                    )
+
+                    const branches = merchant.Branches || merchant.branches || []
+                    const sortedBranches = [...branches].sort((a, b) => Number(b.id) - Number(a.id))
+                    setBranchesData(sortedBranches)
+                }
+            }
+        } catch (err) {
+            console.error("Error fetching merchant:", err.response?.data || err.message)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const fetchStampCards = async (targetId) => {
+        const mId = targetId || merId || initialMerId
+        if (!mId) return
+
+        try {
+            const response = await API.post('firstloop/merchant/fetch-stamp-card', {
+                mer_id: Number(mId)
+            })
+
+            console.log('Fetch Stamp Card Response:', response?.data)
+
+            if (response?.data?.status === 1 || response?.data?.status === '1' || response?.data?.success) {
+                const rawList = response.data.data || response.data.stamp_cards || response.data.cards || []
+                const list = Array.isArray(rawList) ? rawList : []
+
+                const formatted = list.map(item => ({
+                    id: item.id || item._id,
+                    title: item.title || 'Stamp Pass',
+                    brandName: item.brand_name || merchantData?.brand_name || merchantData?.bus_name || merchantData?.user_name || 'Merchant',
+                    brandLogo: item.brand_image ? formatImageUrl(item.brand_image) : null,
+                    total_stamps: Number(item.number_of_stamps) || 8,
+                    reward: item.reward || 'Special Gift',
+                    active_members: item.active_members || 0,
+                    expiry: item.expiry || '2026-12-31',
+                    status: 'Active',
+                    bgColor: item.background_color || '#0E88B8',
+                    bgImage: item.background_image ? formatImageUrl(item.background_image) : null,
+                    textColor: item.text_color || '#FFFFFF',
+                    borderColor: item.border_color || '#00A6D6',
+                    stampBgColor: item.stamp_background || 'rgba(255, 255, 255, 0.3)',
+                    stampBorderColor: item.stamp_border_color || '#FFFFFF',
+                    stampTextColor: item.stamp_text_color || '#FFFFFF',
+                    stamp_radius: Number(item.stamp_radius ?? 50),
+                    preset: 'Custom',
+                    branch_ids: Array.isArray(item.branch_ids)
+                        ? item.branch_ids.map(Number)
+                        : (item.branch_id ? [Number(item.branch_id)] : []),
+                    levelRewards: (() => {
+                        const rawLevels = Array.isArray(item.StampLevels)
+                            ? item.StampLevels
+                            : (Array.isArray(item.stamp_levels) ? item.stamp_levels : []);
+                        if (rawLevels.length > 0) {
+                            return rawLevels.map((lvl, idx) => {
+                                const rawType = String(lvl.reward_type ?? lvl.type ?? '').trim().toLowerCase();
+                                const isDiscount = rawType === '2' || rawType === 'discount';
+                                const isPaid = rawType === '3' || rawType === 'paid';
+                                const rType = isDiscount ? 'Discount' : (isPaid ? 'Paid' : 'Free');
+                                const disc = parseFloat(lvl.discount ?? lvl.discountVal ?? (isDiscount ? (parseFloat(lvl.reward_text) || 0) : 0)) || 0;
+                                return {
+                                    stamp: Number(lvl.stamp_number || lvl.stamp) || idx + 1,
+                                    reward: lvl.reward_text || lvl.reward || (isDiscount ? `${disc}% Discount` : (isPaid ? 'Paid Perk' : 'Free Item')),
+                                    type: rType,
+                                    discountVal: disc,
+                                    discount: disc,
+                                    icon: isDiscount ? 'fa-percent' : (isPaid ? (lvl.icon || 'fa-tag') : 'fa-gift'),
+                                    amt: Number(lvl.amt) || 0,
+                                    category_id: lvl.category_id || null
+                                };
+                            });
+                        }
+                        return Array.from({ length: Number(item.number_of_stamps) || 8 }).map((_, i) => ({
+                            stamp: i + 1,
+                            reward: `Stamp #${i + 1}`,
+                            type: 'Free',
+                            discountVal: 0,
+                            discount: 0,
+                            icon: 'fa-gift',
+                            amt: 0
+                        }));
+                    })()
+                }))
+
+                if (formatted.length > 0) {
+                    setStampCards(formatted)
+                }
+            }
+        } catch (err) {
+            console.error('Error fetching stamp cards from API:', err)
+        }
+    }
     // Filtered lists
     const filteredStampCards = useMemo(() => {
         return stampCards.filter(sc =>
@@ -455,13 +603,13 @@ export default function CardList() {
                                     }}
                                 >
                                     {/* ALERT NOTICE BADGE: 2 STAMPS ONLY REMAINING & EXPIRED IN 30 DAYS */}
-                                
+
 
                                     <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
                                         <div style={{ flex: 1, minWidth: 0 }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                                                 <div style={{ width: 26, height: 26, borderRadius: 8, background: '#FFF', padding: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                    <img src={card.brandLogo || flLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                                    <img src={formatImageUrl(card.brandLogo) || flLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                                                 </div>
                                                 <span style={{ fontSize: '0.92rem', fontWeight: 800, color: 'inherit' }}>
                                                     {card.brandName || 'Urban Brew'}
@@ -482,9 +630,9 @@ export default function CardList() {
                                                         if (rewardItem.type === 'Free') {
                                                             iconMarkup = <i className="fas fa-gift" style={{ fontSize: '0.8rem' }} />
                                                         } else if (rewardItem.type === 'Discount') {
-                                                            iconMarkup = <span style={{ fontSize: '0.65rem', fontWeight: 800 }}>{rewardItem.discountVal || 10}%</span>
-                                                        } else if (rewardItem.type === 'Paid' && rewardItem.icon) {
-                                                            iconMarkup = <i className={`fas ${rewardItem.icon}`} style={{ fontSize: '0.8rem' }} />
+                                                            iconMarkup = <span style={{ fontSize: '0.65rem', fontWeight: 800 }}>{rewardItem.discount ?? rewardItem.discountVal ?? 0}%</span>
+                                                        } else if (rewardItem.type === 'Paid') {
+                                                            iconMarkup = <i className={`fas ${rewardItem.icon || 'fa-tag'}`} style={{ fontSize: '0.8rem' }} />
                                                         }
                                                     }
 
@@ -604,13 +752,13 @@ export default function CardList() {
                                 >
                                     <div style={{ position: 'relative', zIndex: 2 }}>
                                         {/* ALERT NOTICE BADGE: EXPIRED IN 30 DAYS */}
-                                     
+
 
                                         {/* Header Row */}
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                                                 <div style={{ width: 34, height: 34, borderRadius: 10, background: '#FFFFFF', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}>
-                                                    <img src={mem.brandLogo || flLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                                    <img src={formatImageUrl(mem.brandLogo) || flLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                                                 </div>
                                                 <span style={{ fontSize: '1.05rem', fontWeight: 800, color: 'inherit' }}>
                                                     {mem.brandName || 'FirstLoop'}
@@ -708,6 +856,11 @@ export default function CardList() {
                 isOpen={stampBuilderOpen}
                 cardData={selectedEditStampCard}
                 cardDesigns={cardDesignsApi}
+                merchantId={merId || merchantData?.id}
+                merchantData={merchantData}
+                brandName={merchantData?.bus_name || merchantData?.name || "Elite Branch"}
+                brandImage={merchantData?.brand_image }
+                branches={branchesData || []}
                 onSave={handleSaveStampCard}
                 onClose={() => setStampBuilderOpen(false)}
             />
@@ -721,160 +874,13 @@ export default function CardList() {
                 onClose={() => setMembershipBuilderOpen(false)}
             />
 
-            {/* PREVIEW STAMP CARD MODAL */}
-            {selectedStampCard && (
-                <div
-                    style={{
-                        position: 'fixed',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        background: 'rgba(15, 23, 42, 0.75)',
-                        backdropFilter: 'blur(6px)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        zIndex: 9999,
-                        padding: 20
-                    }}
-                >
-                    <div style={{ background: '#FFFFFF', borderRadius: 20, maxWidth: 440, width: '100%', padding: 24, boxShadow: '0 20px 40px rgba(0,0,0,0.3)', position: 'relative' }}>
-                        <button
-                            type="button"
-                            onClick={() => setSelectedStampCard(null)}
-                            style={{ position: 'absolute', right: 16, top: 16, background: 'none', border: 'none', fontSize: '1.2rem', color: 'var(--text-muted)', cursor: 'pointer' }}
-                        >
-                            &times;
-                        </button>
-                        <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: 16 }}>Stamp Card Pass Preview</h3>
-
-                        <div
-                            style={{
-                                width: '100%',
-                                borderRadius: 20,
-                                ...getCardStyle(selectedStampCard),
-                                color: selectedStampCard.textColor || '#FFFFFF',
-                                padding: 18,
-                                boxShadow: '0 14px 30px -6px rgba(0,0,0,0.22)'
-                            }}
-                        >
-                            <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                                        <div style={{ width: 26, height: 26, borderRadius: 8, background: '#FFF', padding: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                            <img src={selectedStampCard.brandLogo || flLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                                        </div>
-                                        <span style={{ fontSize: '0.92rem', fontWeight: 800, color: 'inherit' }}>
-                                            {selectedStampCard.brandName || 'FirstLoop'}
-                                        </span>
-                                    </div>
-
-                                    <div style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: 10 }}>
-                                        {selectedStampCard.title}
-                                    </div>
-
-                                    {/* Stamp Circles Grid */}
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 6, maxWidth: 220 }}>
-                                        {Array.from({ length: Number(selectedStampCard.total_stamps || 8) }).map((_, i) => (
-                                            <div
-                                                key={i}
-                                                style={{
-                                                    width: 36,
-                                                    height: 36,
-                                                    borderRadius: '50%',
-                                                    border: `2px solid ${selectedStampCard.stampBorderColor || '#FFFFFF'}`,
-                                                    background: selectedStampCard.stampBgColor || 'rgba(255, 255, 255, 0.3)',
-                                                    color: selectedStampCard.stampTextColor || 'inherit',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    fontSize: '0.82rem',
-                                                    fontWeight: 800
-                                                }}
-                                            >
-                                                {i + 1}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
-                                    <RealQRCode size={84} />
-                                    <small style={{ fontSize: '0.58rem', fontWeight: 800, marginTop: 4, letterSpacing: '0.5px' }}>
-                                        SCAN TO STAMP
-                                    </small>
-                                </div>
-                            </div>
-
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 4, fontSize: '0.65rem', opacity: 0.9, marginTop: 10, fontWeight: 700 }}>
-                                <span>powered by</span>
-                                <img src={flLogo} alt="FirstLoop" style={{ height: 12 }} />
-                                <span>firstloop.co.in</span>
-                            </div>
-                        </div>
-
-                        {/* Share & Download Action Buttons */}
-                        <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-                            <a
-                                href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`Check out my ${selectedStampCard.title || 'FirstLoop Stamp Card'} Pass! Access your digital loyalty card here: ${window.location.href}`)}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="btn"
-                                style={{
-                                    flex: 1,
-                                    padding: '10px 14px',
-                                    borderRadius: 10,
-                                    background: '#25D366',
-                                    color: '#FFFFFF',
-                                    fontWeight: 700,
-                                    fontSize: '0.85rem',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: 8,
-                                    textDecoration: 'none',
-                                    border: 'none',
-                                    boxShadow: '0 4px 12px rgba(37, 211, 102, 0.25)'
-                                }}
-                            >
-                                <i className="fab fa-whatsapp" style={{ fontSize: '1.1rem' }} />
-                                <span>Share to WhatsApp</span>
-                            </a>
-
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    const fileName = (selectedStampCard.title || 'stamp-card').toLowerCase().replace(/\s+/g, '-')
-                                    const link = document.createElement('a')
-                                    link.href = qrImg
-                                    link.download = `${fileName}-pass.png`
-                                    document.body.appendChild(link)
-                                    link.click()
-                                    document.body.removeChild(link)
-                                    alert(`Downloading ${selectedStampCard.title} Digital Pass...`)
-                                }}
-                                className="btn firstloop-btn-primary"
-                                style={{
-                                    flex: 1,
-                                    padding: '10px 14px',
-                                    borderRadius: 10,
-                                    fontWeight: 700,
-                                    fontSize: '0.85rem',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: 8,
-                                    boxShadow: '0 4px 12px rgba(14, 136, 184, 0.25)'
-                                }}
-                            >
-                                <i className="fas fa-download" style={{ fontSize: '0.95rem' }} />
-                                <span>Download Card</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* REUSABLE STAMP CARD PREVIEW MODAL COMPONENT */}
+            <StampCardPreviewModal
+                isOpen={Boolean(selectedStampCard)}
+                card={selectedStampCard}
+                fallbackBrandName={merchantData?.bus_name || merchantData?.name || "Elite Branch"}
+                onClose={() => setSelectedStampCard(null)}
+            />
 
             {/* PREVIEW MEMBERSHIP MODAL */}
             {selectedMembership && (
@@ -917,7 +923,7 @@ export default function CardList() {
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                                     <div style={{ width: 34, height: 34, borderRadius: 10, background: '#FFFFFF', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        <img src={selectedMembership.brandLogo || flLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                        <img src={formatImageUrl(selectedMembership.brandLogo) || flLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                                     </div>
                                     <span style={{ fontSize: '1.05rem', fontWeight: 800, color: 'inherit' }}>
                                         {selectedMembership.brandName || 'FirstLoop'}

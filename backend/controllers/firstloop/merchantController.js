@@ -1,4 +1,4 @@
-const { Merchant, Coupon, RefreshToken, Branch, Receptionist, MerchantFp, BranchTiming, UserNotificationToken, CouponApplied, Notification, Stampcard, StampLevel, customerCard } = require('../../models');
+const { Merchant, Coupon, RefreshToken, Branch, Receptionist, MerchantFp, Category, BranchTiming, SalePerson, UserNotificationToken, CouponApplied, Notification, Stampcard, StampLevel, customerCard, MembershipCards } = require('../../models');
 const bcrypt = require('bcryptjs');
 const { parsePhoneNumber } = require('libphonenumber-js');
 const jwt = require('jsonwebtoken');
@@ -465,8 +465,8 @@ exports.branch_id = async (req, res) => {
         data.profile_image = profileImagePath
             ? `${baseUrl}/${profileImagePath.replace(/\\/g, '/')}`
             : null;
-data.stamp_card=0;
-data.member_card=0;
+        data.stamp_card = 0;
+        data.member_card = 0;
 
         // Counts
         return res.json({
@@ -487,33 +487,8 @@ data.member_card=0;
 
 exports.stamp_card = async (req, res) => {
     try {
-        console.log("========== STAMP CARD API START ==========");
-        console.log("[STAMP CARD] Method:", req.method);
-        console.log("[STAMP CARD] URL:", req.originalUrl);
-        console.log("[STAMP CARD] Merchant ID:", req.body?.merchant_id);
-        console.log("[STAMP CARD] Card ID:", req.body?.id);
 
-        console.log("[STAMP CARD] Request body:", {
-            ...req.body,
-            stamp_levels:
-                typeof req.body?.stamp_levels === "string"
-                    ? req.body.stamp_levels
-                    : req.body?.stamp_levels
-        });
-
-        console.log(
-            "[STAMP CARD] Uploaded files:",
-            Array.isArray(req.files)
-                ? req.files.map(file => ({
-                    fieldname: file.fieldname,
-                    originalname: file.originalname,
-                    filename: file.filename,
-                    path: file.path,
-                    mimetype: file.mimetype,
-                    size: file.size
-                }))
-                : req.files
-        );
+        // console.log("req body", req.body)
         let {
             id,
             title,
@@ -539,12 +514,8 @@ exports.stamp_card = async (req, res) => {
                 msg: "Merchant authentication required"
             });
         }
-
         // ---------------------------------------
         // BASIC VALIDATION
-        // ---------------------------------------
-        // ---------------------------------------
-
 
         if (typeof branch_ids === "string") {
             try {
@@ -715,6 +686,7 @@ exports.stamp_card = async (req, res) => {
 
                 level.reward_text = null;
                 level.category_id = null;
+                level.discount = 0;
                 level.amt = 0;
             }
 
@@ -737,6 +709,7 @@ exports.stamp_card = async (req, res) => {
 
                 level.reward_text =
                     String(level.reward_text).trim();
+                level.discount = level.discount || 0;
 
                 level.category_id = null;
                 level.amt =
@@ -769,7 +742,7 @@ exports.stamp_card = async (req, res) => {
                         msg: `Category is required for stamp ${i + 1}`
                     });
                 }
-
+                level.discount = 0;
                 level.reward_text =
                     String(level.reward_text).trim();
 
@@ -881,6 +854,7 @@ exports.stamp_card = async (req, res) => {
                 level.category_id || null,
             amt:
                 level.amt || 0,
+            discount: level.discount || 0,
 
             status: 1
         }));
@@ -957,6 +931,7 @@ exports.fetch_stamp_card = async (req, res) => {
                         "stamp_number",
                         "reward_type",
                         "reward_text",
+                        "discount",
                         "category_id",
                         "status"
                     ]
@@ -1074,6 +1049,7 @@ exports.fetch_branch_stamp_card = async (req, res) => {
                         "stamp_number",
                         "reward_type",
                         "reward_text",
+                        "discount",
                         "category_id",
                         "status"
                     ]
@@ -1249,6 +1225,787 @@ exports.fetch_stamp_id = async (req, res) => {
         return res.status(200).json({
             status: 1,
             msg: "Stamp cards details fetched successfully",
+            data
+        });
+
+    } catch (err) {
+
+        console.error(
+            "fetch_stamp_card error:",
+            err
+        );
+
+        return res.status(500).json({
+            status: 0,
+            msg: "Error while processing!",
+            error: err.message
+        });
+    }
+};
+exports.fetchmerchant = async (req, res) => {
+
+    try {
+
+        const id = req.body.id;
+
+        if (!id) {
+
+            return res.json({
+                status: 0,
+                message: "Merchant id is required"
+            });
+
+        }
+
+        const merchant = await Merchant.findOne({
+
+            where: {
+                id: id,
+                del_status: 0
+            },
+
+            include: [
+
+                {
+
+                    model: Branch,
+
+                    where: {
+                        del_status: 0
+                    },
+                    attributes: [
+                        'id',
+                        'name',
+                        'address',
+                        'email',
+                        'phone',
+                        'passlock',
+                        'profile_image',
+                        'country_code',
+                        'status',
+                        'visibility',
+                        'age_group',
+                        'lat',
+                        'lon',
+
+                    ],
+
+                    required: false,
+
+                    include: [
+
+                        {
+
+                            model: Receptionist,
+
+                            where: {
+                                del_status: 0
+                            },
+
+                            required: false,
+
+                            attributes: [
+                                'id',
+                                'rep_id',
+                                'name',
+                                'ref_name',
+                                'country_code',
+                                'profile_image',
+                            ]
+
+                        }
+
+                    ]
+
+                },
+                {
+                    model: Category,
+                    required: false,
+                    where: {
+                        del_status: 0,
+                        status: 1
+                    },
+                    attributes: [
+                        'id',
+                        'name',
+
+                    ]
+
+
+
+                }, {
+                    model: SalePerson,
+                    required: false,
+                    attributes: [
+                        'id',
+                        'name',
+                        'code'
+                    ]
+                }
+
+
+            ]
+
+        });
+
+        if (!merchant) {
+
+            return res.json({
+                status: 0,
+                message: "Merchant not found"
+            });
+
+        }
+
+        const data = merchant.toJSON();
+
+        const baseUrl = process.env.APP_URL;
+
+        ['profile_image', 'brand_image', 'document'].forEach(field => {
+
+            if (data[field]) {
+
+                data[field] =
+                    baseUrl + '/' + data[field].replace(/\\/g, '/');
+
+            } else {
+
+                data[field] = null;
+
+            }
+
+        });
+        const branchMap = {};
+
+
+        if (data.Branches && data.Branches.length > 0) {
+            data.Branches.forEach(branch => {
+                branchMap[branch.id] = branch.name;
+            });
+            for (const branch of data.Branches) {
+
+                // Branch Image
+                if (branch.profile_image) {
+
+                    branch.profile_image =
+                        baseUrl + '/' +
+                        branch.profile_image.replace(/\\/g, '/');
+
+                } else {
+
+                    branch.profile_image = null;
+
+                }
+
+                // Receptionist Images
+                if (branch.Receptionists &&
+                    branch.Receptionists.length > 0) {
+
+                    branch.Receptionists =
+                        branch.Receptionists.map(receptionist => {
+
+                            if (receptionist.profile_image) {
+
+                                receptionist.profile_image =
+                                    baseUrl + '/' +
+                                    receptionist.profile_image.replace(/\\/g, '/');
+
+                            } else {
+
+                                receptionist.profile_image = null;
+
+                            }
+
+                            return receptionist;
+
+                        });
+
+                }
+
+                // Fetch Coupons manually
+                const coupons = await Coupon.findAll({
+
+                    where: {
+                        del_status: 0
+                    },
+
+                    attributes: ['id', 'branch_ids']
+
+                });
+
+                branch.coupon_count = coupons.filter(coupon => {
+
+                    return (
+                        Array.isArray(coupon.branch_ids) &&
+                        coupon.branch_ids.includes(branch.id)
+                    );
+
+                }).length;
+
+            }
+
+        }
+        const branchIds = data.Branches
+            ? data.Branches.map(branch => branch.id)
+            : [];
+
+        const merchantCoupons = await Coupon.findAll({
+
+            where: {
+                merchant_id: id,
+                del_status: 0
+            },
+
+            order: [['id', 'DESC']]
+
+        });
+
+        const couponList = merchantCoupons.map(coupon => {
+
+            const item = coupon.toJSON();
+
+            item.banner_image = item.banner_image
+                ? baseUrl + '/' + item.banner_image.replace(/\\/g, '/')
+                : null;
+
+            item.branch_names = (item.branch_ids || []).map(id => ({
+                id,
+                name: branchMap[id] || null
+            }));
+
+            return item;
+
+        });
+
+        const totalCoupons = await Coupon.count({
+            where: {
+                del_status: 0,
+                status: 1,
+                branch_ids: {
+                    [Op.overlap]: branchIds
+                }
+            }
+        });
+
+        const couponIds = merchantCoupons.map(coupon => coupon.id);
+
+        const redeemedCoupons = await CouponApplied.count({
+            where: {
+                del_status: 0,
+                status: 2,
+                coupon_id: {
+                    [Op.in]: couponIds
+                }
+            }
+        });
+        const total_branch = data.Branches ? data.Branches.length : 0;
+
+        const total_receptionists = data.Branches
+            ? data.Branches.reduce((total, branch) => {
+                return total + (branch.Receptionists ? branch.Receptionists.length : 0);
+            }, 0)
+            : 0;
+
+        const allCoupons = await Coupon.findAll({
+
+            where: {
+                del_status: 0
+            },
+
+            attributes: ['id', 'branch_ids']
+
+        });
+
+        const couponCountMap = {};
+
+        allCoupons.forEach(coupon => {
+
+            (coupon.branch_ids || []).forEach(branchId => {
+
+                couponCountMap[branchId] =
+                    (couponCountMap[branchId] || 0) + 1;
+
+            });
+
+        });
+
+        if (data.Branches && data.Branches.length > 0) {
+
+            for (const branch of data.Branches) {
+
+                // Branch Image
+                if (branch.profile_image) {
+
+                    branch.profile_image =
+                        baseUrl + '/' +
+                        branch.profile_image.replace(/\\/g, '/');
+
+                } else {
+
+                    branch.profile_image = null;
+
+                }
+
+                // Receptionist Images
+                if (
+                    branch.Receptionists &&
+                    branch.Receptionists.length > 0
+                ) {
+
+                    branch.Receptionists =
+                        branch.Receptionists.map(receptionist => {
+
+                            if (receptionist.profile_image) {
+
+                                receptionist.profile_image =
+                                    baseUrl + '/' +
+                                    receptionist.profile_image.replace(/\\/g, '/');
+
+                            } else {
+
+                                receptionist.profile_image = null;
+
+                            }
+
+                            return receptionist;
+
+                        });
+
+                }
+
+                // Coupon Count
+                branch.coupon_count =
+                    couponCountMap[branch.id] || 0;
+
+            }
+
+        }
+        const unassignedReceptionists = await Receptionist.findAll({
+
+            where: {
+                merchant_id: id,
+                del_status: 0,
+                status: 1,
+                branch_id: null
+            },
+
+            attributes: [
+                'id',
+                'rep_id',
+                'name',
+                'email',
+                'phone',
+                'country_code',
+                'profile_image'
+            ]
+
+        });
+
+        const formattedReceptionists = unassignedReceptionists.map(item => {
+
+            const receptionist = item.toJSON();
+
+            receptionist.profile_image = receptionist.profile_image
+                ? baseUrl + '/' + receptionist.profile_image.replace(/\\/g, '/')
+                : null;
+
+            return receptionist;
+
+        });
+
+        data.total_branch = total_branch;
+        data.total_receptionists = total_receptionists;
+        data.total_coupon_count = totalCoupons;
+        data.total_redeem_coupon = redeemedCoupons;
+        data.unassigned_receptionists = formattedReceptionists;
+        data.unassigned_receptionist_count = formattedReceptionists.length;
+        data.coupon_list = couponList;
+        return res.json({
+
+            status: 1,
+            message: "Merchant fetched successfully",
+            data: data,
+
+
+        });
+
+    } catch (err) {
+
+        console.log(err);
+
+        return res.json({
+
+            status: 0,
+            message: "Error",
+            error: err.message
+
+        });
+
+    }
+
+};
+
+
+exports.membership_card = async (req, res) => {
+    try {
+        let {
+            id,
+            title,
+            brand_name,
+            branch_ids,
+            background_image,
+            background_color,
+            text_color,
+            border_color,
+            month
+        } = req.body;
+
+        const merchant_id = req.body.merchant_id;
+
+        // ---------------------------------------
+        // MERCHANT VALIDATION
+        // ---------------------------------------
+
+        if (!merchant_id) {
+            return res.status(401).json({
+                status: 0,
+                msg: "Merchant authentication required"
+            });
+        }
+
+        // ---------------------------------------
+        // BRANCH IDS VALIDATION
+        // ---------------------------------------
+
+        if (typeof branch_ids === "string") {
+            try {
+                branch_ids = JSON.parse(branch_ids);
+            } catch (error) {
+                return res.status(400).json({
+                    status: 0,
+                    msg: "Invalid branch_ids JSON"
+                });
+            }
+        }
+
+        if (!Array.isArray(branch_ids)) {
+            return res.status(400).json({
+                status: 0,
+                msg: "Branch IDs are required"
+            });
+        }
+
+        branch_ids = branch_ids
+            .map(Number)
+            .filter(id => Number.isInteger(id) && id > 0);
+
+        if (!branch_ids.length) {
+            return res.status(400).json({
+                status: 0,
+                msg: "At least one valid branch ID is required"
+            });
+        }
+
+        // ---------------------------------------
+        // TITLE VALIDATION
+        // ---------------------------------------
+
+        if (!title || !String(title).trim()) {
+            return res.status(400).json({
+                status: 0,
+                msg: "Card title is required"
+            });
+        }
+
+        // ---------------------------------------
+        // MONTH VALIDATION
+        // ---------------------------------------
+
+        if (
+            month !== undefined &&
+            month !== null &&
+            month !== "" &&
+            (!Number.isInteger(Number(month)) ||
+                Number(month) < 1 ||
+                Number(month) > 12)
+        ) {
+            return res.status(400).json({
+                status: 0,
+                msg: "Month must be between 1 and 12"
+            });
+        }
+
+        month =
+            month !== undefined &&
+                month !== null &&
+                month !== ""
+                ? Number(month)
+                : null;
+
+        // ---------------------------------------
+        // FIND EXISTING MEMBERSHIP CARD
+        // ---------------------------------------
+
+        let membership_card = null;
+
+        if (id) {
+            membership_card = await MembershipCards.findOne({
+                where: {
+                    id: id,
+                    merchant_id: merchant_id
+                }
+            });
+
+            if (!membership_card) {
+                return res.status(404).json({
+                    status: 0,
+                    msg: "Membership Card not found"
+                });
+            }
+        }
+
+        // ---------------------------------------
+        // BACKGROUND IMAGE
+        // ---------------------------------------
+
+        const bgImageFile = Array.isArray(req.files)
+            ? req.files.find(
+                f =>
+                    f.fieldname === "background_image" ||
+                    f.fieldname === "card_image"
+            )
+            : (
+                req.files?.background_image?.[0] ||
+                req.files?.card_image?.[0] ||
+                null
+            );
+
+        if (bgImageFile) {
+            background_image = `uploads/merchant/${bgImageFile.filename}`;
+        } else {
+            background_image =
+                background_image
+                    ? String(background_image).trim()
+                    : (membership_card?.background_image || null);
+        }
+
+        // ---------------------------------------
+        // CARD DATA
+        // ---------------------------------------
+
+        const cardData = {
+            title: String(title).trim(),
+
+            branch_ids,
+
+            brand_name:
+                brand_name
+                    ? String(brand_name).trim()
+                    : null,
+
+            background_image,
+
+            background_color:
+                background_color
+                    ? String(background_color).trim()
+                    : null,
+
+            text_color:
+                text_color
+                    ? String(text_color).trim()
+                    : null,
+
+            border_color:
+                border_color
+                    ? String(border_color).trim()
+                    : null,
+
+            month
+        };
+
+        // ---------------------------------------
+        // CREATE
+        // ---------------------------------------
+
+        if (!membership_card) {
+            membership_card = await MembershipCards.create({
+                merchant_id,
+                ...cardData
+            });
+
+            return res.status(201).json({
+                status: 1,
+                msg: "Membership Card created successfully",
+                data: membership_card
+            });
+        }
+
+        // ---------------------------------------
+        // UPDATE
+        // ---------------------------------------
+
+        await membership_card.update(cardData);
+
+        return res.status(200).json({
+            status: 1,
+            msg: "Membership Card updated successfully",
+            data: membership_card
+        });
+
+    } catch (err) {
+        console.log("Membership Card Error:", err);
+
+        return res.status(500).json({
+            status: 0,
+            msg: "Error",
+            error: err.message
+        });
+    }
+};
+
+exports.fetch_membership_card = async (req, res) => {
+    try {
+
+        const merchant_id = req.body.mer_id;
+
+        if (!merchant_id) {
+            return res.status(401).json({
+                status: 0,
+                msg: "Merchant authentication required"
+            });
+        }
+
+        const where = {
+            merchant_id
+        };
+
+        // ---------------------------------------
+        // FETCH ALL CARDS OF MERCHANT
+        // ---------------------------------------
+
+        const membership_card = await MembershipCards.findAll({
+            where,
+        });
+
+        // ---------------------------------------
+        // NO CARDS
+        // ---------------------------------------
+
+        if (!membership_card.length) {
+            return res.status(200).json({
+                status: 1,
+                msg: "No Membership cards found",
+                data: []
+            });
+        }
+
+
+
+        // ---------------------------------------
+        // FORMAT DATA
+        // ---------------------------------------
+
+        const data = membership_card.map(card => {
+
+            const cardData = card.toJSON();
+
+            return {
+                ...cardData,
+
+                brand_image: cardData.brand_image
+                    ? baseUrl + '/' + cardData.brand_image
+                    : null,
+
+                background_image:
+                    cardData.background_image ? baseUrl + '/' + cardData.background_image
+                        : null,
+            };
+        });
+
+        // ---------------------------------------
+        // RESPONSE
+        // ---------------------------------------
+
+        return res.status(200).json({
+            status: 1,
+            msg: "Membership cards fetched successfully",
+            data
+        });
+
+    } catch (err) {
+
+        console.error(
+            "fetch_stamp_card error:",
+            err
+        );
+
+        return res.status(500).json({
+            status: 0,
+            msg: "Error while processing!",
+            error: err.message
+        });
+    }
+};
+exports.fetch_branch_membership_card = async (req, res) => {
+    try {
+
+        const card_id = req.body.id;
+
+        if (!card_id) {
+            return res.status(401).json({
+                status: 0,
+                msg: "Card id Is required"
+            });
+        }
+
+        const where = {
+            id: card_id
+        };
+
+        // ---------------------------------------
+        // FETCH ALL CARDS OF MERCHANT
+        // ---------------------------------------
+
+        const membership_card = await MembershipCards.findAll({
+            where,
+        });
+
+        // ---------------------------------------
+        // NO CARDS
+        // ---------------------------------------
+
+        if (!membership_card.length) {
+            return res.status(200).json({
+                status: 1,
+                msg: "No Membership cards found",
+                data: []
+            });
+        }
+
+        const data = membership_card.map(card => {
+
+            const cardData = card.toJSON();
+
+            return {
+                ...cardData,
+
+                brand_image: cardData.brand_image
+                    ? baseUrl + '/' + cardData.brand_image
+                    : null,
+
+                background_image:
+                    cardData.background_image ? baseUrl + '/' + cardData.background_image
+                        : null,
+            };
+        });
+
+        // ---------------------------------------
+        // RESPONSE
+        // ---------------------------------------
+
+        return res.status(200).json({
+            status: 1,
+            msg: "Membership cards fetched successfully",
             data
         });
 

@@ -1,5 +1,5 @@
 const {
-    MembershipCard
+    DesignCards
 } = require('../../models');
 const fs = require('fs');
 const path = require('path');
@@ -11,7 +11,7 @@ exports.list = async (req, res) => {
     try {
         const baseUrl = process.env.APP_URL;
 
-        const membershipCards = await MembershipCard.findAll({
+        const membershipCards = await DesignCards.findAll({
             where: {
                 del_status: 0
             },
@@ -51,6 +51,7 @@ exports.list = async (req, res) => {
         });
     }
 };
+ 
 
 
 // =====================================================
@@ -89,7 +90,7 @@ exports.register = async (req, res) => {
         // =========================
         // CREATE MEMBERSHIP CARD
         // =========================
-        const membershipCard = await MembershipCard.create({
+        const membershipCard = await DesignCards.create({
             name: name.trim(),
             image: cardImage,
             status: 1,
@@ -135,7 +136,7 @@ exports.update = async (req, res) => {
         // =========================
         // FIND CARD
         // =========================
-        const membershipCard = await MembershipCard.findOne({
+        const membershipCard = await DesignCards.findOne({
             where: {
                 id,
                 del_status: 0
@@ -175,7 +176,7 @@ exports.update = async (req, res) => {
         await membershipCard.update(updateData);
 
         // Get updated record
-        const updatedMembershipCard = await MembershipCard.findByPk(id);
+        const updatedMembershipCard = await DesignCards.findByPk(id);
 
         return res.json({
             status: 1,
@@ -212,7 +213,7 @@ exports.fetch_list = async (req, res) => {
             });
         }
 
-        const membershipCard = await MembershipCard.findOne({
+        const membershipCard = await DesignCards.findOne({
             where: {
                 id,
                 del_status: 0
@@ -278,7 +279,7 @@ exports.update_status = async (req, res) => {
             });
         }
 
-        const membershipCard = await MembershipCard.findOne({
+        const membershipCard = await DesignCards.findOne({
             where: {
                 id,
                 del_status: 0
@@ -329,7 +330,7 @@ exports.delete = async (req, res) => {
             });
         }
 
-        const membershipCard = await MembershipCard.findOne({
+        const membershipCard = await DesignCards.findOne({
             where: {
                 id,
                 del_status: 0

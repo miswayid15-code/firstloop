@@ -95,7 +95,7 @@ const libraries = ['places']
 
 const mapContainerStyle = {
     width: '100%',
-    height: '320px',    
+    height: '320px',
     borderRadius: '14px'
 }
 
@@ -312,12 +312,12 @@ export default function ViewMerchant() {
     const { id } = useParams()
 
     const [search, setSearch] = useState('')
-        const [activeRole, setActiveRole] = useState(
+    const [activeRole, setActiveRole] = useState(
         sessionStorage.getItem("role") || localStorage.getItem("role") || "firstpass"
     );
 
     const [stampCards, setStampCards] = useState([])
-    const [membershipCards, setMembershipCards] = useState(INITIAL_MEMBERSHIP_CARDS)
+    const [membershipCards, setMembershipCards] = useState([])
     const [stampSearch, setStampSearch] = useState('')
     const [membershipSearch, setMembershipSearch] = useState('')
 
@@ -329,6 +329,7 @@ export default function ViewMerchant() {
     const [membershipBuilderOpen, setMembershipBuilderOpen] = useState(false)
     const [selectedEditMembershipCard, setSelectedEditMembershipCard] = useState(null)
     const [selectedMembership, setSelectedMembership] = useState(null)
+    const [loadingMembershipCards, setLoadingMembershipCards] = useState(false)
 
     useEffect(() => {
         const fetchCardDesignsFromApi = async () => {
@@ -384,21 +385,39 @@ export default function ViewMerchant() {
                     branch_ids: Array.isArray(item.branch_ids)
                         ? item.branch_ids.map(Number)
                         : (item.branch_id ? [Number(item.branch_id)] : []),
-                    levelRewards: Array.isArray(item.stamp_levels) ? item.stamp_levels.map((lvl, idx) => ({
-                        stamp: lvl.stamp_number || idx + 1,
-                        reward: lvl.reward_text || (lvl.reward_type === '2' ? 'Discount' : 'Free Item'),
-                        type: lvl.reward_type === '2' ? 'Discount' : lvl.reward_type === '3' ? 'Paid' : 'Free',
-                        discountVal: lvl.reward_type === '2' ? parseInt(lvl.reward_text) || 10 : 0,
-                        icon: 'fa-gift',
-                        amt: Number(lvl.amt) || 0
-                    })) : Array.from({ length: Number(item.number_of_stamps) || 8 }).map((_, i) => ({
-                        stamp: i + 1,
-                        reward: `Stamp #${i + 1}`,
-                        type: 'Free',
-                        discountVal: 0,
-                        icon: 'fa-gift',
-                        amt: 0
-                    }))
+                    levelRewards: (() => {
+                        const rawLevels = Array.isArray(item.StampLevels)
+                            ? item.StampLevels
+                            : (Array.isArray(item.stamp_levels) ? item.stamp_levels : []);
+                        if (rawLevels.length > 0) {
+                            return rawLevels.map((lvl, idx) => {
+                                const rawType = String(lvl.reward_type ?? lvl.type ?? '').trim().toLowerCase();
+                                const isDiscount = rawType === '2' || rawType === 'discount';
+                                const isPaid = rawType === '3' || rawType === 'paid';
+                                const rType = isDiscount ? 'Discount' : (isPaid ? 'Paid' : 'Free');
+                                const disc = parseFloat(lvl.discount ?? lvl.discountVal ?? (isDiscount ? (parseFloat(lvl.reward_text) || 0) : 0)) || 0;
+                                return {
+                                    stamp: Number(lvl.stamp_number || lvl.stamp) || idx + 1,
+                                    reward: lvl.reward_text || lvl.reward || (isDiscount ? `${disc}% Discount` : (isPaid ? 'Paid Perk' : 'Free Item')),
+                                    type: rType,
+                                    discountVal: disc,
+                                    discount: disc,
+                                    icon: isDiscount ? 'fa-percent' : (isPaid ? (lvl.icon || 'fa-tag') : 'fa-gift'),
+                                    amt: Number(lvl.amt) || 0,
+                                    category_id: lvl.category_id || null
+                                };
+                            });
+                        }
+                        return Array.from({ length: Number(item.number_of_stamps) || 8 }).map((_, i) => ({
+                            stamp: i + 1,
+                            reward: `Stamp #${i + 1}`,
+                            type: 'Free',
+                            discountVal: 0,
+                            discount: 0,
+                            icon: 'fa-gift',
+                            amt: 0
+                        }));
+                    })()
                 }));
 
                 if (formatted.length > 0) {
@@ -410,9 +429,56 @@ export default function ViewMerchant() {
         }
     };
 
+    const fetchmembershipCards = async () => {
+        try {
+            const mId = id || merchantData?.id;
+            if (!mId) return;
+            try {
+                const response = await API.post('firstloop/merchant/fetch-membership-card', {
+                    mer_id: Number(mId)
+                });
+                console.log("response", response.data)
+                if (response?.data?.status === 1) {
+                    const rawList = response.data.data || [];
+                    const list = Array.isArray(rawList) ? rawList : []
+                    const format = list.map(item => ({
+                        id: item.id,
+                        title: item.title,
+                        brandName: item.brand_name || merchantData?.bus_name || '',
+                        brandLogo: item.brand_image ? getRelativeImagePath(item.brand_image) : null,
+                        status: 'Active',
+                        bgColor: item.background_color || '#0E88B8',
+                        bgImage: item.background_image ? getRelativeImagePath(item.background_image) : null,
+                        textColor: item.text_color || '#FFFFFF',
+                        borderColor: item.border_color || '#00A6D6',
+                        branch_ids: Array.isArray(item.branch_ids)
+                            ? item.branch_ids.map(Number)
+                            : (item.branch_id ? [Number(item.branch_id)] : []),
+                        totalMonth: item.month || 0,
+                    }))
+                    if (format.length > 0) {
+                        setMembershipCards(format);
+                    }
+                }
+
+            }
+            catch (err) {
+                console.log('Error fetching membership cards from API:', err)
+            }
+
+        }
+        catch (err) {
+
+        }
+        finally {
+            setLoadingMembershipCards(false)
+        }
+    }
+
     useEffect(() => {
         if (id) {
             fetchStampCards();
+            fetchmembershipCards();
         }
     }, [id]);
 
@@ -547,8 +613,8 @@ export default function ViewMerchant() {
 
     const filteredMemberships = useMemo(() => {
         return membershipCards.filter(mc =>
-            mc.name.toLowerCase().includes(membershipSearch.toLowerCase()) ||
-            (mc.tier && mc.tier.toLowerCase().includes(membershipSearch.toLowerCase()))
+            mc.title.toLowerCase().includes(membershipSearch.toLowerCase()) ||
+            (mc.totalMonth && mc.totalMonth.toLowerCase().includes(membershipSearch.toLowerCase()))
         )
     }, [membershipCards, membershipSearch])
 
@@ -3736,7 +3802,7 @@ export default function ViewMerchant() {
                                             )}
                                         </div>
                                     </div>
-                                  
+
                                 </div>
 
                             </div>
@@ -4231,24 +4297,24 @@ export default function ViewMerchant() {
                                                 justifyContent: 'flex-end'
                                             }}
                                         >
-{activeRole === "firstloop" && (
-    <button
-        type="button"
-        className="btn-icon view"
-        title="View Branch"
-        onClick={() => navigate(`/view-fl-branch/${branch.id}`)}
-    >
-        <img
-            src={fl_logo}
-            alt="FirstLoop"
-            style={{
-                width: "20px",
-                height: "20px",
-                objectFit: "contain"
-            }}
-        />
-    </button>
-)}
+                                            {activeRole === "firstloop" && (
+                                                <button
+                                                    type="button"
+                                                    className="btn-icon view"
+                                                    title="View Branch"
+                                                    onClick={() => navigate(`/view-fl-branch/${branch.id}`)}
+                                                >
+                                                    <img
+                                                        src={fl_logo}
+                                                        alt="FirstLoop"
+                                                        style={{
+                                                            width: "20px",
+                                                            height: "20px",
+                                                            objectFit: "contain"
+                                                        }}
+                                                    />
+                                                </button>
+                                            )}
 
                                             <button
                                                 className="btn-icon view"
@@ -4453,9 +4519,9 @@ export default function ViewMerchant() {
                                                                 if (rewardItem.type === 'Free') {
                                                                     iconMarkup = <i className="fas fa-gift" style={{ fontSize: '0.8rem' }} />
                                                                 } else if (rewardItem.type === 'Discount') {
-                                                                    iconMarkup = <span style={{ fontSize: '0.65rem', fontWeight: 800 }}>{rewardItem.discountVal || 10}%</span>
-                                                                } else if (rewardItem.type === 'Paid' && rewardItem.icon) {
-                                                                    iconMarkup = <i className={`fas ${rewardItem.icon}`} style={{ fontSize: '0.8rem' }} />
+                                                                    iconMarkup = <span style={{ fontSize: '0.65rem', fontWeight: 800 }}>{rewardItem.discount ?? rewardItem.discountVal ?? 0}%</span>
+                                                                } else if (rewardItem.type === 'Paid') {
+                                                                    iconMarkup = <i className={`fas ${rewardItem.icon || 'fa-tag'}`} style={{ fontSize: '0.8rem' }} />
                                                                 }
                                                             }
 
@@ -7947,9 +8013,9 @@ export default function ViewMerchant() {
                                                         if (rewardItem.type === 'Free') {
                                                             iconMarkup = <i className="fas fa-gift" style={{ fontSize: '0.8rem' }} />
                                                         } else if (rewardItem.type === 'Discount') {
-                                                            iconMarkup = <span style={{ fontSize: '0.65rem', fontWeight: 800 }}>{rewardItem.discountVal || 10}%</span>
-                                                        } else if (rewardItem.type === 'Paid' && rewardItem.icon) {
-                                                            iconMarkup = <i className={`fas ${rewardItem.icon}`} style={{ fontSize: '0.8rem' }} />
+                                                            iconMarkup = <span style={{ fontSize: '0.65rem', fontWeight: 800 }}>{rewardItem.discount ?? rewardItem.discountVal ?? 0}%</span>
+                                                        } else if (rewardItem.type === 'Paid') {
+                                                            iconMarkup = <i className={`fas ${rewardItem.icon || 'fa-tag'}`} style={{ fontSize: '0.8rem' }} />
                                                         }
                                                     }
 

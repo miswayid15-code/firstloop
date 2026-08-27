@@ -8,19 +8,18 @@ import axios from 'axios'
 import API from '../../api.js'
 import StampCardBuilderModal from '../../components/StampCardBuilderModal.jsx'
 import MembershipCardBuilderModal from '../../components/MembershipCardBuilderModal.jsx'
+import StampCardPreviewModal from '../../components/StampCardPreviewModal.jsx'
 import { toast } from 'react-hot-toast'
 
-// Helper: Get clean relative path for uploads
+
 const getRelativeImagePath = (path) => {
     if (!path || typeof path !== 'string') return ''
     let str = path.trim()
     if (str.startsWith('data:') || str.startsWith('blob:')) return str
-
     const uploadsMatch = str.match(/(uploads\/.*)/i)
     if (uploadsMatch && uploadsMatch[1]) {
         return uploadsMatch[1].replace(/^\/+/, '')
     }
-
     if (str.startsWith('http://') || str.startsWith('https://')) {
         const lastHttp = str.lastIndexOf('http://')
         const lastHttps = str.lastIndexOf('https://')
@@ -36,7 +35,6 @@ const getRelativeImagePath = (path) => {
     return str.replace(/^\/+/, '')
 }
 
-// Helper: Format Image URL for backend assets
 const formatImageUrl = (img) => {
     if (!img) return ''
     let str = String(img).trim()
@@ -51,26 +49,8 @@ const formatImageUrl = (img) => {
     return cleanBase ? `${cleanBase}/${cleanImg}` : cleanImg
 }
 
-// Helper: Download Canvas Image using html2canvas
-const handleDownloadCard = async (elementId, title) => {
-    const element = document.getElementById(elementId)
-    if (!element) return
-    try {
-        const canvas = await html2canvas(element, {
-            scale: 2,
-            useCORS: true,
-            allowTaint: true,
-            backgroundColor: null
-        })
-        const image = canvas.toDataURL('image/png')
-        const link = document.createElement('a')
-        link.href = image
-        link.download = `${(title || 'Stamp-Card').replace(/\s+/g, '_')}.png`
-        link.click()
-    } catch (error) {
-        console.error('Error downloading card:', error)
-    }
-}
+
+
 
 const DEFAULT_CARD_DESIGNS = [
     {
@@ -171,99 +151,9 @@ const PAID_ICONS = [
     { label: 'Crown Pass', icon: 'fa-crown' }
 ]
 
-// --- Mock Data ---
-const MOCK_BRANCH_DATA = {
-    id: 'fl-br-101',
-    merchant_id: 'm-204',
-    merchant_name: 'Urban Brew & Glow Outlets',
-    name: 'FirstLoop Flagship Hub - Downtown',
-    email: 'downtown.fl@dealora.com',
-    phone: '+1 (555) 382-9102',
-    address: '450 Grand Avenue, Suite 120',
-    city: 'San Francisco',
-    state: 'California',
-    country: 'United States',
-    zip_code: '94108',
-    status: 1,
-    visibility: 0,
-    createdAt: '2025-01-15T08:30:00Z',
-    profile_image: logo,
-    sales_person: {
-        id: 'sp-88',
-        name: 'Samantha Vance',
-        code: 'SP-SAN-88'
-    },
-    timings: [
-        { day: 1, name: 'Monday', open_time: '08:00 AM', close_time: '08:00 PM', is_closed: false },
-        { day: 2, name: 'Tuesday', open_time: '08:00 AM', close_time: '08:00 PM', is_closed: false },
-        { day: 3, name: 'Wednesday', open_time: '08:00 AM', close_time: '08:00 PM', is_closed: false },
-        { day: 4, name: 'Thursday', open_time: '08:00 AM', close_time: '08:00 PM', is_closed: false },
-        { day: 5, name: 'Friday', open_time: '08:00 AM', close_time: '10:00 PM', is_closed: false },
-        { day: 6, name: 'Saturday', open_time: '09:00 AM', close_time: '10:00 PM', is_closed: false },
-        { day: 7, name: 'Sunday', open_time: '10:00 AM', close_time: '06:00 PM', is_closed: false },
-    ]
-}
 
-const INITIAL_STAMP_CARDS = [
-    {
-        id: 'sc-101',
-        title: 'Artisanal Coffee 8-Stamp Pass',
-        brandName: 'Elite Branch',
-        tagline: 'Buy 8 Specialty Coffees, Get 1 Free Dessert!',
-        total_stamps: 8,
-        reward: 'Free Gourmet Muffin or Specialty Beverage',
-        active_members: 142,
-        expiry: '2026-12-31',
-        status: 'Active',
-        icon: 'fa-coffee',
-        bgColor: '#EF0003',
-        bgImage: null,
-        textColor: '#FFFFFF',
-        borderColor: '#FF3B3B',
-        stampBgColor: 'rgba(255, 255, 255, 0.3)',
-        stampBorderColor: '#FFFFFF',
-        stampTextColor: '#FFFFFF',
-        preset: 'Wave Red',
-        stamps_given: 856,
-        rewards_claimed: 98,
-        levelRewards: Array.from({ length: 8 }).map((_, i) => ({
-            stamp: i + 1,
-            reward: i === 7 ? 'Free Specialty Drink & Muffin' : i === 3 ? '20% Discount' : 'Free Extra Shot',
-            type: i === 3 ? 'Discount' : 'Free',
-            discountVal: i === 3 ? 20 : 0,
-            icon: 'fa-gift'
-        }))
-    },
-    {
-        id: 'sc-102',
-        title: 'Beauty Styling 6-Stamp Card',
-        brandName: 'FirstLoop Salon',
-        tagline: 'Collect 6 Stamps on Hair & Facial Services',
-        total_stamps: 6,
-        reward: '50% Discount on Next Styling Session',
-        active_members: 89,
-        expiry: '2026-11-15',
-        status: 'Active',
-        icon: 'fa-cut',
-        bgColor: '#0284C7',
-        bgImage: null,
-        textColor: '#FFFFFF',
-        borderColor: '#00A6D6',
-        stampBgColor: 'rgba(255, 255, 255, 0.3)',
-        stampBorderColor: '#FFFFFF',
-        stampTextColor: '#FFFFFF',
-        preset: 'Aurora',
-        stamps_given: 320,
-        rewards_claimed: 45,
-        levelRewards: Array.from({ length: 6 }).map((_, i) => ({
-            stamp: i + 1,
-            reward: i === 5 ? '50% Off Styling' : 'Free Treatment',
-            type: i === 5 ? 'Discount' : 'Free',
-            discountVal: i === 5 ? 50 : 0,
-            icon: 'fa-gift'
-        }))
-    }
-]
+
+
 
 const INITIAL_MEMBERSHIP_CARDS = [
     {
@@ -400,17 +290,7 @@ const MOCK_CUSTOMERS = [
     }
 ]
 
-const QUICK_COLORS = [
-    { label: 'Red', hex: '#EF0003' },
-    { label: 'Orange', hex: '#F97316' },
-    { label: 'Yellow', hex: '#F59E0B' },
-    { label: 'Teal', hex: '#10B981' },
-    { label: 'Cyan', hex: '#00A6D6' },
-    { label: 'Blue', hex: '#0284C7' },
-    { label: 'Purple', hex: '#8B5CF6' },
-    { label: 'Dark', hex: '#1E293B' },
-    { label: 'White', hex: '#FFFFFF' }
-]
+
 
 export default function ViewFlBranch() {
     const navigate = useNavigate()
@@ -489,21 +369,28 @@ export default function ViewFlBranch() {
                         stamp_radius: Number(item.stamp_radius ?? 50),
                         preset: 'Custom',
                         levelRewards: stampLevels.length > 0
-                            ? stampLevels.map((lvl, idx) => ({
-                                stamp: Number(lvl.stamp_number) || idx + 1,
-                                reward: lvl.reward_text || (
-                                    lvl.reward_type === '2' ? 'Discount' : (lvl.reward_type === '3' ? 'Paid' : 'Free Item')
-                                ),
-                                type: lvl.reward_type === '2' ? 'Discount' : (lvl.reward_type === '3' ? 'Paid' : 'Free'),
-                                discountVal: lvl.reward_type === '2' ? parseInt(lvl.reward_text) || 10 : 0,
-                                icon: 'fa-gift',
-                                amt: Number(lvl.amt) || 0
-                            }))
+                            ? stampLevels.map((lvl, idx) => {
+                                const rType = lvl.reward_type === '2' ? 'Discount' : (lvl.reward_type === '3' ? 'Paid' : 'Free');
+                                const disc = Number(lvl.discount ?? (rType === 'Discount' ? (parseInt(lvl.reward_text) || 0) : 0));
+                                return {
+                                    stamp: Number(lvl.stamp_number) || idx + 1,
+                                    reward: lvl.reward_text || (
+                                        rType === 'Discount' ? `${disc}% Discount` : (rType === 'Paid' ? 'Paid Perk' : 'Free Item')
+                                    ),
+                                    type: rType,
+                                    discountVal: disc,
+                                    discount: disc,
+                                    icon: rType === 'Discount' ? 'fa-percent' : (rType === 'Paid' ? (lvl.icon || 'fa-tag') : 'fa-gift'),
+                                    amt: Number(lvl.amt) || 0,
+                                    category_id: lvl.category_id
+                                };
+                            })
                             : Array.from({ length: totalStamps }).map((_, i) => ({
                                 stamp: i + 1,
                                 reward: `Stamp #${i + 1}`,
                                 type: 'Free',
                                 discountVal: 0,
+                                discount: 0,
                                 icon: 'fa-gift',
                                 amt: 0
                             }))
@@ -534,7 +421,7 @@ export default function ViewFlBranch() {
                         skipAuthRedirect: true,
                         headers: { Authorization: `Bearer ${adminToken}`, 'X-Role': role }
                     })
-                } catch (e) {}
+                } catch (e) { }
             }
 
             // 2. Try unauthenticated axios POST with X-Role header
@@ -543,21 +430,21 @@ export default function ViewFlBranch() {
                     response = await axios.post(`${import.meta.env.VITE_API_URL}/admin/card-design/list`, {}, {
                         headers: { 'X-Role': role, 'Content-Type': 'application/json' }
                     })
-                } catch (e) {}
+                } catch (e) { }
             }
 
             // 3. Try standard API.post
             if (!response?.data || (response.data.status !== 1 && response.data.status !== "1")) {
                 try {
                     response = await API.post('admin/card-design/list', {}, { skipAuthRedirect: true })
-                } catch (e) {}
+                } catch (e) { }
             }
 
             // 4. Try firstloop merchant route
             if (!response?.data || (response.data.status !== 1 && response.data.status !== "1")) {
                 try {
                     response = await API.post('firstloop/merchant/card-design/list', {}, { skipAuthRedirect: true })
-                } catch (e) {}
+                } catch (e) { }
             }
 
             console.log('Card Designs API Response:', response?.data)
@@ -615,7 +502,7 @@ export default function ViewFlBranch() {
                     setbranch(fallbackRes.data.data);
                     return;
                 }
-            } catch (e) {}
+            } catch (e) { }
 
             toast.error(
                 err.response?.data?.message ||
@@ -624,13 +511,22 @@ export default function ViewFlBranch() {
         }
     };
 
-    // Handler: Stamp Card Brand Logo Upload
-    const handleStampLogoUpload = (e) => {
-        const file = e.target.files[0]
-        if (file) {
-            const url = URL.createObjectURL(file)
-            setStampForm(prev => ({ ...prev, brandLogo: url }))
-        }
+    // Handler: Open Stamp Card Builder for Creation
+    const handleOpenCreateStampCard = () => {
+        setSelectedEditStampCard(null)
+        setStampBuilderOpen(true)
+    }
+
+    // Handler: Open Stamp Card Builder for Editing
+    const handleOpenEditStampCard = (card) => {
+        setSelectedEditStampCard(card)
+        setStampBuilderOpen(true)
+    }
+
+    // Save Stamp Card
+    const handleSaveStampCard = (savedForm) => {
+        fetchStampCards()
+        setStampBuilderOpen(false)
     }
 
     // Filtered lists
@@ -768,15 +664,14 @@ export default function ViewFlBranch() {
                         </p>
                     </div>
 
-                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                         <button
                             type="button"
-                            className="btn firstloop-btn-secondary"
-                            onClick={handleOpenCreateMembership}
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 18px', borderRadius: '10px' }}
+                            className="btn btn-secondary"
+                            onClick={() => navigate(-1)}
                         >
-                            <i className="fas fa-plus-circle" />
-                            <span>+ Add Membership Card</span>
+                            <i className="fas fa-arrow-left" />
+                            {' '}Back
                         </button>
                     </div>
                 </div>
@@ -945,7 +840,7 @@ export default function ViewFlBranch() {
                                     );
                                 })()}
                             </div>
-                            
+
 
                             {/* Branch Operating Hours / Timings */}
                             <div style={{ gridColumn: '1 / -1', marginTop: 14 }}>
@@ -1113,9 +1008,9 @@ export default function ViewFlBranch() {
                                                             if (rewardItem.type === 'Free') {
                                                                 iconMarkup = <i className="fas fa-gift" style={{ fontSize: '0.8rem' }} />
                                                             } else if (rewardItem.type === 'Discount') {
-                                                                iconMarkup = <span style={{ fontSize: '0.65rem', fontWeight: 800 }}>{rewardItem.discountVal || 10}%</span>
-                                                            } else if (rewardItem.type === 'Paid' && rewardItem.icon) {
-                                                                iconMarkup = <i className={`fas ${rewardItem.icon}`} style={{ fontSize: '0.8rem' }} />
+                                                                iconMarkup = <span style={{ fontSize: '0.65rem', fontWeight: 800 }}>{rewardItem.discount ?? rewardItem.discountVal ?? 0}%</span>
+                                                            } else if (rewardItem.type === 'Paid') {
+                                                                iconMarkup = <i className={`fas ${rewardItem.icon || 'fa-tag'}`} style={{ fontSize: '0.8rem' }} />
                                                             }
                                                         }
 
@@ -1162,13 +1057,14 @@ export default function ViewFlBranch() {
                                     </div>
                                 </div>
 
-                                {/* Card Item Action Bar - PREVIEW ONLY */}
+                                {/* Card Item Action Bar */}
                                 <div style={{ display: 'flex', gap: 10, padding: '0 4px' }}>
+
                                     <button
                                         type="button"
                                         className="btn firstloop-btn-secondary"
                                         onClick={() => setSelectedStampCard(card)}
-                                        style={{ width: '100%', padding: '8px 14px', fontSize: '0.82rem', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                                        style={{ flex: 1, padding: '8px 14px', fontSize: '0.82rem', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                                     >
                                         <i className="fas fa-eye" />
                                         <span>Preview</span>
@@ -1277,29 +1173,7 @@ export default function ViewFlBranch() {
 
                             {/* Membership Action Bar */}
                             <div style={{ display: 'flex', gap: 10, padding: '0 4px' }}>
-                                <button
-                                    type="button"
-                                    className="btn"
-                                    onClick={() => handleOpenEditMembership(mem)}
-                                    style={{
-                                        flex: 1,
-                                        padding: '8px 14px',
-                                        fontSize: '0.82rem',
-                                        borderRadius: 8,
-                                        background: 'rgba(217, 119, 6, 0.12)',
-                                        color: '#D97706',
-                                        fontWeight: 700,
-                                        border: 'none',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: 6
-                                    }}
-                                >
-                                    <i className="fas fa-edit" />
-                                    <span>Edit Pass Design</span>
-                                </button>
-
+   
                                 <button
                                     type="button"
                                     className="btn firstloop-btn-secondary"
@@ -1461,6 +1335,11 @@ export default function ViewFlBranch() {
                 isOpen={stampBuilderOpen}
                 cardData={selectedEditStampCard}
                 cardDesigns={cardDesignsApi}
+                merchantId={merchant?.id || branch?.merchant_id}
+                merchantData={merchant}
+                brandName={branch?.name || merchant?.brand_name || merchant?.bus_name}
+                brandImage={branch?.profile_image || merchant?.brand_image || merchant?.profile_image}
+                branches={branch?.id ? [branch] : (id ? [{ id: Number(id), name: branch?.name || 'Current Branch' }] : [])}
                 onSave={handleSaveStampCard}
                 onClose={() => setStampBuilderOpen(false)}
             />
@@ -1474,187 +1353,13 @@ export default function ViewFlBranch() {
                 onClose={() => setMembershipBuilderOpen(false)}
             />
 
-            {/* PREVIEW MODAL 1: STAMP CARD */}
-            {selectedStampCard && (
-                <div
-                    style={{
-                        position: 'fixed',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        background: 'rgba(15, 23, 42, 0.7)',
-                        backdropFilter: 'blur(5px)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        zIndex: 9999,
-                        padding: 20
-                    }}
-                >
-                    <div
-                        style={{
-                            background: '#FFFFFF',
-                            borderRadius: 24,
-                            maxWidth: 460,
-                            width: '100%',
-                            overflow: 'hidden',
-                            boxShadow: '0 25px 50px rgba(0,0,0,0.3)',
-                            animation: 'fadeIn 0.2s ease'
-                        }}
-                    >
-                        <div style={{ padding: '20px 24px', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div>
-                                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: '#0F172A' }}>
-                                    Digital Stamp Card Preview
-                                </h3>
-                                <p style={{ fontSize: '0.8rem', color: '#64748B', margin: '2px 0 0 0' }}>
-                                    Live render of the digital stamp pass for customers
-                                </p>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => setSelectedStampCard(null)}
-                                style={{ background: 'none', border: 'none', fontSize: '1.2rem', color: '#64748B', cursor: 'pointer', padding: 4 }}
-                            >
-                                <i className="fas fa-times" />
-                            </button>
-                        </div>
-
-                        {/* Digital Card Canvas View */}
-                        <div style={{ padding: 24, background: '#F8FAFC', display: 'flex', justifyContent: 'center' }}>
-                            <div
-                                id="stamp-card-preview-canvas"
-                                style={{
-                                    width: '100%',
-                                    maxWidth: 400,
-                                    borderRadius: 20,
-                                    ...getCardStyle(selectedStampCard),
-                                    color: selectedStampCard.textColor || '#FFFFFF',
-                                    padding: 22,
-                                    boxShadow: '0 16px 36px -8px rgba(0,0,0,0.25)',
-                                    position: 'relative',
-                                    minHeight: 230
-                                }}
-                            >
-                                <div style={{ position: 'relative', zIndex: 2 }}>
-                                    <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-                                        {/* Left Side */}
-                                        <div style={{ flex: 1, minWidth: 0 }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                                                <div style={{ width: 26, height: 26, borderRadius: 8, background: '#FFFFFF', padding: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}>
-                                                    <img src={formatImageUrl(selectedStampCard.brandLogo) || logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                                                </div>
-                                                <span style={{ fontSize: '0.95rem', fontWeight: 800, color: 'inherit' }}>
-                                                    {selectedStampCard.brandName || branch?.name || 'Elite Branch'}
-                                                </span>
-                                            </div>
-
-                                            <div style={{ fontSize: '0.78rem', opacity: 0.9, marginBottom: 12 }}>
-                                                <strong>{selectedStampCard.title}</strong>
-                                            </div>
-
-                                            {/* Stamp Circles Grid */}
-                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 6, maxWidth: 220 }}>
-                                                {Array.from({ length: Number(selectedStampCard.total_stamps || 8) }).map((_, i) => {
-                                                    const rewardItem = selectedStampCard.levelRewards ? selectedStampCard.levelRewards[i] : null
-                                                    let iconMarkup = i + 1
-
-                                                    if (rewardItem) {
-                                                        if (rewardItem.type === 'Free') {
-                                                            iconMarkup = <i className="fas fa-gift" style={{ fontSize: '0.8rem' }} />
-                                                        } else if (rewardItem.type === 'Discount') {
-                                                            iconMarkup = <span style={{ fontSize: '0.65rem', fontWeight: 800 }}>{rewardItem.discountVal || 10}%</span>
-                                                        } else if (rewardItem.type === 'Paid' && rewardItem.icon) {
-                                                            iconMarkup = <i className={`fas ${rewardItem.icon}`} style={{ fontSize: '0.8rem' }} />
-                                                        }
-                                                    }
-
-                                                    return (
-                                                        <div
-                                                            key={i}
-                                                            style={{
-                                                                width: 36,
-                                                                height: 36,
-                                                                borderRadius: `${selectedStampCard.stamp_radius ?? 50}%`,
-                                                                border: `2px solid ${selectedStampCard.stampBorderColor || '#FFFFFF'}`,
-                                                                background: selectedStampCard.stampBgColor || 'rgba(255, 255, 255, 0.3)',
-                                                                color: selectedStampCard.stampTextColor || 'inherit',
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                justifyContent: 'center',
-                                                                fontSize: '0.85rem',
-                                                                fontWeight: 800,
-                                                                flexShrink: 0
-                                                            }}
-                                                        >
-                                                            {iconMarkup}
-                                                        </div>
-                                                    )
-                                                })}
-                                            </div>
-                                        </div>
-
-                                        {/* Right Side: QR CODE */}
-                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                            <img src={qrImg} alt="QR Code" style={{ width: 88, height: 88, objectFit: 'contain', flexShrink: 0 }} />
-                                            <small style={{ fontSize: '0.6rem', fontWeight: 700, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.5px', opacity: 0.9 }}>
-                                                SCAN TO STAMP
-                                            </small>
-                                        </div>
-                                    </div>
-
-                                    {/* BOTTOM RIGHT ALIGNED POWERED BY BADGE WITH FIRSTLOOP LOGO */}
-                                    <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 5, fontSize: '0.65rem', opacity: 0.9, fontWeight: 600, marginTop: 10, lineHeight: 1 }}>
-                                        <span style={{ lineHeight: 1, display: 'inline-flex', alignItems: 'center' }}>powered by</span>
-                                        <img src={flLogo} alt="FirstLoop" style={{ height: 13, width: 'auto', display: 'inline-block', verticalAlign: 'middle', objectFit: 'contain', margin: '0 1px' }} />
-                                        <strong style={{ color: 'inherit', lineHeight: 1, display: 'inline-flex', alignItems: 'center' }}>firstloop.co.in</strong>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Modal Action Bar with Share to WhatsApp & Download Card */}
-                        <div style={{ padding: '16px 20px', background: '#FFFFFF', borderTop: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                            <button
-                                type="button"
-                                className="btn"
-                                onClick={() => {
-                                    const shareUrl = `${window.location.origin}/card-preview/${selectedStampCard.id}`
-                                    const brand = selectedStampCard.brandName || branch?.name || 'Merchant'
-                                    const title = selectedStampCard.title || 'Digital Stamp Card'
-                                    const stamps = Number(selectedStampCard.total_stamps) || 8
-                                    const message = `🎉 *${brand}* - ${title}\n⭐ Collect ${stamps} stamps to claim special rewards!\n\n👉 *View Card:* ${shareUrl}`
-                                    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`, '_blank')
-                                }}
-                                style={{ background: '#25D366', color: '#FFFFFF', fontWeight: 700, borderRadius: 8, padding: '9px 16px', fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', gap: 6, border: 'none' }}
-                            >
-                                <i className="fab fa-whatsapp" style={{ fontSize: '1.1rem' }} />
-                                <span>Share to WhatsApp</span>
-                            </button>
-
-                            <button
-                                type="button"
-                                className="btn firstloop-btn-primary"
-                                onClick={() => handleDownloadCard('stamp-card-preview-canvas', selectedStampCard.title)}
-                                style={{ borderRadius: 8, padding: '9px 16px', fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                            >
-                                <i className="fas fa-download" />
-                                <span>Download Card</span>
-                            </button>
-
-                            <button
-                                type="button"
-                                className="btn firstloop-btn-secondary"
-                                onClick={() => setSelectedStampCard(null)}
-                                style={{ borderRadius: 8, padding: '9px 16px', fontSize: '0.82rem' }}
-                            >
-                                Close
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* PREVIEW MODAL 1: STAMP CARD (REUSABLE COMPONENT) */}
+            <StampCardPreviewModal
+                isOpen={Boolean(selectedStampCard)}
+                card={selectedStampCard}
+                fallbackBrandName={branch?.name || merchant?.brand_name || merchant?.bus_name || 'Elite Branch'}
+                onClose={() => setSelectedStampCard(null)}
+            />
 
             {/* PREVIEW MODAL 2: MEMBERSHIP CARD WITH LARGE MIDDLE QR CODE */}
             {selectedMembership && (

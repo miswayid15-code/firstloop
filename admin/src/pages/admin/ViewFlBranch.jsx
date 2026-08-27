@@ -489,21 +489,28 @@ export default function ViewFlBranch() {
                         stamp_radius: Number(item.stamp_radius ?? 50),
                         preset: 'Custom',
                         levelRewards: stampLevels.length > 0
-                            ? stampLevels.map((lvl, idx) => ({
-                                stamp: Number(lvl.stamp_number) || idx + 1,
-                                reward: lvl.reward_text || (
-                                    lvl.reward_type === '2' ? 'Discount' : (lvl.reward_type === '3' ? 'Paid' : 'Free Item')
-                                ),
-                                type: lvl.reward_type === '2' ? 'Discount' : (lvl.reward_type === '3' ? 'Paid' : 'Free'),
-                                discountVal: lvl.reward_type === '2' ? parseInt(lvl.reward_text) || 10 : 0,
-                                icon: 'fa-gift',
-                                amt: Number(lvl.amt) || 0
-                            }))
+                            ? stampLevels.map((lvl, idx) => {
+                                const rType = lvl.reward_type === '2' ? 'Discount' : (lvl.reward_type === '3' ? 'Paid' : 'Free');
+                                const disc = Number(lvl.discount ?? (rType === 'Discount' ? (parseInt(lvl.reward_text) || 0) : 0));
+                                return {
+                                    stamp: Number(lvl.stamp_number) || idx + 1,
+                                    reward: lvl.reward_text || (
+                                        rType === 'Discount' ? `${disc}% Discount` : (rType === 'Paid' ? 'Paid Perk' : 'Free Item')
+                                    ),
+                                    type: rType,
+                                    discountVal: disc,
+                                    discount: disc,
+                                    icon: rType === 'Discount' ? 'fa-percent' : (rType === 'Paid' ? (lvl.icon || 'fa-tag') : 'fa-gift'),
+                                    amt: Number(lvl.amt) || 0,
+                                    category_id: lvl.category_id
+                                };
+                            })
                             : Array.from({ length: totalStamps }).map((_, i) => ({
                                 stamp: i + 1,
                                 reward: `Stamp #${i + 1}`,
                                 type: 'Free',
                                 discountVal: 0,
+                                discount: 0,
                                 icon: 'fa-gift',
                                 amt: 0
                             }))
@@ -733,15 +740,14 @@ export default function ViewFlBranch() {
                         </p>
                     </div>
 
-                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                         <button
                             type="button"
-                            className="btn firstloop-btn-secondary"
-                            onClick={handleOpenCreateMembership}
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 18px', borderRadius: '10px' }}
+                            className="btn btn-secondary"
+                            onClick={() => navigate(branch?.merchant_id ? `/view-merchant/${branch.merchant_id}` : -1)}
                         >
-                            <i className="fas fa-plus-circle" />
-                            <span>+ Add Membership Card</span>
+                            <i className="fas fa-arrow-left" />
+                            {' '}Back to Merchant
                         </button>
                     </div>
                 </div>
@@ -1051,9 +1057,9 @@ export default function ViewFlBranch() {
                                                             if (rewardItem.type === 'Free') {
                                                                 iconMarkup = <i className="fas fa-gift" style={{ fontSize: '0.8rem' }} />
                                                             } else if (rewardItem.type === 'Discount') {
-                                                                iconMarkup = <span style={{ fontSize: '0.65rem', fontWeight: 800 }}>{rewardItem.discountVal || 10}%</span>
-                                                            } else if (rewardItem.type === 'Paid' && rewardItem.icon) {
-                                                                iconMarkup = <i className={`fas ${rewardItem.icon}`} style={{ fontSize: '0.8rem' }} />
+                                                                iconMarkup = <span style={{ fontSize: '0.65rem', fontWeight: 800 }}>{rewardItem.discount ?? rewardItem.discountVal ?? 0}%</span>
+                                                            } else if (rewardItem.type === 'Paid') {
+                                                                iconMarkup = <i className={`fas ${rewardItem.icon || 'fa-tag'}`} style={{ fontSize: '0.8rem' }} />
                                                             }
                                                         }
 
@@ -1339,9 +1345,9 @@ export default function ViewFlBranch() {
                                                         if (rewardItem.type === 'Free') {
                                                             iconMarkup = <i className="fas fa-gift" style={{ fontSize: '0.8rem' }} />
                                                         } else if (rewardItem.type === 'Discount') {
-                                                            iconMarkup = <span style={{ fontSize: '0.65rem', fontWeight: 800 }}>{rewardItem.discountVal || 10}%</span>
-                                                        } else if (rewardItem.type === 'Paid' && rewardItem.icon) {
-                                                            iconMarkup = <i className={`fas ${rewardItem.icon}`} style={{ fontSize: '0.8rem' }} />
+                                                            iconMarkup = <span style={{ fontSize: '0.65rem', fontWeight: 800 }}>{rewardItem.discount ?? rewardItem.discountVal ?? 0}%</span>
+                                                        } else if (rewardItem.type === 'Paid') {
+                                                            iconMarkup = <i className={`fas ${rewardItem.icon || 'fa-tag'}`} style={{ fontSize: '0.8rem' }} />
                                                         }
                                                     }
 

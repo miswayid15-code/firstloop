@@ -4,7 +4,7 @@ import flLogo from '../assets/img/firstloop-favicon.png'
 import qrImg from '../assets/img/qr-img.png'
 import API from '../api.js'
 import { toast } from 'react-hot-toast'
-
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 // Default Card Designs Fallback List
 const DEFAULT_CARD_DESIGNS = [
     {
@@ -53,17 +53,6 @@ const RealQRCode = ({ size = 80 }) => (
     />
 )
 
-
-const PAID_ICONS = [
-    { label: 'Coffee / Drink', icon: 'fa-coffee' },
-    { label: 'Gourmet Meal', icon: 'fa-utensils' },
-    { label: 'Hair & Styling', icon: 'fa-cut' },
-    { label: 'Spa & Care', icon: 'fa-spa' },
-    { label: 'Ticket / Voucher', icon: 'fa-ticket-alt' },
-    { label: 'VIP Gem', icon: 'fa-gem' },
-    { label: 'Crown Pass', icon: 'fa-crown' }
-]
-
 // Helper: Get clean relative image path
 const getRelativeImagePath = (value) => {
     if (!value) return ''
@@ -111,22 +100,24 @@ const formatImageUrl = (img) => {
     return cleanBase ? `${cleanBase}/${cleanImg}` : cleanImg
 }
 
+const EMPTY_ARRAY = []
+
 export default function StampCardBuilderModal({
     isOpen,
     cardData = null,
-    cardDesigns = [],
+    cardDesigns = EMPTY_ARRAY,
     merchantId = null,
     merchantData = null,
     brandName = '',
     brandImage = null,
     brandLogo = null,
-    branches = [],
+    branches = EMPTY_ARRAY,
     onSave,
     onClose
 }) {
-    const fallbackBrandName = brandName || merchantData?.brand_name || merchantData?.bus_name || 'Elite Branch'
-    const fallbackBrandLogo = brandImage || brandLogo || merchantData?.brand_image || merchantData?.profile_image || logo
-
+    const fallbackBrandName = brandName || merchantData?.bus_name || 'Elite Branch'
+    const fallbackBrandLogo = brandImage || brandLogo || merchantData?.brand_image || logo
+    // console.log("fallbackBrandLogo", fallbackBrandLogo)
     const [fetchedDesigns, setFetchedDesigns] = useState([])
     const [stampForm, setStampForm] = useState({
         id: null,
@@ -147,24 +138,25 @@ export default function StampCardBuilderModal({
         stampRadius: 50,
         preset: 'Custom',
         branch_ids: [],
+        category_id: merchantData?.cat_id || null,
+        Category: merchantData?.Category || null,
         levelRewards: Array.from({ length: 8 }).map((_, i) => ({
             stamp: i + 1,
             reward: '',
             type: 'Free',
             discountVal: 0,
             icon: 'fa-gift',
-            amt: 0
+            amt: 0,
+            discount:0,
         }))
     })
 
     // Self-contained API call to fetch card designs if not provided via props
     useEffect(() => {
-        if (isOpen) {
-            if (!cardDesigns || cardDesigns.length === 0) {
-                fetchCardDesignsFromApi()
-            }
+        if (isOpen && (!cardDesigns || cardDesigns.length === 0)) {
+            fetchCardDesignsFromApi()
         }
-    }, [isOpen, cardDesigns])
+    }, [isOpen, cardDesigns?.length])
 
     const fetchCardDesignsFromApi = async () => {
         try {
@@ -199,6 +191,16 @@ export default function StampCardBuilderModal({
 
     const stamp_card = async () => {
         try {
+            // Get local merchant ID if stored
+            let localMerchantId = null
+            try {
+                const rawMerchant = localStorage.getItem("merchant_data")
+                if (rawMerchant && rawMerchant !== "null" && rawMerchant !== "undefined") {
+                    const parsed = JSON.parse(rawMerchant)
+                    localMerchantId = parsed?.id || parsed?.merchant_id || parsed?.mer_id
+                }
+            } catch (e) {}
+
             // Get merchant ID
             const targetMerchantId =
                 merchantId ||
@@ -206,7 +208,8 @@ export default function StampCardBuilderModal({
                 stampForm.merchant_id ||
                 cardData?.merchant_id ||
                 cardData?.mer_id ||
-                25;
+                merchantData?.id ||
+                localMerchantId;
 
             // Build FormData payload
             const formData = new FormData();
@@ -248,13 +251,36 @@ export default function StampCardBuilderModal({
             formData.append('stamp_border_color', stampForm.stampBorderColor || '#FFFFFF');
             formData.append('stamp_text_color', stampForm.stampTextColor || '#FFFFFF');
 
+            // Category ID resolution
+            const catId =
+                stampForm.category_id ||
+                merchantData?.cat_id ||
+                merchantData?.Category?.id ||
+                cardData?.category_id ||
+                cardData?.cat_id ||
+                null;
+
+            if (catId) {
+                formData.append('category_id', Number(catId));
+            }
+
             // Stamp reward levels array JSON string
-            const levelsPayload = (stampForm.levelRewards || []).map((lvl, idx) => ({
-                stamp_number: idx + 1,
-                reward_type: lvl.type === 'Discount' ? '2' : (lvl.type === 'Paid' ? '3' : '1'),
-                amt: Number(lvl.amt || (lvl.type === 'Discount' ? lvl.discountVal : 0) || 0),
-                reward_text: lvl.reward || (lvl.type === 'Discount' ? `${lvl.discountVal || 10}% Off` : `Stamp #${idx + 1}`)
-            }));
+            const levelsPayload = (stampForm.levelRewards || []).map((lvl, idx) => {
+                const isPaid = lvl.type === 'Paid';
+                const isDiscount = lvl.type === 'Discount';
+                const disc = Number(lvl.discount ?? lvl.discountVal ?? (isDiscount ? 10 : 0));
+                const levelItem = {
+                    stamp_number: idx + 1,
+                    reward_type: isDiscount ? '2' : (isPaid ? '3' : '1'),
+                    amt: Number(lvl.amt || 0),
+                    reward_text: lvl.reward || (isDiscount ? `${disc}% Off` : `Stamp #${idx + 1}`),
+                    discount: isDiscount ? disc : 0
+                };
+                if (isPaid && catId) {
+                    levelItem.category_id = Number(catId);
+                }
+                return levelItem;
+            });
             formData.append('stamp_levels', JSON.stringify(levelsPayload));
 
             // Optional card design id
@@ -295,7 +321,7 @@ export default function StampCardBuilderModal({
                 err?.response?.data?.message ||
                 err?.response?.data?.msg ||
                 err?.response?.data?.error ||
-                'Error while creating stamp card'
+                'Server error while saving stamp card'
             );
         }
         finally {
@@ -303,54 +329,80 @@ export default function StampCardBuilderModal({
         }
     };
 
-    const availableDesigns = cardDesigns && cardDesigns.length > 0 ? cardDesigns : fetchedDesigns
+    const availableDesigns = (cardDesigns && cardDesigns.length > 0) ? cardDesigns : fetchedDesigns
 
     // Sync form state when modal opens or cardData changes
     useEffect(() => {
         if (!isOpen) return
 
         if (cardData) {
-            const count = cardData.total_stamps || 8
+            const count = Number(cardData.total_stamps || cardData.number_of_stamps || 8)
+            const resolvedBranchIds = Array.isArray(cardData.branch_ids)
+                ? cardData.branch_ids.map(Number)
+                : (cardData.branch_id ? [Number(cardData.branch_id)] : (branches || []).map(b => Number(b.id || b)).filter(Boolean))
+
+            const rawLevels = Array.isArray(cardData.StampLevels)
+                ? cardData.StampLevels
+                : (Array.isArray(cardData.levelRewards)
+                    ? cardData.levelRewards
+                    : (Array.isArray(cardData.stamp_levels) ? cardData.stamp_levels : []))
+
             setStampForm({
-                id: cardData.id,
+                id: cardData.id || null,
                 title: cardData.title || '',
                 brandName: cardData.brandName || cardData.brand_name || fallbackBrandName,
                 brandLogo: cardData.brandLogo || cardData.brand_image || fallbackBrandLogo,
                 brandLogoFile: null,
                 total_stamps: count,
                 reward: cardData.reward || '',
-                bgColor: cardData.bgColor || '#0E88B8',
-                bgImage: cardData.bgImage || null,
-                cardDesignId: cardData.cardDesignId || null,
-                textColor: cardData.textColor || '#FFFFFF',
-                borderColor: cardData.borderColor || '#00A6D6',
-                stampBgColor: cardData.stampBgColor || 'rgba(255, 255, 255, 0.3)',
-                stampBorderColor: cardData.stampBorderColor || '#FFFFFF',
-                stampTextColor: cardData.stampTextColor || '#FFFFFF',
+                bgColor: cardData.bgColor || cardData.background_color || '#0E88B8',
+                bgImage: cardData.bgImage || cardData.background_image || null,
+                cardDesignId: cardData.cardDesignId || cardData.card_design_id || null,
+                textColor: cardData.textColor || cardData.text_color || '#FFFFFF',
+                borderColor: cardData.borderColor || cardData.border_color || '#00A6D6',
+                stampBgColor: cardData.stampBgColor || cardData.stamp_background || 'rgba(255, 255, 255, 0.3)',
+                stampBorderColor: cardData.stampBorderColor || cardData.stamp_border_color || '#FFFFFF',
+                stampTextColor: cardData.stampTextColor || cardData.stamp_text_color || '#FFFFFF',
                 stampRadius: Number(cardData.stamp_radius ?? cardData.stampRadius ?? 50),
                 preset: cardData.preset || 'Custom',
-                branch_ids: Array.isArray(cardData.branch_ids)
-                    ? cardData.branch_ids.map(Number)
-                    : (cardData.branch_id ? [Number(cardData.branch_id)] : (branches || []).map(b => Number(b.id))),
-                levelRewards: cardData.levelRewards && cardData.levelRewards.length === count
-                    ? cardData.levelRewards.map((r, i) => ({
-                        stamp: i + 1,
-                        reward: r.reward || '',
-                        type: r.type || 'Free',
-                        discountVal: r.discountVal || 0,
-                        icon: r.icon || 'fa-gift',
-                        amt: r.amt || 0
-                    }))
-                    : Array.from({ length: count }).map((_, i) => ({
-                        stamp: i + 1,
-                        reward: '',
-                        type: 'Free',
-                        discountVal: 0,
-                        icon: 'fa-gift',
-                        amt: 0
-                    }))
+                branch_ids: resolvedBranchIds,
+                category_id: cardData.category_id || cardData.cat_id || merchantData?.cat_id || null,
+                Category: cardData.Category || merchantData?.Category || null,
+                levelRewards: Array.from({ length: count }).map((_, i) => {
+                    const r = rawLevels[i];
+                    if (!r) {
+                        return {
+                            stamp: i + 1,
+                            reward: '',
+                            type: 'Free',
+                            discountVal: 0,
+                            discount: 0,
+                            icon: 'fa-gift',
+                            amt: 0,
+                            category_id: null
+                        };
+                    }
+                    const rawType = String(r.reward_type ?? r.type ?? '').trim().toLowerCase();
+                    const isDiscount = rawType === '2' || rawType === 'discount';
+                    const isPaid = rawType === '3' || rawType === 'paid';
+                    const rType = isDiscount ? 'Discount' : (isPaid ? 'Paid' : 'Free');
+                    const disc = parseFloat(r.discount ?? r.discountVal ?? (isDiscount ? (parseFloat(r.reward_text) || 0) : 0)) || 0;
+                    return {
+                        stamp: Number(r.stamp_number || r.stamp) || i + 1,
+                        reward: r.reward || r.reward_text || (isDiscount ? `${disc}% Discount` : ''),
+                        type: rType,
+                        discountVal: disc,
+                        discount: disc,
+                        icon: isDiscount ? 'fa-percent' : (isPaid ? (r.icon || 'fa-tag') : 'fa-gift'),
+                        amt: Number(r.amt || 0),
+                        category_id: r.category_id || null
+                    };
+                })
             })
         } else {
+            const initialDesign = (cardDesigns && cardDesigns.length > 0) ? cardDesigns[0] : (fetchedDesigns.length > 0 ? fetchedDesigns[0] : null)
+            const initialBranchIds = (branches || []).map(b => Number(b.id || b)).filter(Boolean)
+
             setStampForm({
                 id: null,
                 title: '',
@@ -360,26 +412,46 @@ export default function StampCardBuilderModal({
                 total_stamps: 8,
                 reward: 'Free Beverage or Meal Pass',
                 bgColor: '#0E88B8',
-                bgImage: availableDesigns.length > 0 ? availableDesigns[0].image : null,
-                cardDesignId: availableDesigns.length > 0 ? availableDesigns[0].id : null,
+                bgImage: initialDesign ? initialDesign.image : null,
+                cardDesignId: initialDesign ? initialDesign.id : null,
                 textColor: '#FFFFFF',
                 borderColor: '#00A6D6',
                 stampBgColor: 'rgba(255, 255, 255, 0.3)',
                 stampBorderColor: '#FFFFFF',
                 stampTextColor: '#FFFFFF',
-                preset: availableDesigns.length > 0 ? availableDesigns[0].name : 'Custom',
-                branch_ids: (branches || []).map(b => Number(b.id)),
+                stampRadius: 50,
+                preset: initialDesign ? initialDesign.name : 'Custom',
+                branch_ids: initialBranchIds,
+                category_id: merchantData?.cat_id || null,
+                Category: merchantData?.Category || null,
                 levelRewards: Array.from({ length: 8 }).map((_, i) => ({
                     stamp: i + 1,
                     reward: '',
                     type: 'Free',
                     discountVal: 0,
+                    discount: 0,
                     icon: 'fa-gift',
                     amt: 0
                 }))
             })
         }
-    }, [cardData, availableDesigns, isOpen, branches, fallbackBrandName, fallbackBrandLogo])
+    }, [isOpen, cardData])
+
+    // Update background image if card designs load asynchronously for a new card
+    useEffect(() => {
+        if (!isOpen || cardData) return
+        if (availableDesigns.length > 0) {
+            setStampForm(prev => {
+                if (prev.cardDesignId || prev.bgImage) return prev
+                return {
+                    ...prev,
+                    bgImage: availableDesigns[0].image,
+                    cardDesignId: availableDesigns[0].id,
+                    preset: availableDesigns[0].name
+                }
+            })
+        }
+    }, [isOpen, cardData, availableDesigns.length])
 
     if (!isOpen) return null
 
@@ -575,7 +647,7 @@ export default function StampCardBuilderModal({
                                                     setStampForm(prev => ({
                                                         ...prev,
                                                         total_stamps: count,
-                                                        levelRewards: Array.from({ length: count }).map((_, i) => prev.levelRewards[i] || { stamp: i + 1, reward: '', type: 'Free', discountVal: 0, icon: 'fa-gift' })
+                                                        levelRewards: Array.from({ length: count }).map((_, i) => prev.levelRewards[i] || { stamp: i + 1, reward: '', type: 'Free', discountVal: 0, icon: 'fa-gift', discount: 0 })
                                                     }))
                                                 }}
                                                 style={{ height: 36, fontSize: '0.85rem' }}
@@ -848,7 +920,7 @@ export default function StampCardBuilderModal({
 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                                     {Array.from({ length: Number(stampForm.total_stamps) }).map((_, i) => {
-                                        const reward = stampForm.levelRewards[i] || { stamp: i + 1, reward: '', type: 'Free', discountVal: 0, icon: 'fa-gift', amt: 0 }
+                                        const reward = stampForm.levelRewards[i] || { stamp: i + 1, reward: '', type: 'Free', discountVal: 0, icon: 'fa-gift', amt: 0,discount: 0 }
                                         return (
                                             <div key={i} style={{ padding: 10, background: '#F8FAFC', borderRadius: 10, border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', gap: 8 }}>
                                                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -863,11 +935,16 @@ export default function StampCardBuilderModal({
                                                             const typeVal = e.target.value
                                                             setStampForm(prev => {
                                                                 const updated = [...prev.levelRewards]
+                                                                const prevDisc = parseFloat(updated[i]?.discount ?? updated[i]?.discountVal) || 0
+                                                                const newDisc = prevDisc > 0 ? prevDisc : 10
                                                                 updated[i] = {
                                                                     ...updated[i],
                                                                     stamp: i + 1,
                                                                     type: typeVal,
-                                                                    icon: typeVal === 'Free' ? 'fa-gift' : typeVal === 'Discount' ? 'fa-percent' : 'fa-coffee'
+                                                                    icon: typeVal === 'Free' ? 'fa-gift' : typeVal === 'Discount' ? 'fa-percent' : 'fa-tag',
+                                                                    discountVal: typeVal === 'Discount' ? newDisc : 0,
+                                                                    discount: typeVal === 'Discount' ? newDisc : 0,
+                                                                    reward: typeVal === 'Discount' ? `${newDisc}% Discount` : (typeVal === 'Paid' ? (updated[i]?.reward || 'Paid Perk') : (updated[i]?.reward || `Stamp #${i + 1}`))
                                                                 }
                                                                 return { ...prev, levelRewards: updated }
                                                             })
@@ -887,12 +964,17 @@ export default function StampCardBuilderModal({
                                                                 max="100"
                                                                 className="form-control"
                                                                 placeholder="0-100"
-                                                                value={reward.discountVal || ''}
+                                                                value={reward.discount !== undefined && reward.discount !== null ? reward.discount : (reward.discountVal ?? '')}
                                                                 onChange={(e) => {
-                                                                    const val = Math.min(100, Math.max(0, Number(e.target.value) || 0))
+                                                                    const val = e.target.value === '' ? '' : Math.min(100, Math.max(0, Number(e.target.value) || 0))
                                                                     setStampForm(prev => {
                                                                         const updated = [...prev.levelRewards]
-                                                                        updated[i] = { ...updated[i], discountVal: val, reward: `${val}% Discount` }
+                                                                        updated[i] = {
+                                                                            ...updated[i],
+                                                                            discountVal: val,
+                                                                            discount: val,
+                                                                            reward: val !== '' ? `${val}% Discount` : ''
+                                                                        }
                                                                         return { ...prev, levelRewards: updated }
                                                                     })
                                                                 }}
@@ -901,25 +983,10 @@ export default function StampCardBuilderModal({
                                                             <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>%</span>
                                                         </div>
                                                     ) : reward.type === 'Paid' ? (
-                                                        <select
-                                                            className="form-control"
-                                                            value={reward.icon || 'fa-coffee'}
-                                                            onChange={(e) => {
-                                                                const iconVal = e.target.value
-                                                                setStampForm(prev => {
-                                                                    const updated = [...prev.levelRewards]
-                                                                    updated[i] = { ...updated[i], icon: iconVal }
-                                                                    return { ...prev, levelRewards: updated }
-                                                                })
-                                                            }}
-                                                            style={{ width: 140, height: 36, fontSize: '0.8rem' }}
-                                                        >
-                                                            {PAID_ICONS.map(pi => (
-                                                                <option key={pi.icon} value={pi.icon}>
-                                                                    {pi.label}
-                                                                </option>
-                                                            ))}
-                                                        </select>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: '#F1F5F9', borderRadius: 8, fontSize: '0.8rem', color: 'var(--text-primary)', border: '1px solid #E2E8F0' }}>
+                                                            <i className="fas fa-tag" style={{ color: 'var(--firstloop-primary)' }} />
+                                                            <span>{stampForm.Category?.name || merchantData?.Category?.name || merchantData?.category?.name || 'Category Perk'}</span>
+                                                        </div>
                                                     ) : (
                                                         <div style={{ fontSize: '0.78rem', color: '#059669', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
                                                             <i className="fas fa-gift" /> Free Reward
@@ -1019,9 +1086,9 @@ export default function StampCardBuilderModal({
                                                     if (r.type === 'Free') {
                                                         iconMarkup = <i className="fas fa-gift" style={{ fontSize: '0.8rem' }} />
                                                     } else if (r.type === 'Discount') {
-                                                        iconMarkup = <span style={{ fontSize: '0.65rem', fontWeight: 800 }}>{r.discountVal || 10}%</span>
-                                                    } else if (r.type === 'Paid' && r.icon) {
-                                                        iconMarkup = <i className={`fas ${r.icon}`} style={{ fontSize: '0.8rem' }} />
+                                                        iconMarkup = <span style={{ fontSize: '0.65rem', fontWeight: 800 }}>{r.discount ?? r.discountVal ?? 0}%</span>
+                                                    } else if (r.type === 'Paid') {
+                                                        iconMarkup = <i className={`fas ${r.icon || 'fa-tag'}`} style={{ fontSize: '0.8rem' }} />
                                                     }
                                                 }
 

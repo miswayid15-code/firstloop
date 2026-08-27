@@ -22,8 +22,14 @@ module.exports = (sequelize, DataTypes) => {
             },
 
             amt: {
-                type: DataTypes.DECIMAL(10,2),
+                type: DataTypes.DECIMAL(10, 2),
                 allowNull: false,
+            },
+            discount: {
+                type: DataTypes.DECIMAL(5, 2),
+                allowNull: false,
+                defaultValue: 0,
+                comment: 'Discount percentage'
             },
             // 1 = Free
             // 2 = Discount

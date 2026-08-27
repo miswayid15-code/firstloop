@@ -74,10 +74,12 @@ const formatImageUrl = (img) => {
     return `${cleanBase}/${cleanImg}`
 }
 
+const EMPTY_ARRAY = []
+
 export default function MembershipCardBuilderModal({
     isOpen,
     cardData = null,
-    cardDesigns = [],
+    cardDesigns = EMPTY_ARRAY,
     onSave,
     onClose
 }) {
@@ -99,12 +101,10 @@ export default function MembershipCardBuilderModal({
 
     // Self-contained API call to fetch card designs if not provided via props
     useEffect(() => {
-        if (isOpen) {
-            if (!cardDesigns || cardDesigns.length === 0) {
-                fetchCardDesignsFromApi()
-            }
+        if (isOpen && (!cardDesigns || cardDesigns.length === 0)) {
+            fetchCardDesignsFromApi()
         }
-    }, [isOpen, cardDesigns])
+    }, [isOpen, cardDesigns?.length])
 
     const fetchCardDesignsFromApi = async () => {
         try {
@@ -172,7 +172,7 @@ export default function MembershipCardBuilderModal({
         }
     }
 
-    const availableDesigns = cardDesigns && cardDesigns.length > 0 ? cardDesigns : fetchedDesigns
+    const availableDesigns = (cardDesigns && cardDesigns.length > 0) ? cardDesigns : fetchedDesigns
 
     // Sync form state when modal opens or cardData changes
     useEffect(() => {
@@ -201,6 +201,8 @@ export default function MembershipCardBuilderModal({
                 isDefault: cardData.isDefault || false
             })
         } else {
+            const initialDesign = (cardDesigns && cardDesigns.length > 0) ? cardDesigns[0] : (fetchedDesigns.length > 0 ? fetchedDesigns[0] : null)
+
             setMembershipForm({
                 id: null,
                 name: '',
@@ -208,15 +210,31 @@ export default function MembershipCardBuilderModal({
                 brandLogo: flLogo,
                 validityMonths: 12,
                 bgColor: '#D97706',
-                bgImage: availableDesigns.length > 0 ? availableDesigns[0].image : null,
-                cardDesignId: availableDesigns.length > 0 ? availableDesigns[0].id : null,
+                bgImage: initialDesign ? initialDesign.image : null,
+                cardDesignId: initialDesign ? initialDesign.id : null,
                 textColor: '#FFFFFF',
                 borderColor: '#F59E0B',
-                preset: availableDesigns.length > 0 ? availableDesigns[0].name : 'Custom',
+                preset: initialDesign ? initialDesign.name : 'Custom',
                 isDefault: false
             })
         }
-    }, [cardData, availableDesigns, isOpen])
+    }, [isOpen, cardData])
+
+    // Update background image if card designs load asynchronously for a new card
+    useEffect(() => {
+        if (!isOpen || cardData) return
+        if (availableDesigns.length > 0) {
+            setMembershipForm(prev => {
+                if (prev.cardDesignId || prev.bgImage) return prev
+                return {
+                    ...prev,
+                    bgImage: availableDesigns[0].image,
+                    cardDesignId: availableDesigns[0].id,
+                    preset: availableDesigns[0].name
+                }
+            })
+        }
+    }, [isOpen, cardData, availableDesigns.length])
 
     if (!isOpen) return null
 
@@ -519,16 +537,7 @@ export default function MembershipCardBuilderModal({
                                     </div>
                                 </div>
 
-                                <div style={{ paddingTop: 10 }}>
-                                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: '0.84rem', fontWeight: 600, cursor: 'pointer' }}>
-                                        <input
-                                            type="checkbox"
-                                            checked={membershipForm.isDefault}
-                                            onChange={(e) => setMembershipForm(prev => ({ ...prev, isDefault: e.target.checked }))}
-                                        />
-                                        <span>Set as default membership card</span>
-                                    </label>
-                                </div>
+
                             </div>
                         </div>
                     </div>
