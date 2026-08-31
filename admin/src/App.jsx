@@ -41,6 +41,7 @@ import Support from './pages/admin/Support';
 import ProtectedRoute from './pages/admin/ProtectedRoute';
 import AdminCharts from './pages/admin/AdminCharts';
 import FirstLoopComingSoon from './pages/admin/FirstLoopComingSoon';
+import AddCardCustomer from './pages/admin/AddCardCustomer';
 import NotFound from './pages/NotFound';
 
 
@@ -256,6 +257,8 @@ function AdminLayout() {
           <Route path="view-branch/:id" element={<ViewBranch />} />
           <Route path="view-fl-branch" element={<ViewFlBranch />} />
           <Route path="view-fl-branch/:id" element={<ViewFlBranch />} />
+          <Route path="add-card-customer" element={<AddCardCustomer />} />
+          <Route path="add-card-customer/:branchId" element={<AddCardCustomer />} />
           <Route path="fp-customer_details" element={<FpCustomerDetails />} />
           <Route path="fp-customer_details/:id" element={<FpCustomerDetails />} />
           <Route path="branch-report/:id" element={<BranchReport />} />

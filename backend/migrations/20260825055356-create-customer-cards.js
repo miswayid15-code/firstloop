@@ -25,13 +25,22 @@ module.exports = {
         type: Sequelize.BIGINT,
         allowNull: false,
         references: {
-          model: 'Customers',
+          model: 'customers',
           key: 'id',
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE',
       },
-
+      branch_id: {
+        type: Sequelize.BIGINT,
+        allowNull: false,
+        references: {
+          model: 'branches',
+          key: 'id',
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+      },
       card_type: {
         type: Sequelize.SMALLINT,
         allowNull: false,

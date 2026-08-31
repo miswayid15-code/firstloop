@@ -8,6 +8,9 @@ export default function PhoneNumberField({
     required = false
 }) {
 
+    const safeCountryCode = countryCode != null ? String(countryCode).trim() : ''
+    const cleanDialCode = safeCountryCode ? safeCountryCode.replace('+', '') : ''
+
     return (
 
         <div className="form-group">
@@ -20,11 +23,11 @@ export default function PhoneNumberField({
             </label>
 
             <PhoneInput
-                country={countryCode ? countryCode.replace('+', '') : 'in'}
-                value={countryCode && value ? `${countryCode}${value}` : value}
+                country={cleanDialCode || 'in'}
+                value={safeCountryCode && value ? `${safeCountryCode}${value}` : (value || '')}
                 onChange={(phoneValue, country) => {
                     const rawPhone = String(phoneValue || '')
-                    const dialCode = String(country?.dialCode || countryCode?.replace('+', '') || '')
+                    const dialCode = String(country?.dialCode || cleanDialCode || '')
                     const cleanPhone = dialCode && rawPhone.startsWith(`+${dialCode}`)
                         ? rawPhone.slice(dialCode.length + 1)
                         : rawPhone.replace(/^\+/, '').replace(new RegExp(`^${dialCode}`), '')

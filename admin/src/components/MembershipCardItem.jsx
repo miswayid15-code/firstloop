@@ -16,7 +16,7 @@ export default function MembershipCardItem({
     const brandLogo = card.brandLogo ? formatImageUrl(card.brandLogo) : flLogo
     const cardTitle = card.name || card.title || 'Membership Card'
     const cardholder = card.cardholderName || card.cardholder_name || 'Member Pass'
-    const validityText = formatValidity(card.validityMonths || card.month || card.totalMonth)
+    const validityText = formatValidity(card.month)
 
     return (
         <div

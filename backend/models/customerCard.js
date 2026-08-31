@@ -20,6 +20,10 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.BIGINT,
                 allowNull: false,
             },
+            branch_id: {
+                type: DataTypes.BIGINT,
+                allowNull: false,
+            },
 
             // 1 = Stamp Card
             // 2 = Membership Card
@@ -77,10 +81,18 @@ module.exports = (sequelize, DataTypes) => {
             foreignKey: 'merchant_card_id',
             as: 'Stampcard',
         });
+        CustomerCard.belongsTo(models.MembershipCards, {
+            foreignKey: 'merchant_card_id',
+            as: 'MembershipCards',
+        });
 
         CustomerCard.belongsTo(models.Customer, {
             foreignKey: 'customer_id',
             as: 'Customer',
+        });
+        CustomerCard.belongsTo(models.Branch, {
+            foreignKey: 'branch_id',
+            as: 'Branch',
         });
     };
 

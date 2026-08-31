@@ -401,6 +401,7 @@ export default function ViewFlBranch() {
 
     const [membershipBuilderOpen, setMembershipBuilderOpen] = useState(false)
     const [selectedEditMembershipCard, setSelectedEditMembershipCard] = useState(null)
+    const [addCardCustomerOpen, setAddCardCustomerOpen] = useState(false)
 
     // Fetch Branch Details using firstloop/branch_details/:id
     const fetchBranchDetails = async () => {
@@ -1163,6 +1164,25 @@ export default function ViewFlBranch() {
             {/* ASSOCIATED CUSTOMERS TABLE SECTION */}
             <div className="card" style={{ padding: 15 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, marginBottom: 20 }}>
+                    <div style={{ flex: '0 0 auto' }}>
+                        <button
+                            type="button"
+                            className="btn btn-primary"
+                            onClick={() => navigate(`/add-card-customer/${branch?.id || id}`)}
+                            style={{
+                                fontWeight: 600,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 8,
+                                borderRadius: 10,
+                                padding: '9px 18px',
+                                boxShadow: '0 4px 12px rgba(14, 136, 184, 0.25)'
+                            }}
+                        >
+                            <i className="fas fa-user-plus"></i>
+                            <span>Add Card to Customer</span>
+                        </button>
+                    </div>
                     <div>
                         <h3 style={{ fontSize: '1.15rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-primary)' }}>
                             <i className="fas fa-users" style={{ color: '#059669' }} />

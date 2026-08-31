@@ -91,6 +91,7 @@ app.use('/api/chats', require('./routes/api/chatRoute'));
 
 app.use('/firstloop/merchant/', require('./routes/firstloop/merchantRoutes'));
 app.use('/firstloop/reception/', require('./routes/firstloop/ReceptionistRoutes'));
+app.use('/firstloop/customer/', require('./routes/firstloop/CustomerRoutes'));
 
 
 module.exports = app;

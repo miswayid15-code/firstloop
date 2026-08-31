@@ -1197,10 +1197,6 @@ exports.fetch_stamp_id = async (req, res) => {
 
 
 
-        // ---------------------------------------
-        // FORMAT DATA
-        // ---------------------------------------
-
         const data = stampcards.map(card => {
 
             const cardData = card.toJSON();

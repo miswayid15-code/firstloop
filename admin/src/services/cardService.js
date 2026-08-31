@@ -100,7 +100,7 @@ export const fetchStampCardsApi = async ({ merchantId, branchId, fallbackBrandNa
                 brandName: item.brand_name || fallbackBrandName,
                 brandLogo: item.brand_image ? getRelativeImagePath(item.brand_image) : null,
                 total_stamps: Number(item.number_of_stamps) || 8,
-                reward: item.reward || 'Special Gift',
+                // reward: item.reward || 's',
                 active_members: item.active_members || 0,
                 expiry: item.expiry || '2026-12-31',
                 status: 'Active',
