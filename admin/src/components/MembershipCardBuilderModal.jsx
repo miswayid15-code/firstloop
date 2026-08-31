@@ -1,42 +1,9 @@
 import { useState, useEffect } from 'react'
 import flLogo from '../assets/img/firstloop-favicon.png'
 import qrImg from '../assets/img/qr-img.png'
-import axios from 'axios'
 import API from '../api.js'
+import { toast } from 'react-hot-toast'
 
-// Default Card Designs Fallback List
-const DEFAULT_CARD_DESIGNS = [
-    {
-        id: 'cd-def-1',
-        name: 'Aurora Cyan',
-        image: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&q=80&w=400',
-        status: 1
-    },
-    {
-        id: 'cd-def-2',
-        name: 'Crimson Wave',
-        image: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&q=80&w=400',
-        status: 1
-    },
-    {
-        id: 'cd-def-3',
-        name: 'Midnight Gold',
-        image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=400',
-        status: 1
-    },
-    {
-        id: 'cd-def-4',
-        name: 'Emerald Luxe',
-        image: 'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?auto=format&fit=crop&q=80&w=400',
-        status: 1
-    },
-    {
-        id: 'cd-def-5',
-        name: 'Royal Purple',
-        image: 'https://images.unsplash.com/photo-1550684847-75bdda21cc95?auto=format&fit=crop&q=80&w=400',
-        status: 1
-    }
-]
 
 // --- QR Code Component ---
 const RealQRCode = ({ size = 80 }) => (
@@ -51,8 +18,34 @@ const RealQRCode = ({ size = 80 }) => (
         }}
     />
 )
+const getRelativeImagePath = (value) => {
+    if (!value) return ''
+    let str = String(value).trim()
 
-// Helper: Format validity months for pass display (e.g. 12 -> 12 Months)
+    if (str.startsWith('data:') || str.startsWith('blob:')) {
+        return str
+    }
+
+    const uploadsMatch = str.match(/(uploads\/.*)/i)
+    if (uploadsMatch) {
+        return uploadsMatch[1]
+    }
+
+    while (str.includes('http://') || str.includes('https://')) {
+        const lastHttp = str.lastIndexOf('http://')
+        const lastHttps = str.lastIndexOf('https://')
+        const idx = Math.max(lastHttp, lastHttps)
+        try {
+            const url = new URL(str.substring(idx))
+            str = url.pathname
+        } catch (e) {
+            str = str.replace(/^https?:\/\/[^/]+/i, '')
+        }
+    }
+
+    return str.replace(/^\/+/, '')
+}
+
 const formatValidity = (val) => {
     if (!val) return '12 Months'
     const str = String(val).trim()
@@ -80,9 +73,17 @@ export default function MembershipCardBuilderModal({
     isOpen,
     cardData = null,
     cardDesigns = EMPTY_ARRAY,
+    merchantId = null,
+    merchantData = null,
+    brandName = '',
+    brandImage = null,
+    brandLogo = null,
+    branches = EMPTY_ARRAY,
     onSave,
     onClose
 }) {
+    const fallbackBrandName = brandName || merchantData?.bus_name || 'Elite Branch'
+    const fallbackBrandLogo = brandImage || brandLogo || merchantData?.brand_image || flLogo
     const [fetchedDesigns, setFetchedDesigns] = useState([])
     const [membershipForm, setMembershipForm] = useState({
         id: null,
@@ -95,6 +96,7 @@ export default function MembershipCardBuilderModal({
         cardDesignId: null,
         textColor: '#FFFFFF',
         borderColor: '#F59E0B',
+        branch_ids: (branches || []).map(b => Number(b.id)),
         preset: 'Custom',
         isDefault: false
     })
@@ -108,43 +110,8 @@ export default function MembershipCardBuilderModal({
 
     const fetchCardDesignsFromApi = async () => {
         try {
-            const adminToken = localStorage.getItem('access_token') || localStorage.getItem('admin_token')
-            const role = localStorage.getItem('role') || 'firstpass'
-
-            let response = null
-
-            // 1. Try with Admin token
-            if (adminToken && adminToken !== 'null' && adminToken !== 'undefined') {
-                try {
-                    response = await API.post('admin/card-design/list', {}, {
-                        skipAuthRedirect: true,
-                        headers: { Authorization: `Bearer ${adminToken}`, 'X-Role': role }
-                    })
-                } catch (e) {}
-            }
-
-            // 2. Try unauthenticated axios POST with X-Role header
-            if (!response?.data || (response.data.status !== 1 && response.data.status !== "1")) {
-                try {
-                    response = await axios.post(`${import.meta.env.VITE_API_URL}/admin/card-design/list`, {}, {
-                        headers: { 'X-Role': role, 'Content-Type': 'application/json' }
-                    })
-                } catch (e) {}
-            }
-
-            // 3. Try standard API.post
-            if (!response?.data || (response.data.status !== 1 && response.data.status !== "1")) {
-                try {
-                    response = await API.post('admin/card-design/list', {}, { skipAuthRedirect: true })
-                } catch (e) {}
-            }
-
-            // 4. Try firstloop merchant route
-            if (!response?.data || (response.data.status !== 1 && response.data.status !== "1")) {
-                try {
-                    response = await API.post('firstloop/merchant/card-design/list', {}, { skipAuthRedirect: true })
-                } catch (e) {}
-            }
+            const response = await API.post('admin/card-design/list')
+            console.log("response", response)
 
             if (response?.data && (response.data.status === 1 || response.data.status === '1' || response.data.success)) {
                 const rawList = response.data.data || response.data.card_designs || response.data.designs || []
@@ -164,14 +131,122 @@ export default function MembershipCardBuilderModal({
                     return
                 }
             }
-
-            setFetchedDesigns(DEFAULT_CARD_DESIGNS.map(d => ({ ...d, image: formatImageUrl(d.image) })))
         } catch (err) {
             console.error('Error fetching card designs in MembershipCardBuilderModal:', err)
-            setFetchedDesigns(DEFAULT_CARD_DESIGNS.map(d => ({ ...d, image: formatImageUrl(d.image) })))
         }
     }
+    const membership_cards = async () => {
+        try {
+            let localMerchantId = null
 
+            try {
+                const rawMerchant = localStorage.getItem("merchant_data")
+                if (rawMerchant && rawMerchant !== "null" && rawMerchant !== "undefined") {
+                    const parsed = JSON.parse(rawMerchant)
+                    localMerchantId = parsed?.id || parsed?.merchant_id || parsed?.mer_id
+                }
+
+            } catch (e) {
+                console.error('Error getting merchant id:', e);
+            }
+            const targetMerchantId =
+                merchantId ||
+                membershipForm.merchant_id ||
+                cardData?.merchant_id ||
+                merchantData?.id ||
+                localMerchantId;
+
+            const cardTitle = (membershipForm.name || membershipForm.title || '').trim();
+            if (!cardTitle) {
+                toast.error('Please enter a Membership Card Name');
+                return;
+            }
+
+            if (!targetMerchantId) {
+                toast.error('Merchant ID is missing');
+                return;
+            }
+
+            const formData = new FormData();
+            const isNumericId = membershipForm.id && !isNaN(Number(membershipForm.id)) && !String(membershipForm.id).startsWith('mc-');
+            if (isNumericId) {
+                formData.append('id', Number(membershipForm.id));
+            }
+            formData.append('merchant_id', Number(targetMerchantId));
+            formData.append('branch_ids', JSON.stringify(membershipForm.branch_ids || []));
+            formData.append('title', cardTitle);
+            formData.append('brand_name', membershipForm.brandName || fallbackBrandName);
+            formData.append('month', Number(membershipForm.validityMonths) || 12);
+            formData.append('background_color', membershipForm.bgColor || '#D97706');
+            formData.append('text_color', membershipForm.textColor || '#FFFFFF');
+            formData.append('border_color', membershipForm.borderColor || '#F59E0B');
+            if (membershipForm.brandLogoFile) {
+                formData.append('brand_image', membershipForm.brandLogoFile);
+            } else if (membershipForm.brandLogo && typeof membershipForm.brandLogo === 'string' && !membershipForm.brandLogo.startsWith('blob:') && !membershipForm.brandLogo.startsWith('data:')) {
+                const relBrandLogo = getRelativeImagePath(membershipForm.brandLogo);
+                if (relBrandLogo) {
+                    formData.append('brand_image', relBrandLogo);
+                }
+            }
+
+            // Background & style fields
+            if (membershipForm.bgImage) {
+                const relBgImage = getRelativeImagePath(membershipForm.bgImage);
+                formData.append('background_image', relBgImage || membershipForm.bgImage);
+            }
+
+            // Optional Card Design ID
+            if (membershipForm.cardDesignId && !isNaN(Number(membershipForm.cardDesignId))) {
+                formData.append('card_design_id', Number(membershipForm.cardDesignId));
+            }
+
+            console.log("Submitting Membership Card FormData entries:");
+            for (let [key, val] of formData.entries()) {
+                console.log(`  ${key}:`, val);
+            }
+
+            const response = await API.post('firstloop/merchant/create_membership_card', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+
+            console.log("Membership card save response:", response?.data);
+
+            if (response?.data?.status === 1 || response?.data?.status === '1' || response?.data?.success) {
+                toast.success(response?.data?.message || 'Membership Card saved successfully!');
+                if (onSave) {
+                    onSave({
+                        ...membershipForm,
+                        name: cardTitle,
+                        title: cardTitle
+                    });
+                }
+                onClose();
+            } else {
+                toast.error(
+                    response?.data?.message ||
+                    response?.data?.msg ||
+                    'Failed to save Membership Card'
+                );
+            }
+        }
+        catch (err) {
+            console.error('Error creating membership card:', err);
+            console.error('Backend 400 Error Details:', err?.response?.data);
+
+            const serverMsg =
+                err?.response?.data?.message ||
+                err?.response?.data?.msg ||
+                err?.response?.data?.error ||
+                (typeof err?.response?.data === 'string' ? err.response.data : null) ||
+                err?.message ||
+                'Server error while saving Membership Card';
+
+            toast.error(serverMsg);
+        }
+
+    }
     const availableDesigns = (cardDesigns && cardDesigns.length > 0) ? cardDesigns : fetchedDesigns
 
     // Sync form state when modal opens or cardData changes
@@ -180,23 +255,25 @@ export default function MembershipCardBuilderModal({
 
         if (cardData) {
             let valMonths = 12
-            if (cardData.validityMonths) {
-                const parsed = parseInt(cardData.validityMonths, 10)
+            if (cardData.validityMonths || cardData.month || cardData.totalMonth) {
+                const parsed = parseInt(cardData.validityMonths || cardData.month || cardData.totalMonth, 10)
                 if (!isNaN(parsed)) valMonths = parsed
-                else valMonths = cardData.validityMonths
             }
 
             setMembershipForm({
                 id: cardData.id || null,
-                name: cardData.name || '',
-                brandName: cardData.brandName || 'FirstLoop',
-                brandLogo: cardData.brandLogo || flLogo,
+                name: cardData.name || cardData.title || '',
+                brandName: cardData.brandName || cardData.brand_name || fallbackBrandName,
+                brandLogo: cardData.brandLogo || (cardData.brand_image ? formatImageUrl(cardData.brand_image) : fallbackBrandLogo),
                 validityMonths: valMonths,
-                bgColor: cardData.bgColor || '#D97706',
-                bgImage: cardData.bgImage || null,
-                cardDesignId: cardData.cardDesignId || null,
-                textColor: cardData.textColor || '#FFFFFF',
-                borderColor: cardData.borderColor || '#F59E0B',
+                bgColor: cardData.bgColor || cardData.background_color || '#D97706',
+                bgImage: cardData.bgImage || (cardData.background_image ? formatImageUrl(cardData.background_image) : null),
+                cardDesignId: cardData.cardDesignId || cardData.card_design_id || null,
+                textColor: cardData.textColor || cardData.text_color || '#FFFFFF',
+                borderColor: cardData.borderColor || cardData.border_color || '#F59E0B',
+                branch_ids: Array.isArray(cardData.branch_ids)
+                    ? cardData.branch_ids.map(Number)
+                    : (cardData.branch_id ? [Number(cardData.branch_id)] : (branches || []).map(b => Number(b.id))),
                 preset: cardData.preset || 'Custom',
                 isDefault: cardData.isDefault || false
             })
@@ -206,19 +283,20 @@ export default function MembershipCardBuilderModal({
             setMembershipForm({
                 id: null,
                 name: '',
-                brandName: 'FirstLoop',
-                brandLogo: flLogo,
+                brandName: fallbackBrandName,
+                brandLogo: fallbackBrandLogo,
                 validityMonths: 12,
                 bgColor: '#D97706',
                 bgImage: initialDesign ? initialDesign.image : null,
                 cardDesignId: initialDesign ? initialDesign.id : null,
                 textColor: '#FFFFFF',
                 borderColor: '#F59E0B',
+                branch_ids: (branches || []).map(b => Number(b.id)),
                 preset: initialDesign ? initialDesign.name : 'Custom',
                 isDefault: false
             })
         }
-    }, [isOpen, cardData])
+    }, [isOpen, cardData, fallbackBrandName, fallbackBrandLogo])
 
     // Update background image if card designs load asynchronously for a new card
     useEffect(() => {
@@ -260,18 +338,19 @@ export default function MembershipCardBuilderModal({
         if (file) {
             const reader = new FileReader()
             reader.onloadend = () => {
-                setMembershipForm(prev => ({ ...prev, brandLogo: reader.result }))
+                const previewUrl = URL.createObjectURL(file)
+                setMembershipForm(prev => ({
+                    ...prev,
+                    brandLogoFile: file,
+                    brandLogo: previewUrl
+                }))
             }
             reader.readAsDataURL(file)
         }
     }
 
     const handleSubmit = () => {
-        if (!membershipForm.name.trim()) {
-            alert('Please enter a Membership Card Name')
-            return
-        }
-        onSave && onSave(membershipForm)
+        membership_cards()
     }
 
     return (
@@ -332,7 +411,7 @@ export default function MembershipCardBuilderModal({
 
                 {/* Top Card Design API Picker */}
                 <div style={{ padding: '12px 20px', background: '#FFFFFF', borderBottom: '1px solid #F1F5F9' }}>
-                  
+
                     <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 4 }}>
                         {availableDesigns.length > 0 && availableDesigns.map(design => {
                             const isSelected = membershipForm.cardDesignId === design.id || membershipForm.bgImage === design.image
@@ -539,6 +618,88 @@ export default function MembershipCardBuilderModal({
 
 
                             </div>
+
+                            <div style={{ paddingTop: 16, borderTop: '1px solid #F1F5F9' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                                    <h4 style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                        Applicable Branches <span style={{ color: '#EF4444' }}>*</span>
+                                    </h4>
+                                    <div style={{ display: 'flex', gap: 6 }}>
+                                        <button
+                                            type="button"
+                                            className="btn btn-sm btn-outline-primary"
+                                            onClick={() => setMembershipForm(prev => ({ ...prev, branch_ids: (branches || []).map(b => Number(b.id)) }))}
+                                            style={{ padding: '2px 8px', fontSize: '0.72rem' }}
+                                        >
+                                            Select All
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="btn btn-sm btn-outline-secondary"
+                                            onClick={() => setMembershipForm(prev => ({ ...prev, branch_ids: [] }))}
+                                            style={{ padding: '2px 8px', fontSize: '0.72rem' }}
+                                        >
+                                            Clear
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div
+                                    style={{
+                                        border: '1px solid #E2E8F0',
+                                        borderRadius: 8,
+                                        maxHeight: 140,
+                                        overflowY: 'auto',
+                                        background: '#F8FAFC'
+                                    }}
+                                >
+                                    {branches && branches.length > 0 ? (
+                                        branches.map((b) => {
+                                            const bId = Number(b.id);
+                                            const isSelected = (membershipForm.branch_ids || []).includes(bId);
+                                            return (
+                                                <label
+                                                    key={b.id}
+                                                    style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: 8,
+                                                        padding: '6px 10px',
+                                                        cursor: 'pointer',
+                                                        borderBottom: '1px solid #F1F5F9',
+                                                        fontSize: '0.8rem',
+                                                        background: isSelected ? 'rgba(14, 136, 184, 0.08)' : 'transparent',
+                                                        margin: 0
+                                                    }}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isSelected}
+                                                        onChange={() => {
+                                                            setMembershipForm(prev => {
+                                                                const current = prev.branch_ids || [];
+                                                                const exists = current.includes(bId);
+                                                                const updated = exists
+                                                                    ? current.filter(x => x !== bId)
+                                                                    : [...current, bId];
+                                                                return { ...prev, branch_ids: updated };
+                                                            });
+                                                        }}
+                                                    />
+                                                    <span style={{ fontWeight: 600 }}>{b.name || b.branch_name || `Branch #${b.id}`}</span>
+                                                </label>
+                                            );
+                                        })
+                                    ) : (
+                                        <p style={{ padding: 8, margin: 0, fontSize: '0.76rem', color: '#94A3B8' }}>
+                                            No branches available for this merchant.
+                                        </p>
+                                    )}
+                                </div>
+                                <small style={{ color: '#64748B', fontSize: '0.72rem', marginTop: 4, display: 'block' }}>
+                                    {(membershipForm.branch_ids || []).length} branch(es) selected
+                                </small>
+                            </div>
                         </div>
                     </div>
 
@@ -564,7 +725,7 @@ export default function MembershipCardBuilderModal({
                         >
                             <div style={{ position: 'relative', zIndex: 2 }}>
                                 {/* ALERT NOTICE BADGE: EXPIRES IN 30 DAYS */}
-                            
+
 
                                 {/* Header Row */}
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>

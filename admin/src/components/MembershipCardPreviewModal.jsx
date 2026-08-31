@@ -1,0 +1,307 @@
+import React, { useRef, useState } from 'react'
+import html2canvas from 'html2canvas'
+import logo from '../assets/img/firstloop-favicon.png'
+import flLogo from '../assets/img/firstloop-favicon.png'
+import qrImg from '../assets/img/qr-img.png'
+
+// Helper: Clean relative image path
+const getRelativeImagePath = (path) => {
+    if (!path || typeof path !== 'string') return ''
+    let str = path.trim()
+    if (str.startsWith('data:') || str.startsWith('blob:')) return str
+
+    const uploadsMatch = str.match(/(uploads\/.*)/i)
+    if (uploadsMatch && uploadsMatch[1]) {
+        return uploadsMatch[1].replace(/^\/+/, '')
+    }
+
+    if (str.startsWith('http://') || str.startsWith('https://')) {
+        const lastHttp = str.lastIndexOf('http://')
+        const lastHttps = str.lastIndexOf('https://')
+        const idx = Math.max(lastHttp, lastHttps)
+        try {
+            const url = new URL(str.substring(idx))
+            str = url.pathname
+        } catch (e) {
+            str = str.replace(/^https?:\/\/[^/]+/i, '')
+        }
+    }
+
+    return str.replace(/^\/+/, '')
+}
+
+// Helper: Format image url with base API URL
+const formatImageUrl = (img) => {
+    if (!img) return ''
+    let str = String(img).trim()
+
+    if (str.startsWith('http://') || str.startsWith('https://') || str.startsWith('data:') || str.startsWith('blob:')) {
+        return str
+    }
+
+    const baseUrl = import.meta.env.VITE_API_URL || ''
+    const cleanBase = baseUrl.replace(/\/+$/, '')
+    const cleanImg = getRelativeImagePath(str).replace(/^\/+/, '')
+    return cleanBase ? `${cleanBase}/${cleanImg}` : cleanImg
+}
+
+// Helper: Format validity months for pass display (e.g. 12 -> 12 Months)
+const formatValidity = (val) => {
+    if (!val) return '12 Months'
+    const str = String(val).trim()
+    if (/^\d+$/.test(str)) {
+        return `${str} Month${Number(str) > 1 ? 's' : ''}`
+    }
+    return str
+}
+
+export default function MembershipCardPreviewModal({
+    isOpen = true,
+    card = null,
+    onClose,
+    fallbackBrandName = 'FirstLoop'
+}) {
+    const cardRef = useRef(null)
+    const [downloading, setDownloading] = useState(false)
+
+    if (!isOpen || !card) return null
+
+    // Card background and border style computation
+    const getCardStyle = () => {
+        const style = {
+            border: `2px solid ${card.borderColor || card.border_color || 'rgba(255,255,255,0.4)'}`
+        }
+        const bgImg = card.bgImage || card.background_image
+        if (bgImg && bgImg !== 'none' && bgImg !== 'null' && bgImg !== 'undefined') {
+            style.backgroundImage = `url(${formatImageUrl(bgImg)})`
+            style.backgroundSize = 'cover'
+            style.backgroundPosition = 'center'
+            style.backgroundRepeat = 'no-repeat'
+        } else {
+            style.backgroundColor = card.bgColor || card.background_color || '#D97706'
+        }
+        return style
+    }
+
+    // High quality canvas download
+    const handleDownload = async () => {
+        if (!cardRef.current) return
+        try {
+            setDownloading(true)
+            const canvas = await html2canvas(cardRef.current, {
+                scale: 2,
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: null
+            })
+            const image = canvas.toDataURL('image/png')
+            const fileName = (card.name || card.title || 'membership-pass').toLowerCase().replace(/\s+/g, '-')
+            const link = document.createElement('a')
+            link.href = image
+            link.download = `${fileName}.png`
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+        } catch (error) {
+            console.error('Error downloading membership card canvas:', error)
+            const fileName = (card.name || card.title || 'membership-pass').toLowerCase().replace(/\s+/g, '-')
+            const link = document.createElement('a')
+            link.href = qrImg
+            link.download = `${fileName}.png`
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+        } finally {
+            setDownloading(false)
+        }
+    }
+
+    // WhatsApp Share Link
+    const getWhatsAppShareUrl = () => {
+        const brand = card.brandName || card.brand_name || fallbackBrandName
+        const title = card.name || card.title || 'Digital Membership Pass'
+        const validity = formatValidity(card.validityMonths || card.month || card.totalMonth)
+        const shareUrl = card.id ? `${window.location.origin}/card-preview/${card.id}` : window.location.href
+        const message = `🎉 *${brand}* - ${title}\n⭐ Validity: ${validity}\n\n👉 *View Pass:* ${shareUrl}`
+        return `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`
+    }
+
+    const brandName = card.brandName || card.brand_name || fallbackBrandName
+    const brandLogo = card.brandLogo || card.brand_image ? formatImageUrl(card.brandLogo || card.brand_image) : logo
+    const cardTitle = card.name || card.title || 'Membership Card'
+    const cardholder = card.cardholderName || card.cardholder_name || 'Member Pass'
+    const validityText = formatValidity(card.validityMonths || card.month || card.totalMonth)
+
+    return (
+        <div
+            style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'rgba(15, 23, 42, 0.75)',
+                backdropFilter: 'blur(6px)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 9999,
+                padding: 20
+            }}
+            onClick={(e) => {
+                if (e.target === e.currentTarget && onClose) onClose()
+            }}
+        >
+            <div
+                style={{
+                    background: '#FFFFFF',
+                    borderRadius: 24,
+                    maxWidth: 450,
+                    width: '100%',
+                    overflow: 'hidden',
+                    boxShadow: '0 25px 50px rgba(0,0,0,0.3)',
+                    animation: 'modalSlideIn 0.25s ease-out'
+                }}
+            >
+                {/* Modal Header */}
+                <div style={{ padding: '20px 24px', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                        <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: '#0F172A' }}>
+                            Digital Membership Pass Preview
+                        </h3>
+                        <p style={{ fontSize: '0.8rem', color: '#64748B', margin: '2px 0 0 0' }}>
+                            Live render of the digital membership pass for members
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        style={{ background: 'none', border: 'none', fontSize: '1.2rem', color: '#64748B', cursor: 'pointer', padding: 4 }}
+                    >
+                        <i className="fas fa-times" />
+                    </button>
+                </div>
+
+                {/* Digital Card Canvas View */}
+                <div style={{ padding: 24, background: '#F8FAFC', display: 'flex', justifyContent: 'center' }}>
+                    <div
+                        ref={cardRef}
+                        id="membership-pass-preview-canvas"
+                        style={{
+                            width: '100%',
+                            maxWidth: 370,
+                            borderRadius: 20,
+                            ...getCardStyle(),
+                            color: card.textColor || card.text_color || '#FFFFFF',
+                            padding: 22,
+                            boxShadow: '0 16px 36px -8px rgba(0,0,0,0.25)',
+                            position: 'relative',
+                            minHeight: 210
+                        }}
+                    >
+                        <div style={{ position: 'relative', zIndex: 2 }}>
+                            {/* Header Row */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                    <div style={{ width: 34, height: 34, borderRadius: 10, background: '#FFFFFF', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}>
+                                        <img src={brandLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                    </div>
+                                    <span style={{ fontSize: '1.05rem', fontWeight: 800, color: 'inherit' }}>
+                                        {brandName}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Middle Section: Left Info + Right Large Middle QR Code */}
+                            <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 10 }}>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'inherit', wordBreak: 'break-word' }}>
+                                        {cardTitle}
+                                    </div>
+                                    <div style={{ fontSize: '0.82rem', opacity: 0.9, marginTop: 4, fontWeight: 700 }}>
+                                        {cardholder}
+                                    </div>
+
+                                    <div style={{ marginTop: 12, borderTop: '1px solid rgba(255,255,255,0.25)', paddingTop: 8 }}>
+                                        <small style={{ fontSize: '0.65rem', textTransform: 'uppercase', opacity: 0.85 }}>
+                                            Valid Thru
+                                        </small>
+                                        <div style={{ fontSize: '0.88rem', fontWeight: 800, color: 'inherit' }}>
+                                            {validityText}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Large Centered Middle QR Code */}
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                    <img src={qrImg} alt="QR Code" style={{ width: 92, height: 92, objectFit: 'contain', flexShrink: 0 }} />
+                                    <small style={{ fontSize: '0.6rem', fontWeight: 700, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.5px', opacity: 0.9 }}>
+                                        SCAN PASS
+                                    </small>
+                                </div>
+                            </div>
+
+                            {/* Bottom Right Logo Badge */}
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 5, fontSize: '0.65rem', opacity: 0.9, fontWeight: 600, marginTop: 6, lineHeight: 1 }}>
+                                <span style={{ lineHeight: 1, display: 'inline-flex', alignItems: 'center' }}>powered by</span>
+                                <img src={flLogo} alt="FirstLoop" style={{ height: 13, width: 'auto', display: 'inline-block', verticalAlign: 'middle', objectFit: 'contain', margin: '0 1px' }} />
+                                <strong style={{ color: 'inherit', lineHeight: 1, display: 'inline-flex', alignItems: 'center' }}>firstloop.co.in</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Modal Action Bar */}
+                <div style={{ padding: '16px 20px', background: '#FFFFFF', borderTop: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    <a
+                        href={getWhatsAppShareUrl()}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn"
+                        style={{
+                            flex: 1,
+                            padding: '10px 14px',
+                            borderRadius: 10,
+                            background: '#25D366',
+                            color: '#FFFFFF',
+                            fontWeight: 700,
+                            fontSize: '0.85rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 8,
+                            textDecoration: 'none',
+                            border: 'none',
+                            boxShadow: '0 4px 12px rgba(37, 211, 102, 0.25)'
+                        }}
+                    >
+                        <i className="fab fa-whatsapp" style={{ fontSize: '1.1rem' }} />
+                        <span>Share to WhatsApp</span>
+                    </a>
+
+                    <button
+                        type="button"
+                        onClick={handleDownload}
+                        disabled={downloading}
+                        className="btn firstloop-btn-primary"
+                        style={{
+                            flex: 1,
+                            padding: '10px 14px',
+                            borderRadius: 10,
+                            fontWeight: 700,
+                            fontSize: '0.85rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 8,
+                            boxShadow: '0 4px 12px rgba(14, 136, 184, 0.25)'
+                        }}
+                    >
+                        <i className={`fas ${downloading ? 'fa-spinner fa-spin' : 'fa-download'}`} style={{ fontSize: '0.95rem' }} />
+                        <span>{downloading ? 'Generating...' : 'Download Pass'}</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    )
+}

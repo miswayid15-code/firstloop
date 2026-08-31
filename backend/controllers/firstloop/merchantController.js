@@ -1647,6 +1647,7 @@ exports.fetchmerchant = async (req, res) => {
 
 
 exports.membership_card = async (req, res) => {
+    console.log("data", req.body)
     try {
         let {
             id,
@@ -1721,26 +1722,22 @@ exports.membership_card = async (req, res) => {
         // MONTH VALIDATION
         // ---------------------------------------
 
-        if (
-            month !== undefined &&
-            month !== null &&
-            month !== "" &&
-            (!Number.isInteger(Number(month)) ||
-                Number(month) < 1 ||
-                Number(month) > 12)
-        ) {
-            return res.status(400).json({
-                status: 0,
-                msg: "Month must be between 1 and 12"
-            });
-        }
+        // ---------------------------------------
+        // MONTH VALIDATION
+        // ---------------------------------------
 
-        month =
-            month !== undefined &&
-                month !== null &&
-                month !== ""
-                ? Number(month)
-                : null;
+        if (month !== undefined && month !== null && month !== "") {
+            month = Number(month);
+
+            if (!Number.isInteger(month) || month <= 0) {
+                return res.status(400).json({
+                    status: 0,
+                    msg: "Month must be a valid positive number"
+                });
+            }
+        } else {
+            month = null;
+        }
 
         // ---------------------------------------
         // FIND EXISTING MEMBERSHIP CARD
@@ -1853,7 +1850,13 @@ exports.membership_card = async (req, res) => {
         });
 
     } catch (err) {
-        console.log("Membership Card Error:", err);
+        console.error("====================================");
+        console.error("MEMBERSHIP CARD ERROR");
+        console.error("Message:", err.message);
+        console.error("Stack:", err.stack);
+        console.error("Request Body:", req.body);
+        console.error("Request Files:", req.files);
+        console.error("====================================");
 
         return res.status(500).json({
             status: 0,
@@ -1919,6 +1922,7 @@ exports.fetch_membership_card = async (req, res) => {
                 background_image:
                     cardData.background_image ? baseUrl + '/' + cardData.background_image
                         : null,
+
             };
         });
 
@@ -1949,17 +1953,18 @@ exports.fetch_membership_card = async (req, res) => {
 exports.fetch_branch_membership_card = async (req, res) => {
     try {
 
-        const card_id = req.body.id;
+        const branch_id = req.body.branch_id;
 
-        if (!card_id) {
+        if (!branch_id) {
             return res.status(401).json({
                 status: 0,
-                msg: "Card id Is required"
+                msg: "Branch id required"
             });
         }
-
         const where = {
-            id: card_id
+            branch_ids: {
+                [Op.contains]: [Number(branch_id)]
+            }
         };
 
         // ---------------------------------------
@@ -2006,6 +2011,93 @@ exports.fetch_branch_membership_card = async (req, res) => {
         return res.status(200).json({
             status: 1,
             msg: "Membership cards fetched successfully",
+            data
+        });
+
+    } catch (err) {
+
+        console.error(
+            "fetch_stamp_card error:",
+            err
+        );
+
+        return res.status(500).json({
+            status: 0,
+            msg: "Error while processing!",
+            error: err.message
+        });
+    }
+};
+
+exports.fetch_membership_id = async (req, res) => {
+    try {
+
+        const card_id = req.body.id;
+
+        if (!card_id) {
+            return res.status(401).json({
+                status: 0,
+                msg: "Card id Is required"
+            });
+        }
+
+        const where = {
+            id: card_id
+        };
+
+        // ---------------------------------------
+        // FETCH ALL CARDS OF MERCHANT
+        // ---------------------------------------
+
+        const membership_card = await MembershipCards.findAll({
+            where,
+
+
+
+        });
+
+        // ---------------------------------------
+        // NO CARDS
+        // ---------------------------------------
+
+        if (!membership_card.length) {
+            return res.status(200).json({
+                status: 1,
+                msg: "No Membership cards found",
+                data: []
+            });
+        }
+
+
+
+        // ---------------------------------------
+        // FORMAT DATA
+        // ---------------------------------------
+
+        const data = membership_card.map(card => {
+
+            const cardData = card.toJSON();
+
+            return {
+                ...cardData,
+
+                brand_image: cardData.brand_image
+                    ? baseUrl + '/' + cardData.brand_image
+                    : null,
+
+                background_image:
+                    cardData.background_image ? baseUrl + '/' + cardData.background_image
+                        : null,
+            };
+        });
+
+        // ---------------------------------------
+        // RESPONSE
+        // ---------------------------------------
+
+        return res.status(200).json({
+            status: 1,
+            msg: "Stamp cards details fetched successfully",
             data
         });
 

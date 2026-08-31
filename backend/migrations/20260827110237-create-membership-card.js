@@ -10,6 +10,7 @@ module.exports = {
         autoIncrement: true,
         primaryKey: true,
       },
+
       merchant_id: {
         type: Sequelize.BIGINT,
         allowNull: false,
@@ -20,6 +21,7 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE',
       },
+
       title: {
         type: Sequelize.STRING,
         allowNull: false,
@@ -31,7 +33,7 @@ module.exports = {
       },
 
       branch_ids: {
-        type: Sequelize.JSON,
+        type: Sequelize.JSONB,
         allowNull: true,
       },
 

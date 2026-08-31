@@ -6,9 +6,12 @@ import flLogo from '../../assets/img/firstloop-favicon.png'
 import qrImg from '../../assets/img/qr-img.png'
 import axios from 'axios'
 import API from '../../api.js'
+import StampCardItem from '../../components/StampCardItem.jsx'
+import MembershipCardItem from '../../components/MembershipCardItem.jsx'
 import StampCardBuilderModal from '../../components/StampCardBuilderModal.jsx'
 import MembershipCardBuilderModal from '../../components/MembershipCardBuilderModal.jsx'
 import StampCardPreviewModal from '../../components/StampCardPreviewModal.jsx'
+import MembershipCardPreviewModal from '../../components/MembershipCardPreviewModal.jsx'
 import { toast } from 'react-hot-toast'
 
 
@@ -298,7 +301,7 @@ export default function ViewFlBranch() {
 
     // Dynamic Lists State
     const [stampCards, setStampCards] = useState([])
-    const [membershipCards, setMembershipCards] = useState(INITIAL_MEMBERSHIP_CARDS)
+    const [membershipCards, setMembershipCards] = useState([])
     const [cardDesignsApi, setCardDesignsApi] = useState([])
 
     // Filters & Search state
@@ -326,6 +329,7 @@ export default function ViewFlBranch() {
         branch_details()
         if (id) {
             fetchStampCards()
+            fetchMembershipCards()
         }
     }, [id])
 
@@ -406,6 +410,52 @@ export default function ViewFlBranch() {
             setStampCards([])
         }
     }
+
+    // Fetch Branch Membership Cards using fetch-br-membership-card
+    const fetchMembershipCards = async () => {
+        if (!id) return
+        try {
+            const response = await API.post('firstloop/merchant/fetch-br-membership-card', {
+                branch_id: Number(id)
+            })
+
+            console.log('Fetch Branch Membership Card Response:', response?.data)
+
+            if (response?.data && (response.data.status === 1 || response.data.status === '1' || response.data.success)) {
+                const rawList = response.data.data || response.data.membership_cards || response.data.cards || []
+                const list = Array.isArray(rawList) ? rawList : (rawList ? [rawList] : [])
+
+                const formattedCards = list.map((item) => ({
+                    id: item.id || item._id,
+                    name: item.name || item.title || 'Membership Card',
+                    title: item.name || item.title || 'Membership Card',
+                    cardholderName: item.cardholder_name || item.cardholderName || 'Member Pass',
+                    brandName: item.brand_name || branch?.name || 'FirstLoop',
+                    brandLogo: item.brand_image ? getRelativeImagePath(item.brand_image) : null,
+                    validityMonths: item.month || item.validity_months || item.validityMonths || 12,
+                    totalMonth: item.month || item.validity_months || item.validityMonths || 12,
+                    tier: item.tier || 'VIP Pass',
+                    status: Number(item.status) === 1 ? 'Active' : (item.status || 'Active'),
+                    bgColor: item.background_color || item.bgColor || '#0E88B8',
+                    bgImage: item.background_image ? getRelativeImagePath(item.background_image) : (item.bgImage ? getRelativeImagePath(item.bgImage) : null),
+                    textColor: item.text_color || item.textColor || '#FFFFFF',
+                    borderColor: item.border_color || item.borderColor || '#00A6D6',
+                    preset: 'Custom',
+                    branch_ids: Array.isArray(item.branch_ids)
+                        ? item.branch_ids.map(Number)
+                        : (item.branch_id ? [Number(item.branch_id)] : [])
+                }))
+
+                setMembershipCards(formattedCards)
+            } else {
+                setMembershipCards([])
+            }
+        } catch (err) {
+            console.error('Error fetching branch membership cards:', err)
+            setMembershipCards([])
+        }
+    }
+
 
     const fetchCardDesignsFromApi = async () => {
         try {
@@ -957,120 +1007,13 @@ export default function ViewFlBranch() {
                 ) : (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 380px))', gap: 24 }}>
                         {filteredStampCards.map((card) => (
-                            <div
+                            <StampCardItem
                                 key={card.id}
-                                style={{
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: 12,
-                                    maxWidth: 380,
-                                    width: '100%'
-                                }}
-                            >
-                                {/* DIGITAL STAMP CARD CANVAS */}
-                                <div
-                                    style={{
-                                        width: '100%',
-                                        maxWidth: 380,
-                                        borderRadius: 20,
-                                        ...getCardStyle(card),
-                                        color: card.textColor || '#FFFFFF',
-                                        padding: 15,
-                                        boxShadow: '0 14px 30px -6px rgba(0,0,0,0.22)',
-                                        position: 'relative',
-                                        minHeight: 220
-                                    }}
-                                >
-                                    <div style={{ position: 'relative', zIndex: 2 }}>
-                                        <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-                                            {/* LEFT SIDE: Brand, Title & Stamp Circles */}
-                                            <div style={{ flex: 1, minWidth: 0 }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                                                    <div style={{ width: 26, height: 26, borderRadius: 8, background: '#FFFFFF', padding: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}>
-                                                        <img src={formatImageUrl(card.brandLogo) || logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                                                    </div>
-                                                    <span style={{ fontSize: '0.95rem', fontWeight: 800, color: 'inherit' }}>
-                                                        {card.brandName || branch?.name || 'Elite Branch'}
-                                                    </span>
-                                                </div>
-
-                                                <div style={{ fontSize: '0.78rem', opacity: 0.9, marginBottom: 10, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                                                    <strong>{card.title}</strong>
-                                                </div>
-
-                                                {/* Fixed 36px Stamp Circles Grid */}
-                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 6, maxWidth: 220 }}>
-                                                    {Array.from({ length: Number(card.total_stamps || 8) }).map((_, i) => {
-                                                        const rewardItem = card.levelRewards ? card.levelRewards[i] : null
-                                                        let iconMarkup = i + 1
-
-                                                        if (rewardItem) {
-                                                            if (rewardItem.type === 'Free') {
-                                                                iconMarkup = <i className="fas fa-gift" style={{ fontSize: '0.8rem' }} />
-                                                            } else if (rewardItem.type === 'Discount') {
-                                                                iconMarkup = <span style={{ fontSize: '0.65rem', fontWeight: 800 }}>{rewardItem.discount ?? rewardItem.discountVal ?? 0}%</span>
-                                                            } else if (rewardItem.type === 'Paid') {
-                                                                iconMarkup = <i className={`fas ${rewardItem.icon || 'fa-tag'}`} style={{ fontSize: '0.8rem' }} />
-                                                            }
-                                                        }
-
-                                                        return (
-                                                            <div
-                                                                key={i}
-                                                                style={{
-                                                                    width: 36,
-                                                                    height: 36,
-                                                                    borderRadius: `${card.stamp_radius ?? 50}%`,
-                                                                    border: `2px solid ${card.stampBorderColor || '#FFFFFF'}`,
-                                                                    background: card.stampBgColor || 'rgba(255, 255, 255, 0.3)',
-                                                                    color: card.stampTextColor || 'inherit',
-                                                                    display: 'flex',
-                                                                    alignItems: 'center',
-                                                                    justifyContent: 'center',
-                                                                    fontSize: '0.85rem',
-                                                                    fontWeight: 800,
-                                                                    flexShrink: 0
-                                                                }}
-                                                            >
-                                                                {iconMarkup}
-                                                            </div>
-                                                        )
-                                                    })}
-                                                </div>
-                                            </div>
-
-                                            {/* RIGHT SIDE: QR CODE */}
-                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                                <img src={qrImg} alt="QR Code" style={{ width: 86, height: 86, objectFit: 'contain', flexShrink: 0 }} />
-                                                <small style={{ fontSize: '0.6rem', fontWeight: 700, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.5px', opacity: 0.9 }}>
-                                                    SCAN TO STAMP
-                                                </small>
-                                            </div>
-                                        </div>
-
-                                        {/* BOTTOM RIGHT ALIGNED POWERED BY BADGE WITH FIRSTLOOP LOGO */}
-                                        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 5, fontSize: '0.65rem', opacity: 0.9, fontWeight: 600, marginTop: 10, lineHeight: 1 }}>
-                                            <span style={{ lineHeight: 1, display: 'inline-flex', alignItems: 'center' }}>powered by</span>
-                                            <img src={flLogo} alt="FirstLoop" style={{ height: 13, width: 'auto', display: 'inline-block', verticalAlign: 'middle', objectFit: 'contain', margin: '0 1px' }} />
-                                            <strong style={{ color: 'inherit', lineHeight: 1, display: 'inline-flex', alignItems: 'center' }}>firstloop.co.in</strong>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Card Item Action Bar */}
-                                <div style={{ display: 'flex', gap: 10, padding: '0 4px' }}>
-
-                                    <button
-                                        type="button"
-                                        className="btn firstloop-btn-secondary"
-                                        onClick={() => setSelectedStampCard(card)}
-                                        style={{ flex: 1, padding: '8px 14px', fontSize: '0.82rem', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-                                    >
-                                        <i className="fas fa-eye" />
-                                        <span>Preview</span>
-                                    </button>
-                                </div>
-                            </div>
+                                card={card}
+                                merchantName={branch?.name || 'Elite Branch'}
+                                onEdit={handleOpenEditStampCard}
+                                onPreview={setSelectedStampCard}
+                            />
                         ))}
                     </div>
                 )}
@@ -1115,78 +1058,24 @@ export default function ViewFlBranch() {
                 </div>
 
                 {/* Membership Cards Grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 380px))', gap: 24 }}>
-                    {filteredMemberships.map((mem) => (
-                        <div
-                            key={mem.id}
-                            style={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: 12,
-                                maxWidth: 380,
-                                width: '100%'
-                            }}
-                        >
-                            {/* DIGITAL MEMBERSHIP PASS CANVAS WITH LARGE MIDDLE QR CODE */}
-                            <div
-                                style={{
-                                    width: '100%',
-                                    maxWidth: 380,
-                                    borderRadius: 20,
-                                    ...getCardStyle(mem),
-                                    color: mem.textColor || '#FFFFFF',
-                                    padding: 22,
-                                    boxShadow: '0 14px 30px -6px rgba(0,0,0,0.22)',
-                                    position: 'relative',
-                                    minHeight: 210
-                                }}
-                            >
-                                <div style={{ position: 'relative', zIndex: 2 }}>
-                                    {/* Header Row */}
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                            <div style={{ width: 34, height: 34, borderRadius: 10, background: '#FFFFFF', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}>
-                                                <img src={mem.brandLogo || flLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                                            </div>
-                                            <span style={{ fontSize: '1.05rem', fontWeight: 800, color: 'inherit' }}>
-                                                {mem.brandName || 'FirstLoop'}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    {/* MIDDLE: LARGE CENTERED QR CODE */}
-                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', margin: '4px 0 6px' }}>
-                                        <img src={qrImg} alt="QR Code" style={{ width: 92, height: 92, objectFit: 'contain', flexShrink: 0 }} />
-                                        <small style={{ fontSize: '0.62rem', fontWeight: 700, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.5px', opacity: 0.9 }}>
-                                            SCAN PASS
-                                        </small>
-                                    </div>
-
-                                    {/* Bottom Right Logo Badge */}
-                                    <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 5, fontSize: '0.65rem', opacity: 0.9, fontWeight: 600, marginTop: 6 }}>
-                                        <span>powered by</span>
-                                        <img src={flLogo} alt="FirstLoop" style={{ height: 14, objectFit: 'contain' }} />
-                                        <strong style={{ color: 'inherit' }}>firstloop.co.in</strong>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Membership Action Bar */}
-                            <div style={{ display: 'flex', gap: 10, padding: '0 4px' }}>
-   
-                                <button
-                                    type="button"
-                                    className="btn firstloop-btn-secondary"
-                                    onClick={() => setSelectedMembership(mem)}
-                                    style={{ padding: '8px 14px', fontSize: '0.82rem', borderRadius: 8 }}
-                                >
-                                    <i className="fas fa-eye" />
-                                    <span>Preview</span>
-                                </button>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                {filteredMemberships.length === 0 ? (
+                    <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                        <i className="fas fa-id-card" style={{ fontSize: '2rem', marginBottom: 8, opacity: 0.4 }} />
+                        <p>No membership cards found for this branch.</p>
+                    </div>
+                ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 380px))', gap: 24 }}>
+                        {filteredMemberships.map((mem) => (
+                            <MembershipCardItem
+                                key={mem.id}
+                                card={mem}
+                                merchantName={branch?.name || 'FirstLoop'}
+                                onEdit={handleOpenEditMembership}
+                                onPreview={setSelectedMembership}
+                            />
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* ASSOCIATED CUSTOMERS TABLE SECTION */}
@@ -1335,10 +1224,10 @@ export default function ViewFlBranch() {
                 isOpen={stampBuilderOpen}
                 cardData={selectedEditStampCard}
                 cardDesigns={cardDesignsApi}
-                merchantId={merchant?.id || branch?.merchant_id}
-                merchantData={merchant}
-                brandName={branch?.name || merchant?.brand_name || merchant?.bus_name}
-                brandImage={branch?.profile_image || merchant?.brand_image || merchant?.profile_image}
+                merchantId={branch?.merchant_id}
+                merchantData={branch}
+                brandName={branch?.name || 'Elite Branch'}
+                brandImage={branch?.profile_image}
                 branches={branch?.id ? [branch] : (id ? [{ id: Number(id), name: branch?.name || 'Current Branch' }] : [])}
                 onSave={handleSaveStampCard}
                 onClose={() => setStampBuilderOpen(false)}
@@ -1357,142 +1246,17 @@ export default function ViewFlBranch() {
             <StampCardPreviewModal
                 isOpen={Boolean(selectedStampCard)}
                 card={selectedStampCard}
-                fallbackBrandName={branch?.name || merchant?.brand_name || merchant?.bus_name || 'Elite Branch'}
+                fallbackBrandName={branch?.name || 'Elite Branch'}
                 onClose={() => setSelectedStampCard(null)}
             />
 
-            {/* PREVIEW MODAL 2: MEMBERSHIP CARD WITH LARGE MIDDLE QR CODE */}
-            {selectedMembership && (
-                <div
-                    style={{
-                        position: 'fixed',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        background: 'rgba(15, 23, 42, 0.7)',
-                        backdropFilter: 'blur(5px)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        zIndex: 9999,
-                        padding: 20
-                    }}
-                >
-                    <div
-                        style={{
-                            background: '#FFFFFF',
-                            borderRadius: 24,
-                            maxWidth: 440,
-                            width: '100%',
-                            overflow: 'hidden',
-                            boxShadow: '0 25px 50px rgba(0,0,0,0.3)',
-                            animation: 'fadeIn 0.2s ease'
-                        }}
-                    >
-                        {/* Digital Pass Canvas View */}
-                        <div style={{ padding: 15, background: '#F8FAFC', display: 'flex', justifyContent: 'center' }}>
-                            <div
-                                style={{
-                                    width: '100%',
-                                    maxWidth: 370,
-                                    borderRadius: 20,
-                                    ...getCardStyle(selectedMembership),
-                                    color: selectedMembership.textColor || '#FFFFFF',
-                                    padding: 22,
-                                    boxShadow: '0 16px 36px -8px rgba(0,0,0,0.25)',
-                                    position: 'relative',
-                                    minHeight: 210
-                                }}
-                            >
-                                <div style={{ position: 'relative', zIndex: 2 }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                            <div style={{ width: 34, height: 34, borderRadius: 10, background: '#FFFFFF', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}>
-                                                <img src={selectedMembership.brandLogo || flLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                                            </div>
-                                            <span style={{ fontSize: '1.05rem', fontWeight: 800, color: 'inherit' }}>
-                                                {selectedMembership.brandName || 'FirstLoop'}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    {/* Middle Section: Left Info + Right Large Middle QR Code */}
-                                    <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 10 }}>
-                                        <div style={{ flex: 1, minWidth: 0 }}>
-                                            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'inherit' }}>
-                                                {selectedMembership.name}
-                                            </div>
-                                            <div style={{ fontSize: '0.82rem', opacity: 0.9, marginTop: 4, fontWeight: 700 }}>
-                                                {selectedMembership.cardholderName || 'Sarah Jenkins'}
-                                            </div>
-
-                                            <div style={{ marginTop: 12, borderTop: '1px solid rgba(255,255,255,0.25)', paddingTop: 8 }}>
-                                                <small style={{ fontSize: '0.65rem', textTransform: 'uppercase', opacity: 0.85 }}>
-                                                    Valid Thru
-                                                </small>
-                                                <div style={{ fontSize: '0.88rem', fontWeight: 800, color: 'inherit' }}>
-                                                    {selectedMembership.validityMonths || '03/25'}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Large Centered Middle QR Code */}
-                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                            <img src={qrImg} alt="QR Code" style={{ width: 92, height: 92, objectFit: 'contain', flexShrink: 0 }} />
-                                            <small style={{ fontSize: '0.6rem', fontWeight: 700, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.5px', opacity: 0.9 }}>
-                                                SCAN PASS
-                                            </small>
-                                        </div>
-                                    </div>
-
-                                    {/* Bottom Right Logo Badge */}
-                                    <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 5, fontSize: '0.65rem', opacity: 0.9, fontWeight: 600, marginTop: 6 }}>
-                                        <span>powered by</span>
-                                        <img src={flLogo} alt="FirstLoop" style={{ height: 14, objectFit: 'contain' }} />
-                                        <strong style={{ color: 'inherit' }}>firstloop.co.in</strong>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Modal Action Bar with Share to WhatsApp & Download Card */}
-                        <div style={{ padding: '16px 20px', background: '#FFFFFF', borderTop: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                            <button
-                                type="button"
-                                className="btn"
-                                onClick={() => {
-                                    const text = encodeURIComponent(`Check out our Digital Membership Pass "${selectedMembership.name}" from ${branch.name}!`)
-                                    window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank')
-                                }}
-                                style={{ background: '#25D366', color: '#FFFFFF', fontWeight: 700, borderRadius: 8, padding: '9px 16px', fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', gap: 6, border: 'none' }}
-                            >
-                                <i className="fab fa-whatsapp" style={{ fontSize: '1.1rem' }} />
-                                <span>Share to WhatsApp</span>
-                            </button>
-
-                            <button
-                                type="button"
-                                className="btn firstloop-btn-primary"
-                                onClick={() => alert(`Downloading pass image for "${selectedMembership.name}"...`)}
-                                style={{ borderRadius: 8, padding: '9px 16px', fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                            >
-                                <i className="fas fa-download" />
-                                <span>Download Pass</span>
-                            </button>
-
-                            <button
-                                type="button"
-                                className="btn firstloop-btn-secondary"
-                                onClick={() => setSelectedMembership(null)}
-                                style={{ borderRadius: 8, padding: '9px 16px', fontSize: '0.82rem' }}
-                            >
-                                Close
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* PREVIEW MODAL 2: MEMBERSHIP CARD (REUSABLE COMPONENT) */}
+            <MembershipCardPreviewModal
+                isOpen={Boolean(selectedMembership)}
+                card={selectedMembership}
+                fallbackBrandName={branch?.name || 'FirstLoop'}
+                onClose={() => setSelectedMembership(null)}
+            />
 
             {/* PREVIEW MODAL 3: ENHANCED CUSTOMER PROFILE MODAL (STAMP & MEMBERSHIP CARD USAGE & EXPIRY DETAILS) */}
             {selectedCustomer && (

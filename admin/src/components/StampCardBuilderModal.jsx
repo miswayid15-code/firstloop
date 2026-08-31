@@ -6,39 +6,6 @@ import API from '../api.js'
 import { toast } from 'react-hot-toast'
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 // Default Card Designs Fallback List
-const DEFAULT_CARD_DESIGNS = [
-    {
-        id: 'cd-def-1',
-        name: 'Aurora Cyan',
-        image: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&q=80&w=400',
-        status: 1
-    },
-    {
-        id: 'cd-def-2',
-        name: 'Crimson Wave',
-        image: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&q=80&w=400',
-        status: 1
-    },
-    {
-        id: 'cd-def-3',
-        name: 'Midnight Gold',
-        image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=400',
-        status: 1
-    },
-    {
-        id: 'cd-def-4',
-        name: 'Emerald Luxe',
-        image: 'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?auto=format&fit=crop&q=80&w=400',
-        status: 1
-    },
-    {
-        id: 'cd-def-5',
-        name: 'Royal Purple',
-        image: 'https://images.unsplash.com/photo-1550684847-75bdda21cc95?auto=format&fit=crop&q=80&w=400',
-        status: 1
-    }
-]
-
 // --- QR Code Component ---
 const RealQRCode = ({ size = 80 }) => (
     <img
@@ -182,10 +149,10 @@ export default function StampCardBuilderModal({
                 }
             }
 
-            setFetchedDesigns(DEFAULT_CARD_DESIGNS.map(d => ({ ...d, image: formatImageUrl(d.image) })))
+            // setFetchedDesigns(DEFAULT_CARD_DESIGNS.map(d => ({ ...d, image: formatImageUrl(d.image) })))
         } catch (err) {
             console.error('Error fetching card designs in StampCardBuilderModal:', err)
-            setFetchedDesigns(DEFAULT_CARD_DESIGNS.map(d => ({ ...d, image: formatImageUrl(d.image) })))
+            // setFetchedDesigns(DEFAULT_CARD_DESIGNS.map(d => ({ ...d, image: formatImageUrl(d.image) })))
         }
     }
 
@@ -223,6 +190,7 @@ export default function StampCardBuilderModal({
             formData.append('merchant_id', Number(targetMerchantId));
             formData.append('branch_ids', JSON.stringify(stampForm.branch_ids || []));
             formData.append('title', stampForm.title || '');
+
             formData.append('brand_name', stampForm.brandName || 'Elite Branch');
             formData.append('number_of_stamps', Number(stampForm.total_stamps || 8));
 
@@ -463,7 +431,8 @@ export default function StampCardBuilderModal({
             setStampForm(prev => ({
                 ...prev,
                 brandLogoFile: file,
-                brandLogo: previewUrl
+                brandLogo: reader.result
+
             }))
         }
     }

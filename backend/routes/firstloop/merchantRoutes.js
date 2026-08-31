@@ -89,4 +89,8 @@ router.post(
     '/fetch-br-membership-card',
     controller.fetch_branch_membership_card
 );
+router.post(
+    '/fetch-membership-card-details',
+    controller.fetch_membership_id
+);
 module.exports = router;
