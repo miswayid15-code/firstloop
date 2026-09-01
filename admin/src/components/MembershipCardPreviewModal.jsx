@@ -26,13 +26,15 @@ export default function MembershipCardPreviewModal({
         try {
             setDownloading(true)
             const canvas = await html2canvas(cardRef.current, {
-                scale: 2,
+                scale: 3,
                 useCORS: true,
                 allowTaint: true,
-                backgroundColor: null
+                backgroundColor: null,
+                logging: false
             })
             const image = canvas.toDataURL('image/png')
-            const fileName = (card.name || card.title || 'membership-pass').toLowerCase().replace(/\s+/g, '-')
+            const rawName = card.name || card.title || 'membership-pass'
+            const fileName = rawName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'membership-pass'
             const link = document.createElement('a')
             link.href = image
             link.download = `${fileName}.png`
@@ -41,13 +43,6 @@ export default function MembershipCardPreviewModal({
             document.body.removeChild(link)
         } catch (error) {
             console.error('Error downloading membership card canvas:', error)
-            const fileName = (card.name || card.title || 'membership-pass').toLowerCase().replace(/\s+/g, '-')
-            const link = document.createElement('a')
-            link.href = qrImg
-            link.download = `${fileName}.png`
-            document.body.appendChild(link)
-            link.click()
-            document.body.removeChild(link)
         } finally {
             setDownloading(false)
         }
@@ -141,7 +136,7 @@ export default function MembershipCardPreviewModal({
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                                     <div style={{ width: 34, height: 34, borderRadius: 10, background: '#FFFFFF', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}>
-                                        <img src={brandLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                        <img src={brandLogo} alt="Logo" crossOrigin="anonymous" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                                     </div>
                                     <span style={{ fontSize: '1.05rem', fontWeight: 800, color: 'inherit' }}>
                                         {brandName}
@@ -171,7 +166,7 @@ export default function MembershipCardPreviewModal({
 
                                 {/* Large Centered Middle QR Code */}
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                    <img src={qrImg} alt="QR Code" style={{ width: 92, height: 92, objectFit: 'contain', flexShrink: 0 }} />
+                                    <img src={qrImg} alt="QR Code" crossOrigin="anonymous" style={{ width: 92, height: 92, objectFit: 'contain', flexShrink: 0 }} />
                                     <small style={{ fontSize: '0.6rem', fontWeight: 700, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.5px', opacity: 0.9 }}>
                                         SCAN PASS
                                     </small>
@@ -181,7 +176,7 @@ export default function MembershipCardPreviewModal({
                             {/* Bottom Right Logo Badge */}
                             <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 5, fontSize: '0.65rem', opacity: 0.9, fontWeight: 600, marginTop: 6, lineHeight: 1 }}>
                                 <span style={{ lineHeight: 1, display: 'inline-flex', alignItems: 'center' }}>powered by</span>
-                                <img src={flLogo} alt="FirstLoop" style={{ height: 13, width: 'auto', display: 'inline-block', verticalAlign: 'middle', objectFit: 'contain', margin: '0 1px' }} />
+                                <img src={flLogo} alt="FirstLoop" crossOrigin="anonymous" style={{ height: 13, width: 'auto', display: 'inline-block', verticalAlign: 'middle', objectFit: 'contain', margin: '0 1px' }} />
                                 <strong style={{ color: 'inherit', lineHeight: 1, display: 'inline-flex', alignItems: 'center' }}>firstloop.co.in</strong>
                             </div>
                         </div>
@@ -235,7 +230,7 @@ export default function MembershipCardPreviewModal({
                         }}
                     >
                         <i className={`fas ${downloading ? 'fa-spinner fa-spin' : 'fa-download'}`} style={{ fontSize: '0.95rem' }} />
-                        <span>{downloading ? 'Generating...' : 'Download Pass'}</span>
+                        <span>{downloading ? 'Downloading...' : `Download ${card.name || card.title || 'Membership Pass'}`}</span>
                     </button>
                 </div>
             </div>

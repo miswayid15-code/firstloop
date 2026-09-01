@@ -24,4 +24,9 @@ router.post(
     auth(),
     controller.fetch_card
 );
+router.post(
+    '/fetch-branch-customers',
+    auth(),
+    controller.get_branch_cus
+);
 module.exports = router;

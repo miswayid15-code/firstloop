@@ -25,11 +25,12 @@ export default function AddCardCustomer() {
     const [searchParams] = useSearchParams();
     const branchId = paramBranchId || searchParams.get("branchId") || "";
 
+    const isMerchantMode = location.pathname.startsWith("/merchant") || window.location.pathname.startsWith("/merchant");
+    const isReceptionistMode = location.pathname.startsWith("/receptionist") || window.location.pathname.startsWith("/receptionist");
+
     const backUrl = branchId
-        ? `/view-fl-branch/${branchId}`
-        : location.pathname.startsWith("/merchant")
-            ? "/merchant/customers"
-            : "/customers";
+        ? (isMerchantMode ? `/merchant/branches/${branchId}` : (isReceptionistMode ? `/receptionist/dashboard` : `/view-fl-branch/${branchId}`))
+        : (isMerchantMode ? "/merchant/customers" : (isReceptionistMode ? "/receptionist/customers" : "/customers"));
 
     const [branch, setBranch] = useState(null);
     const [branchLoading, setBranchLoading] = useState(false);
@@ -321,9 +322,41 @@ export default function AddCardCustomer() {
             {/* TOP HEADER & BREADCRUMBS */}
             <div style={{ marginBottom: 24 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.84rem", color: "var(--text-muted)", fontWeight: 500, marginBottom: 8 }}>
-                    <NavLink to={backUrl} style={{ color: "var(--firstloop-primary, #0E88B8)", textDecoration: "none" }}>
-                        {branch?.name ? branch.name : "Branch Directory"}
-                    </NavLink>
+                    {isMerchantMode ? (
+                        <>
+                            <NavLink to="/merchant/branches" style={{ color: "var(--firstloop-primary, #0E88B8)", textDecoration: "none" }}>
+                                Branches
+                            </NavLink>
+                            {branchId && (
+                                <>
+                                    <i className="fas fa-chevron-right" style={{ fontSize: "0.7rem" }} />
+                                    <NavLink to={`/merchant/branches/${branchId}`} style={{ color: "var(--firstloop-primary, #0E88B8)", textDecoration: "none" }}>
+                                        {branch?.name || "Branch"}
+                                    </NavLink>
+                                </>
+                            )}
+                        </>
+                    ) : isReceptionistMode ? (
+                        <>
+                            <NavLink to="/receptionist/dashboard" style={{ color: "var(--firstloop-primary, #0E88B8)", textDecoration: "none" }}>
+                                Dashboard
+                            </NavLink>
+                        </>
+                    ) : (
+                        <>
+                            <NavLink to="/merchants" style={{ color: "var(--firstloop-primary, #0E88B8)", textDecoration: "none" }}>
+                                Merchants
+                            </NavLink>
+                            {branchId && (
+                                <>
+                                    <i className="fas fa-chevron-right" style={{ fontSize: "0.7rem" }} />
+                                    <NavLink to={`/view-fl-branch/${branchId}`} style={{ color: "var(--firstloop-primary, #0E88B8)", textDecoration: "none" }}>
+                                        {branch?.name || "Branch"}
+                                    </NavLink>
+                                </>
+                            )}
+                        </>
+                    )}
                     <i className="fas fa-chevron-right" style={{ fontSize: "0.7rem" }} />
                     <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>Issue Card to Customer</span>
                 </div>

@@ -212,7 +212,10 @@ function AdminLayout() {
           <Route path="customers/:id" element={<FpCustomerDetails />} />
           <Route path="cards" element={<MerchantCardList />} />
           <Route path="branches" element={<MerchantBranchList />} />
-          <Route path="branches/:id" element={<MerchantViewBranch />} />
+          <Route path="branches/:id" element={<ViewFlBranch />} />
+          <Route path="view-fl-branch/:id" element={<ViewFlBranch />} />
+          <Route path="add-card-customer" element={<AddCardCustomer />} />
+          <Route path="add-card-customer/:branchId" element={<AddCardCustomer />} />
           <Route path="branches/:branchId/receptionists" element={<MerchantBranchReceptionists />} />
           <Route path="reports" element={<MerchantReportsView />} />
         </Route>
@@ -226,6 +229,9 @@ function AdminLayout() {
           <Route path="dashboard" element={<ReceptionistDashboard />} />
           <Route path="customers" element={<ReceptionistCustomerList />} />
           <Route path="checkin" element={<CardCheckInPayment />} />
+          <Route path="add-card-customer" element={<AddCardCustomer />} />
+          <Route path="add-card-customer/:branchId" element={<AddCardCustomer />} />
+          <Route path="view-fl-branch/:id" element={<ViewFlBranch />} />
         </Route>
 
         <Route

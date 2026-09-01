@@ -1044,3 +1044,185 @@ exports.fetch_card = async (req, res) => {
         });
     }
 };
+
+exports.get_branch_cus = async (req, res) => {
+    try {
+
+        const { br_id } = req.body;
+
+        // ---------------------------------------
+        // 1. VALIDATION
+        // ---------------------------------------
+
+        if (!br_id) {
+            return res.status(400).json({
+                status: 0,
+                message: 'Branch ID is required'
+            });
+        }
+
+        const branchId = Number(br_id);
+
+        if (!Number.isInteger(branchId) || branchId <= 0) {
+            return res.status(400).json({
+                status: 0,
+                message: 'Invalid Branch ID'
+            });
+        }
+
+        // ---------------------------------------
+        // 2. GET CUSTOMER CARDS
+        // ---------------------------------------
+
+        const customer_cards = await CustomerCard.findAll({
+            where: {
+                branch_id: branchId
+            },
+
+            attributes: [
+                "id",
+                "customer_id"
+            ]
+        });
+
+        // ---------------------------------------
+        // 3. GET UNIQUE CUSTOMER IDS
+        // ---------------------------------------
+
+        const customerIds = [
+            ...new Set(
+                customer_cards.map(card => card.customer_id)
+            )
+        ];
+
+        // ---------------------------------------
+        // 4. NO CUSTOMERS
+        // ---------------------------------------
+
+        if (customerIds.length === 0) {
+            return res.status(200).json({
+                status: 1,
+                message: 'No customers found for this branch',
+                data: []
+            });
+        }
+
+        // ---------------------------------------
+        // 5. GET ACTIVE CUSTOMERS
+        // ---------------------------------------
+
+        const customers = await Customer.findAll({
+
+            where: {
+                id: {
+                    [Op.in]: customerIds
+                },
+
+                status: 1,
+
+                del_status: 0
+            },
+
+            attributes: [
+                "id",
+                "name",
+                "email",
+                "phone",
+                "country_code",
+                "profile_image",
+                "status",
+                "del_status"
+            ],
+
+            order: [
+                ["id", "DESC"]
+            ]
+        });
+
+        // ---------------------------------------
+        // 6. FORMAT PROFILE IMAGE
+        // ---------------------------------------
+
+        const customerData = customers.map(customer => {
+
+            const data = customer.toJSON();
+
+            data.profile_image = data.profile_image
+                ? baseUrl + '/' + data.profile_image
+                : null;
+
+            return data;
+        });
+
+        // ---------------------------------------
+        // 7. RESPONSE
+        // ---------------------------------------
+
+        return res.status(200).json({
+
+            status: 1,
+
+            message: 'Customers fetched successfully',
+
+            data: customerData
+        });
+
+    } catch (err) {
+
+        console.error(
+            'get_branch_cus Error:',
+            err
+        );
+
+        return res.status(500).json({
+
+            status: 0,
+
+            message: 'Something went wrong',
+
+            error: err.message
+        });
+    }
+};
+
+exports.get_customer_details = async (req, res) => {
+    try {
+        const { customer_id } = req.body;
+        const customer = await Customer.findByPk(customer_id);
+        if (!customer) {
+            return res.status(404).json({
+                status: 0,
+                message: 'Customer not found'
+            });
+        }
+        const customerCards = await CustomerCard.findAll({
+            where: {
+                customer_id: customer_id
+            }
+        });
+        
+        return res.status(200).json({
+            status: 1,
+            message: 'Customer details fetched successfully',
+            data: {
+                customer: customer,
+                cards: customerCards
+            }
+        }); 
+        
+    }
+    catch (err) {
+        console.error(
+            'get_customer_details Error:',
+            err
+        );
+        return res.status(500).json({
+
+            status: 0,
+
+            message: 'Something went wrong',
+
+            error: err.message
+        });
+    }
+}

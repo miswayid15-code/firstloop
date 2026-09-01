@@ -27,29 +27,23 @@ export default function StampCardPreviewModal({
         try {
             setDownloading(true)
             const canvas = await html2canvas(cardRef.current, {
-                scale: 2,
+                scale: 3,
                 useCORS: true,
                 allowTaint: true,
-                backgroundColor: null
+                backgroundColor: null,
+                logging: false
             })
             const image = canvas.toDataURL('image/png')
-            const fileName = (card.title || 'stamp-card').toLowerCase().replace(/\s+/g, '-')
+            const rawName = card.title || card.name || 'stamp-card'
+            const fileName = rawName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'stamp-card'
             const link = document.createElement('a')
             link.href = image
-            link.download = `${fileName}-pass.png`
+            link.download = `${fileName}.png`
             document.body.appendChild(link)
             link.click()
             document.body.removeChild(link)
         } catch (error) {
             console.error('Error downloading stamp card canvas:', error)
-            // Fallback download
-            const fileName = (card.title || 'stamp-card').toLowerCase().replace(/\s+/g, '-')
-            const link = document.createElement('a')
-            link.href = qrImg
-            link.download = `${fileName}-pass.png`
-            document.body.appendChild(link)
-            link.click()
-            document.body.removeChild(link)
         } finally {
             setDownloading(false)
         }
@@ -142,7 +136,7 @@ export default function StampCardPreviewModal({
                                 <div style={{ flex: 1, minWidth: 0 }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                                         <div style={{ width: 26, height: 26, borderRadius: 8, background: '#FFFFFF', padding: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}>
-                                            <img src={brandLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                            <img src={brandLogo} alt="Logo" crossOrigin="anonymous" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                                         </div>
                                         <span style={{ fontSize: '0.95rem', fontWeight: 800, color: 'inherit' }}>
                                             {brandName}
@@ -162,13 +156,75 @@ export default function StampCardPreviewModal({
                                             if (rewardItem) {
                                                 const rType = rewardItem.type || (rewardItem.reward_type === '2' ? 'Discount' : (rewardItem.reward_type === '3' ? 'Paid' : 'Free'))
                                                 if (rType === 'Free') {
-                                                    iconMarkup = <i className="fas fa-gift" style={{ fontSize: '0.8rem' }} />
+                                                    iconMarkup = (
+                                                        <i
+                                                            className={`fas ${rewardItem.icon || 'fa-gift'}`}
+                                                            style={{
+                                                                fontSize: '0.82rem',
+                                                                display: 'inline-flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                lineHeight: 1,
+                                                                verticalAlign: '0',
+                                                                margin: 0,
+                                                                padding: 0
+                                                            }}
+                                                        />
+                                                    )
                                                 } else if (rType === 'Discount') {
                                                     const disc = Number(rewardItem.discount ?? rewardItem.discountVal ?? (parseInt(rewardItem.reward_text) || 0))
-                                                    iconMarkup = <span style={{ fontSize: '0.65rem', fontWeight: 800 }}>{disc}%</span>
+                                                    iconMarkup = (
+                                                        <span
+                                                            style={{
+                                                                fontSize: '0.62rem',
+                                                                fontWeight: 800,
+                                                                display: 'inline-flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                lineHeight: 1,
+                                                                verticalAlign: '0',
+                                                                margin: 0,
+                                                                padding: 0
+                                                            }}
+                                                        >
+                                                            {disc}%
+                                                        </span>
+                                                    )
                                                 } else if (rType === 'Paid') {
-                                                    iconMarkup = <i className={`fas ${rewardItem.icon || 'fa-tag'}`} style={{ fontSize: '0.8rem' }} />
+                                                    iconMarkup = (
+                                                        <i
+                                                            className={`fas ${rewardItem.icon || 'fa-tag'}`}
+                                                            style={{
+                                                                fontSize: '0.82rem',
+                                                                display: 'inline-flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                lineHeight: 1,
+                                                                verticalAlign: '0',
+                                                                margin: 0,
+                                                                padding: 0
+                                                            }}
+                                                        />
+                                                    )
                                                 }
+                                            } else {
+                                                iconMarkup = (
+                                                    <span
+                                                        style={{
+                                                            fontSize: '0.82rem',
+                                                            fontWeight: 800,
+                                                            display: 'inline-flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            lineHeight: 1,
+                                                            verticalAlign: '0',
+                                                            margin: 0,
+                                                            padding: 0
+                                                        }}
+                                                    >
+                                                        {i + 1}
+                                                    </span>
+                                                )
                                             }
 
                                             return (
@@ -184,9 +240,11 @@ export default function StampCardPreviewModal({
                                                         display: 'flex',
                                                         alignItems: 'center',
                                                         justifyContent: 'center',
+                                                        textAlign: 'center',
                                                         fontSize: '0.85rem',
                                                         fontWeight: 800,
-                                                        flexShrink: 0
+                                                        flexShrink: 0,
+                                                        boxSizing: 'border-box'
                                                     }}
                                                 >
                                                     {iconMarkup}
@@ -198,7 +256,7 @@ export default function StampCardPreviewModal({
 
                                 {/* Right Side: QR CODE */}
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                    <img src={qrImg} alt="QR Code" style={{ width: 86, height: 86, objectFit: 'contain', flexShrink: 0 }} />
+                                    <img src={qrImg} alt="QR Code" crossOrigin="anonymous" style={{ width: 86, height: 86, objectFit: 'contain', flexShrink: 0 }} />
                                     <small style={{ fontSize: '0.6rem', fontWeight: 700, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.5px', opacity: 0.9 }}>
                                         SCAN TO STAMP
                                     </small>
@@ -208,7 +266,7 @@ export default function StampCardPreviewModal({
                             {/* Powered by FirstLoop badge */}
                             <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 5, fontSize: '0.65rem', opacity: 0.9, fontWeight: 600, marginTop: 10, lineHeight: 1 }}>
                                 <span style={{ lineHeight: 1, display: 'inline-flex', alignItems: 'center' }}>powered by</span>
-                                <img src={flLogo} alt="FirstLoop" style={{ height: 13, width: 'auto', display: 'inline-block', verticalAlign: 'middle', objectFit: 'contain', margin: '0 1px' }} />
+                                <img src={flLogo} alt="FirstLoop" crossOrigin="anonymous" style={{ height: 13, width: 'auto', display: 'inline-block', verticalAlign: 'middle', objectFit: 'contain', margin: '0 1px' }} />
                                 <strong style={{ color: 'inherit', lineHeight: 1, display: 'inline-flex', alignItems: 'center' }}>firstloop.co.in</strong>
                             </div>
                         </div>
@@ -262,7 +320,7 @@ export default function StampCardPreviewModal({
                         }}
                     >
                         <i className={`fas ${downloading ? 'fa-spinner fa-spin' : 'fa-download'}`} style={{ fontSize: '0.95rem' }} />
-                        <span>{downloading ? 'Generating...' : 'Download Card'}</span>
+                        <span>{downloading ? 'Downloading...' : `Download ${card.title || card.name || 'Stamp Card'}`}</span>
                     </button>
                 </div>
             </div>

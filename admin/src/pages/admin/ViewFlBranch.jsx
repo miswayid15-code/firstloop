@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { NavLink, useNavigate, useParams } from 'react-router-dom'
+import { NavLink, useNavigate, useParams ,useLocation  } from 'react-router-dom'
 import html2canvas from 'html2canvas'
 import logo from '../../assets/img/firstloop-favicon.png'
 import flLogo from '../../assets/img/firstloop-favicon.png'
@@ -56,257 +56,12 @@ const RealQRCode = ({ size = 80 }) => (
     />
 )
 
-// List of Icon options for Paid rewards
-const PAID_ICONS = [
-    { label: 'Coffee / Drink', icon: 'fa-coffee' },
-    { label: 'Gourmet Meal', icon: 'fa-utensils' },
-    { label: 'Hair & Styling', icon: 'fa-cut' },
-    { label: 'Spa & Care', icon: 'fa-spa' },
-    { label: 'Ticket / Voucher', icon: 'fa-ticket-alt' },
-    { label: 'VIP Gem', icon: 'fa-gem' },
-    { label: 'Crown Pass', icon: 'fa-crown' }
-]
 
-// --- Mock Data ---
-const MOCK_BRANCH_DATA = {
-    id: 'fl-br-101',
-    merchant_id: 'm-204',
-    merchant_name: 'Urban Brew & Glow Outlets',
-    name: 'FirstLoop Flagship Hub - Downtown',
-    email: 'downtown.fl@dealora.com',
-    phone: '+1 (555) 382-9102',
-    address: '450 Grand Avenue, Suite 120',
-    city: 'San Francisco',
-    state: 'California',
-    country: 'United States',
-    zip_code: '94108',
-    status: 1,
-    visibility: 0,
-    createdAt: '2025-01-15T08:30:00Z',
-    profile_image: logo,
-    sales_person: {
-        id: 'sp-88',
-        name: 'Samantha Vance',
-        code: 'SP-SAN-88'
-    },
-    timings: [
-        { day: 1, name: 'Monday', open_time: '08:00 AM', close_time: '08:00 PM', is_closed: false },
-        { day: 2, name: 'Tuesday', open_time: '08:00 AM', close_time: '08:00 PM', is_closed: false },
-        { day: 3, name: 'Wednesday', open_time: '08:00 AM', close_time: '08:00 PM', is_closed: false },
-        { day: 4, name: 'Thursday', open_time: '08:00 AM', close_time: '08:00 PM', is_closed: false },
-        { day: 5, name: 'Friday', open_time: '08:00 AM', close_time: '10:00 PM', is_closed: false },
-        { day: 6, name: 'Saturday', open_time: '09:00 AM', close_time: '10:00 PM', is_closed: false },
-        { day: 7, name: 'Sunday', open_time: '10:00 AM', close_time: '06:00 PM', is_closed: false },
-    ]
-}
 
-const INITIAL_STAMP_CARDS = [
-    {
-        id: 'sc-101',
-        title: 'Artisanal Coffee 8-Stamp Pass',
-        brandName: 'Elite Branch',
-        tagline: 'Buy 8 Specialty Coffees, Get 1 Free Dessert!',
-        total_stamps: 8,
-        reward: 'Free Gourmet Muffin or Specialty Beverage',
-        active_members: 142,
-        expiry: '2026-12-31',
-        status: 'Active',
-        icon: 'fa-coffee',
-        bgColor: '#EF0003',
-        bgImage: null,
-        textColor: '#FFFFFF',
-        borderColor: '#FF3B3B',
-        stampBgColor: 'rgba(255, 255, 255, 0.3)',
-        stampBorderColor: '#FFFFFF',
-        stampTextColor: '#FFFFFF',
-        preset: 'Wave Red',
-        stamps_given: 856,
-        rewards_claimed: 98,
-        levelRewards: Array.from({ length: 8 }).map((_, i) => ({
-            stamp: i + 1,
-            reward: i === 7 ? 'Free Specialty Drink & Muffin' : i === 3 ? '20% Discount' : 'Free Extra Shot',
-            type: i === 3 ? 'Discount' : 'Free',
-            discountVal: i === 3 ? 20 : 0,
-            icon: 'fa-gift'
-        }))
-    },
-    {
-        id: 'sc-102',
-        title: 'Beauty Styling 6-Stamp Card',
-        brandName: 'FirstLoop Salon',
-        tagline: 'Collect 6 Stamps on Hair & Facial Services',
-        total_stamps: 6,
-        reward: '50% Discount on Next Styling Session',
-        active_members: 89,
-        expiry: '2026-11-15',
-        status: 'Active',
-        icon: 'fa-cut',
-        bgColor: '#0284C7',
-        bgImage: null,
-        textColor: '#FFFFFF',
-        borderColor: '#00A6D6',
-        stampBgColor: 'rgba(255, 255, 255, 0.3)',
-        stampBorderColor: '#FFFFFF',
-        stampTextColor: '#FFFFFF',
-        preset: 'Aurora',
-        stamps_given: 320,
-        rewards_claimed: 45,
-        levelRewards: Array.from({ length: 6 }).map((_, i) => ({
-            stamp: i + 1,
-            reward: i === 5 ? '50% Off Styling' : 'Free Treatment',
-            type: i === 5 ? 'Discount' : 'Free',
-            discountVal: i === 5 ? 50 : 0,
-            icon: 'fa-gift'
-        }))
-    }
-]
 
-const INITIAL_MEMBERSHIP_CARDS = [
-    {
-        id: 'mc-201',
-        name: 'Gold Elite Membership',
-        cardholderName: 'Sarah Jenkins',
-        brandName: 'FirstLoop Elite',
-        brandLogo: flLogo,
-        validityMonths: '03/25',
-        tier: 'Gold',
-        bgColor: '#D97706',
-        bgImage: null,
-        textColor: '#FFFFFF',
-        borderColor: '#F59E0B',
-        preset: 'Gold Tier',
-        isDefault: true,
-        minSpend: '$250 / year',
-        activeMembers: 128,
-        perks: [
-            '15% Instant Discount on All Items',
-            'Priority Queue & Reserved Seating',
-            'Free Birthday Gift & $10 Voucher',
-            'Exclusive Double Stamp Days'
-        ],
-        status: 'Active'
-    },
-    {
-        id: 'mc-202',
-        name: 'Platinum Black VIP Pass',
-        cardholderName: 'Alex Mercer',
-        brandName: 'VIP Club',
-        brandLogo: logo,
-        validityMonths: '03/25',
-        tier: 'Platinum',
-        bgColor: '#1E293B',
-        bgImage: null,
-        textColor: '#FFFFFF',
-        borderColor: '#64748B',
-        preset: 'Midnight',
-        isDefault: false,
-        minSpend: '$500 / year',
-        activeMembers: 64,
-        perks: [
-            '25% Discount on All Premium Products',
-            'Dedicated Concierge & Account Assistant',
-            'Complimentary Valet Parking',
-            'Free Monthly Tasting Pass'
-        ],
-        status: 'Active'
-    }
-]
 
-const MOCK_CUSTOMERS = [
-    {
-        id: 'cus-501',
-        name: 'Sophia Reynolds',
-        email: 'sophia.reynolds@example.com',
-        phone: '+1 (555) 234-5678',
-        avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=120',
-        stampCard: 'Artisanal Coffee 8-Stamp Pass',
-        stampsCollected: 7,
-        stampsTotal: 8,
-        membershipTier: 'Gold Elite Member',
-        tierBadge: 'Gold',
-        totalVisits: 24,
-        lifetimeSpend: '$480.50',
-        joinedDate: '2025-02-10',
-        status: 'VIP',
-        stampCardsCount: 2,
-        membershipCardsCount: 1,
-        heldStampCards: [
-            {
-                title: 'Artisanal Coffee 8-Stamp Pass',
-                collected: 7,
-                total: 8,
-                reward: 'Free Gourmet Muffin or Specialty Beverage',
-                usageStatus: '7 of 8 stamps collected — 1 stamp away from unlocking Free Muffin reward!'
-            },
-            {
-                title: 'Beauty Styling 6-Stamp Card',
-                collected: 4,
-                total: 6,
-                reward: '50% Discount on Next Styling Session',
-                usageStatus: '4 of 6 stamps collected — 2 stamps remaining for 50% Off Styling reward.'
-            }
-        ],
-        heldMemberships: [
-            {
-                name: 'Gold Elite Membership',
-                tier: 'Gold',
-                validThru: '03/25',
-                expiryDate: '28 Dec 2026',
-                expiryNotice: 'Going to expire on 28 Dec 2026',
-                status: 'Active'
-            }
-        ]
-    },
-    {
-        id: 'cus-502',
-        name: 'Alexander Wright',
-        email: 'alex.wright@example.com',
-        phone: '+1 (555) 876-5432',
-        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=120',
-        stampCard: 'Beauty Styling 6-Stamp Card',
-        stampsCollected: 5,
-        stampsTotal: 6,
-        membershipTier: 'Platinum Black VIP Pass',
-        tierBadge: 'Platinum',
-        totalVisits: 38,
-        lifetimeSpend: '$920.00',
-        joinedDate: '2025-01-22',
-        status: 'VIP',
-        stampCardsCount: 1,
-        membershipCardsCount: 1,
-        heldStampCards: [
-            {
-                title: 'Beauty Styling 6-Stamp Card',
-                collected: 5,
-                total: 6,
-                reward: '50% Discount on Next Styling Session',
-                usageStatus: '5 of 6 stamps collected — 1 stamp remaining for 50% Off Styling reward.'
-            }
-        ],
-        heldMemberships: [
-            {
-                name: 'Platinum Black VIP Pass',
-                tier: 'Platinum',
-                validThru: '03/25',
-                expiryDate: '15 Nov 2026',
-                expiryNotice: 'Going to expire on 15 Nov 2026',
-                status: 'Active'
-            }
-        ]
-    }
-]
 
-const QUICK_COLORS = [
-    { label: 'Red', hex: '#EF0003' },
-    { label: 'Orange', hex: '#F97316' },
-    { label: 'Yellow', hex: '#F59E0B' },
-    { label: 'Teal', hex: '#10B981' },
-    { label: 'Cyan', hex: '#00A6D6' },
-    { label: 'Blue', hex: '#0284C7' },
-    { label: 'Purple', hex: '#8B5CF6' },
-    { label: 'Dark', hex: '#1E293B' },
-    { label: 'White', hex: '#FFFFFF' }
-]
+
 
 const DAYS_LIST = [
     { day: 1, name: 'Monday' },
@@ -332,7 +87,11 @@ const formatTimingTime = (timeStr) => {
 
 export default function ViewFlBranch() {
     const navigate = useNavigate()
+    const location = useLocation()
     const { id } = useParams()
+
+    const isMerchantMode = location.pathname.startsWith('/merchant') || window.location.pathname.startsWith('/merchant')
+    const isReceptionistMode = location.pathname.startsWith('/receptionist') || window.location.pathname.startsWith('/receptionist')
 
     const [branch, setBranch] = useState(null)
     const [branchLoading, setBranchLoading] = useState(true)
@@ -360,6 +119,8 @@ export default function ViewFlBranch() {
     const [membershipBuilderOpen, setMembershipBuilderOpen] = useState(false)
     const [selectedEditMembershipCard, setSelectedEditMembershipCard] = useState(null)
     const [addCardCustomerOpen, setAddCardCustomerOpen] = useState(false)
+    const [customers, setCustomers] = useState([])
+    const [customersLoading, setCustomersLoading] = useState(false)
 
     // Fetch Branch Details using firstloop/branch_details/:id
     const fetchBranchDetails = async () => {
@@ -391,6 +152,31 @@ export default function ViewFlBranch() {
         }
     }
 
+    // Fetch Branch Customers using firstloop/customer/fetch-branch-customers
+    const fetchBranchCustomers = async () => {
+        if (!id) return
+        setCustomersLoading(true)
+        try {
+            const response = await API.post('firstloop/customer/fetch-branch-customers', {
+                br_id: Number(id)
+            })
+
+            console.log('Fetch Branch Customers Response:', response?.data)
+
+            if (response?.data && (response.data.status === 1 || response.data.status === '1' || response.data.success)) {
+                const list = response.data.data || response.data.customers || []
+                setCustomers(Array.isArray(list) ? list : (list ? [list] : []))
+            } else {
+                setCustomers([])
+            }
+        } catch (err) {
+            console.error('Error fetching branch customers:', err)
+            setCustomers([])
+        } finally {
+            setCustomersLoading(false)
+        }
+    }
+
     const fetchCardDesignsFromApi = async () => {
         try {
             const response = await API.post('admin/card-design/list')
@@ -410,6 +196,7 @@ export default function ViewFlBranch() {
             fetchBranchDetails()
             fetchStampCards()
             fetchMembershipCards()
+            fetchBranchCustomers()
         }
     }, [id])
 
@@ -552,20 +339,16 @@ export default function ViewFlBranch() {
     }, [membershipCards, membershipSearch])
 
     const filteredCustomers = useMemo(() => {
-        return MOCK_CUSTOMERS.filter(c => {
-            const matchesSearch =
-                c.name.toLowerCase().includes(customerSearch.toLowerCase()) ||
-                c.email.toLowerCase().includes(customerSearch.toLowerCase()) ||
-                c.phone.includes(customerSearch)
+        return (customers || []).filter(c => {
+            const name = (c.name || '').toLowerCase()
+            const email = (c.email || '').toLowerCase()
+            const phone = String(c.phone || '')
+            const search = (customerSearch || '').toLowerCase().trim()
 
-            const matchesCard =
-                customerFilterCard === 'all' ||
-                (customerFilterCard === 'stamps' && c.stampCard) ||
-                (customerFilterCard === 'membership' && c.membershipTier)
-
-            return matchesSearch && matchesCard
+            if (!search) return true
+            return name.includes(search) || email.includes(search) || phone.includes(search)
         })
-    }, [customerSearch, customerFilterCard])
+    }, [customers, customerSearch])
 
     // Handler: Open Stamp Card Builder for Creation
     const handleOpenCreateStampCard = () => {
@@ -705,15 +488,35 @@ export default function ViewFlBranch() {
             {/* Header & Breadcrumbs */}
             <div style={{ marginBottom: 24 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 500, marginBottom: 8 }}>
-                    <NavLink to="/merchants" style={{ color: 'var(--firstloop-primary)' }}>
-                        Merchants
-                    </NavLink>
-                    <i className="fas fa-chevron-right" style={{ fontSize: '0.7rem' }} />
-                    <NavLink to={branch?.merchant_id ? `/view-merchant/${branch.merchant_id}` : '/merchants'} style={{ color: 'var(--firstloop-primary)' }}>
-                        {branch?.merchant_name || 'Merchant'}
-                    </NavLink>
-                    <i className="fas fa-chevron-right" style={{ fontSize: '0.7rem' }} />
-                    <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{branch?.name || 'Branch Overview'}</span>
+                    {isMerchantMode ? (
+                        <>
+                            <NavLink to="/merchant/branches" style={{ color: 'var(--firstloop-primary)' }}>
+                                Branches
+                            </NavLink>
+                            <i className="fas fa-chevron-right" style={{ fontSize: '0.7rem' }} />
+                            <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{branch?.name || 'Branch Overview'}</span>
+                        </>
+                    ) : isReceptionistMode ? (
+                        <>
+                            <NavLink to="/receptionist/dashboard" style={{ color: 'var(--firstloop-primary)' }}>
+                                Dashboard
+                            </NavLink>
+                            <i className="fas fa-chevron-right" style={{ fontSize: '0.7rem' }} />
+                            <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{branch?.name || 'Branch Overview'}</span>
+                        </>
+                    ) : (
+                        <>
+                            <NavLink to="/merchants" style={{ color: 'var(--firstloop-primary)' }}>
+                                Merchants
+                            </NavLink>
+                            <i className="fas fa-chevron-right" style={{ fontSize: '0.7rem' }} />
+                            <NavLink to={branch?.merchant_id ? `/view-merchant/${branch.merchant_id}` : '/merchants'} style={{ color: 'var(--firstloop-primary)' }}>
+                                {branch?.merchant_name || 'Merchant'}
+                            </NavLink>
+                            <i className="fas fa-chevron-right" style={{ fontSize: '0.7rem' }} />
+                            <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{branch?.name || 'Branch Overview'}</span>
+                        </>
+                    )}
                 </div>
 
                 <div className="flex-between" style={{ gap: 20, flexWrap: 'wrap' }}>
@@ -732,10 +535,14 @@ export default function ViewFlBranch() {
                         <button
                             type="button"
                             className="btn btn-secondary"
-                            onClick={() => navigate(branch?.merchant_id ? `/view-merchant/${branch.merchant_id}` : -1)}
+                            onClick={() => {
+                                if (isMerchantMode) navigate('/merchant/branches')
+                                else if (isReceptionistMode) navigate('/receptionist/dashboard')
+                                else navigate(branch?.merchant_id ? `/view-merchant/${branch.merchant_id}` : -1)
+                            }}
                         >
                             <i className="fas fa-arrow-left" />
-                            {' '}Back to Merchant
+                            {' '}{isMerchantMode ? 'Back to Branches' : (isReceptionistMode ? 'Back to Dashboard' : 'Back to Merchant')}
                         </button>
                     </div>
                 </div>
@@ -1107,25 +914,7 @@ export default function ViewFlBranch() {
             {/* ASSOCIATED CUSTOMERS TABLE SECTION */}
             <div className="card" style={{ padding: 15 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, marginBottom: 20 }}>
-                    <div style={{ flex: '0 0 auto' }}>
-                        <button
-                            type="button"
-                            className="btn btn-primary"
-                            onClick={() => navigate(`/add-card-customer/${branch?.id || id}`)}
-                            style={{
-                                fontWeight: 600,
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 8,
-                                borderRadius: 10,
-                                padding: '9px 18px',
-                                boxShadow: '0 4px 12px rgba(14, 136, 184, 0.25)'
-                            }}
-                        >
-                            <i className="fas fa-user-plus"></i>
-                            <span>Add Card to Customer</span>
-                        </button>
-                    </div>
+
                     <div>
                         <h3 style={{ fontSize: '1.15rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-primary)' }}>
                             <i className="fas fa-users" style={{ color: '#059669' }} />
@@ -1137,7 +926,32 @@ export default function ViewFlBranch() {
                     </div>
 
                     <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-                        <select
+                        <div style={{ flex: '0 0 auto' }}>
+                            <button
+                                type="button"
+                                className="btn btn-primary"
+                                onClick={() => navigate(
+                                    isMerchantMode
+                                        ? `/merchant/add-card-customer/${branch?.id || id}`
+                                        : isReceptionistMode
+                                            ? `/receptionist/add-card-customer/${branch?.id || id}`
+                                            : `/add-card-customer/${branch?.id || id}`
+                                )}
+                                style={{
+                                    fontWeight: 600,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 8,
+                                    borderRadius: 10,
+                                    padding: '9px 18px',
+                                    boxShadow: '0 4px 12px rgba(14, 136, 184, 0.25)'
+                                }}
+                            >
+                                <i className="fas fa-user-plus"></i>
+                                <span>Add Card to Customer</span>
+                            </button>
+                        </div>
+                        {/* <select
                             className="form-control"
                             value={customerFilterCard}
                             onChange={(e) => setCustomerFilterCard(e.target.value)}
@@ -1146,7 +960,7 @@ export default function ViewFlBranch() {
                             <option value="all">All Card Types</option>
                             <option value="stamps">Stamp Card Holders</option>
                             <option value="membership">Membership Holders</option>
-                        </select>
+                        </select> */}
 
                         <div style={{ position: 'relative', width: 220 }}>
                             <i className="fas fa-search" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.8rem' }} />
@@ -1171,79 +985,76 @@ export default function ViewFlBranch() {
                                 <th style={{ padding: '12px 16px', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)' }}>CONTACT</th>
                                 {/* <th style={{ padding: '12px 16px', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)' }}>ACTIVE STAMP CARD</th> */}
                                 {/* <th style={{ padding: '12px 16px', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)' }}>MEMBERSHIP TIER</th> */}
-                                <th style={{ padding: '12px 16px', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)' }}>VISITS & SPEND</th>
+                                {/* <th style={{ padding: '12px 16px', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)' }}>VISITS & SPEND</th> */}
                                 {/* <th style={{ padding: '12px 16px', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)' }}>STATUS</th> */}
                                 <th style={{ padding: '12px 16px', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', textAlign: 'right' }}>ACTION</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredCustomers.length > 0 ? (
+                            {customersLoading ? (
+                                <tr>
+                                    <td colSpan="3" style={{ textAlign: 'center', padding: '36px 16px', color: 'var(--text-muted)' }}>
+                                        <i className="fas fa-spinner fa-spin" style={{ fontSize: '1.5rem', marginBottom: 8, color: 'var(--firstloop-primary)' }} />
+                                        <p style={{ margin: 0, fontSize: '0.88rem' }}>Loading associated customers...</p>
+                                    </td>
+                                </tr>
+                            ) : filteredCustomers.length > 0 ? (
                                 filteredCustomers.map((cus) => (
                                     <tr key={cus.id} style={{ verticalAlign: 'middle' }}>
                                         <td style={{ padding: '14px 16px' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                                <img
-                                                    src={cus.avatar}
-                                                    alt={cus.name}
-                                                    style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }}
-                                                />
-                                                <div>
-                                                    <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-primary)' }}>{cus.name}</div>
-                                                    <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Joined: {cus.joinedDate}</small>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td style={{ padding: '14px 16px', fontSize: '0.82rem' }}>
-                                            <div>{cus.email}</div>
-                                            <small style={{ color: 'var(--text-muted)' }}>{cus.phone}</small>
-                                        </td>
-                                        {/* <td style={{ padding: '14px 16px' }}>
-                                            <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--firstloop-primary)' }}>
-                                                {cus.stampCard}
-                                            </div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                                                <div style={{ flex: 1, background: '#E2E8F0', height: 6, borderRadius: 4, overflow: 'hidden', maxWidth: 100 }}>
-                                                    <div
-                                                        style={{
-                                                            width: `${(cus.stampsCollected / cus.stampsTotal) * 100}%`,
-                                                            background: 'var(--firstloop-gradient-primary)',
-                                                            height: '100%'
-                                                        }}
+                                                {cus.profile_image ? (
+                                                    <img
+                                                        src={formatImageUrl(cus.profile_image)}
+                                                        alt={cus.name || 'Customer'}
+                                                        style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }}
                                                     />
+                                                ) : (
+                                                    <div style={{
+                                                        width: 40,
+                                                        height: 40,
+                                                        borderRadius: '50%',
+                                                        background: 'var(--firstloop-primary-light, #E6F2FA)',
+                                                        color: 'var(--firstloop-primary, #0E88B8)',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        fontWeight: 700,
+                                                        fontSize: '0.9rem',
+                                                        flexShrink: 0
+                                                    }}>
+                                                        {cus.name ? cus.name.charAt(0).toUpperCase() : 'C'}
+                                                    </div>
+                                                )}
+                                                <div>
+                                                    <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-primary)' }}>
+                                                        {cus.name || 'Customer'}
+                                                    </div>
+                                                    {cus.created_at && (
+                                                        <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+                                                            Joined: {new Date(cus.created_at).toLocaleDateString()}
+                                                        </small>
+                                                    )}
                                                 </div>
-                                                <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)' }}>
-                                                    {cus.stampsCollected}/{cus.stampsTotal} Stamps
-                                                </span>
                                             </div>
-                                        </td> */}
-                                        {/* <td style={{ padding: '14px 16px' }}>
-                                            <span
-                                                style={{
-                                                    fontSize: '0.75rem',
-                                                    fontWeight: 700,
-                                                    padding: '3px 10px',
-                                                    borderRadius: 12,
-                                                    background: cus.tierBadge === 'Platinum' ? '#1E293B' : cus.tierBadge === 'Gold' ? '#D97706' : '#64748B',
-                                                    color: '#FFFFFF'
-                                                }}
-                                            >
-                                                {cus.membershipTier}
-                                            </span>
-                                        </td> */}
-                                        <td style={{ padding: '14px 16px', fontSize: '0.82rem' }}>
-                                            <strong>{cus.totalVisits} Visits</strong>
-                                            <div style={{ color: '#059669', fontWeight: 600 }}>{cus.lifetimeSpend} Spend</div>
                                         </td>
-                                        {/* <td style={{ padding: '14px 16px' }}>
-                                            <span className="badge active" style={{ fontSize: '0.72rem' }}>
-                                                {cus.status}
-                                            </span>
-                                        </td> */}
+                                        <td style={{ padding: '14px 16px', fontSize: '0.82rem' }}>
+                                            <div>{cus.email || '-'}</div>
+                                            <small style={{ color: 'var(--text-muted)' }}>
+                                                {cus.country_code ? `+${cus.country_code} ` : ''}{cus.phone || ''}
+                                            </small>
+                                        </td>
                                         <td style={{ padding: '14px 16px', textAlign: 'right' }}>
                                             <button
                                                 type="button"
                                                 className="btn firstloop-btn-secondary"
-                                                onClick={() => navigate(`/fp-customer_details/${cus.id}?branchId=${branch.id || 'br-101'}`)}
+                                                onClick={() => navigate(
+                                                    isMerchantMode
+                                                        ? `/merchant/customers/${cus.id}?branchId=${branch?.id || id}`
+                                                        : isReceptionistMode
+                                                            ? `/receptionist/customers/${cus.id}?branchId=${branch?.id || id}`
+                                                            : `/fp-customer_details/${cus.id}?branchId=${branch?.id || id}`
+                                                )}
                                                 style={{ padding: '6px 12px', fontSize: '0.78rem', borderRadius: 6 }}
                                             >
                                                 <i className="fas fa-user-circle" style={{ marginRight: 4 }} />
@@ -1254,8 +1065,8 @@ export default function ViewFlBranch() {
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan="7" style={{ textAlign: 'center', padding: 30, color: 'var(--text-muted)' }}>
-                                        No associated customers match your query.
+                                    <td colSpan="3" style={{ textAlign: 'center', padding: 30, color: 'var(--text-muted)' }}>
+                                        No associated customers found for this branch.
                                     </td>
                                 </tr>
                             )}
