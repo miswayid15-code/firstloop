@@ -2,7 +2,7 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('stamp_levels', {
+    await queryInterface.createTable('customer_stamp_levels', {
       id: {
         type: Sequelize.BIGINT,
         autoIncrement: true,
@@ -10,22 +10,36 @@ module.exports = {
         allowNull: false,
       },
 
-      merchant_card_id: {
+      customer_card_id: {
         type: Sequelize.BIGINT,
         allowNull: false,
         references: {
-          model: 'stamp_cards',
+          model: 'customer_cards',
           key: 'id',
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE',
       },
 
+      // Stamp number
       stamp_number: {
         type: Sequelize.INTEGER,
         allowNull: false,
       },
 
+      // Amount required for this stamp
+      amt: {
+        type: Sequelize.DECIMAL(10, 2),
+        allowNull: false,
+      },
+
+      // Discount percentage
+      discount: {
+        type: Sequelize.DECIMAL(5, 2),
+        allowNull: false,
+        defaultValue: 0,
+        comment: 'Discount percentage',
+      },
 
       // 1 = Free
       // 2 = Discount
@@ -36,24 +50,22 @@ module.exports = {
         defaultValue: '1',
       },
 
+      // Free     -> NULL
+      // Discount -> "10%", "20%", etc.
+      // Paid     -> "Coffee", "Burger", "₹99 Coffee", etc.
       reward_text: {
         type: Sequelize.STRING(255),
         allowNull: true,
       },
+
       icon: {
         type: Sequelize.STRING(255),
         allowNull: true,
-      },
-      amt: {
-        type: Sequelize.DECIMAL(10, 2),
-        allowNull: false,
       },
 
       category_id: {
         type: Sequelize.BIGINT,
         allowNull: true,
-        onUpdate: 'CASCADE',
-        onDelete: 'SET NULL',
       },
 
       status: {
@@ -74,22 +86,9 @@ module.exports = {
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
       },
     });
-
-    await queryInterface.addConstraint(
-      'stamp_levels',
-      {
-        fields: ['merchant_card_id', 'stamp_number'],
-        type: 'unique',
-        name: 'merchant_card_stamp_levels_card_stamp_unique',
-      }
-    );
   },
 
   async down(queryInterface) {
-    await queryInterface.dropTable('stamp_levels');
-
-    await queryInterface.sequelize.query(
-      'DROP TYPE IF EXISTS "enum_merchant_card_stamp_levels_reward_type";'
-    );
+    await queryInterface.dropTable('customer_stamp_levels');
   },
 };

@@ -57,60 +57,11 @@ const RealQRCode = ({ size = 80 }) => (
         }}
     />
 )
-const getRelativeImagePath = (value) => {
-    if (!value) return ''
-    let str = String(value).trim()
-
-    if (str.startsWith('data:') || str.startsWith('blob:')) {
-        return str
-    }
-
-    const uploadsMatch = str.match(/(uploads\/.*)/i)
-    if (uploadsMatch) {
-        return uploadsMatch[1]
-    }
-
-    while (str.includes('http://') || str.includes('https://')) {
-        const lastHttp = str.lastIndexOf('http://')
-        const lastHttps = str.lastIndexOf('https://')
-        const idx = Math.max(lastHttp, lastHttps)
-        try {
-            const url = new URL(str.substring(idx))
-            str = url.pathname
-        } catch (e) {
-            str = str.replace(/^https?:\/\/[^/]+/i, '')
-        }
-    }
-
-    return str.replace(/^\/+/, '')
-}
-
-const formatValidity = (val) => {
-    if (!val) return '12 Months'
-    const str = String(val).trim()
-    if (/^\d+$/.test(str)) {
-        return `${str} Month${Number(str) > 1 ? 's' : ''}`
-    }
-    return str
-}
-
-const formatImageUrl = (img) => {
-    if (!img) return ''
-    let str = String(img).trim()
-
-    if (str.startsWith('data:') || str.startsWith('blob:')) {
-        return str
-    }
-
-    if (str.startsWith('http://') || str.startsWith('https://')) {
-        return str
-    }
-
-    const baseUrl = import.meta.env.VITE_API_URL || ''
-    const cleanBase = baseUrl.replace(/\/+$/, '')
-    const cleanImg = getRelativeImagePath(str).replace(/^\/+/, '')
-    return cleanBase ? `${cleanBase}/${cleanImg}` : `/${cleanImg}`
-}
+import {
+    getRelativeImagePath,
+    formatImageUrl,
+    formatValidity
+} from '../../services/cardService.js'
 
 export default function CardList() {
 
@@ -396,22 +347,7 @@ export default function CardList() {
         )
     }, [membershipCards, membershipSearch])
 
-    // Card Style Helper (supports bgImage, cardDesignId and bgColor)
-    const getCardStyle = (card) => {
-        const style = {
-            border: `2px solid ${card.borderColor || 'rgba(255,255,255,0.4)'}`
-        }
-        const bgImg = card.bgImage || (card.cardDesignId ? cardDesignsApi.find(d => String(d.id) === String(card.cardDesignId))?.image : null)
-        if (bgImg) {
-            style.backgroundImage = `url(${formatImageUrl(bgImg)})`
-            style.backgroundSize = 'cover'
-            style.backgroundPosition = 'center'
-            style.backgroundRepeat = 'no-repeat'
-        } else {
-            style.backgroundColor = card.bgColor || '#0E88B8'
-        }
-        return style
-    }
+
 
     // --- STAMP CARD HANDLERS ---
     const handleOpenCreateStampCard = () => {

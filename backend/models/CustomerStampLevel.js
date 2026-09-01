@@ -1,8 +1,9 @@
 'use strict';
 
 module.exports = (sequelize, DataTypes) => {
-    const StampLevel = sequelize.define(
-        'StampLevel',
+
+    const CustomerStampLevel = sequelize.define(
+        'CustomerStampLevel',
         {
             id: {
                 type: DataTypes.BIGINT,
@@ -11,7 +12,7 @@ module.exports = (sequelize, DataTypes) => {
                 allowNull: false,
             },
 
-            merchant_card_id: {
+            customer_card_id: {
                 type: DataTypes.BIGINT,
                 allowNull: false,
             },
@@ -25,28 +26,25 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.DECIMAL(10, 2),
                 allowNull: false,
             },
+
             discount: {
                 type: DataTypes.DECIMAL(5, 2),
                 allowNull: false,
                 defaultValue: 0,
-                comment: 'Discount percentage'
+                comment: 'Discount percentage',
             },
-            // 1 = Free
-            // 2 = Discount
-            // 3 = Paid
+
             reward_type: {
                 type: DataTypes.ENUM('1', '2', '3'),
                 allowNull: false,
                 defaultValue: '1',
             },
 
-            // Free     -> NULL
-            // Discount -> "10%", "20%", etc.
-            // Paid     -> "Coffee", "Burger", "₹99 Coffee", etc.
             reward_text: {
                 type: DataTypes.STRING(255),
                 allowNull: true,
             },
+
             icon: {
                 type: DataTypes.STRING(255),
                 allowNull: true,
@@ -64,24 +62,25 @@ module.exports = (sequelize, DataTypes) => {
             },
         },
         {
-            tableName: 'stamp_levels',
+            tableName: 'customer_stamp_levels',
             timestamps: true,
             createdAt: 'created_at',
             updatedAt: 'updated_at',
         }
     );
 
-    StampLevel.associate = (models) => {
-        StampLevel.belongsTo(models.Stampcard, {
-            foreignKey: 'merchant_card_id',
-            as: 'Stampcard',
+    CustomerStampLevel.associate = (models) => {
+
+        CustomerStampLevel.belongsTo(models.CustomerCard, {
+            foreignKey: 'customer_card_id',
+            as: 'CustomerCard',
         });
 
-        StampLevel.belongsTo(models.Category, {
+        CustomerStampLevel.belongsTo(models.Category, {
             foreignKey: 'category_id',
             as: 'Category',
         });
     };
 
-    return StampLevel;
+    return CustomerStampLevel;
 };

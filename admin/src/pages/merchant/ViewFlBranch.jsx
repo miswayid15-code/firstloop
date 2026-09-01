@@ -15,42 +15,12 @@ import MembershipCardPreviewModal from '../../components/MembershipCardPreviewMo
 import { toast } from 'react-hot-toast'
 
 
-const getRelativeImagePath = (path) => {
-    if (!path || typeof path !== 'string') return ''
-    let str = path.trim()
-    if (str.startsWith('data:') || str.startsWith('blob:')) return str
-    const uploadsMatch = str.match(/(uploads\/.*)/i)
-    if (uploadsMatch && uploadsMatch[1]) {
-        return uploadsMatch[1].replace(/^\/+/, '')
-    }
-    if (str.startsWith('http://') || str.startsWith('https://')) {
-        const lastHttp = str.lastIndexOf('http://')
-        const lastHttps = str.lastIndexOf('https://')
-        const idx = Math.max(lastHttp, lastHttps)
-        try {
-            const url = new URL(str.substring(idx))
-            str = url.pathname
-        } catch (e) {
-            str = str.replace(/^https?:\/\/[^/]+/i, '')
-        }
-    }
-
-    return str.replace(/^\/+/, '')
-}
-
-const formatImageUrl = (img) => {
-    if (!img) return ''
-    let str = String(img).trim()
-
-    if (str.startsWith('http://') || str.startsWith('https://') || str.startsWith('data:') || str.startsWith('blob:')) {
-        return str
-    }
-
-    const baseUrl = import.meta.env.VITE_API_URL || ''
-    const cleanBase = baseUrl.replace(/\/+$/, '')
-    const cleanImg = getRelativeImagePath(str).replace(/^\/+/, '')
-    return cleanBase ? `${cleanBase}/${cleanImg}` : cleanImg
-}
+import {
+    getRelativeImagePath,
+    formatImageUrl,
+    getCardStyle,
+    formatValidity
+} from '../../services/cardService.js'
 
 
 
@@ -87,15 +57,7 @@ const DEFAULT_CARD_DESIGNS = [
         status: 1
     }
 ]
-// Helper: Format validity months for pass display (e.g. 12 -> 12 Months)
-const formatValidity = (val) => {
-    if (!val) return '12 Months'
-    const str = String(val).trim()
-    if (/^\d+$/.test(str)) {
-        return `${str} Month${Number(str) > 1 ? 's' : ''}`
-    }
-    return str
-}
+
 
 const DAYS_LIST = [
     { day: 1, name: 'Monday' },
@@ -670,22 +632,7 @@ export default function ViewFlBranch() {
         setMembershipBuilderOpen(false)
     }
 
-    // Helper: Compute Card Background & Border Style
-    const getCardStyle = (card) => {
-        const style = {
-            border: `2px solid ${card.borderColor || 'rgba(255,255,255,0.4)'}`
-        }
-        if (card.bgImage) {
-            const fullImg = formatImageUrl(card.bgImage)
-            style.backgroundImage = `url(${fullImg})`
-            style.backgroundSize = 'cover'
-            style.backgroundPosition = 'center'
-            style.backgroundRepeat = 'no-repeat'
-        } else {
-            style.backgroundColor = card.bgColor || '#0E88B8'
-        }
-        return style
-    }
+
 
     return (
         <div style={{ paddingBottom: 40 }}>

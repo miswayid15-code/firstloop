@@ -175,6 +175,7 @@ function WebsiteLayout() {
           <Route path="/firstloop-coming-soon" element={<FirstLoopComingSoon />} />
           <Route path="/firstloop" element={<FirstLoopComingSoon />} />
           <Route path="/card-preview/:id" element={<CardPreview />} />
+          <Route path="/card-preview/:id/:type" element={<CardPreview />} />
         </Routes>
       </main>
 
@@ -193,6 +194,7 @@ function AdminLayout() {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="card-preview/:id" element={<CardPreview />} />
+        <Route path="card-preview/:id/:type" element={<CardPreview />} />
         <Route path="saleperson-login" element={<SalePersonLogin />} />
         <Route path="saleperson-dashboard" element={<SalePersonDashboard />} />
         <Route path="saleperson-add-merchant" element={<SalePersonAddMerchant />} />

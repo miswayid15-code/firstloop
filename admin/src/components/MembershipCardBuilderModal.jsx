@@ -18,54 +18,12 @@ const RealQRCode = ({ size = 80 }) => (
         }}
     />
 )
-const getRelativeImagePath = (value) => {
-    if (!value) return ''
-    let str = String(value).trim()
-
-    if (str.startsWith('data:') || str.startsWith('blob:')) {
-        return str
-    }
-
-    const uploadsMatch = str.match(/(uploads\/.*)/i)
-    if (uploadsMatch) {
-        return uploadsMatch[1]
-    }
-
-    while (str.includes('http://') || str.includes('https://')) {
-        const lastHttp = str.lastIndexOf('http://')
-        const lastHttps = str.lastIndexOf('https://')
-        const idx = Math.max(lastHttp, lastHttps)
-        try {
-            const url = new URL(str.substring(idx))
-            str = url.pathname
-        } catch (e) {
-            str = str.replace(/^https?:\/\/[^/]+/i, '')
-        }
-    }
-
-    return str.replace(/^\/+/, '')
-}
-
-const formatValidity = (val) => {
-    if (!val) return '12 Months'
-    const str = String(val).trim()
-    if (/^\d+$/.test(str)) {
-        return `${str} Month${Number(str) > 1 ? 's' : ''}`
-    }
-    return str
-}
-
-// Format Image URL helper
-const formatImageUrl = (img) => {
-    if (!img) return ''
-    if (img.startsWith('http://') || img.startsWith('https://') || img.startsWith('data:') || img.startsWith('blob:')) {
-        return img
-    }
-    const baseUrl = import.meta.env.VITE_API_URL || ''
-    const cleanBase = baseUrl.replace(/\/+$/, '')
-    const cleanImg = String(img).replace(/^\/+/, '')
-    return `${cleanBase}/${cleanImg}`
-}
+import {
+    getRelativeImagePath,
+    formatImageUrl,
+    formatValidity,
+    getCardStyle
+} from '../services/cardService.js'
 
 const EMPTY_ARRAY = []
 
@@ -316,22 +274,7 @@ export default function MembershipCardBuilderModal({
 
     if (!isOpen) return null
 
-    // Card Style Helper
-    const getCardStyle = (form) => {
-        const style = {
-            border: `2px solid ${form.borderColor || 'rgba(255,255,255,0.4)'}`
-        }
-        const bgImg = form.bgImage || (form.cardDesignId ? availableDesigns.find(d => String(d.id) === String(form.cardDesignId))?.image : null)
-        if (bgImg) {
-            style.backgroundImage = `url(${formatImageUrl(bgImg)})`
-            style.backgroundSize = 'cover'
-            style.backgroundPosition = 'center'
-            style.backgroundRepeat = 'no-repeat'
-        } else {
-            style.backgroundColor = form.bgColor || '#D97706'
-        }
-        return style
-    }
+
 
     const handleMembershipLogoUpload = (e) => {
         const file = e.target.files[0]

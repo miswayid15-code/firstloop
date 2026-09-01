@@ -20,54 +20,114 @@ const RealQRCode = ({ size = 80 }) => (
     />
 )
 
-// Helper: Get clean relative image path
-const getRelativeImagePath = (value) => {
-    if (!value) return ''
-    let str = String(value).trim()
-
-    if (str.startsWith('data:') || str.startsWith('blob:')) {
-        return str
-    }
-
-    const uploadsMatch = str.match(/(uploads\/.*)/i)
-    if (uploadsMatch) {
-        return uploadsMatch[1]
-    }
-
-    while (str.includes('http://') || str.includes('https://')) {
-        const lastHttp = str.lastIndexOf('http://')
-        const lastHttps = str.lastIndexOf('https://')
-        const idx = Math.max(lastHttp, lastHttps)
-        try {
-            const url = new URL(str.substring(idx))
-            str = url.pathname
-        } catch (e) {
-            str = str.replace(/^https?:\/\/[^/]+/i, '')
-        }
-    }
-
-    return str.replace(/^\/+/, '')
-}
-
-// Format Image URL helper
-const formatImageUrl = (img) => {
-    if (!img) return ''
-    let str = String(img).trim()
-
-    if (str.startsWith('data:') || str.startsWith('blob:')) {
-        return str
-    }
-
-    const rel = getRelativeImagePath(str)
-    if (!rel) return ''
-
-    const baseUrl = import.meta.env.VITE_API_URL || ''
-    const cleanBase = baseUrl.replace(/\/+$/, '')
-    const cleanImg = rel.replace(/^\/+/, '')
-    return cleanBase ? `${cleanBase}/${cleanImg}` : cleanImg
-}
+import {
+    getRelativeImagePath,
+    formatImageUrl,
+    getCardStyle
+} from '../services/cardService.js'
 
 const EMPTY_ARRAY = []
+
+// Categorized Font Awesome Icons for Stamp Levels & Categories
+export const FA_ICONS_BY_CATEGORY = {
+    'Food & Beverages': [
+        { icon: 'fa-utensils', label: 'Utensils' },
+        { icon: 'fa-burger', label: 'Burger' },
+        { icon: 'fa-pizza-slice', label: 'Pizza' },
+        { icon: 'fa-coffee', label: 'Coffee' },
+        { icon: 'fa-mug-hot', label: 'Hot Mug' },
+        { icon: 'fa-ice-cream', label: 'Ice Cream' },
+        { icon: 'fa-cocktail', label: 'Cocktail' },
+        { icon: 'fa-beer', label: 'Beer' },
+        { icon: 'fa-wine-glass', label: 'Wine' },
+        { icon: 'fa-bread-slice', label: 'Bakery' },
+        { icon: 'fa-cookie', label: 'Cookie' },
+        { icon: 'fa-drumstick-bite', label: 'Meal' }
+    ],
+    'Salon & Beauty': [
+        { icon: 'fa-spa', label: 'Spa' },
+        { icon: 'fa-cut', label: 'Salon / Cut' },
+        { icon: 'fa-hand-sparkles', label: 'Nails & Care' },
+        { icon: 'fa-magic', label: 'Treatment' },
+        { icon: 'fa-spray-can', label: 'Cosmetics' },
+        { icon: 'fa-smile', label: 'Facial' },
+        { icon: 'fa-heart', label: 'Wellness' }
+    ],
+    'Retail & Shopping': [
+        { icon: 'fa-shopping-bag', label: 'Shopping Bag' },
+        { icon: 'fa-shopping-cart', label: 'Cart' },
+        { icon: 'fa-tag', label: 'Price Tag' },
+        { icon: 'fa-tags', label: 'Tags' },
+        { icon: 'fa-tshirt', label: 'Apparel' },
+        { icon: 'fa-gem', label: 'Jewelry / Gem' },
+        { icon: 'fa-store', label: 'Store' }
+    ],
+    'Fitness & Sports': [
+        { icon: 'fa-dumbbell', label: 'Gym / Fitness' },
+        { icon: 'fa-running', label: 'Running' },
+        { icon: 'fa-bicycle', label: 'Cycling' },
+        { icon: 'fa-heartbeat', label: 'Cardio' },
+        { icon: 'fa-trophy', label: 'Trophy' },
+        { icon: 'fa-medal', label: 'Medal' }
+    ],
+    'Automotive & Fuel': [
+        { icon: 'fa-car', label: 'Car Service' },
+        { icon: 'fa-wrench', label: 'Repair' },
+        { icon: 'fa-gas-pump', label: 'Fuel' },
+        { icon: 'fa-oil-can', label: 'Oil Change' }
+    ],
+    'Entertainment': [
+        { icon: 'fa-ticket-alt', label: 'Ticket' },
+        { icon: 'fa-film', label: 'Cinema' },
+        { icon: 'fa-gamepad', label: 'Gaming' },
+        { icon: 'fa-music', label: 'Music' }
+    ],
+    'Rewards & Generic': [
+        { icon: 'fa-gift', label: 'Gift' },
+        { icon: 'fa-star', label: 'Star / VIP' },
+        { icon: 'fa-crown', label: 'Crown' },
+        { icon: 'fa-award', label: 'Award' },
+        { icon: 'fa-coins', label: 'Coins' },
+        { icon: 'fa-percent', label: 'Discount' },
+        { icon: 'fa-check', label: 'Checkmark' }
+    ]
+}
+
+export const ALL_FA_ICONS = Object.entries(FA_ICONS_BY_CATEGORY).flatMap(([category, icons]) =>
+    icons.map(item => ({ ...item, category }))
+)
+
+export const getCategoryRecommendedIcons = (categoryName = '') => {
+    const cat = String(categoryName).toLowerCase()
+    if (cat.includes('food') || cat.includes('restaurant') || cat.includes('cafe') || cat.includes('bakery') || cat.includes('dining')) {
+        return FA_ICONS_BY_CATEGORY['Food & Beverages']
+    }
+    if (cat.includes('salon') || cat.includes('spa') || cat.includes('beauty') || cat.includes('hair') || cat.includes('nail')) {
+        return FA_ICONS_BY_CATEGORY['Salon & Beauty']
+    }
+    if (cat.includes('retail') || cat.includes('shop') || cat.includes('cloth') || cat.includes('jewel') || cat.includes('fashion') || cat.includes('store')) {
+        return FA_ICONS_BY_CATEGORY['Retail & Shopping']
+    }
+    if (cat.includes('fit') || cat.includes('gym') || cat.includes('sport') || cat.includes('health') || cat.includes('yoga')) {
+        return FA_ICONS_BY_CATEGORY['Fitness & Sports']
+    }
+    if (cat.includes('auto') || cat.includes('car') || cat.includes('bike') || cat.includes('fuel') || cat.includes('wash')) {
+        return FA_ICONS_BY_CATEGORY['Automotive & Fuel']
+    }
+    if (cat.includes('entertain') || cat.includes('game') || cat.includes('movie') || cat.includes('cinema') || cat.includes('event')) {
+        return FA_ICONS_BY_CATEGORY['Entertainment']
+    }
+    return [
+        ...FA_ICONS_BY_CATEGORY['Food & Beverages'].slice(0, 4),
+        ...FA_ICONS_BY_CATEGORY['Retail & Shopping'].slice(0, 4),
+        ...FA_ICONS_BY_CATEGORY['Rewards & Generic'].slice(0, 4)
+    ]
+}
+
+export const getCategoryDefaultIcon = (categoryName = '') => {
+    const recs = getCategoryRecommendedIcons(categoryName)
+    return recs && recs.length > 0 ? recs[0].icon : 'fa-tag'
+}
 
 export default function StampCardBuilderModal({
     isOpen,
@@ -86,6 +146,17 @@ export default function StampCardBuilderModal({
     const fallbackBrandLogo = brandImage || brandLogo || merchantData?.brand_image || logo
     // console.log("fallbackBrandLogo", fallbackBrandLogo)
     const [fetchedDesigns, setFetchedDesigns] = useState([])
+
+    // Font Awesome Icon Picker & Multi-Select State
+    const [activeIconPickerLevel, setActiveIconPickerLevel] = useState(null)
+    const [isMultiSelectModalOpen, setIsMultiSelectModalOpen] = useState(false)
+    const [selectedCategoryIcons, setSelectedCategoryIcons] = useState([])
+    const [iconSearchQuery, setIconSearchQuery] = useState('')
+    const [selectedIconCategoryTab, setSelectedIconCategoryTab] = useState('Recommended')
+
+    const categoryName = merchantData?.Category?.name || merchantData?.category?.name || cardData?.Category?.name || 'Category'
+    const categoryRecommendedIcons = getCategoryRecommendedIcons(categoryName)
+
     const [stampForm, setStampForm] = useState({
         id: null,
         title: '',
@@ -114,7 +185,7 @@ export default function StampCardBuilderModal({
             discountVal: 0,
             icon: 'fa-gift',
             amt: 0,
-            discount:0,
+            discount: 0,
         }))
     })
 
@@ -242,7 +313,8 @@ export default function StampCardBuilderModal({
                     reward_type: isDiscount ? '2' : (isPaid ? '3' : '1'),
                     amt: Number(lvl.amt || 0),
                     reward_text: lvl.reward || (isDiscount ? `${disc}% Off` : `Stamp #${idx + 1}`),
-                    discount: isDiscount ? disc : 0
+                    discount: isDiscount ? disc : 0,
+                    icon: lvl.icon || (isDiscount ? 'fa-percent' : (isPaid ? 'fa-tag' : 'fa-gift'))
                 };
                 if (isPaid && catId) {
                     levelItem.category_id = Number(catId);
@@ -437,22 +509,7 @@ export default function StampCardBuilderModal({
         }
     }
 
-    // Helper: Compute Card Background Style
-    const getCardStyle = (card) => {
-        const bgImg = card.bgImage
-        if (bgImg && bgImg !== 'none' && bgImg !== 'null' && bgImg !== 'undefined') {
-            return {
-                backgroundImage: `url(${formatImageUrl(bgImg)})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                backgroundRepeat: 'no-repeat'
-            }
-        }
-        return {
-            backgroundColor: card.bgColor || card.background_color || '#0E88B8',
-            border: `2px solid ${card.borderColor || card.border_color || '#00A6D6'}`
-        }
-    }
+
 
     const handleSubmit = () => {
         stamp_card()
@@ -883,20 +940,132 @@ export default function StampCardBuilderModal({
 
                             {/* 5. Stamp Levels Setup */}
                             <div style={{ paddingTop: 16, borderTop: '1px solid #F1F5F9' }}>
-                                <h4 style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                    Stamp Levels Configuration ({stampForm.total_stamps} Levels)
-                                </h4>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
+                                    <div>
+                                        <h4 style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                            Stamp Levels Configuration ({stampForm.total_stamps} Levels)
+                                        </h4>
+                                        <small style={{ color: '#64748B', fontSize: '0.72rem' }}>
+                                            Category: <strong style={{ color: 'var(--firstloop-primary)' }}>{categoryName}</strong>
+                                        </small>
+                                    </div>
+
+                                    {/* Multi-Select Category Icons Button */}
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setIsMultiSelectModalOpen(true)
+                                            setActiveIconPickerLevel(null)
+                                            setIconSearchQuery('')
+                                        }}
+                                        className="btn btn-sm btn-outline-primary"
+                                        style={{
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: 6,
+                                            fontSize: '0.75rem',
+                                            fontWeight: 700,
+                                            padding: '4px 10px',
+                                            borderRadius: 8
+                                        }}
+                                    >
+                                        <i className="fas fa-icons" />
+                                        <span>Category FA Icons ({selectedCategoryIcons.length || categoryRecommendedIcons.length})</span>
+                                    </button>
+                                </div>
+
+                                {/* Category Recommended Icons Bar */}
+                                <div
+                                    style={{
+                                        background: '#F1F5F9',
+                                        borderRadius: 8,
+                                        padding: '8px 12px',
+                                        marginBottom: 12,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        flexWrap: 'wrap',
+                                        gap: 8
+                                    }}
+                                >
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                                        <small style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569' }}>
+                                            Category Icons:
+                                        </small>
+                                        {(selectedCategoryIcons.length > 0
+                                            ? selectedCategoryIcons.map(ic => ({ icon: ic, label: ic.replace('fa-', '') }))
+                                            : categoryRecommendedIcons
+                                        ).map((item, idx) => (
+                                            <button
+                                                key={idx}
+                                                type="button"
+                                                onClick={() => {
+                                                    // Quick apply icon to all paid or first free level
+                                                    setStampForm(prev => ({
+                                                        ...prev,
+                                                        levelRewards: prev.levelRewards.map(lvl => ({
+                                                            ...lvl,
+                                                            icon: lvl.type === 'Paid' ? item.icon : lvl.icon
+                                                        }))
+                                                    }))
+                                                    toast.success(`Applied ${item.label || item.icon} to Paid Stamp Levels`)
+                                                }}
+                                                title={`Click to apply ${item.label || item.icon} to Paid Levels`}
+                                                style={{
+                                                    background: '#FFFFFF',
+                                                    border: '1px solid #CBD5E1',
+                                                    borderRadius: 6,
+                                                    padding: '2px 8px',
+                                                    fontSize: '0.75rem',
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    gap: 4,
+                                                    cursor: 'pointer',
+                                                    color: 'var(--text-primary)'
+                                                }}
+                                            >
+                                                <i className={`fas ${item.icon}`} style={{ color: 'var(--firstloop-primary)', fontSize: '0.75rem' }} />
+                                                <span style={{ fontSize: '0.7rem', fontWeight: 600 }}>{item.label}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <small style={{ fontSize: '0.68rem', color: '#64748B' }}>
+                                        Click icon to apply to Paid levels
+                                    </small>
+                                </div>
 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                                     {Array.from({ length: Number(stampForm.total_stamps) }).map((_, i) => {
-                                        const reward = stampForm.levelRewards[i] || { stamp: i + 1, reward: '', type: 'Free', discountVal: 0, icon: 'fa-gift', amt: 0,discount: 0 }
+                                        const reward = stampForm.levelRewards[i] || {
+                                            stamp: i + 1,
+                                            reward: '',
+                                            type: 'Free',
+                                            discountVal: 0,
+                                            icon: 'fa-gift',
+                                            amt: 0,
+                                            discount: 0
+                                        }
+                                        const activeIcon = reward.icon || (reward.type === 'Free' ? 'fa-gift' : (reward.type === 'Discount' ? 'fa-percent' : getCategoryDefaultIcon(categoryName)))
+
                                         return (
-                                            <div key={i} style={{ padding: 10, background: '#F8FAFC', borderRadius: 10, border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                                                    <span style={{ fontSize: '0.78rem', fontWeight: 700, width: 60, color: 'var(--firstloop-primary)' }}>
+                                            <div
+                                                key={i}
+                                                style={{
+                                                    padding: 10,
+                                                    background: '#F8FAFC',
+                                                    borderRadius: 10,
+                                                    border: '1px solid #E2E8F0',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    gap: 8
+                                                }}
+                                            >
+                                                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                                                    <span style={{ fontSize: '0.78rem', fontWeight: 700, width: 56, color: 'var(--firstloop-primary)' }}>
                                                         Stamp {i + 1}
                                                     </span>
 
+                                                    {/* Reward Type Dropdown */}
                                                     <select
                                                         className="form-control"
                                                         value={reward.type || 'Free'}
@@ -906,11 +1075,12 @@ export default function StampCardBuilderModal({
                                                                 const updated = [...prev.levelRewards]
                                                                 const prevDisc = parseFloat(updated[i]?.discount ?? updated[i]?.discountVal) || 0
                                                                 const newDisc = prevDisc > 0 ? prevDisc : 10
+                                                                const defaultLvlIcon = typeVal === 'Free' ? 'fa-gift' : (typeVal === 'Discount' ? 'fa-percent' : getCategoryDefaultIcon(categoryName))
                                                                 updated[i] = {
                                                                     ...updated[i],
                                                                     stamp: i + 1,
                                                                     type: typeVal,
-                                                                    icon: typeVal === 'Free' ? 'fa-gift' : typeVal === 'Discount' ? 'fa-percent' : 'fa-tag',
+                                                                    icon: updated[i]?.icon && updated[i]?.icon !== 'fa-gift' && updated[i]?.icon !== 'fa-percent' && updated[i]?.icon !== 'fa-tag' ? updated[i].icon : defaultLvlIcon,
                                                                     discountVal: typeVal === 'Discount' ? newDisc : 0,
                                                                     discount: typeVal === 'Discount' ? newDisc : 0,
                                                                     reward: typeVal === 'Discount' ? `${newDisc}% Discount` : (typeVal === 'Paid' ? (updated[i]?.reward || 'Paid Perk') : (updated[i]?.reward || `Stamp #${i + 1}`))
@@ -918,15 +1088,16 @@ export default function StampCardBuilderModal({
                                                                 return { ...prev, levelRewards: updated }
                                                             })
                                                         }}
-                                                        style={{ width: 110, height: 36, fontSize: '0.8rem' }}
+                                                        style={{ width: 105, height: 36, fontSize: '0.8rem' }}
                                                     >
                                                         <option value="Free">Free 🎁</option>
                                                         <option value="Discount">Discount %</option>
-                                                        <option value="Paid">Paid Perk</option>
+                                                        <option value="Paid">Paid / Price</option>
                                                     </select>
 
+                                                    {/* Type Value Control */}
                                                     {reward.type === 'Discount' ? (
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, width: 130 }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, width: 100 }}>
                                                             <input
                                                                 type="number"
                                                                 min="0"
@@ -952,17 +1123,63 @@ export default function StampCardBuilderModal({
                                                             <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>%</span>
                                                         </div>
                                                     ) : reward.type === 'Paid' ? (
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: '#F1F5F9', borderRadius: 8, fontSize: '0.8rem', color: 'var(--text-primary)', border: '1px solid #E2E8F0' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px', background: '#F1F5F9', borderRadius: 8, fontSize: '0.75rem', color: 'var(--text-primary)', border: '1px solid #CBD5E1', maxWidth: 130, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
                                                             <i className="fas fa-tag" style={{ color: 'var(--firstloop-primary)' }} />
-                                                            <span>{stampForm.Category?.name || merchantData?.Category?.name || merchantData?.category?.name || 'Category Perk'}</span>
+                                                            <span>{categoryName}</span>
                                                         </div>
                                                     ) : (
-                                                        <div style={{ fontSize: '0.78rem', color: '#059669', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
-                                                            <i className="fas fa-gift" /> Free Reward
+                                                        <div style={{ fontSize: '0.75rem', color: '#059669', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4, paddingRight: 4 }}>
+                                                            <i className="fas fa-gift" /> Free
                                                         </div>
                                                     )}
+
+                                                    {/* FA Icon Picker Trigger Button */}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setActiveIconPickerLevel(i)
+                                                            setIsMultiSelectModalOpen(false)
+                                                            setIconSearchQuery('')
+                                                            setSelectedIconCategoryTab('Recommended')
+                                                        }}
+                                                        className="btn btn-sm btn-light"
+                                                        title="Click to choose Font Awesome icon"
+                                                        style={{
+                                                            height: 36,
+                                                            padding: '4px 10px',
+                                                            borderRadius: 8,
+                                                            border: '1px solid #CBD5E1',
+                                                            background: '#FFFFFF',
+                                                            display: 'inline-flex',
+                                                            alignItems: 'center',
+                                                            gap: 6,
+                                                            cursor: 'pointer',
+                                                            marginLeft: 'auto'
+                                                        }}
+                                                    >
+                                                        <div
+                                                            style={{
+                                                                width: 22,
+                                                                height: 22,
+                                                                borderRadius: 6,
+                                                                background: 'rgba(14, 136, 184, 0.1)',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                color: 'var(--firstloop-primary)',
+                                                                fontSize: '0.82rem'
+                                                            }}
+                                                        >
+                                                            <i className={`fas ${activeIcon}`} />
+                                                        </div>
+                                                        <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#334155' }}>
+                                                            {activeIcon.replace('fa-', '')}
+                                                        </span>
+                                                        <i className="fas fa-chevron-down" style={{ fontSize: '0.55rem', opacity: 0.6 }} />
+                                                    </button>
                                                 </div>
 
+                                                {/* Description & Amount Inputs */}
                                                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                                                     <input
                                                         type="text"
@@ -980,23 +1197,25 @@ export default function StampCardBuilderModal({
                                                         style={{ flex: 2, height: 34, fontSize: '0.8rem' }}
                                                     />
 
-                                                    <input
-                                                        type="number"
-                                                        min="0"
-                                                        step="any"
-                                                        className="form-control"
-                                                        placeholder="Amt (Spend)"
-                                                        value={reward.amt ?? ''}
-                                                        onChange={(e) => {
-                                                            const val = e.target.value === '' ? '' : Number(e.target.value) || 0
-                                                            setStampForm(prev => {
-                                                                const updated = [...prev.levelRewards]
-                                                                updated[i] = { ...updated[i], amt: val }
-                                                                return { ...prev, levelRewards: updated }
-                                                            })
-                                                        }}
-                                                        style={{ flex: 1, height: 34, fontSize: '0.8rem' }}
-                                                    />
+                                                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            step="any"
+                                                            className="form-control"
+                                                            placeholder="Spend Amt"
+                                                            value={reward.amt ?? ''}
+                                                            onChange={(e) => {
+                                                                const val = e.target.value === '' ? '' : Number(e.target.value) || 0
+                                                                setStampForm(prev => {
+                                                                    const updated = [...prev.levelRewards]
+                                                                    updated[i] = { ...updated[i], amt: val }
+                                                                    return { ...prev, levelRewards: updated }
+                                                                })
+                                                            }}
+                                                            style={{ height: 34, fontSize: '0.8rem' }}
+                                                        />
+                                                    </div>
                                                 </div>
                                             </div>
                                         )
@@ -1027,9 +1246,6 @@ export default function StampCardBuilderModal({
                             }}
                         >
                             <div style={{ position: 'relative', zIndex: 2 }}>
-                                {/* ALERT NOTICE BADGE: 2 STAMPS ONLY REMAINING & EXPIRES IN 30 DAYS */}
-
-
                                 <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
                                     {/* Left Side */}
                                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -1053,11 +1269,11 @@ export default function StampCardBuilderModal({
                                                 let iconMarkup = i + 1
                                                 if (r) {
                                                     if (r.type === 'Free') {
-                                                        iconMarkup = <i className="fas fa-gift" style={{ fontSize: '0.8rem' }} />
+                                                        iconMarkup = <i className={`fas ${r.icon || 'fa-gift'}`} style={{ fontSize: '0.8rem' }} />
                                                     } else if (r.type === 'Discount') {
                                                         iconMarkup = <span style={{ fontSize: '0.65rem', fontWeight: 800 }}>{r.discount ?? r.discountVal ?? 0}%</span>
                                                     } else if (r.type === 'Paid') {
-                                                        iconMarkup = <i className={`fas ${r.icon || 'fa-tag'}`} style={{ fontSize: '0.8rem' }} />
+                                                        iconMarkup = <i className={`fas ${r.icon || getCategoryDefaultIcon(categoryName)}`} style={{ fontSize: '0.8rem' }} />
                                                     }
                                                 }
 
@@ -1127,6 +1343,267 @@ export default function StampCardBuilderModal({
                     </button>
                 </div>
             </div>
+
+            {/* =========================================================================
+                FONT AWESOME ICON PICKER & MULTI-SELECT MODAL
+            ========================================================================= */}
+            {(activeIconPickerLevel !== null || isMultiSelectModalOpen) && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'rgba(15, 23, 42, 0.65)',
+                        backdropFilter: 'blur(4px)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 100000,
+                        padding: 16
+                    }}
+                >
+                    <div
+                        style={{
+                            background: '#FFFFFF',
+                            borderRadius: 16,
+                            maxWidth: 580,
+                            width: '100%',
+                            maxHeight: '85vh',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.35)',
+                            overflow: 'hidden'
+                        }}
+                    >
+                        {/* Header */}
+                        <div style={{ padding: '16px 20px', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#F8FAFC' }}>
+                            <div>
+                                <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                                    {isMultiSelectModalOpen
+                                        ? `Select Font Awesome Icons for ${categoryName}`
+                                        : `Choose Icon for Stamp Level #${(activeIconPickerLevel ?? 0) + 1}`
+                                    }
+                                </h4>
+                                <small style={{ color: '#64748B', fontSize: '0.75rem' }}>
+                                    {isMultiSelectModalOpen
+                                        ? 'Multi-select icons relevant to your category and price offers'
+                                        : 'Pick an icon or apply to multiple stamp levels'
+                                    }
+                                </small>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setActiveIconPickerLevel(null)
+                                    setIsMultiSelectModalOpen(false)
+                                }}
+                                style={{ background: 'none', border: 'none', fontSize: '1.2rem', color: '#64748B', cursor: 'pointer' }}
+                            >
+                                <i className="fas fa-times" />
+                            </button>
+                        </div>
+
+                        {/* Search Bar & Category Filter Tabs */}
+                        <div style={{ padding: '14px 20px', borderBottom: '1px solid #F1F5F9', background: '#FFFFFF', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                            <div style={{ position: 'relative' }}>
+                                <i className="fas fa-search" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8', fontSize: '0.85rem' }} />
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    placeholder="Search icons (e.g. coffee, burger, gift, spa, tag, percent)..."
+                                    value={iconSearchQuery}
+                                    onChange={(e) => setIconSearchQuery(e.target.value)}
+                                    style={{ paddingLeft: 36, height: 38, fontSize: '0.85rem', borderRadius: 10 }}
+                                />
+                            </div>
+
+                            {/* Category Filter Pills */}
+                            <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
+                                {['Recommended', 'All', ...Object.keys(FA_ICONS_BY_CATEGORY)].map((catKey) => {
+                                    const isSelected = selectedIconCategoryTab === catKey
+                                    return (
+                                        <button
+                                            key={catKey}
+                                            type="button"
+                                            onClick={() => setSelectedIconCategoryTab(catKey)}
+                                            style={{
+                                                padding: '4px 10px',
+                                                borderRadius: 20,
+                                                fontSize: '0.72rem',
+                                                fontWeight: 700,
+                                                border: isSelected ? '1px solid var(--firstloop-primary)' : '1px solid #E2E8F0',
+                                                background: isSelected ? 'rgba(14, 136, 184, 0.12)' : '#F8FAFC',
+                                                color: isSelected ? 'var(--firstloop-primary)' : '#64748B',
+                                                cursor: 'pointer',
+                                                whiteSpace: 'nowrap'
+                                            }}
+                                        >
+                                            {catKey === 'Recommended' ? `✨ ${categoryName}` : catKey}
+                                        </button>
+                                    )
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Icon Grid */}
+                        <div style={{ padding: 18, overflowY: 'auto', maxHeight: 340, background: '#F8FAFC' }}>
+                            {(() => {
+                                let displayedIcons = []
+                                if (selectedIconCategoryTab === 'Recommended') {
+                                    displayedIcons = categoryRecommendedIcons
+                                } else if (selectedIconCategoryTab === 'All') {
+                                    displayedIcons = ALL_FA_ICONS
+                                } else if (FA_ICONS_BY_CATEGORY[selectedIconCategoryTab]) {
+                                    displayedIcons = FA_ICONS_BY_CATEGORY[selectedIconCategoryTab]
+                                }
+
+                                if (iconSearchQuery.trim()) {
+                                    const q = iconSearchQuery.toLowerCase()
+                                    displayedIcons = ALL_FA_ICONS.filter(
+                                        item => item.label.toLowerCase().includes(q) || item.icon.toLowerCase().includes(q)
+                                    )
+                                }
+
+                                if (displayedIcons.length === 0) {
+                                    return (
+                                        <div style={{ textAlign: 'center', padding: 28, color: '#94A3B8' }}>
+                                            <i className="fas fa-search" style={{ fontSize: '1.8rem', marginBottom: 8 }} />
+                                            <p style={{ margin: 0, fontSize: '0.85rem' }}>No icons found for "{iconSearchQuery}"</p>
+                                        </div>
+                                    )
+                                }
+
+                                return (
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(76px, 1fr))', gap: 10 }}>
+                                        {displayedIcons.map((item, idx) => {
+                                            const currentLvlIcon = activeIconPickerLevel !== null ? stampForm.levelRewards[activeIconPickerLevel]?.icon : null
+                                            const isSelectedForLevel = currentLvlIcon === item.icon
+                                            const isSelectedForCategory = selectedCategoryIcons.includes(item.icon)
+
+                                            return (
+                                                <button
+                                                    key={`${item.icon}-${idx}`}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (isMultiSelectModalOpen) {
+                                                            // Toggle in category multi-select list
+                                                            setSelectedCategoryIcons(prev =>
+                                                                prev.includes(item.icon)
+                                                                    ? prev.filter(x => x !== item.icon)
+                                                                    : [...prev, item.icon]
+                                                            )
+                                                        } else if (activeIconPickerLevel !== null) {
+                                                            // Assign to active level
+                                                            setStampForm(prev => {
+                                                                const updated = [...prev.levelRewards]
+                                                                updated[activeIconPickerLevel] = {
+                                                                    ...updated[activeIconPickerLevel],
+                                                                    icon: item.icon
+                                                                }
+                                                                return { ...prev, levelRewards: updated }
+                                                            })
+                                                            toast.success(`Selected ${item.label} for Stamp #${activeIconPickerLevel + 1}`)
+                                                            setActiveIconPickerLevel(null)
+                                                        }
+                                                    }}
+                                                    style={{
+                                                        display: 'flex',
+                                                        flexDirection: 'column',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        gap: 6,
+                                                        padding: '10px 6px',
+                                                        borderRadius: 10,
+                                                        background: (isSelectedForLevel || isSelectedForCategory) ? 'rgba(14, 136, 184, 0.12)' : '#FFFFFF',
+                                                        border: (isSelectedForLevel || isSelectedForCategory) ? '2px solid var(--firstloop-primary)' : '1px solid #E2E8F0',
+                                                        color: (isSelectedForLevel || isSelectedForCategory) ? 'var(--firstloop-primary)' : '#334155',
+                                                        cursor: 'pointer',
+                                                        transition: 'all 0.15s ease',
+                                                        position: 'relative'
+                                                    }}
+                                                >
+                                                    {isMultiSelectModalOpen && isSelectedForCategory && (
+                                                        <span style={{ position: 'absolute', top: 3, right: 4, fontSize: '0.65rem', color: 'var(--firstloop-primary)' }}>
+                                                            <i className="fas fa-check-circle" />
+                                                        </span>
+                                                    )}
+                                                    <i className={`fas ${item.icon}`} style={{ fontSize: '1.25rem' }} />
+                                                    <span style={{ fontSize: '0.65rem', fontWeight: 600, textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', whiteSpace: 'nowrap' }}>
+                                                        {item.label}
+                                                    </span>
+                                                </button>
+                                            )
+                                        })}
+                                    </div>
+                                )
+                            })()}
+                        </div>
+
+                        {/* Modal Footer with Actions */}
+                        <div style={{ padding: '12px 20px', borderTop: '1px solid #E2E8F0', background: '#FFFFFF', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                            {activeIconPickerLevel !== null && (
+                                <div style={{ display: 'flex', gap: 6 }}>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const activeIcon = stampForm.levelRewards[activeIconPickerLevel]?.icon || 'fa-tag'
+                                            setStampForm(prev => ({
+                                                ...prev,
+                                                levelRewards: prev.levelRewards.map(lvl => ({ ...lvl, icon: activeIcon }))
+                                            }))
+                                            toast.success(`Applied ${activeIcon} to all ${stampForm.total_stamps} Stamp Levels`)
+                                            setActiveIconPickerLevel(null)
+                                        }}
+                                        className="btn btn-sm btn-outline-secondary"
+                                        style={{ fontSize: '0.72rem', padding: '4px 8px', borderRadius: 6 }}
+                                    >
+                                        Apply to All Stamps
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const activeIcon = stampForm.levelRewards[activeIconPickerLevel]?.icon || 'fa-tag'
+                                            setStampForm(prev => ({
+                                                ...prev,
+                                                levelRewards: prev.levelRewards.map(lvl => ({
+                                                    ...lvl,
+                                                    icon: lvl.type === 'Paid' ? activeIcon : lvl.icon
+                                                }))
+                                            }))
+                                            toast.success(`Applied ${activeIcon} to all Paid Levels`)
+                                            setActiveIconPickerLevel(null)
+                                        }}
+                                        className="btn btn-sm btn-outline-secondary"
+                                        style={{ fontSize: '0.72rem', padding: '4px 8px', borderRadius: 6 }}
+                                    >
+                                        Apply to All Paid
+                                    </button>
+                                </div>
+                            )}
+
+                            {isMultiSelectModalOpen && (
+                                <div style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: 600 }}>
+                                    {selectedCategoryIcons.length} icon(s) selected
+                                </div>
+                            )}
+
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setActiveIconPickerLevel(null)
+                                    setIsMultiSelectModalOpen(false)
+                                }}
+                                className="btn firstloop-btn-primary"
+                                style={{ padding: '6px 16px', borderRadius: 8, fontSize: '0.8rem', marginLeft: 'auto' }}
+                            >
+                                Done
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

@@ -48,7 +48,7 @@ export const formatImageUrl = (img) => {
 };
 
 // Helper: Card background and border style computation
-export const getCardStyle = (card) => {
+export const getCardStyle = (card, defaultBgColor = '#0E88B8') => {
     if (!card) return {};
     const style = {
         border: `2px solid ${card.borderColor || card.border_color || 'rgba(255,255,255,0.4)'}`
@@ -60,7 +60,7 @@ export const getCardStyle = (card) => {
         style.backgroundPosition = 'center';
         style.backgroundRepeat = 'no-repeat';
     } else {
-        style.backgroundColor = card.bgColor || card.background_color || '#0E88B8';
+        style.backgroundColor = card.bgColor || card.background_color || defaultBgColor;
     }
     return style;
 };

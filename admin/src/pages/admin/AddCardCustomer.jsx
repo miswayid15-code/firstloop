@@ -67,17 +67,17 @@ export default function AddCardCustomer() {
             try {
                 let response = await API.post(`firstloop/merchant/branch_details/${branchId}`);
 
-                // If not found in merchant branch details, try admin branch details
-                if (!response?.data || (response.data.status !== 1 && response.data.status !== "1") || !response?.data?.data) {
+            
+                if (!response?.data) {
                     try {
                         const fallbackRes = await API.post(`firstloop/branch_details/${branchId}`);
-                        if (fallbackRes?.data && (fallbackRes.data.status === 1 || fallbackRes.data.status === "1") && fallbackRes.data.data) {
+                        if (fallbackRes?.data && (fallbackRes.data.status === 1) && fallbackRes.data.data) {
                             response = fallbackRes;
                         }
                     } catch (e) {}
                 }
 
-                if (response?.data && (response.data.status === 1 || response.data.status === "1") && response.data.data) {
+                if (response?.data && (response.data.status === 1) && response.data.data) {
                     const bData = response.data.data;
                     setBranch(bData);
                     fetchStampCards(branchId, bData?.name);
@@ -120,7 +120,7 @@ export default function AddCardCustomer() {
 
         try {
             const response = await API.post("firstloop/customer/check-customer", { email: emailToLookup });
-            if (response?.data?.status === 1 || response?.data?.status === "1") {
+            if (response?.data?.status === 1) {
                 const cust = response.data.customer || response.data.data || {};
                 if (cust.name) setCustomerName(cust.name);
                 if (cust.id) setCustomerId(cust.id);
@@ -272,25 +272,44 @@ export default function AddCardCustomer() {
         setIsSubmitting(true);
         try {
             const response = await API.post("firstloop/customer/link-customer", payload);
-            if (response?.data?.status === 1 || response?.data?.status === "1" || response?.data?.success) {
-                toast.success(response?.data?.message || `🎉 Successfully assigned card to ${customerName}!`, {
+            const resStatus = response?.data?.status;
+            const resMsg = response?.data?.message || response?.data?.msg || "";
+            const resData = response?.data?.data;
+
+            if (resStatus === 1 || resStatus === "1" || response?.data?.success) {
+                toast.success(resMsg || `🎉 Successfully assigned card to ${customerName}!`, {
                     duration: 4500
                 });
+                console.log("Link Customer Response Data:", resData);
 
-                // Navigate back to branch or customers
-                if (branchId) {
-                    navigate(`/view-fl-branch/${branchId}`);
-                } else if (location.pathname.startsWith("/merchant")) {
-                    navigate("/merchant/customers");
+                const targetCardId =  resData?.customer_card_id;
+                const typeNum = resData?.card_type || (cardType === "membership" ? 2 : 1);
+                const targetCusId = resData?.customer_id || customerId || (payload.cus_id || 1);
+
+                if (targetCardId) {
+                    navigate(`/card-preview/${targetCardId}?type=${typeNum}&cus_id=${targetCusId}`);
                 } else {
-                    navigate("/customers");
+                    navigate(`/view-fl-branch/${branchId}`);
+                }  
+            } else if (resData && (resStatus === 0 || resStatus === "0")) {
+                toast(resMsg || "Customer already has this card", {
+                    icon: "ℹ️",
+                    duration: 4000
+                });
+
+                const targetCardId =  resData?.id;
+                const typeNum = resData?.card_type || (cardType === "membership" ? 2 : 1);
+                const targetCusId = resData?.customer_id || customerId || (payload.cus_id || 1);
+
+                if (targetCardId) {
+                    navigate(`/card-preview/${targetCardId}?type=${typeNum}&cus_id=${targetCusId}`);
                 }
             } else {
-                toast.error(response?.data?.message || "Failed to link card to customer");
+                toast.error(resMsg || "Failed to link card to customer");
             }
         } catch (error) {
             console.error("Error linking customer card:", error);
-            const errMsg = error?.response?.data?.message || error?.message || "Failed to link customer card";
+            const errMsg = error?.response?.data?.message || error?.response?.data?.msg || error?.message || "Failed to link customer card";
             toast.error(errMsg);
         } finally {
             setIsSubmitting(false);

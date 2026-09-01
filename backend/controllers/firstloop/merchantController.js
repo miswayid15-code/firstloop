@@ -503,7 +503,8 @@ exports.stamp_card = async (req, res) => {
             stamp_background,
             stamp_border_color,
             stamp_text_color,
-            stamp_levels
+            stamp_levels,
+            
         } = req.body;
 
         const merchant_id = req.body.merchant_id;
@@ -688,6 +689,7 @@ exports.stamp_card = async (req, res) => {
                 level.category_id = null;
                 level.discount = 0;
                 level.amt = 0;
+                level.icon =level.icon || null;
             }
 
             // -----------------------------------
@@ -718,6 +720,7 @@ exports.stamp_card = async (req, res) => {
                         level.amt !== ""
                         ? Number(level.amt)
                         : 0;
+             level.icon =level.icon || null;
             }
 
             // -----------------------------------
@@ -754,6 +757,8 @@ exports.stamp_card = async (req, res) => {
                         level.amt !== ""
                         ? Number(level.amt)
                         : 0;
+
+                 level.icon =level.icon || null;
             }
         }
 
@@ -855,6 +860,7 @@ exports.stamp_card = async (req, res) => {
             amt:
                 level.amt || 0,
             discount: level.discount || 0,
+            icon: level.icon || null,
 
             status: 1
         }));
@@ -931,6 +937,7 @@ exports.fetch_stamp_card = async (req, res) => {
                         "stamp_number",
                         "reward_type",
                         "reward_text",
+                        "icon",
                         "discount",
                         "category_id",
                         "status"
@@ -1049,6 +1056,7 @@ exports.fetch_branch_stamp_card = async (req, res) => {
                         "stamp_number",
                         "reward_type",
                         "reward_text",
+                        "icon",
                         "discount",
                         "category_id",
                         "status"
@@ -1164,6 +1172,7 @@ exports.fetch_stamp_id = async (req, res) => {
                         "stamp_number",
                         "reward_type",
                         "reward_text",
+                        "icon",
                         "category_id",
                         "status"
                     ]

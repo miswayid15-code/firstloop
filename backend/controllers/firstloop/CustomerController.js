@@ -1,4 +1,25 @@
-const { Merchant, Coupon, RefreshToken, Branch, Receptionist, MerchantFp, Category, BranchTiming, Customer, SalePerson, UserNotificationToken, CouponApplied, Notification, Stampcard, StampLevel, CustomerCard, MembershipCards, db } = require('../../models');
+const {
+    Merchant,
+    Coupon,
+    RefreshToken,
+    Branch,
+    Receptionist,
+    MerchantFp,
+    Category,
+    BranchTiming,
+    Customer,
+    SalePerson,
+    UserNotificationToken,
+    CouponApplied,
+    Notification,
+    Stampcard,
+    StampLevel,
+    CustomerCard,
+    CustomerStampLevel,
+    MembershipCards,
+    db,
+    sequelize
+} = require('../../models');
 const bcrypt = require('bcryptjs');
 const { parsePhoneNumber } = require('libphonenumber-js');
 const jwt = require('jsonwebtoken');
@@ -17,7 +38,18 @@ const baseUrl = process.env.APP_URL;
 const { Op } = require('sequelize');
 const fs = require('fs');
 const path = require('path');
+const formatExpiry = (date) => {
+    if (!date) {
+        return null;
+    }
 
+    const expiryDate = new Date(date);
+
+    const month = String(expiryDate.getUTCMonth() + 1).padStart(2, '0');
+    const year = String(expiryDate.getUTCFullYear()).slice(-2);
+
+    return `${month}/${year}`;
+};
 exports.check_customer = async (req, res) => {
     try {
         const { email } = req.body;
@@ -69,18 +101,19 @@ exports.check_customer = async (req, res) => {
 };
 
 
-
-
-
 exports.Link_customer = async (req, res) => {
+
+    const transaction = await sequelize.transaction();
+
     try {
 
-        let {
+        console.log("Link_customer req.body:", req.body);
+
+        const {
             cardType,
             cus_id,
             br_id,
             cardId,
-
             name,
             email,
             phone,
@@ -88,11 +121,14 @@ exports.Link_customer = async (req, res) => {
             password
         } = req.body;
 
+
         // --------------------------------------------------
         // 1. VALIDATION
         // --------------------------------------------------
 
         if (!cardType) {
+            await transaction.rollback();
+
             return res.status(400).json({
                 status: 0,
                 message: 'cardType is required'
@@ -100,6 +136,8 @@ exports.Link_customer = async (req, res) => {
         }
 
         if (!br_id) {
+            await transaction.rollback();
+
             return res.status(400).json({
                 status: 0,
                 message: 'Branch ID is required'
@@ -107,6 +145,8 @@ exports.Link_customer = async (req, res) => {
         }
 
         if (!cardId) {
+            await transaction.rollback();
+
             return res.status(400).json({
                 status: 0,
                 message: 'Card ID is required'
@@ -130,6 +170,8 @@ exports.Link_customer = async (req, res) => {
 
         } else {
 
+            await transaction.rollback();
+
             return res.status(400).json({
                 status: 0,
                 message: 'Invalid cardType. Use stamp or membership'
@@ -146,18 +188,23 @@ exports.Link_customer = async (req, res) => {
         if (!customer_id) {
 
             if (!name || !phone || !password) {
+
+                await transaction.rollback();
+
                 return res.status(400).json({
                     status: 0,
                     message: 'Name, phone and password are required for new customer'
                 });
             }
 
-            // Check existing customer by phone
+
             const existingCustomer = await Customer.findOne({
                 where: {
                     phone: phone
-                }
+                },
+                transaction
             });
+
 
             if (existingCustomer) {
 
@@ -165,25 +212,46 @@ exports.Link_customer = async (req, res) => {
 
             } else {
 
-                const hashedPassword = await bcrypt.hash(password, 10);
+                const hashedPassword = await bcrypt.hash(
+                    password,
+                    10
+                );
+
 
                 const newCustomer = await Customer.create({
+
                     name: name,
+
                     email: email || null,
+
                     phone: phone,
+
                     country_code: country_code || null,
+
                     password: hashedPassword
+
+                }, {
+                    transaction
                 });
+
 
                 customer_id = newCustomer.id;
             }
 
         } else {
 
-            // cus_id was supplied, so verify it exists
-            const existingCustomer = await Customer.findByPk(customer_id);
+            const existingCustomer = await Customer.findByPk(
+                customer_id,
+                {
+                    transaction
+                }
+            );
+
 
             if (!existingCustomer) {
+
+                await transaction.rollback();
+
                 return res.status(404).json({
                     status: 0,
                     message: `Customer with ID ${customer_id} not found`
@@ -191,13 +259,23 @@ exports.Link_customer = async (req, res) => {
             }
         }
 
+
         // --------------------------------------------------
         // 4. VERIFY CUSTOMER
         // --------------------------------------------------
 
-        const customer = await Customer.findByPk(customer_id);
+        const customer = await Customer.findByPk(
+            customer_id,
+            {
+                transaction
+            }
+        );
+
 
         if (!customer) {
+
+            await transaction.rollback();
+
             return res.status(404).json({
                 status: 0,
                 message: 'Customer not found'
@@ -209,34 +287,62 @@ exports.Link_customer = async (req, res) => {
         // 5. VERIFY BRANCH
         // --------------------------------------------------
 
-        const branch = await Branch.findByPk(br_id);
+        const branch = await Branch.findByPk(
+            br_id,
+            {
+                transaction
+            }
+        );
+
 
         if (!branch) {
+
+            await transaction.rollback();
+
             return res.status(404).json({
-                status: 404,
+                status: 0,
                 message: 'Branch not found'
             });
         }
 
 
         // --------------------------------------------------
-        // 6. VERIFY CARD
+        // 6. VERIFY MERCHANT CARD
         // --------------------------------------------------
 
-        let merchantCard;
-        let month;
+        let merchantCard = null;
+        let month = null;
+
 
         if (card_type === 1) {
 
-            merchantCard = await Stampcard.findByPk(cardId);
+            // Stamp Card
+
+            merchantCard = await Stampcard.findByPk(
+                cardId,
+                {
+                    transaction
+                }
+            );
 
         } else {
 
-            merchantCard = await MembershipCards.findByPk(cardId);
-            month = merchantCard.month;
+            // Membership Card
+
+            merchantCard = await MembershipCards.findByPk(
+                cardId,
+                {
+                    transaction
+                }
+            );
         }
+        console.log("merchantCard:", merchantCard);
+
 
         if (!merchantCard) {
+
+            await transaction.rollback();
+
             return res.status(404).json({
                 status: 0,
                 message: 'Card configuration not found'
@@ -245,29 +351,70 @@ exports.Link_customer = async (req, res) => {
 
 
         // --------------------------------------------------
-        // 7. CHECK DUPLICATE CUSTOMER CARD
+        // 7. MEMBERSHIP VALIDITY
+        // --------------------------------------------------
+
+        if (card_type === 2) {
+
+            month = parseInt(
+                merchantCard.month,
+                10
+            );
+
+
+            if (!month || month <= 0) {
+
+                await transaction.rollback();
+
+                return res.status(400).json({
+                    status: 0,
+                    message: 'Valid month is required for membership card'
+                });
+            }
+        }
+
+
+        // --------------------------------------------------
+        // 8. CHECK DUPLICATE
         // --------------------------------------------------
 
         const existingCard = await CustomerCard.findOne({
+
             where: {
+
                 merchant_card_id: cardId,
+
                 customer_id: customer_id,
+
                 branch_id: br_id,
+
                 card_type: card_type
-            }
+
+            },
+
+            transaction
+
         });
 
+
         if (existingCard) {
+
+            await transaction.rollback();
+
             return res.status(409).json({
+
                 status: 0,
+
                 message: 'Customer already has this card',
+
                 data: existingCard
+
             });
         }
 
 
         // --------------------------------------------------
-        // 8. GENERATE CARD NUMBER
+        // 9. GENERATE CARD NUMBER
         // --------------------------------------------------
 
         const card_number =
@@ -281,7 +428,7 @@ exports.Link_customer = async (req, res) => {
 
 
         // --------------------------------------------------
-        // 9. GENERATE QR TOKEN
+        // 10. GENERATE QR TOKEN
         // --------------------------------------------------
 
         const qr_token = crypto
@@ -290,27 +437,18 @@ exports.Link_customer = async (req, res) => {
 
 
         // --------------------------------------------------
-        // 10. EXPIRY DATE
+        // 11. EXPIRY DATE
         // --------------------------------------------------
 
         let expires_at = null;
 
-        // Membership card only
+
         if (card_type === 2) {
-
-            const validityMonths = parseInt(month, 10);
-
-            if (!validityMonths || validityMonths <= 0) {
-                return res.status(400).json({
-                    status: 0,
-                    message: 'Valid month is required for membership card'
-                });
-            }
 
             const expiryDate = new Date();
 
             expiryDate.setMonth(
-                expiryDate.getMonth() + validityMonths
+                expiryDate.getMonth() + month
             );
 
             expires_at = expiryDate;
@@ -318,18 +456,10 @@ exports.Link_customer = async (req, res) => {
 
 
         // --------------------------------------------------
-        // 11. INITIAL STAMP
+        // 12. CUSTOMER CARD SNAPSHOT
         // --------------------------------------------------
 
-        const current_stamp = 0;
-
-
-        // --------------------------------------------------
-        // 12. CREATE CUSTOMER CARD
-        // --------------------------------------------------
-
-
-        const newCustomerCard = await CustomerCard.create({
+        const customerCardData = {
 
             merchant_card_id: cardId,
 
@@ -339,22 +469,184 @@ exports.Link_customer = async (req, res) => {
 
             card_type: card_type,
 
+
+            // ----------------------------------------------
+            // COMMON CARD DETAILS
+            // ----------------------------------------------
+
+            title:
+                merchantCard.title || null,
+
+            brand_name:
+                merchantCard.brand_name || null,
+
+            brand_image:
+                merchantCard.brand_image || null,
+
+            background_image:
+                merchantCard.background_image || null,
+
+            background_color:
+                merchantCard.background_color || null,
+
+            text_color:
+                merchantCard.text_color || null,
+
+            border_color:
+                merchantCard.border_color || null,
+
+
+            // ----------------------------------------------
+            // STAMP CARD DETAILS
+            // ----------------------------------------------
+
+            number_of_stamps:
+                card_type === 1
+                    ? merchantCard.number_of_stamps || null
+                    : null,
+
+            stamp_radius:
+                card_type === 1
+                    ? merchantCard.stamp_radius || null
+                    : null,
+
+            stamp_background:
+                card_type === 1
+                    ? merchantCard.stamp_background || null
+                    : null,
+
+            stamp_border_color:
+                card_type === 1
+                    ? merchantCard.stamp_border_color || null
+                    : null,
+
+            stamp_text_color:
+                card_type === 1
+                    ? merchantCard.stamp_text_color || null
+                    : null,
+
+
+            // ----------------------------------------------
+            // MEMBERSHIP CARD DETAILS
+            // ----------------------------------------------
+
+            month:
+                card_type === 2
+                    ? month
+                    : null,
+
+
+            // ----------------------------------------------
+            // CUSTOMER CARD DETAILS
+            // ----------------------------------------------
+
             card_number: card_number,
 
             qr_token: qr_token,
 
-            current_stamp: current_stamp,
+            current_stamp: 0,
 
             status: 1,
 
             issued_at: new Date(),
 
             expires_at: expires_at
-        });
+        };
 
 
         // --------------------------------------------------
-        // 13. RESPONSE
+        // 13. CREATE CUSTOMER CARD
+        // --------------------------------------------------
+
+        const newCustomerCard =
+            await CustomerCard.create(
+                customerCardData,
+                {
+                    transaction
+                }
+            );
+
+
+        // --------------------------------------------------
+        // 14. COPY STAMP LEVELS
+        // --------------------------------------------------
+
+        if (card_type === 1) {
+
+            const stampLevels =
+                await StampLevel.findAll({
+
+                    where: {
+
+                        merchant_card_id: cardId,
+
+                        status: 1
+                    },
+
+                    order: [
+                        ['stamp_number', 'ASC']
+                    ],
+
+                    transaction
+                });
+
+
+            if (stampLevels.length > 0) {
+
+                const customerStampLevels =
+                    stampLevels.map(level => ({
+
+                        customer_card_id:
+                            newCustomerCard.id,
+
+                        stamp_number:
+                            level.stamp_number,
+
+                        amt:
+                            level.amt,
+
+                        discount:
+                            level.discount,
+
+                        reward_type:
+                            level.reward_type,
+
+                        reward_text:
+                            level.reward_text || null,
+
+                        icon:
+                            level.icon || null,
+
+                        category_id:
+                            level.category_id || null,
+
+                        status:
+                            level.status
+                    }));
+
+
+                await CustomerStampLevel.bulkCreate(
+
+                    customerStampLevels,
+
+                    {
+                        transaction
+                    }
+
+                );
+            }
+        }
+
+
+        // --------------------------------------------------
+        // 15. COMMIT
+        // --------------------------------------------------
+
+        await transaction.commit();
+
+
+        // --------------------------------------------------
+        // 16. RESPONSE
         // --------------------------------------------------
 
         return res.status(201).json({
@@ -365,39 +657,68 @@ exports.Link_customer = async (req, res) => {
 
             data: {
 
-                customer_id: customer_id,
+                customer_id:
+                    customer_id,
 
-                customer_card_id: newCustomerCard.id,
+                customer_card_id:
+                    newCustomerCard.id,
 
-                merchant_card_id: cardId,
+                merchant_card_id:
+                    cardId,
 
-                branch_id: br_id,
+                branch_id:
+                    br_id,
 
-                card_type: card_type,
+                card_type:
+                    card_type,
 
-                card_number: newCustomerCard.card_number,
+                card_number:
+                    newCustomerCard.card_number,
 
-                qr_token: newCustomerCard.qr_token,
+                qr_token:
+                    newCustomerCard.qr_token,
 
-                current_stamp: newCustomerCard.current_stamp,
+                current_stamp:
+                    newCustomerCard.current_stamp,
 
-                issued_at: newCustomerCard.issued_at,
+                issued_at:
+                    newCustomerCard.issued_at,
 
-                expires_at: newCustomerCard.expires_at
+                expires_at:
+                    newCustomerCard.expires_at
             }
         });
 
+
     } catch (err) {
 
-        console.error('Link_customer Error:', err);
+        try {
+            await transaction.rollback();
+        } catch (rollbackError) {
+            console.error(
+                'Transaction rollback error:',
+                rollbackError
+            );
+        }
+
+
+        console.error(
+            'Link_customer Error:',
+            err
+        );
+
 
         return res.status(500).json({
+
             status: 0,
+
             message: 'Something went wrong',
+
             error: err.message
         });
     }
 };
+
 
 
 exports.fetch_card = async (req, res) => {
@@ -406,7 +727,7 @@ exports.fetch_card = async (req, res) => {
         const { type, id, cus_id } = req.body;
 
         // ---------------------------------------
-        // VALIDATION
+        // 1. VALIDATION
         // ---------------------------------------
 
         if (!type) {
@@ -419,7 +740,7 @@ exports.fetch_card = async (req, res) => {
         if (!id) {
             return res.status(400).json({
                 status: 0,
-                message: 'Card ID is required'
+                message: 'Customer Card ID is required'
             });
         }
 
@@ -430,140 +751,246 @@ exports.fetch_card = async (req, res) => {
             });
         }
 
+
         const cardType = Number(type);
+        const customerCardId = Number(id);
         const customerId = Number(cus_id);
-        const cardId = Number(id);
 
-        // =======================================
-        // VERIFY CUSTOMER
-        // =======================================
 
-        const customer = await Customer.findByPk(customerId);
+        // ---------------------------------------
+        // 2. VALIDATE TYPE
+        // ---------------------------------------
 
-        if (!customer) {
-            return res.status(404).json({
+        if (![1, 2].includes(cardType)) {
+            return res.status(400).json({
                 status: 0,
-                message: 'Customer not found'
+                message: 'Invalid type. Use 1 for stamp card or 2 for membership card'
+            });
+        }
+
+
+        // ---------------------------------------
+        // 3. VALIDATE IDS
+        // ---------------------------------------
+
+        if (
+            !Number.isInteger(customerCardId) ||
+            customerCardId <= 0
+        ) {
+            return res.status(400).json({
+                status: 0,
+                message: 'Invalid Customer Card ID'
+            });
+        }
+
+        if (
+            !Number.isInteger(customerId) ||
+            customerId <= 0
+        ) {
+            return res.status(400).json({
+                status: 0,
+                message: 'Invalid Customer ID'
             });
         }
 
 
         // =======================================
-        // STAMP CARD
+        // 4. FETCH CUSTOMER CARD
         // =======================================
 
-        if (cardType === 1) {
+        const customerCardData = await CustomerCard.findOne({
 
-            // ---------------------------------------
-            // FETCH STAMP CARD
-            // ---------------------------------------
+            where: {
+                id: customerCardId,
+                customer_id: customerId,
+                card_type: cardType
+            },
 
-            const stampcard = await Stampcard.findOne({
-                where: {
-                    id: cardId
+            attributes: [
+                "id",
+                "merchant_card_id",
+                "customer_id",
+                "branch_id",
+                "card_type",
+
+                // ---------------------------------
+                // CARD SNAPSHOT
+                // ---------------------------------
+
+                "title",
+                "brand_name",
+                "brand_image",
+
+                "background_image",
+                "background_color",
+                "text_color",
+                "border_color",
+
+                // ---------------------------------
+                // STAMP CARD SNAPSHOT
+                // ---------------------------------
+
+                "number_of_stamps",
+                "stamp_radius",
+                "stamp_background",
+                "stamp_border_color",
+                "stamp_text_color",
+
+                // ---------------------------------
+                // MEMBERSHIP CARD SNAPSHOT
+                // ---------------------------------
+
+                "month",
+
+                // ---------------------------------
+                // CUSTOMER CARD DETAILS
+                // ---------------------------------
+
+                "card_number",
+                "qr_token",
+                "current_stamp",
+                "status",
+                "issued_at",
+                "expires_at"
+            ],
+
+            include: [
+
+                {
+                    model: Customer,
+                    as: "Customer",
+                    required: false,
+
+                    attributes: [
+                        "id",
+                        "name"
+                    ]
                 },
 
-                include: [
-                    {
-                        model: StampLevel,
-                        as: "StampLevels",
-                        required: false,
+                // ---------------------------------
+                // CUSTOMER STAMP LEVELS
+                // ---------------------------------
 
-                        where: {
-                            status: 1
-                        },
+                ...(cardType === 1
+                    ? [
+                        {
+                            model: CustomerStampLevel,
+                            as: "CustomerStampLevels",
+                            required: false,
 
-                        attributes: [
-                            "id",
-                            "stamp_number",
-                            "reward_type",
-                            "reward_text",
-                            "category_id",
-                            "status"
-                        ]
-                    }
-                ],
+                            where: {
+                                status: 1
+                            },
 
-                order: [
+                            attributes: [
+                                "id",
+                                "customer_card_id",
+                                "stamp_number",
+                                "amt",
+                                "discount",
+                                "reward_type",
+                                "reward_text",
+                                "icon",
+                                "category_id",
+                                "status"
+                            ]
+                        }
+                    ]
+                    : [])
+            ],
+
+            order: cardType === 1
+                ? [
                     [
                         {
-                            model: StampLevel,
-                            as: "StampLevels"
+                            model: CustomerStampLevel,
+                            as: "CustomerStampLevels"
                         },
                         "stamp_number",
                         "ASC"
                     ]
                 ]
+                : undefined
+        });
+
+
+        // =======================================
+        // 5. CUSTOMER DOES NOT HAVE THIS CARD
+        // =======================================
+
+        if (!customerCardData) {
+
+            return res.status(200).json({
+
+                status: 1,
+
+                msg: cardType === 1
+                    ? "Customer does not have this stamp card"
+                    : "Customer does not have this membership card",
+
+                data: []
             });
+        }
 
 
-            // ---------------------------------------
-            // NO STAMP CARD
-            // ---------------------------------------
+        // =======================================
+        // 6. FORMAT CUSTOMER CARD
+        // =======================================
 
-            if (!stampcard) {
-                return res.status(200).json({
-                    status: 1,
-                    msg: "No stamp card found",
-                    data: []
-                });
-            }
+        const customerCardJson =
+            customerCardData.toJSON();
 
 
-            // ---------------------------------------
-            // FETCH CUSTOMER CARD
-            // ---------------------------------------
+        // ---------------------------------------
+        // FORMAT EXPIRY
+        // ---------------------------------------
 
-            const customerCardData = await CustomerCard.findOne({
-                where: {
-                    merchant_card_id: cardId,
-                    customer_id: customerId,
-                    card_type: 1
-                },
-
-                attributes: [
-                    "id",
-                    "customer_id",
-                    "branch_id",
-                    "card_type",
-                    "card_number",
-                    "qr_token",
-                    "current_stamp",
-                    "status",
-                    "issued_at",
-                    "expires_at"
-                ]
-            });
+        customerCardJson.expires_at =
+            formatExpiry(
+                customerCardData.expires_at
+            );
 
 
-            // ---------------------------------------
-            // FORMAT DATA
-            // ---------------------------------------
+        // ---------------------------------------
+        // CUSTOMER
+        // ---------------------------------------
 
-            const cardData = stampcard.toJSON();
-
-            const data = {
-
-                ...cardData,
-
-                brand_image: cardData.brand_image
-                    ? baseUrl + '/' + cardData.brand_image
-                    : null,
-
-                background_image: cardData.background_image
-                    ? baseUrl + '/' + cardData.background_image
-                    : null,
-
-                customer_card: customerCardData
-                    ? customerCardData.toJSON()
-                    : null
-
-            };
+        customerCardJson.customer =
+            customerCardData.Customer
+                ? {
+                    id: customerCardData.Customer.id,
+                    name: customerCardData.Customer.name
+                }
+                : null;
 
 
-            // ---------------------------------------
-            // RESPONSE
-            // ---------------------------------------
+        delete customerCardJson.Customer;
+
+
+        // =======================================
+        // 7. FORMAT IMAGES
+        // =======================================
+
+        if (customerCardJson.brand_image) {
+
+            customerCardJson.brand_image =
+                baseUrl + '/' +
+                customerCardJson.brand_image;
+        }
+
+        if (customerCardJson.background_image) {
+
+            customerCardJson.background_image =
+                baseUrl + '/' +
+                customerCardJson.background_image;
+        }
+
+
+        // =======================================
+        // 8. STAMP CARD
+        // =======================================
+
+        if (cardType === 1) {
 
             return res.status(200).json({
 
@@ -571,97 +998,21 @@ exports.fetch_card = async (req, res) => {
 
                 msg: "Stamp card details fetched successfully",
 
-                data
+                data: {
+                    ...customerCardJson,
 
+                    stamp_levels:
+                        customerCardJson.CustomerStampLevels || []
+                }
             });
-
         }
 
 
         // =======================================
-        // MEMBERSHIP CARD
+        // 9. MEMBERSHIP CARD
         // =======================================
 
-        else if (cardType === 2) {
-
-            // ---------------------------------------
-            // FETCH MEMBERSHIP CARD
-            // ---------------------------------------
-
-            const membershipCard = await MembershipCards.findOne({
-                where: {
-                    id: cardId
-                }
-            });
-
-
-            // ---------------------------------------
-            // NO MEMBERSHIP CARD
-            // ---------------------------------------
-
-            if (!membershipCard) {
-                return res.status(200).json({
-                    status: 1,
-                    msg: "No membership card found",
-                    data: []
-                });
-            }
-
-
-            // ---------------------------------------
-            // FETCH CUSTOMER CARD
-            // ---------------------------------------
-
-            const customerCardData = await CustomerCard.findOne({
-                where: {
-                    merchant_card_id: cardId,
-                    customer_id: customerId,
-                    card_type: 2
-                },
-
-                attributes: [
-                    "id",
-                    "customer_id",
-                    "branch_id",
-                    "card_type",
-                    "card_number",
-                    "qr_token",
-                    "current_stamp",
-                    "status",
-                    "issued_at",
-                    "expires_at"
-                ]
-            });
-
-
-            // ---------------------------------------
-            // FORMAT DATA
-            // ---------------------------------------
-
-            const cardData = membershipCard.toJSON();
-
-            const data = {
-
-                ...cardData,
-
-                brand_image: cardData.brand_image
-                    ? baseUrl + '/' + cardData.brand_image
-                    : null,
-
-                background_image: cardData.background_image
-                    ? baseUrl + '/' + cardData.background_image
-                    : null,
-
-                customer_card: customerCardData
-                    ? customerCardData.toJSON()
-                    : null
-
-            };
-
-
-            // ---------------------------------------
-            // RESPONSE
-            // ---------------------------------------
+        if (cardType === 2) {
 
             return res.status(200).json({
 
@@ -669,33 +1020,18 @@ exports.fetch_card = async (req, res) => {
 
                 msg: "Membership card details fetched successfully",
 
-                data
+                data: customerCardJson
 
             });
-
         }
 
 
-        // =======================================
-        // INVALID TYPE
-        // =======================================
+    } catch (err) {
 
-        else {
-
-            return res.status(400).json({
-
-                status: 0,
-
-                message: 'Invalid type. Use 1 for stamp card or 2 for membership card'
-
-            });
-
-        }
-
-    }
-    catch (err) {
-
-        console.error('fetch_card Error:', err);
+        console.error(
+            'fetch_card Error:',
+            err
+        );
 
         return res.status(500).json({
 
@@ -706,6 +1042,5 @@ exports.fetch_card = async (req, res) => {
             error: err.message
 
         });
-
     }
 };

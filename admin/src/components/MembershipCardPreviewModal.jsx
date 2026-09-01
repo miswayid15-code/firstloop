@@ -4,56 +4,12 @@ import logo from '../assets/img/firstloop-favicon.png'
 import flLogo from '../assets/img/firstloop-favicon.png'
 import qrImg from '../assets/img/qr-img.png'
 
-// Helper: Clean relative image path
-const getRelativeImagePath = (path) => {
-    if (!path || typeof path !== 'string') return ''
-    let str = path.trim()
-    if (str.startsWith('data:') || str.startsWith('blob:')) return str
-
-    const uploadsMatch = str.match(/(uploads\/.*)/i)
-    if (uploadsMatch && uploadsMatch[1]) {
-        return uploadsMatch[1].replace(/^\/+/, '')
-    }
-
-    if (str.startsWith('http://') || str.startsWith('https://')) {
-        const lastHttp = str.lastIndexOf('http://')
-        const lastHttps = str.lastIndexOf('https://')
-        const idx = Math.max(lastHttp, lastHttps)
-        try {
-            const url = new URL(str.substring(idx))
-            str = url.pathname
-        } catch (e) {
-            str = str.replace(/^https?:\/\/[^/]+/i, '')
-        }
-    }
-
-    return str.replace(/^\/+/, '')
-}
-
-// Helper: Format image url with base API URL
-const formatImageUrl = (img) => {
-    if (!img) return ''
-    let str = String(img).trim()
-
-    if (str.startsWith('http://') || str.startsWith('https://') || str.startsWith('data:') || str.startsWith('blob:')) {
-        return str
-    }
-
-    const baseUrl = import.meta.env.VITE_API_URL || ''
-    const cleanBase = baseUrl.replace(/\/+$/, '')
-    const cleanImg = getRelativeImagePath(str).replace(/^\/+/, '')
-    return cleanBase ? `${cleanBase}/${cleanImg}` : cleanImg
-}
-
-// Helper: Format validity months for pass display (e.g. 12 -> 12 Months)
-const formatValidity = (val) => {
-    if (!val) return '12 Months'
-    const str = String(val).trim()
-    if (/^\d+$/.test(str)) {
-        return `${str} Month${Number(str) > 1 ? 's' : ''}`
-    }
-    return str
-}
+import {
+    getRelativeImagePath,
+    formatImageUrl,
+    getCardStyle,
+    formatValidity
+} from '../services/cardService.js'
 
 export default function MembershipCardPreviewModal({
     isOpen = true,
@@ -65,25 +21,6 @@ export default function MembershipCardPreviewModal({
     const [downloading, setDownloading] = useState(false)
 
     if (!isOpen || !card) return null
-
-    // Card background and border style computation
-    const getCardStyle = () => {
-        const style = {
-            border: `2px solid ${card.borderColor || card.border_color || 'rgba(255,255,255,0.4)'}`
-        }
-        const bgImg = card.bgImage || card.background_image
-        if (bgImg && bgImg !== 'none' && bgImg !== 'null' && bgImg !== 'undefined') {
-            style.backgroundImage = `url(${formatImageUrl(bgImg)})`
-            style.backgroundSize = 'cover'
-            style.backgroundPosition = 'center'
-            style.backgroundRepeat = 'no-repeat'
-        } else {
-            style.backgroundColor = card.bgColor || card.background_color || '#D97706'
-        }
-        return style
-    }
-
-    // High quality canvas download
     const handleDownload = async () => {
         if (!cardRef.current) return
         try {
@@ -121,7 +58,7 @@ export default function MembershipCardPreviewModal({
         const brand = card.brandName || card.brand_name || fallbackBrandName
         const title = card.name || card.title || 'Digital Membership Pass'
         const validity = formatValidity(card.validityMonths || card.month || card.totalMonth)
-        const shareUrl = card.id ? `${window.location.origin}/card-preview/${card.id}` : window.location.href
+        const shareUrl = card.id ? `${window.location.origin}/card-preview/${card.id}?type=2` : window.location.href
         const message = `🎉 *${brand}* - ${title}\n⭐ Validity: ${validity}\n\n👉 *View Pass:* ${shareUrl}`
         return `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`
     }
@@ -191,7 +128,7 @@ export default function MembershipCardPreviewModal({
                             width: '100%',
                             maxWidth: 370,
                             borderRadius: 20,
-                            ...getCardStyle(),
+                            ...getCardStyle(card, '#D97706'),
                             color: card.textColor || card.text_color || '#FFFFFF',
                             padding: 22,
                             boxShadow: '0 16px 36px -8px rgba(0,0,0,0.25)',

@@ -3,6 +3,7 @@ import { NavLink, useParams, useNavigate, useSearchParams, useLocation } from 'r
 import logo from '../../assets/img/firstloop-favicon.png'
 import flLogo from '../../assets/img/firstloop-favicon.png'
 import qrImg from '../../assets/img/qr-img.png'
+import { getCardStyle, formatImageUrl } from '../../services/cardService.js'
 
 // --- QR Code Component Using qr-img.png ---
 const RealQRCode = ({ size = 80 }) => (
@@ -240,11 +241,7 @@ export default function FpCustomerDetails() {
         return customer.membershipCards.filter(mc => mc.branchId === selectedBranchId)
     }, [customer.membershipCards, selectedBranchId])
 
-    // Helper: Compute Card Style
-    const getCardStyle = (card) => ({
-        backgroundColor: card.bgColor || '#0E88B8',
-        border: `2px solid ${card.borderColor || 'rgba(255,255,255,0.4)'}`
-    })
+
 
     const location = useLocation()
     const backPath = location.pathname.startsWith('/merchant') ? '/merchant/customers' : '/customers'
