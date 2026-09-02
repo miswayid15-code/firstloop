@@ -1,8 +1,52 @@
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { NavLink, useNavigate } from 'react-router-dom'
+import { toast } from "react-hot-toast"
+import API from '../../api.js'
 import { MOCK_RECEPTIONIST_PROFILE, RECEPTIONIST_STATS, TODAY_CHECKINS } from './mockReceptionistData'
 
 export default function ReceptionistDashboard() {
     const navigate = useNavigate()
+    const [dashboard, setDashboard] = useState({})
+    const [loading, setLoading] = useState(false)
+
+    let receptionist = {}
+    try {
+        const rawReceptionist = localStorage.getItem("receptionist_data")
+        if (rawReceptionist && rawReceptionist !== "null" && rawReceptionist !== "undefined") {
+            receptionist = JSON.parse(rawReceptionist) || {}
+        }
+    } catch (e) {
+        console.error("Error parsing receptionist_data:", e)
+    }
+
+    const fetchDashboard = async () => {
+        try {
+            setLoading(true)
+            const response = await API.post('firstloop/reception/dashboard')
+            if (response.data?.status == 1) {
+                const dashData = (response.data?.data && typeof response.data.data === 'object')
+                    ? response.data.data
+                    : response.data
+                setDashboard(dashData || {})
+            } else {
+                toast.error(
+                    response.data?.message ||
+                    "Failed to fetch dashboard"
+                )
+            }
+        } catch (error) {
+            toast.error(
+                error.response?.data?.message ||
+                "Something went wrong"
+            )
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        fetchDashboard()
+    }, [])
 
     return (
         <div style={{ paddingBottom: 40 }}>
@@ -13,7 +57,7 @@ export default function ReceptionistDashboard() {
                         Receptionist Counter Dashboard
                     </h2>
                     <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 4 }}>
-                        Welcome back, <strong>{MOCK_RECEPTIONIST_PROFILE.name}</strong>
+                        Welcome back, <strong>{receptionist?.user_name || receptionist?.name || dashboard?.name || "Receptionist"}</strong>
                     </p>
                 </div>
 
@@ -62,7 +106,7 @@ export default function ReceptionistDashboard() {
                         </div>
                     </div>
                     <h3 style={{ fontSize: '2rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
-                        {RECEPTIONIST_STATS.activeCustomers}
+                        {loading ? <i className="fas fa-spinner fa-spin" style={{ fontSize: '1.4rem' }} /> : (dashboard?.total_cus || 0)}
                     </h3>
                     <div style={{ fontSize: '0.78rem', color: '#059669', fontWeight: 700, marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
                         <i className="fas fa-check-circle" />
@@ -90,7 +134,7 @@ export default function ReceptionistDashboard() {
                         </div>
                     </div>
                     <h3 style={{ fontSize: '2rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
-                        {RECEPTIONIST_STATS.activeStampCards}
+                        {loading ? <i className="fas fa-spinner fa-spin" style={{ fontSize: '1.4rem' }} /> : (dashboard?.total_stamp_card || 0)}
                     </h3>
                     <div style={{ fontSize: '0.78rem', color: '#0284C7', fontWeight: 700, marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
                         <i className="fas fa-stamp" />
@@ -118,7 +162,7 @@ export default function ReceptionistDashboard() {
                         </div>
                     </div>
                     <h3 style={{ fontSize: '2rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
-                        {RECEPTIONIST_STATS.activeMembershipCards}
+                        {loading ? <i className="fas fa-spinner fa-spin" style={{ fontSize: '1.4rem' }} /> : (dashboard?.total_membership_card || 0)}
                     </h3>
                     <div style={{ fontSize: '0.78rem', color: '#D97706', fontWeight: 700, marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
                         <i className="fas fa-crown" />

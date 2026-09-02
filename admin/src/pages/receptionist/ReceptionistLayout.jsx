@@ -2,7 +2,17 @@ import { useState } from 'react'
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import API from '../../api.js'
-import { MOCK_RECEPTIONIST_PROFILE } from './mockReceptionistData'
+let receptionist = {};
+try {
+    const rawReceptionist = localStorage.getItem("receptionist_data");
+
+    if (rawReceptionist && rawReceptionist !== "null" && rawReceptionist !== "undefined") {
+        receptionist = JSON.parse(rawReceptionist) || {};
+
+    }
+} catch (e) {
+    console.error("Error parsing receptionist_data:", e);
+}
 
 export default function ReceptionistLayout() {
     const navigate = useNavigate()
@@ -40,25 +50,8 @@ export default function ReceptionistLayout() {
             localStorage.removeItem('receptionist_token')
             localStorage.removeItem('receptionist_data')
             localStorage.removeItem('rec_data')
-            localStorage.removeItem('user_id')
-            localStorage.removeItem('user_repId')
-
-            localStorage.removeItem('mer_access_token')
-            localStorage.removeItem('mer_refresh_token')
-            localStorage.removeItem('merchant_data')
-
-            sessionStorage.removeItem('rec_access_token')
-            sessionStorage.removeItem('rec_refresh_token')
-            sessionStorage.removeItem('receptionist_token')
-            sessionStorage.removeItem('receptionist_data')
-            sessionStorage.removeItem('rec_data')
-            sessionStorage.removeItem('user_id')
-            sessionStorage.removeItem('user_repId')
-
-            sessionStorage.removeItem('mer_access_token')
-            sessionStorage.removeItem('mer_refresh_token')
-            sessionStorage.removeItem('merchant_data')
-
+            localStorage.removeItem('rec_user_id')
+            localStorage.removeItem('rec_user_repId')
             navigate('/receptionist/login', { replace: true })
         }
     }
@@ -122,7 +115,7 @@ export default function ReceptionistLayout() {
                                 </h1>
                                 <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: 0, display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                     <i className="fas fa-map-marker-alt" style={{ color: 'var(--firstloop-primary)' }} />
-                                    {MOCK_RECEPTIONIST_PROFILE.branchName}
+                                    {receptionist.user_branch || "Branch"}
                                 </p>
                             </div>
                         </div>
@@ -145,17 +138,27 @@ export default function ReceptionistLayout() {
                         {/* Staff Profile Tag & Logout (Desktop) */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }} className="d-none d-sm-flex">
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 10px', background: '#F1F5F9', borderRadius: 10 }}>
-                                <img
-                                    src={MOCK_RECEPTIONIST_PROFILE.avatar}
-                                    alt={MOCK_RECEPTIONIST_PROFILE.name}
-                                    style={{ width: 30, height: 30, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--firstloop-primary)' }}
-                                />
+                                <div
+                                    style={{
+                                        width: 30,
+                                        height: 30,
+                                        borderRadius: '50%',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        background: 'var(--firstloop-primary)',
+                                        color: '#fff',
+                                        border: '2px solid var(--firstloop-primary)'
+                                    }}
+                                >
+                                    <i className="fa-solid fa-user"></i>
+                                </div>
                                 <div style={{ lineHeight: 1.1 }}>
                                     <strong style={{ fontSize: '0.78rem', color: 'var(--text-primary)', display: 'block' }}>
-                                        {MOCK_RECEPTIONIST_PROFILE.name}
+                                        {receptionist.user_name || "Receptionist"}
                                     </strong>
                                     <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
-                                        ID: {MOCK_RECEPTIONIST_PROFILE.staffId}
+                                        ID: {receptionist.user_repId}
                                     </span>
                                 </div>
                             </div>

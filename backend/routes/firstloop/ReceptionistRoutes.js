@@ -23,4 +23,10 @@ router.post(
     auth('receptionist'),
     controller.logout
 );
+router.post(
+    '/dashboard',
+    auth('receptionist'),
+    controller.dashboard
+);
+
 module.exports = router;

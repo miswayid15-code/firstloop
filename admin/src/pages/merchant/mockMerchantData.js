@@ -346,7 +346,7 @@ export const INITIAL_MEMBERSHIP_CARDS = [
 export const INITIAL_CUSTOMERS = [
     {
         id: 'cus-501',
-        name: 'Sophia Reynolds',
+        name: 'Sophia Reynoldss',
         email: 'sophia.reynolds@example.com',
         phone: '+1 (555) 234-5678',
         avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=120',
@@ -509,7 +509,7 @@ export const INITIAL_REPORTS_LOGS = [
     {
         id: 'tx-901',
         date: '2026-08-14 10:24 AM',
-        customer: 'Sophia Reynolds',
+        customer: 'Sophia Reynoldss',
         branch: 'FirstLoop Flagship Hub - Downtown',
         cardType: 'Stamp Card',
         cardName: 'Artisanal Coffee 8-Stamp Pass',
@@ -557,7 +557,7 @@ export const INITIAL_REPORTS_LOGS = [
     {
         id: 'tx-905',
         date: '2026-08-12 11:15 AM',
-        customer: 'Sophia Reynolds',
+        customer: 'Sophia Reynoldss',
         branch: 'FirstLoop Flagship Hub - Downtown',
         cardType: 'Membership Tier',
         cardName: 'Gold Elite Membership',

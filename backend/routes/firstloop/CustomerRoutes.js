@@ -29,4 +29,19 @@ router.post(
     auth(),
     controller.get_branch_cus
 );
+router.post(
+    '/fetch-merchant-customers',
+    auth(),
+    controller.get_merchant_customers
+);
+router.post(
+    '/stamp-paid',
+    auth(),
+    controller.stamp_paid
+);
+router.post(
+    '/get-customer-card-details',
+    auth(),
+    controller.get_customer_card_details
+);
 module.exports = router;

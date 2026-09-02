@@ -345,10 +345,29 @@ export default function ViewFlBranch() {
             const phone = String(c.phone || '')
             const search = (customerSearch || '').toLowerCase().trim()
 
-            if (!search) return true
-            return name.includes(search) || email.includes(search) || phone.includes(search)
+            const matchesSearch = !search ||
+                name.includes(search) ||
+                email.includes(search) ||
+                phone.includes(search) ||
+                (Array.isArray(c.cards) && c.cards.some(card =>
+                    (card.title && card.title.toLowerCase().includes(search)) ||
+                    (card.card_number && card.card_number.toLowerCase().includes(search)) ||
+                    (Number(card.card_type) === 1 && 'stamp card'.includes(search)) ||
+                    (Number(card.card_type) === 2 && 'membership card'.includes(search))
+                ))
+
+            if (!matchesSearch) return false
+
+            if (customerFilterCard === '1' || customerFilterCard === 'stamps') {
+                return Array.isArray(c.cards) && c.cards.some(card => Number(card.card_type) === 1)
+            }
+            if (customerFilterCard === '2' || customerFilterCard === 'membership') {
+                return Array.isArray(c.cards) && c.cards.some(card => Number(card.card_type) === 2)
+            }
+
+            return true
         })
-    }, [customers, customerSearch])
+    }, [customers, customerSearch, customerFilterCard])
 
     // Handler: Open Stamp Card Builder for Creation
     const handleOpenCreateStampCard = () => {
@@ -951,16 +970,16 @@ export default function ViewFlBranch() {
                                 <span>Add Card to Customer</span>
                             </button>
                         </div>
-                        {/* <select
+                        <select
                             className="form-control"
                             value={customerFilterCard}
                             onChange={(e) => setCustomerFilterCard(e.target.value)}
-                            style={{ height: 38, fontSize: '0.85rem', borderRadius: 8, width: 170 }}
+                            style={{ height: 38, fontSize: '0.85rem', borderRadius: 8, width: 180 }}
                         >
                             <option value="all">All Card Types</option>
-                            <option value="stamps">Stamp Card Holders</option>
-                            <option value="membership">Membership Holders</option>
-                        </select> */}
+                            <option value="1">Stamp Card Holders</option>
+                            <option value="2">Membership Holders</option>
+                        </select>
 
                         <div style={{ position: 'relative', width: 220 }}>
                             <i className="fas fa-search" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.8rem' }} />
@@ -983,17 +1002,14 @@ export default function ViewFlBranch() {
                             <tr style={{ background: '#F8FAFC' }}>
                                 <th style={{ padding: '12px 16px', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)' }}>CUSTOMER</th>
                                 <th style={{ padding: '12px 16px', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)' }}>CONTACT</th>
-                                {/* <th style={{ padding: '12px 16px', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)' }}>ACTIVE STAMP CARD</th> */}
-                                {/* <th style={{ padding: '12px 16px', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)' }}>MEMBERSHIP TIER</th> */}
-                                {/* <th style={{ padding: '12px 16px', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)' }}>VISITS & SPEND</th> */}
-                                {/* <th style={{ padding: '12px 16px', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)' }}>STATUS</th> */}
+                                <th style={{ padding: '12px 16px', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)' }}>ASSIGNED CARDS & TYPE</th>
                                 <th style={{ padding: '12px 16px', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', textAlign: 'right' }}>ACTION</th>
                             </tr>
                         </thead>
                         <tbody>
                             {customersLoading ? (
                                 <tr>
-                                    <td colSpan="3" style={{ textAlign: 'center', padding: '36px 16px', color: 'var(--text-muted)' }}>
+                                    <td colSpan="4" style={{ textAlign: 'center', padding: '36px 16px', color: 'var(--text-muted)' }}>
                                         <i className="fas fa-spinner fa-spin" style={{ fontSize: '1.5rem', marginBottom: 8, color: 'var(--firstloop-primary)' }} />
                                         <p style={{ margin: 0, fontSize: '0.88rem' }}>Loading associated customers...</p>
                                     </td>
@@ -1044,6 +1060,64 @@ export default function ViewFlBranch() {
                                                 {cus.country_code ? `+${cus.country_code} ` : ''}{cus.phone || ''}
                                             </small>
                                         </td>
+                                        <td style={{ padding: '14px 16px' }}>
+                                            {Array.isArray(cus.cards) && cus.cards.length > 0 ? (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                                    {cus.cards.map((card, cIdx) => {
+                                                        const isStamp = Number(card.card_type) === 1
+                                                        const isMembership = Number(card.card_type) === 2
+                                                        return (
+                                                            <div
+                                                                key={card.id || cIdx}
+                                                                style={{
+                                                                    display: 'inline-flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'space-between',
+                                                                    gap: 10,
+                                                                    padding: '6px 10px',
+                                                                    borderRadius: 8,
+                                                                    background: isStamp ? 'rgba(14, 136, 184, 0.08)' : isMembership ? 'rgba(217, 119, 6, 0.08)' : '#F1F5F9',
+                                                                    border: `1px solid ${isStamp ? 'rgba(14, 136, 184, 0.22)' : isMembership ? 'rgba(217, 119, 6, 0.22)' : '#E2E8F0'}`,
+                                                                    maxWidth: 360
+                                                                }}
+                                                            >
+                                                                <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+                                                                    <div style={{ fontWeight: 600, fontSize: '0.82rem', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                                        {card.title || (isStamp ? 'Stamp Card' : isMembership ? 'Membership Card' : 'Card')}
+                                                                    </div>
+                                                                    {card.card_number && (
+                                                                        <small style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontFamily: 'monospace' }}>
+                                                                            {card.card_number}
+                                                                        </small>
+                                                                    )}
+                                                                </div>
+                                                                <span
+                                                                    style={{
+                                                                        flexShrink: 0,
+                                                                        fontSize: '0.68rem',
+                                                                        fontWeight: 700,
+                                                                        padding: '2px 8px',
+                                                                        borderRadius: 6,
+                                                                        display: 'inline-flex',
+                                                                        alignItems: 'center',
+                                                                        gap: 4,
+                                                                        background: isStamp ? 'var(--firstloop-primary, #0E88B8)' : isMembership ? '#D97706' : '#64748B',
+                                                                        color: '#FFFFFF'
+                                                                    }}
+                                                                >
+                                                                    <i className={isStamp ? 'fas fa-stamp' : isMembership ? 'fas fa-id-card' : 'fas fa-credit-card'} style={{ fontSize: '0.65rem' }} />
+                                                                    {isStamp ? 'Stamp Card' : isMembership ? 'Membership Card' : 'Card'}
+                                                                </span>
+                                                            </div>
+                                                        )
+                                                    })}
+                                                </div>
+                                            ) : (
+                                                <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontStyle: 'italic' }}>
+                                                    No cards assigned
+                                                </span>
+                                            )}
+                                        </td>
                                         <td style={{ padding: '14px 16px', textAlign: 'right' }}>
                                             <button
                                                 type="button"
@@ -1065,7 +1139,7 @@ export default function ViewFlBranch() {
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan="3" style={{ textAlign: 'center', padding: 30, color: 'var(--text-muted)' }}>
+                                    <td colSpan="4" style={{ textAlign: 'center', padding: 30, color: 'var(--text-muted)' }}>
                                         No associated customers found for this branch.
                                     </td>
                                 </tr>

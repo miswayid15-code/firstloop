@@ -8,14 +8,29 @@ const API = axios.create({
     },
 });
 
-
 /* ---------------------------------------------------
-   Get current application type
+   Get current application / role type
+   Checks both request URL and browser pathname
 --------------------------------------------------- */
+export const getAppType = (reqUrl = "") => {
+    const url = String(reqUrl || "").toLowerCase();
+    const path = String(window.location.pathname || "").toLowerCase();
 
-const getAppType = () => {
-    const path = window.location.pathname.toLowerCase();
+    // 1. Explicit API endpoint checks
+    if (url.includes("firstloop/merchant/") || url.includes("/merchant/")) {
+        return "merchant";
+    }
+    if (url.includes("firstloop/reception/") || url.includes("/reception/")) {
+        return "receptionist";
+    }
+    if (url.includes("admin/saleperson/") || url.includes("/saleperson/")) {
+        return "saleperson";
+    }
+    if (url.startsWith("admin/") || url.includes("/admin/")) {
+        return "admin";
+    }
 
+    // 2. Browser URL Path checks
     if (
         path.startsWith("/merchant/") ||
         path === "/merchant" ||
@@ -56,16 +71,15 @@ const getAppType = () => {
     return "admin";
 };
 
-
 /* ---------------------------------------------------
-   Token Keys
+   Role-Specific Token Storage Keys
 --------------------------------------------------- */
-
-const getTokenKeys = () => {
-    const appType = getAppType();
+export const getTokenKeys = (reqUrl = "") => {
+    const appType = getAppType(reqUrl);
 
     if (appType === "saleperson") {
         return {
+            role: "saleperson",
             access: "sale_access_token",
             refresh: "sale_refresh_token",
             data: "saleperson_data",
@@ -74,6 +88,7 @@ const getTokenKeys = () => {
 
     if (appType === "merchant") {
         return {
+            role: "merchant",
             access: "mer_access_token",
             refresh: "mer_refresh_token",
             data: "merchant_data",
@@ -82,6 +97,7 @@ const getTokenKeys = () => {
 
     if (appType === "receptionist") {
         return {
+            role: "receptionist",
             access: "rec_access_token",
             refresh: "rec_refresh_token",
             data: "receptionist_data",
@@ -89,224 +105,189 @@ const getTokenKeys = () => {
     }
 
     return {
+        role: "admin",
         access: "access_token",
         refresh: "refresh_token",
         data: "admin_data",
     };
 };
 
-
 /* ---------------------------------------------------
-   Get Access Token
+   Get Access Token for specific role/endpoint
 --------------------------------------------------- */
-
-const getAccessToken = () => {
-    const keys = getTokenKeys();
-
-    return localStorage.getItem(keys.access) || (keys.access === "access_token" ? localStorage.getItem("admin_token") : null);
+export const getAccessToken = (reqUrl = "") => {
+    const keys = getTokenKeys(reqUrl);
+    const token = localStorage.getItem(keys.access);
+    if (token && token !== "null" && token !== "undefined") {
+        return token;
+    }
+    if (keys.role === "admin") {
+        const adminToken = localStorage.getItem("admin_token");
+        if (adminToken && adminToken !== "null" && adminToken !== "undefined") {
+            return adminToken;
+        }
+    }
+    if (keys.role === "receptionist") {
+        const recToken = localStorage.getItem("receptionist_token");
+        if (recToken && recToken !== "null" && recToken !== "undefined") {
+            return recToken;
+        }
+    }
+    return null;
 };
 
-
 /* ---------------------------------------------------
-   Get Refresh Token
+   Get Refresh Token for specific role/endpoint
 --------------------------------------------------- */
-
-const getRefreshToken = () => {
-    const keys = getTokenKeys();
-
-    return localStorage.getItem(keys.refresh);
+export const getRefreshToken = (reqUrl = "") => {
+    const keys = getTokenKeys(reqUrl);
+    const token = localStorage.getItem(keys.refresh);
+    if (token && token !== "null" && token !== "undefined") {
+        return token;
+    }
+    return null;
 };
-
 
 /* ---------------------------------------------------
    Save Tokens
 --------------------------------------------------- */
-
-const saveTokens = (accessToken, refreshToken = null) => {
-    const keys = getTokenKeys();
+export const saveTokens = (accessToken, refreshToken = null, reqUrl = "") => {
+    const keys = getTokenKeys(reqUrl);
 
     if (accessToken) {
-        localStorage.setItem(
-            keys.access,
-            accessToken
-        );
+        localStorage.setItem(keys.access, accessToken);
     }
-
     if (refreshToken) {
-        localStorage.setItem(
-            keys.refresh,
-            refreshToken
-        );
+        localStorage.setItem(keys.refresh, refreshToken);
     }
 };
 
-
 /* ---------------------------------------------------
-   Logout
+   Isolated Logout (Only logs out the specific role)
 --------------------------------------------------- */
+const activeLogouts = new Set();
 
-let isLoggingOut = false;
+export const logoutAndRedirect = (message, targetAppType = null) => {
+    const appType = targetAppType || getAppType();
 
-const logoutAndRedirect = (message) => {
-
-    if (isLoggingOut) {
+    if (activeLogouts.has(appType)) {
         return;
     }
+    activeLogouts.add(appType);
+    setTimeout(() => activeLogouts.delete(appType), 3000);
 
-    isLoggingOut = true;
-
-    const appType = getAppType();
-    const keys = getTokenKeys();
-
-    toast.error(
-        message || "Session expired. Please login again."
-    );
-
-    /* Remove common token */
-    localStorage.removeItem(keys.access);
-    localStorage.removeItem(keys.refresh);
-    localStorage.removeItem(keys.data);
-
-    /* Additional cleanup */
+    if (message) {
+        toast.error(message);
+    }
 
     if (appType === "merchant") {
-
-        localStorage.removeItem("role");
-
-        setTimeout(() => {
-            window.location.href = "/admin/merchant/login";
-        }, 1500);
-
-    }
-
-    else if (appType === "saleperson") {
+        localStorage.removeItem("mer_access_token");
+        localStorage.removeItem("mer_refresh_token");
+        localStorage.removeItem("merchant_data");
 
         setTimeout(() => {
-            window.location.href = "/admin/saleperson-login";
-        }, 1500);
+            window.location.href = "/merchant/login";
+        }, 1200);
+    } else if (appType === "saleperson") {
+        localStorage.removeItem("sale_access_token");
+        localStorage.removeItem("sale_refresh_token");
+        localStorage.removeItem("saleperson_data");
 
-    }
-
-    else if (appType === "receptionist") {
-
+        setTimeout(() => {
+            window.location.href = "/saleperson-login";
+        }, 1200);
+    } else if (appType === "receptionist") {
         localStorage.removeItem("rec_access_token");
         localStorage.removeItem("rec_refresh_token");
         localStorage.removeItem("receptionist_token");
         localStorage.removeItem("receptionist_data");
         localStorage.removeItem("rec_data");
-        sessionStorage.removeItem("rec_access_token");
-        sessionStorage.removeItem("rec_refresh_token");
-        sessionStorage.removeItem("receptionist_token");
-        sessionStorage.removeItem("receptionist_data");
-        sessionStorage.removeItem("rec_data");
+        localStorage.removeItem("rec_user_id");
+        localStorage.removeItem("rec_user_repId");
 
         setTimeout(() => {
             window.location.href = "/receptionist/login";
-        }, 1500);
-
-    }
-
-    else {
-
+        }, 1200);
+    } else {
+        localStorage.removeItem("access_token");
         localStorage.removeItem("admin_token");
+        localStorage.removeItem("refresh_token");
+        localStorage.removeItem("admin_data");
         localStorage.removeItem("role");
 
         setTimeout(() => {
-            window.location.href = "/admin";
-        }, 1500);
+            window.location.href = "/";
+        }, 1200);
     }
 };
 
-
 /* ---------------------------------------------------
-   Add Authorization Header
+   Add Authorization & Role Headers
 --------------------------------------------------- */
-
 const addAuthHeaders = (config) => {
-
-    const appType = getAppType();
-    const accessToken = getAccessToken();
+    const reqUrl = config.url || "";
+    const appType = getAppType(reqUrl);
+    const accessToken = getAccessToken(reqUrl);
 
     config.headers = config.headers || {};
 
     if (!config.headers.Authorization && !config.headers.authorization) {
-        if (
-            accessToken &&
-            accessToken !== "null" &&
-            accessToken !== "undefined"
-        ) {
+        if (accessToken && accessToken !== "null" && accessToken !== "undefined") {
             config.headers.Authorization = `Bearer ${accessToken}`;
         }
     }
 
     if (!config.headers["X-Role"] && !config.headers["x-role"]) {
-        const role = localStorage.getItem("role") || "firstpass";
-        if (role) {
+        if (appType === "admin") {
+            const role = localStorage.getItem("role") || "firstpass";
             config.headers["X-Role"] = role;
+        } else if (appType === "merchant") {
+            config.headers["X-Role"] = "merchant";
+        } else if (appType === "receptionist") {
+            config.headers["X-Role"] = "receptionist";
+        } else if (appType === "saleperson") {
+            config.headers["X-Role"] = "saleperson";
         }
     }
 
     return config;
 };
 
-
 /* ---------------------------------------------------
    Request Interceptor
 --------------------------------------------------- */
-
 API.interceptors.request.use(
     (config) => {
-
         return addAuthHeaders(config);
     },
-
     (error) => {
         return Promise.reject(error);
     }
 );
 
-
 /* ---------------------------------------------------
    Response Interceptor
 --------------------------------------------------- */
-
 API.interceptors.response.use(
-
     (response) => {
         return response;
     },
-
     async (error) => {
-
         const originalRequest = error.config;
-
-
-        /* -----------------------------------------------
-           No response from server
-        ------------------------------------------------ */
 
         if (!error.response) {
             return Promise.reject(error);
         }
 
-
-        /* -----------------------------------------------
-           Only handle 401
-        ------------------------------------------------ */
-
-        if (
-            error.response.status !== 401 ||
-            !originalRequest
-        ) {
-
+        // Only handle 401 Unauthorized
+        if (error.response.status !== 401 || !originalRequest) {
             return Promise.reject(error);
         }
 
+        const reqUrl = originalRequest.url || "";
+        const appType = getAppType(reqUrl);
 
-        /* -----------------------------------------------
-           Check for skipAuthRedirect flag
-        ------------------------------------------------ */
-
+        // Check for skipAuthRedirect flag
         if (
             originalRequest.skipAuthRedirect ||
             originalRequest.headers?.["X-Skip-Auth-Redirect"]
@@ -314,183 +295,63 @@ API.interceptors.response.use(
             return Promise.reject(error);
         }
 
-
-        /* -----------------------------------------------
-           Check for role/endpoint scope mismatch
-           (e.g., Merchant calling an /admin/ endpoint)
-        ------------------------------------------------ */
-
-        const appType = getAppType();
-        const reqUrl = originalRequest.url || "";
+        // Check for role/endpoint scope mismatch (e.g. non-admin calling admin endpoint)
         const isAdminEndpoint = reqUrl.includes("admin/") || reqUrl.startsWith("admin");
-
         if (appType !== "admin" && isAdminEndpoint) {
-            // A 401 on an admin endpoint in merchant/saleperson context is an authorization scope mismatch, not session expiry.
             return Promise.reject(error);
         }
 
-
-        /* -----------------------------------------------
-           Prevent infinite retry
-        ------------------------------------------------ */
-
+        // Prevent infinite retry
         if (originalRequest._retry) {
-            logoutAndRedirect(
-                "Session expired. Please login again."
-            );
-
+            logoutAndRedirect("Session expired. Please login again.", appType);
             return Promise.reject(error);
         }
 
-
-        /* -----------------------------------------------
-           Don't refresh the refresh-token API itself
-        ------------------------------------------------ */
-
-        if (
-            originalRequest.url?.includes(
-                "/admin/refresh-token"
-            )
-        ) {
-
-            logoutAndRedirect(
-                "Session expired. Please login again."
-            );
-
+        if (originalRequest.url?.includes("/refresh-token")) {
+            logoutAndRedirect("Session expired. Please login again.", appType);
             return Promise.reject(error);
         }
-
 
         originalRequest._retry = true;
 
-
         try {
+            const refreshToken = getRefreshToken(reqUrl);
 
-            const refreshToken =
-                getRefreshToken();
-
-
-            /* -------------------------------------------
-               No refresh token
-            ------------------------------------------- */
-
-            if (
-                !refreshToken ||
-                refreshToken === "null" ||
-                refreshToken === "undefined"
-            ) {
-
-                logoutAndRedirect(
-                    "Session expired. Please login again."
-                );
-
+            if (!refreshToken || refreshToken === "null" || refreshToken === "undefined") {
+                logoutAndRedirect("Session expired. Please login again.", appType);
                 return Promise.reject(error);
             }
 
-
-            /* -------------------------------------------
-               Refresh token API
-            ------------------------------------------- */
-
             const refreshResponse = await axios.post(
-
                 `${import.meta.env.VITE_API_URL}/admin/refresh-token`,
-
                 {},
-
                 {
                     headers: {
-                        Authorization:
-                            `Bearer ${refreshToken}`,
-                        "Content-Type":
-                            "application/json",
+                        Authorization: `Bearer ${refreshToken}`,
+                        "Content-Type": "application/json",
                     },
                 }
             );
 
+            const refreshData = refreshResponse.data;
 
-            const refreshData =
-                refreshResponse.data;
+            if (refreshData?.status === 1 && refreshData?.access_token) {
+                saveTokens(refreshData.access_token, refreshData.refresh_token, reqUrl);
 
-
-            /* -------------------------------------------
-               Refresh successful
-            ------------------------------------------- */
-
-            if (
-                refreshData?.status === 1 &&
-                refreshData?.access_token
-            ) {
-
-                saveTokens(
-                    refreshData.access_token,
-                    refreshData.refresh_token
-                );
-
-
-                /* ---------------------------------------
-                   Update original request
-                --------------------------------------- */
-
-                originalRequest.headers =
-                    originalRequest.headers || {};
-
-                originalRequest.headers.Authorization =
-                    `Bearer ${refreshData.access_token}`;
-
-
-                /* ---------------------------------------
-                   Admin Role
-                --------------------------------------- */
-
-                if (getAppType() === "admin") {
-
-                    const role =
-                        localStorage.getItem("role");
-
-                    if (role) {
-
-                        originalRequest.headers["X-Role"] =
-                            role;
-                    }
-                }
-
-
-                /* ---------------------------------------
-                   Retry original request
-                --------------------------------------- */
+                originalRequest.headers = originalRequest.headers || {};
+                originalRequest.headers.Authorization = `Bearer ${refreshData.access_token}`;
 
                 return API(originalRequest);
             }
 
-
-            /* -------------------------------------------
-               Refresh failed
-            ------------------------------------------- */
-
-            logoutAndRedirect(
-                "Session expired. Please login again."
-            );
-
+            logoutAndRedirect("Session expired. Please login again.", appType);
             return Promise.reject(error);
-
-        }
-
-        catch (refreshError) {
-
-            console.error(
-                "Token refresh failed:",
-                refreshError
-            );
-
-            logoutAndRedirect(
-                "Session expired. Please login again."
-            );
-
+        } catch (refreshError) {
+            console.error("Token refresh failed:", refreshError);
+            logoutAndRedirect("Session expired. Please login again.", appType);
             return Promise.reject(refreshError);
         }
     }
 );
-
 
 export default API;

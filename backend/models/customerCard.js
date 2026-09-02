@@ -139,7 +139,11 @@ module.exports = (sequelize, DataTypes) => {
                 allowNull: false,
                 defaultValue: 1,
             },
-
+            is_completed: {
+                type: DataTypes.SMALLINT,
+                allowNull: false,
+                defaultValue: 0,
+            },
             issued_at: {
                 type: DataTypes.DATE,
                 allowNull: false,

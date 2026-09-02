@@ -152,6 +152,11 @@ module.exports = {
         allowNull: false,
         defaultValue: 1,
       },
+      is_completed: {
+        type: Sequelize.SMALLINT,
+        allowNull: false,
+        defaultValue: 0,
+      },
 
       issued_at: {
         type: Sequelize.DATE,

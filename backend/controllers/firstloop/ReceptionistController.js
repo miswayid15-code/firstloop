@@ -1,4 +1,5 @@
-const { Merchant, Coupon, RefreshToken, Branch, Receptionist, MerchantFp, BranchTiming, UserNotificationToken, CouponApplied, Notification } = require('../../models');
+const { Merchant, Coupon, RefreshToken, Branch, Receptionist, MerchantFp, BranchTiming, UserNotificationToken, CouponApplied, Notification,Stampcard, StampLevel, MembershipCards, CustomerCard,
+    CustomerStampLevel, } = require('../../models');
 const bcrypt = require('bcryptjs');
 const { parsePhoneNumber } = require('libphonenumber-js');
 const jwt = require('jsonwebtoken');
@@ -34,8 +35,8 @@ exports.login = async (req, res) => {
         if (!match) {
             return res.json({ status: 0, message: "Invalid password" });
         }
-
-        // Refresh Token - 2 minutes
+        const branch = await Branch.findOne({ where: { id: receptionist.branch_id } });
+        
         const refreshToken = jwt.sign(
             {
                 id: receptionist.id,
@@ -71,6 +72,9 @@ exports.login = async (req, res) => {
             message: "Login successful",
             user_id: receptionist.id,
             user_repId:receptionist.rep_id,
+            user_name:receptionist.name,
+            user_branch: branch.name,
+            user_branch_id: branch.id,
             access_token: accessToken,
             refresh_token: refreshToken,
 
@@ -105,3 +109,48 @@ exports.logout = async (req, res) => {
         return res.json({ status: 0, message: "Error" });
     }
 };
+
+exports.dashboard = async (req, res) => {
+    try{
+        const rep_id = req.user.id;
+        const receptionist = await Receptionist.findOne({ where: { id: rep_id } });
+        if (!receptionist) {
+            return res.json({ status: 0, message: "Receptionist not found" });
+        }
+        const branch_id=receptionist.branch_id;
+       
+        const branch = await Branch.findOne({ where: { id: branch_id } });
+        const total_cus = await CustomerCard.count({
+            branch_id: branch_id,
+        });
+        const total_stamp_card = await Stampcard.count({
+            where: {
+                branch_ids:{ [Op.contains]: [branch_id] },
+            }
+        });
+        const total_membership_card = await MembershipCards.count({
+            where: {
+                branch_ids:{ [Op.contains]: [branch_id] },
+            }
+        });
+
+
+
+        return res.status(200).json({
+            status: 1,
+            message: "Dashboard data fetched successfully",
+            name: receptionist.name,
+            branch_id: branch.id,
+            branch_name: branch.name,
+            total_cus: total_cus || 0,
+            total_stamp_card: total_stamp_card|| 0,
+            total_membership_card: total_membership_card|| 0,
+          
+        });
+
+    }
+    catch(err){
+        console.log(err);
+        return res.json({ status: 0, message: "Error" });
+    }
+}

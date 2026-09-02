@@ -1,32 +1,39 @@
 import { useState, useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
-import { RECEPTIONIST_CUSTOMERS } from './mockReceptionistData'
-import { INITIAL_STAMP_CARDS, INITIAL_MEMBERSHIP_CARDS } from '../merchant/mockMerchantData'
+import { useSearchParams, useNavigate } from 'react-router-dom'
+import { toast } from "react-hot-toast"
+import API from '../../api.js'
+import CustomerCard from '../../components/CustomerCard.jsx'
+import CustomerCardHistory from '../../components/CustomerCardHistory.jsx'
+import { fetchCustomerStampLevelsApi } from '../../services/cardService.js'
 import qrImg from '../../assets/img/qr-img.png'
 
 export default function CardCheckInPayment() {
+    const navigate = useNavigate()
+    let receptionist = {}
+    try {
+        const rawReceptionist = localStorage.getItem("receptionist_data")
+        if (rawReceptionist && rawReceptionist !== "null" && rawReceptionist !== "undefined") {
+            receptionist = JSON.parse(rawReceptionist) || {}
+        }
+    } catch (e) {
+        console.error("Error parsing receptionist_data:", e)
+    }
     const [searchParams] = useSearchParams()
 
-    // Customers State (allows dynamically adding new customers)
-    const [customerList, setCustomerList] = useState(RECEPTIONIST_CUSTOMERS)
+    // Customers State
+    const [customerList, setCustomerList] = useState([])
+    const [loading, setLoading] = useState(false)
 
     // Mode: 'phone' or 'qr'
     const [activeTab, setActiveTab] = useState(searchParams.get('mode') === 'qr' ? 'qr' : 'phone')
 
     // Search state
-    const [phoneInput, setPhoneInput] = useState(searchParams.get('phone') || '')
+    const [searchInput, setSearchInput] = useState(searchParams.get('phone') || '')
+    const [searchResults, setSearchResults] = useState([])
     const [matchedCustomer, setMatchedCustomer] = useState(null)
     const [selectedCard, setSelectedCard] = useState(null)
-
-    // Add / Enroll Customer Modal State
-    const [enrollModalOpen, setEnrollModalOpen] = useState(false)
-    const [enrollForm, setEnrollForm] = useState({
-        name: '',
-        email: '',
-        phone: '',
-        cardType: 'stamp',
-        selectedCardTitle: INITIAL_STAMP_CARDS[0].title
-    })
+    const [selectedCardDetails, setSelectedCardDetails] = useState(null)
+    const [loadingCardDetails, setLoadingCardDetails] = useState(false)
 
     // QR Modal Scanner state
     const [qrScannerOpen, setQrScannerOpen] = useState(false)
@@ -34,102 +41,153 @@ export default function CardCheckInPayment() {
 
     // Card Payment / Entry Form state
     const [paymentMethod, setPaymentMethod] = useState('Cash') // 'Cash' | 'Online'
-    const [paymentAmount, setPaymentAmount] = useState('25.00')
+    const [paymentAmount, setPaymentAmount] = useState('0.00')
+    const [savingEntry, setSavingEntry] = useState(false)
+    const [historyModalOpen, setHistoryModalOpen] = useState(false)
     const [successReceiptModal, setSuccessReceiptModal] = useState(null)
+
+    const fetchCustomers = async () => {
+        setLoading(true)
+        try {
+            const res = await API.post('firstloop/customer/fetch-branch-customers', {
+                br_id: receptionist?.user_branch_id
+            })
+
+            if (res?.data?.status == 1 && res.data.data) {
+                setCustomerList(res.data.data)
+            } else {
+                setCustomerList([])
+            }
+        } catch (error) {
+            console.error('Error fetching customers:', error)
+            toast.error("Failed to load customer list")
+            setCustomerList([])
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        fetchCustomers()
+    }, [])
+
+    // Filter search results whenever search input or customer list changes
+    useEffect(() => {
+        const query = searchInput.trim().toLowerCase()
+        if (!query) {
+            setSearchResults([])
+            return
+        }
+
+        const queryDigits = query.replace(/\D/g, '')
+
+        const matches = customerList.filter(c => {
+            const name = (c.name || '').toLowerCase()
+            const email = (c.email || '').toLowerCase()
+            const phone = String(c.phone || '')
+            const phoneClean = phone.replace(/\D/g, '')
+
+            const hasCardMatch = Array.isArray(c.cards) && c.cards.some(card =>
+                (card.title && card.title.toLowerCase().includes(query)) ||
+                (card.card_number && card.card_number.toLowerCase().includes(query))
+            )
+
+            return (
+                name.includes(query) ||
+                email.includes(query) ||
+                phone.includes(query) ||
+                (queryDigits.length >= 2 && phoneClean.includes(queryDigits)) ||
+                hasCardMatch
+            )
+        })
+
+        setSearchResults(matches)
+    }, [searchInput, customerList])
 
     // Pre-load customer if phone is passed in URL query
     useEffect(() => {
         const initialPhone = searchParams.get('phone')
-        if (initialPhone) {
-            handlePhoneSearch(initialPhone)
+        if (initialPhone && customerList.length > 0) {
+            const found = customerList.find(c =>
+                String(c.phone).includes(initialPhone) ||
+                (c.name && c.name.toLowerCase().includes(initialPhone.toLowerCase()))
+            )
+            if (found) {
+                selectCustomer(found)
+            }
         }
     }, [searchParams, customerList])
 
-    // Search by Phone Number or Name logic
-    const handlePhoneSearch = (phoneToSearch = phoneInput) => {
-        if (!phoneToSearch.trim()) {
-            setMatchedCustomer(null)
-            setSelectedCard(null)
+    // Fetch full card design details whenever selected card changes
+    useEffect(() => {
+        if (!selectedCard?.id || !matchedCustomer?.id) {
+            setSelectedCardDetails(null)
             return
         }
 
-        const found = customerList.find(c =>
-            c.phone.replace(/\D/g, '').includes(phoneToSearch.replace(/\D/g, '')) ||
-            c.name.toLowerCase().includes(phoneToSearch.toLowerCase())
-        )
-
-        if (found) {
-            setMatchedCustomer(found)
-            // Default select first available card
-            if (found.heldCards && found.heldCards.length > 0) {
-                setSelectedCard(found.heldCards[0])
-            }
-        } else {
-            setMatchedCustomer(null)
-            setSelectedCard(null)
-        }
-    }
-
-    // Open Enroll Customer Modal with pre-filled phone
-    const handleOpenEnrollModal = () => {
-        setEnrollForm({
-            name: '',
-            email: '',
-            phone: phoneInput || '+1 (555) 000-0000',
-            cardType: 'stamp',
-            selectedCardTitle: INITIAL_STAMP_CARDS[0].title
-        })
-        setEnrollModalOpen(true)
-    }
-
-    // Save newly enrolled customer
-    const handleSaveEnrolledCustomer = (e) => {
-        e.preventDefault()
-        if (!enrollForm.name.trim()) {
-            alert('Please enter customer name')
-            return
-        }
-
-        const isStamp = enrollForm.cardType === 'stamp'
-        const cardTitle = enrollForm.selectedCardTitle
-
-        const newCus = {
-            id: `cus-${Date.now()}`,
-            name: enrollForm.name,
-            email: enrollForm.email || `${enrollForm.name.toLowerCase().replace(/\s+/g, '')}@example.com`,
-            phone: enrollForm.phone || phoneInput || '+1 (555) 000-0000',
-            avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120',
-            joinedDate: new Date().toISOString().split('T')[0],
-            totalVisits: 1,
-            status: 'Active',
-            heldCards: [
-                isStamp ? {
-                    id: `sc-${Date.now()}`,
-                    type: 'stamp',
-                    title: cardTitle,
-                    brandName: 'FirstLoop Flagship Hub',
-                    collected: 1,
-                    total: 8,
-                    reward: 'Free Gourmet Beverage',
-                    status: 'Active',
-                    qrCode: qrImg
-                } : {
-                    id: `mc-${Date.now()}`,
-                    type: 'membership',
-                    title: cardTitle,
-                    tier: 'VIP',
-                    validThru: '12/26',
-                    expiryDate: '31 Dec 2026',
-                    status: 'Active',
-                    qrCode: qrImg
+        let isMounted = true
+        const loadCardDetails = async () => {
+            setLoadingCardDetails(true)
+            try {
+                const data = await fetchCustomerStampLevelsApi(
+                    selectedCard.id,
+                    selectedCard.card_type,
+                    matchedCustomer.id
+                )
+                if (isMounted) {
+                    setSelectedCardDetails(data || selectedCard)
+                    const finalAmt = Number(
+                        data?.overAll_amt ??
+                        data?.current_amt ??
+                        selectedCard?.overAll_amt ??
+                        selectedCard?.current_amt ??
+                        0
+                    ).toFixed(2)
+                    setPaymentAmount(String(finalAmt))
                 }
-            ]
+            } catch (err) {
+                console.error('Error fetching card details in CheckIn:', err)
+                if (isMounted) {
+                    setSelectedCardDetails(selectedCard)
+                }
+            } finally {
+                if (isMounted) {
+                    setLoadingCardDetails(false)
+                }
+            }
         }
 
-        setCustomerList(prev => [newCus, ...prev])
-        setMatchedCustomer(newCus)
-        setSelectedCard(newCus.heldCards[0])
-        setEnrollModalOpen(false)
+        loadCardDetails()
+
+        return () => {
+            isMounted = false
+        }
+    }, [selectedCard?.id, selectedCard?.card_type, matchedCustomer?.id])
+
+    const selectCustomer = (customer) => {
+        setMatchedCustomer(customer)
+        setSearchInput(customer.name || customer.phone || '')
+        setSearchResults([])
+        const cards = Array.isArray(customer.cards) ? customer.cards : []
+        if (cards.length > 0) {
+            setSelectedCard(cards[0])
+        } else {
+            setSelectedCard(null)
+        }
+    }
+
+    const clearSelectedCustomer = () => {
+        setMatchedCustomer(null)
+        setSelectedCard(null)
+        setSelectedCardDetails(null)
+        setSearchInput('')
+        setSearchResults([])
+    }
+
+    // Navigate to Add Card to Customer page
+    const handleNavigateToAddCustomer = () => {
+        const branchId = receptionist?.user_branch_id || ''
+        navigate(`/merchant/add-card-customer/${branchId}`)
     }
 
     // QR Code Scanning Simulation
@@ -137,50 +195,115 @@ export default function CardCheckInPayment() {
         setQrScannerOpen(true)
         setQrScanningState(true)
 
-        // Simulate camera scanning delay (1.5 seconds)
         setTimeout(() => {
             setQrScanningState(false)
-            // Pick customer #1 (Sophia Reynolds with Stamp Card + Membership)
-            const scannedCus = customerList[0]
-            setMatchedCustomer(scannedCus)
-            if (scannedCus.heldCards && scannedCus.heldCards.length > 0) {
-                setSelectedCard(scannedCus.heldCards[0])
+            if (customerList.length > 0) {
+                const scannedCus = customerList[0]
+                selectCustomer(scannedCus)
+                toast.success(`QR Identified: ${scannedCus.name}`)
+            } else {
+                toast.error("No customer records found to match QR")
             }
             setQrScannerOpen(false)
         }, 1500)
     }
 
     // Handler: Save & Submit Card Payment / Entry Update
-    const handleSaveEntry = (e) => {
+    const handleSaveEntry = async (e) => {
         e.preventDefault()
 
-        if (!matchedCustomer || !selectedCard) return
+        if (!matchedCustomer || !selectedCard) {
+            toast.error('Please select a customer and card pass')
+            return
+        }
 
-        const isStamp = selectedCard.type === 'stamp'
+        const isStamp = Number(selectedCard.card_type) === 1 || selectedCard.type === 'stamp'
         const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        const totalStamps = Number(selectedCardDetails?.total_stamps || selectedCard.total_stamps || 0)
+        const currentCollected = Number(selectedCard.collected || selectedCard.current_stamps || 0)
+        const updatedStamps = isStamp ? Math.min(totalStamps, currentCollected + 1) : undefined
 
-        const receipt = {
-            receiptId: `RCP-${Date.now().toString().slice(-6)}`,
-            customerName: matchedCustomer.name,
-            customerPhone: matchedCustomer.phone,
-            cardTitle: selectedCard.title,
-            cardType: selectedCard.type,
-            previousStamps: isStamp ? selectedCard.collected : undefined,
-            newStamps: isStamp ? Math.min(selectedCard.total, selectedCard.collected + 1) : undefined,
-            totalStamps: isStamp ? selectedCard.total : undefined,
-            remainingStamps: isStamp ? Math.max(0, selectedCard.total - (selectedCard.collected + 1)) : undefined,
-            paymentMethod: isStamp ? paymentMethod : 'Daily Check-In Validated',
-            paymentAmount: isStamp ? `$${paymentAmount}` : '$0.00',
-            time: nowTime,
-            date: new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
+        setSavingEntry(true)
+        try {
+            if (isStamp) {
+                // Determine stamp_level_id for the current stamp entry
+                const stampLevelId = Number(
+                    selectedCardDetails?.stamp_level_id ||
+                    selectedCardDetails?.CustomerStampLevels?.[currentCollected]?.id ||
+                    selectedCardDetails?.levelRewards?.[currentCollected]?.id ||
+                    selectedCardDetails?.CustomerStampLevels?.[0]?.id ||
+                    0
+                )
+
+                const payload = {
+                    cus_id: Number(matchedCustomer.id),
+                    card_id: Number(selectedCard.id),
+                    payment_type: paymentMethod === 'Online' ? 2 : 1,
+                    amount: parseFloat(paymentAmount) || Number(selectedCardDetails?.overAll_amt || selectedCardDetails?.current_amt || 0),
+                    stamp_level_id: stampLevelId
+                }
+
+                const res = await API.post('firstloop/customer/stamp-paid', payload)
+
+                if (res?.data?.status == 1) {
+                    toast.success(res.data.message || "Stamp payment entry logged successfully 🚀")
+                    selectedCard.collected = updatedStamps
+
+                    const receipt = {
+                        receiptId: res.data.receipt_id || `RCP-${Date.now().toString().slice(-6)}`,
+                        customerName: matchedCustomer.name || 'Customer',
+                        customerPhone: matchedCustomer.phone || '-',
+                        cardTitle: selectedCard.title || selectedCardDetails?.title || 'Stamp Pass',
+                        cardNumber: selectedCard.card_number || '-',
+                        cardType: 'stamp',
+                        previousStamps: currentCollected,
+                        newStamps: updatedStamps,
+                        totalStamps: totalStamps,
+                        remainingStamps: Math.max(0, totalStamps - updatedStamps),
+                        paymentMethod: paymentMethod,
+                        paymentAmount: `$${parseFloat(paymentAmount).toFixed(2)}`,
+                        time: nowTime,
+                        date: new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
+                    }
+                    setSuccessReceiptModal(receipt)
+
+                    // Refresh latest card and level details
+                    if (selectedCard?.id && matchedCustomer?.id) {
+                        const refreshed = await fetchCustomerStampLevelsApi(
+                            selectedCard.id,
+                            selectedCard.card_type,
+                            matchedCustomer.id
+                        )
+                        if (refreshed) {
+                            setSelectedCardDetails(refreshed)
+                        }
+                    }
+                } else {
+                    toast.error(res?.data?.message || "Failed to log stamp payment entry")
+                }
+            } else {
+                // Membership Daily Check-In
+                const receipt = {
+                    receiptId: `RCP-${Date.now().toString().slice(-6)}`,
+                    customerName: matchedCustomer.name || 'Customer',
+                    customerPhone: matchedCustomer.phone || '-',
+                    cardTitle: selectedCard.title || selectedCardDetails?.title || 'Membership Pass',
+                    cardNumber: selectedCard.card_number || '-',
+                    cardType: 'membership',
+                    paymentMethod: 'Daily Check-In Validated',
+                    paymentAmount: '$0.00',
+                    time: nowTime,
+                    date: new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
+                }
+                setSuccessReceiptModal(receipt)
+                toast.success("Daily Membership Check-In Entry Logged 🚀")
+            }
+        } catch (error) {
+            console.error('Error in handleSaveEntry:', error)
+            toast.error(error?.response?.data?.message || "Error logging entry")
+        } finally {
+            setSavingEntry(false)
         }
-
-        // If stamp card, update local collected count by +1
-        if (isStamp) {
-            selectedCard.collected = receipt.newStamps
-        }
-
-        setSuccessReceiptModal(receipt)
     }
 
     return (
@@ -192,7 +315,7 @@ export default function CardCheckInPayment() {
                         Card Check-In & Payment Terminal
                     </h2>
                     <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 4 }}>
-                        Search customer phone or scan QR code to load cards and process entry updates.
+                        Search customer by name, phone, or scan QR code to load cards and process check-in entries.
                     </p>
                 </div>
 
@@ -216,8 +339,8 @@ export default function CardCheckInPayment() {
                             gap: 6
                         }}
                     >
-                        <i className="fas fa-phone-alt" />
-                        <span>Search by Phone</span>
+                        <i className="fas fa-search" />
+                        <span>Search Customer</span>
                     </button>
 
                     <button
@@ -244,65 +367,180 @@ export default function CardCheckInPayment() {
                 </div>
             </div>
 
-            {/* TAB CONTENT: SEARCH BY PHONE vs QR CODE SCANNER */}
-            <div className="card mb-4" style={{ padding: 22, borderRadius: 20, background: '#FFFFFF' }}>
+            {/* TAB CONTENT: SEARCH BY NAME/PHONE vs QR CODE SCANNER */}
+            <div className="card mb-4" style={{ padding: 22, borderRadius: 20, background: '#FFFFFF', position: 'relative' }}>
                 {activeTab === 'phone' ? (
                     <div>
-                        <label style={{ fontSize: '0.85rem', fontWeight: 800, marginBottom: 8, display: 'block', color: 'var(--text-primary)' }}>
-                            Enter Customer Phone Number or Name:
-                        </label>
-                        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                            <div style={{ position: 'relative', flex: 1, minWidth: 260 }}>
-                                <i className="fas fa-search" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                                <input
-                                    type="text"
-                                    className="form-control"
-                                    placeholder="e.g. +1 (555) 234-5678 or Sophia"
-                                    value={phoneInput}
-                                    onChange={(e) => {
-                                        setPhoneInput(e.target.value)
-                                        handlePhoneSearch(e.target.value)
-                                    }}
-                                    style={{ paddingLeft: 40, height: 46, borderRadius: 10, fontSize: '0.92rem' }}
-                                />
-                            </div>
-
-                            {/* Quick Select Preset Buttons */}
-                            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                                <small style={{ fontWeight: 700, color: 'var(--text-muted)' }}>Quick Pick:</small>
-                                {customerList.slice(0, 3).map(cus => (
-                                    <button
-                                        key={cus.id}
-                                        type="button"
-                                        className="btn btn-sm btn-light"
-                                        onClick={() => {
-                                            setPhoneInput(cus.phone)
-                                            handlePhoneSearch(cus.phone)
-                                        }}
-                                        style={{ borderRadius: 8, fontWeight: 700, fontSize: '0.78rem' }}
-                                    >
-                                        {cus.name} ({cus.phone.slice(-4)})
-                                    </button>
-                                ))}
-                            </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                            <label style={{ fontSize: '0.88rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
+                                Search Customer by Name, Phone, Email or Card:
+                            </label>
+                            {matchedCustomer && (
+                                <button
+                                    type="button"
+                                    className="btn btn-sm btn-link text-danger"
+                                    onClick={clearSelectedCustomer}
+                                    style={{ fontSize: '0.8rem', textDecoration: 'none', fontWeight: 700 }}
+                                >
+                                    <i className="fas fa-times-circle" style={{ marginRight: 4 }} />
+                                    Clear Selection
+                                </button>
+                            )}
                         </div>
 
+                        <div style={{ position: 'relative' }}>
+                            <i className="fas fa-search" style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--firstloop-primary)', fontSize: '1rem' }} />
+                            <input
+                                type="text"
+                                className="form-control"
+                                placeholder="Type customer name (e.g. Rahul, Sophia) or phone number..."
+                                value={searchInput}
+                                onChange={(e) => {
+                                    setSearchInput(e.target.value)
+                                    setMatchedCustomer(null)
+                                    setSelectedCard(null)
+                                }}
+                                style={{
+                                    paddingLeft: 46,
+                                    paddingRight: searchInput ? 40 : 16,
+                                    height: 48,
+                                    borderRadius: 12,
+                                    fontSize: '0.92rem',
+                                    border: '1.5px solid #CBD5E1'
+                                }}
+                            />
+                            {searchInput && (
+                                <button
+                                    type="button"
+                                    onClick={clearSelectedCustomer}
+                                    style={{
+                                        position: 'absolute',
+                                        right: 12,
+                                        top: '50%',
+                                        transform: 'translateY(-50%)',
+                                        background: 'none',
+                                        border: 'none',
+                                        color: '#94A3B8',
+                                        cursor: 'pointer',
+                                        fontSize: '1.1rem'
+                                    }}
+                                >
+                                    &times;
+                                </button>
+                            )}
+                        </div>
+
+                        {/* LIVE SEARCH RESULTS LIST / DROPDOWN */}
+                        {!matchedCustomer && searchResults.length > 0 && (
+                            <div
+                                style={{
+                                    marginTop: 12,
+                                    borderRadius: 14,
+                                    border: '1px solid #E2E8F0',
+                                    background: '#F8FAFC',
+                                    maxHeight: 280,
+                                    overflowY: 'auto',
+                                    boxShadow: '0 8px 24px rgba(0,0,0,0.06)'
+                                }}
+                            >
+                                <div style={{ padding: '8px 16px', background: '#F1F5F9', borderBottom: '1px solid #E2E8F0', fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                                    Matching Customers ({searchResults.length}) — Click to select:
+                                </div>
+                                {searchResults.map((cus) => {
+                                    const cards = Array.isArray(cus.cards) ? cus.cards : []
+                                    const stampCardsCount = cards.filter(c => Number(c.card_type) === 1).length
+                                    const membershipCardsCount = cards.filter(c => Number(c.card_type) === 2).length
+
+                                    return (
+                                        <div
+                                            key={cus.id}
+                                            onClick={() => selectCustomer(cus)}
+                                            style={{
+                                                padding: '12px 16px',
+                                                borderBottom: '1px solid #F1F5F9',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'space-between',
+                                                cursor: 'pointer',
+                                                transition: 'background 0.15s ease',
+                                                background: '#FFFFFF'
+                                            }}
+                                            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--firstloop-primary-light, #E6F2FA)'}
+                                            onMouseLeave={(e) => e.currentTarget.style.background = '#FFFFFF'}
+                                        >
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                                <div
+                                                    style={{
+                                                        width: 38,
+                                                        height: 38,
+                                                        borderRadius: '50%',
+                                                        background: 'var(--firstloop-primary-light, #E6F2FA)',
+                                                        color: 'var(--firstloop-primary, #0E88B8)',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        fontWeight: 800,
+                                                        fontSize: '0.9rem',
+                                                        border: '1.5px solid var(--firstloop-primary, #0E88B8)'
+                                                    }}
+                                                >
+                                                    {cus.name ? cus.name.charAt(0).toUpperCase() : 'C'}
+                                                </div>
+                                                <div>
+                                                    <strong style={{ fontSize: '0.9rem', color: 'var(--text-primary)', display: 'block' }}>
+                                                        {cus.name}
+                                                    </strong>
+                                                    <small style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                                                        <i className="fas fa-phone-alt" style={{ marginRight: 4, color: 'var(--firstloop-primary)' }} />
+                                                        {cus.phone}
+                                                        {cus.email && <span style={{ marginLeft: 8 }}><i className="fas fa-envelope" style={{ marginRight: 4 }} />{cus.email}</span>}
+                                                    </small>
+                                                </div>
+                                            </div>
+
+                                            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                                                {stampCardsCount > 0 && (
+                                                    <span className="badge" style={{ background: 'var(--firstloop-primary-light)', color: 'var(--firstloop-primary)', fontWeight: 700, padding: '3px 8px', borderRadius: 6, fontSize: '0.72rem' }}>
+                                                        <i className="fas fa-stamp" style={{ marginRight: 3 }} />
+                                                        {stampCardsCount} Stamp Card{stampCardsCount > 1 ? 's' : ''}
+                                                    </span>
+                                                )}
+                                                {membershipCardsCount > 0 && (
+                                                    <span className="badge" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#D97706', fontWeight: 700, padding: '3px 8px', borderRadius: 6, fontSize: '0.72rem' }}>
+                                                        <i className="fas fa-crown" style={{ marginRight: 3 }} />
+                                                        {membershipCardsCount} VIP Member
+                                                    </span>
+                                                )}
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-sm firstloop-btn-primary"
+                                                    style={{ padding: '4px 10px', fontSize: '0.75rem', borderRadius: 6, marginLeft: 4 }}
+                                                >
+                                                    Select
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        )}
+
                         {/* NO CUSTOMER FOUND BANNER & ENROLL BUTTON */}
-                        {!matchedCustomer && phoneInput.trim().length > 0 && (
-                            <div style={{ marginTop: 18, padding: 16, borderRadius: 14, background: '#FFFBEB', border: '1px dashed #F59E0B', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+                        {!matchedCustomer && searchInput.trim().length > 0 && searchResults.length === 0 && (
+                            <div style={{ marginTop: 16, padding: 16, borderRadius: 14, background: '#FFFBEB', border: '1px dashed #F59E0B', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
                                 <div>
                                     <strong style={{ color: '#B45309', fontSize: '0.9rem', display: 'block' }}>
-                                        No customer found for "{phoneInput}"
+                                        No customer found matching "{searchInput}"
                                     </strong>
                                     <span style={{ fontSize: '0.8rem', color: '#D97706' }}>
-                                        Click button to quickly register this customer and assign a card.
+                                        Click button to register this customer and assign an initial card pass.
                                     </span>
                                 </div>
 
                                 <button
                                     type="button"
                                     className="btn firstloop-btn-primary"
-                                    onClick={handleOpenEnrollModal}
+                                    onClick={handleNavigateToAddCustomer}
                                     style={{ padding: '8px 16px', borderRadius: 10, fontWeight: 800, fontSize: '0.84rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}
                                 >
                                     <i className="fas fa-user-plus" />
@@ -341,11 +579,23 @@ export default function CardCheckInPayment() {
                 <div className="card mb-4" style={{ padding: 22, borderRadius: 20, background: '#FFFFFF', border: '2px solid var(--firstloop-primary)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16, marginBottom: 18, borderBottom: '1px solid #E2E8F0', paddingBottom: 16 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                            <img
-                                src={matchedCustomer.avatar}
-                                alt={matchedCustomer.name}
-                                style={{ width: 52, height: 52, borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--firstloop-primary)' }}
-                            />
+                            <div
+                                style={{
+                                    width: 48,
+                                    height: 48,
+                                    borderRadius: '50%',
+                                    background: 'var(--firstloop-primary-light)',
+                                    color: 'var(--firstloop-primary)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontWeight: 800,
+                                    fontSize: '1.1rem',
+                                    border: '2.5px solid var(--firstloop-primary)'
+                                }}
+                            >
+                                {matchedCustomer.name ? matchedCustomer.name.charAt(0).toUpperCase() : 'C'}
+                            </div>
                             <div>
                                 <span className="badge" style={{ background: '#10B981', color: '#FFF', fontWeight: 800, padding: '3px 8px', borderRadius: 6, fontSize: '0.7rem' }}>
                                     CUSTOMER IDENTIFIED
@@ -355,14 +605,18 @@ export default function CardCheckInPayment() {
                                 </h3>
                                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', gap: 14, marginTop: 2 }}>
                                     <span><i className="fas fa-phone-alt" style={{ marginRight: 4, color: 'var(--firstloop-primary)' }} />{matchedCustomer.phone}</span>
-                                    <span><i className="fas fa-envelope" style={{ marginRight: 4, color: 'var(--firstloop-primary)' }} />{matchedCustomer.email}</span>
+                                    {matchedCustomer.email && (
+                                        <span><i className="fas fa-envelope" style={{ marginRight: 4, color: 'var(--firstloop-primary)' }} />{matchedCustomer.email}</span>
+                                    )}
                                 </div>
                             </div>
                         </div>
 
                         <div style={{ textAlign: 'right' }}>
-                            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block' }}>Branch Visits</span>
-                            <strong style={{ fontSize: '1.1rem', color: 'var(--text-primary)', fontWeight: 800 }}>{matchedCustomer.totalVisits} Visits Logged</strong>
+                            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block' }}>Held Passes</span>
+                            <strong style={{ fontSize: '1rem', color: 'var(--text-primary)', fontWeight: 800 }}>
+                                {Array.isArray(matchedCustomer.cards) ? matchedCustomer.cards.length : 0} Cards Enrolled
+                            </strong>
                         </div>
                     </div>
 
@@ -372,10 +626,12 @@ export default function CardCheckInPayment() {
                     </h4>
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
-                        {matchedCustomer.heldCards.map(card => {
+                        {(matchedCustomer.cards || []).map(card => {
                             const isSelected = selectedCard?.id === card.id
-                            const isStamp = card.type === 'stamp'
-                            const remainingStamps = Math.max(0, card.total - card.collected)
+                            const isStamp = Number(card.card_type) === 1 || card.type === 'stamp'
+                            const totalStamps = Number(card.total_stamps || card.total || 8)
+                            const collectedStamps = Number(card.collected || card.current_stamps || 0)
+                            const remainingStamps = Math.max(0, totalStamps - collectedStamps)
 
                             return (
                                 <div
@@ -408,22 +664,26 @@ export default function CardCheckInPayment() {
                                     </div>
 
                                     <h5 style={{ fontSize: '1rem', fontWeight: 800, margin: '4px 0', color: 'var(--text-primary)' }}>
-                                        {card.title}
+                                        {card.title || (isStamp ? 'Stamp Card' : 'Membership Pass')}
                                     </h5>
+                                    {card.card_number && (
+                                        <small style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'monospace', fontWeight: 600, display: 'block', marginBottom: 6 }}>
+                                            {card.card_number}
+                                        </small>
+                                    )}
 
-                                    {/* MENTION STAMP CARD AS REMAINING STAMPS & MEMBERSHIP CARD AS 1 MONTH TO EXPIRE */}
                                     {isStamp ? (
                                         <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: 6 }}>
                                             Remaining: <strong style={{ color: 'var(--firstloop-primary)', fontWeight: 800 }}>{remainingStamps} stamps remaining</strong>
                                             <div style={{ fontSize: '0.75rem', color: '#059669', marginTop: 4, fontWeight: 700 }}>
-                                                Reward: {card.reward}
+                                                Progress: {collectedStamps}/{totalStamps} Stamps Collected
                                             </div>
                                         </div>
                                     ) : (
                                         <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: 6 }}>
-                                            Status: <strong style={{ color: '#D97706', fontWeight: 800 }}>1 month to expire</strong>
+                                            Status: <strong style={{ color: '#D97706', fontWeight: 800 }}>Active Member</strong>
                                             <div style={{ fontSize: '0.75rem', color: '#D97706', marginTop: 4, fontWeight: 700 }}>
-                                                Tier: {card.tier} Status Active (Valid Thru: {card.validThru})
+                                                Tier: {card.tier || 'VIP'} Status Active
                                             </div>
                                         </div>
                                     )}
@@ -437,7 +697,7 @@ export default function CardCheckInPayment() {
             {/* UNIFIED CARD PAYMENT / UPDATE ENTRY PANEL */}
             {matchedCustomer && selectedCard && (
                 <div
-                    className="card"
+                    className="card mb-4"
                     style={{
                         padding: 24,
                         borderRadius: 22,
@@ -446,324 +706,352 @@ export default function CardCheckInPayment() {
                         boxShadow: '0 20px 40px rgba(0,0,0,0.1)'
                     }}
                 >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, borderBottom: '1px solid #E2E8F0', paddingBottom: 16 }}>
-                        <div
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 20, borderBottom: '1px solid #E2E8F0', paddingBottom: 16 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <div
+                                style={{
+                                    width: 44,
+                                    height: 44,
+                                    borderRadius: 12,
+                                    background: (Number(selectedCard.card_type) === 1 || selectedCard.type === 'stamp') ? 'var(--firstloop-primary)' : '#D97706',
+                                    color: '#FFFFFF',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '1.2rem',
+                                    fontWeight: 800
+                                }}
+                            >
+                                <i className={(Number(selectedCard.card_type) === 1 || selectedCard.type === 'stamp') ? 'fas fa-stamp' : 'fas fa-crown'} />
+                            </div>
+                            <div>
+                                <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 800, color: 'var(--text-muted)' }}>
+                                    CARD ENTRY & PAYMENT TERMINAL
+                                </span>
+                                <h3 style={{ fontSize: '1.3rem', fontWeight: 800, margin: '2px 0 0 0', color: 'var(--text-primary)' }}>
+                                    {(Number(selectedCard.card_type) === 1 || selectedCard.type === 'stamp') ? 'Stamp Card Payment & Entry Update' : 'Membership Daily Check-In Entry'}
+                                </h3>
+                            </div>
+                        </div>
+
+                        <button
+                            type="button"
+                            className="btn btn-sm btn-outline-primary"
+                            onClick={() => setHistoryModalOpen(true)}
                             style={{
-                                width: 44,
-                                height: 44,
-                                borderRadius: 12,
-                                background: selectedCard.type === 'stamp' ? 'var(--firstloop-primary)' : '#D97706',
-                                color: '#FFFFFF',
-                                display: 'flex',
+                                borderRadius: 10,
+                                fontWeight: 700,
+                                fontSize: '0.82rem',
+                                padding: '8px 14px',
+                                display: 'inline-flex',
                                 alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '1.2rem',
-                                fontWeight: 800
+                                gap: 6
                             }}
                         >
-                            <i className={selectedCard.type === 'stamp' ? 'fas fa-stamp' : 'fas fa-crown'} />
-                        </div>
-                        <div>
-                            <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 800, color: 'var(--text-muted)' }}>
-                                CARD ENTRY & PAYMENT TERMINAL
-                            </span>
-                            <h3 style={{ fontSize: '1.3rem', fontWeight: 800, margin: '2px 0 0 0', color: 'var(--text-primary)' }}>
-                                {selectedCard.type === 'stamp' ? 'Stamp Card Payment & Entry Update' : 'Membership Daily Check-In Entry'}
-                            </h3>
-                        </div>
+                            <i className="fas fa-history" />
+                            <span>View Card History</span>
+                        </button>
                     </div>
 
-                    <form onSubmit={handleSaveEntry}>
-                        {/* CONDITIONAL CONTENT: STAMP CARD vs MEMBERSHIP CARD */}
-                        {selectedCard.type === 'stamp' ? (
-                            <div>
-                                {/* Current Stamp Progress & Remaining Stamps Display */}
-                                <div style={{ background: '#F8FAFC', borderRadius: 16, padding: 18, border: '1px solid #E2E8F0', marginBottom: 20 }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                                        <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                                            Current Stamp Pass Progress:
-                                        </span>
-                                        <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--firstloop-primary)' }}>
-                                            {selectedCard.total - selectedCard.collected} Stamps Remaining ({selectedCard.collected}/{selectedCard.total} collected)
-                                        </span>
-                                    </div>
-
-                                    {/* Visual Stamp Circles */}
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 12 }}>
-                                        {Array.from({ length: selectedCard.total }).map((_, idx) => (
-                                            <div
-                                                key={idx}
-                                                style={{
-                                                    width: 38,
-                                                    height: 38,
-                                                    borderRadius: '50%',
-                                                    background: idx < selectedCard.collected ? 'var(--firstloop-gradient-primary)' : '#FFFFFF',
-                                                    color: idx < selectedCard.collected ? '#FFFFFF' : '#94A3B8',
-                                                    border: idx < selectedCard.collected ? 'none' : '2px dashed #CBD5E1',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    fontWeight: 800,
-                                                    fontSize: '0.85rem'
-                                                }}
-                                            >
-                                                {idx < selectedCard.collected ? <i className="fas fa-check" /> : idx + 1}
-                                            </div>
-                                        ))}
-                                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24, alignItems: 'start' }}>
+                        {/* LEFT: REAL DIGITAL PASS CARD PREVIEW */}
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                            <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 10, letterSpacing: '0.5px' }}>
+                                Live Digital Customer Pass
+                            </span>
+                            {loadingCardDetails ? (
+                                <div style={{ minHeight: 240, width: '100%', maxWidth: 420, borderRadius: 22, background: '#F1F5F9', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+                                    <div className="spinner-border text-primary" role="status" style={{ width: '2rem', height: '2rem' }} />
+                                    <small style={{ fontWeight: 700, color: 'var(--text-muted)' }}>Loading Card Design...</small>
                                 </div>
-
-                                {/* Payment Method Selector: Cash vs Online */}
-                                <div className="form-group mb-4">
-                                    <label style={{ fontSize: '0.85rem', fontWeight: 800, marginBottom: 8, display: 'block', color: 'var(--text-primary)' }}>
-                                        Select Payment Method:
-                                    </label>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                                        <div
-                                            onClick={() => setPaymentMethod('Cash')}
-                                            style={{
-                                                padding: 14,
-                                                borderRadius: 14,
-                                                border: paymentMethod === 'Cash' ? '2px solid #059669' : '1px solid #E2E8F0',
-                                                background: paymentMethod === 'Cash' ? 'rgba(16, 185, 129, 0.12)' : '#F8FAFC',
-                                                color: paymentMethod === 'Cash' ? '#059669' : 'var(--text-secondary)',
-                                                cursor: 'pointer',
-                                                fontWeight: 800,
-                                                textAlign: 'center',
-                                                fontSize: '0.9rem',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                gap: 8
-                                            }}
-                                        >
-                                            <i className="fas fa-money-bill-wave" style={{ fontSize: '1.2rem' }} />
-                                            <span>Cash Payment</span>
-                                        </div>
-
-                                        <div
-                                            onClick={() => setPaymentMethod('Online')}
-                                            style={{
-                                                padding: 14,
-                                                borderRadius: 14,
-                                                border: paymentMethod === 'Online' ? '2px solid #0284C7' : '1px solid #E2E8F0',
-                                                background: paymentMethod === 'Online' ? 'rgba(2, 132, 199, 0.12)' : '#F8FAFC',
-                                                color: paymentMethod === 'Online' ? '#0284C7' : 'var(--text-secondary)',
-                                                cursor: 'pointer',
-                                                fontWeight: 800,
-                                                textAlign: 'center',
-                                                fontSize: '0.9rem',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                gap: 8
-                                            }}
-                                        >
-                                            <i className="fas fa-credit-card" style={{ fontSize: '1.2rem' }} />
-                                            <span>Online (UPI / Card)</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Amount Input */}
-                                <div className="form-group mb-4">
-                                    <label style={{ fontSize: '0.85rem', fontWeight: 800, marginBottom: 4, display: 'block', color: 'var(--text-primary)' }}>
-                                        Transaction Payment Amount ($)
-                                    </label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        value={paymentAmount}
-                                        onChange={(e) => setPaymentAmount(e.target.value)}
-                                        placeholder="25.00"
-                                        required
-                                        style={{ height: 44, borderRadius: 10, fontWeight: 700 }}
-                                    />
-                                </div>
-                            </div>
-                        ) : (
-                            /* MEMBERSHIP CARD FLOW */
-                            <div>
-                                <div style={{ background: 'rgba(245, 158, 11, 0.08)', borderRadius: 16, padding: 20, border: '1px solid rgba(245, 158, 11, 0.3)', marginBottom: 20 }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <div>
-                                            <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#B45309', fontWeight: 800 }}>
-                                                MEMBERSHIP STATUS: 1 MONTH TO EXPIRE
-                                            </span>
-                                            <h4 style={{ fontSize: '1.15rem', fontWeight: 800, margin: '2px 0 0 0', color: '#D97706' }}>
-                                                {selectedCard.title} ({selectedCard.tier} Tier)
-                                            </h4>
-                                            <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: 4, marginBottom: 0 }}>
-                                                Expiration Status: <strong style={{ color: '#D97706' }}>1 month to expire</strong> (Valid Thru: {selectedCard.validThru})
-                                            </p>
-                                        </div>
-
-                                        <span className="badge" style={{ background: '#D97706', color: '#FFF', padding: '6px 14px', borderRadius: 10, fontWeight: 800, fontSize: '0.8rem' }}>
-                                            <i className="fas fa-crown" style={{ marginRight: 6 }} /> VIP Member
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <div style={{ padding: 16, background: '#F8FAFC', borderRadius: 14, border: '1px solid #E2E8F0', marginBottom: 20 }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                        <div style={{ width: 36, height: 36, borderRadius: 10, background: '#10B981', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                            <i className="fas fa-calendar-check" />
-                                        </div>
-                                        <div>
-                                            <strong style={{ fontSize: '0.9rem', color: 'var(--text-primary)', display: 'block' }}>
-                                                Logging Current Day's Visit Check-In
-                                            </strong>
-                                            <small style={{ color: 'var(--text-muted)' }}>
-                                                Check-In Date: <strong>Today ({new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })})</strong> • Timestamp logged automatically.
-                                            </small>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Submit Button */}
-                        <button
-                            type="submit"
-                            className="btn firstloop-btn-primary"
-                            style={{
-                                width: '100%',
-                                height: 48,
-                                borderRadius: 12,
-                                fontWeight: 800,
-                                fontSize: '0.95rem',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: 8
-                            }}
-                        >
-                            <i className="fas fa-check-circle" />
-                            <span>{selectedCard.type === 'stamp' ? 'Save Card Entry & Generate Payment Receipt' : "Save Today's Check-In Entry"}</span>
-                        </button>
-                    </form>
-                </div>
-            )}
-
-            {/* ENROLL NEW CUSTOMER POPUP MODAL */}
-            {enrollModalOpen && (
-                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(6px)', zIndex: 1050, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-                    <div style={{ width: '100%', maxWidth: 480, background: '#FFFFFF', borderRadius: 22, padding: 26, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.35)', position: 'relative' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                <div style={{ width: 38, height: 38, borderRadius: 10, background: 'var(--firstloop-primary-light)', color: 'var(--firstloop-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: 800 }}>
-                                    <i className="fas fa-user-plus" />
-                                </div>
-                                <div>
-                                    <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>Enroll New Customer</h3>
-                                    <small style={{ color: 'var(--text-muted)' }}>Quick register customer & issue initial pass card.</small>
-                                </div>
-                            </div>
-                            <button type="button" onClick={() => setEnrollModalOpen(false)} style={{ background: 'none', border: 'none', fontSize: '1.2rem', color: 'var(--text-muted)', cursor: 'pointer' }}>&times;</button>
+                            ) : (
+                                <CustomerCard
+                                    card={selectedCardDetails || selectedCard}
+                                    cardType={Number(selectedCard.card_type)}
+                                />
+                            )}
                         </div>
 
-                        <form onSubmit={handleSaveEnrolledCustomer}>
-                            <div className="form-group mb-3">
-                                <label style={{ fontSize: '0.8rem', fontWeight: 700, marginBottom: 4, display: 'block' }}>Full Name</label>
-                                <input type="text" className="form-control" placeholder="e.g. Chloe Adams" value={enrollForm.name} onChange={(e) => setEnrollForm({ ...enrollForm, name: e.target.value })} required style={{ height: 42, borderRadius: 8 }} />
-                            </div>
+                        {/* RIGHT: ACTION CONTROLS & FORM */}
+                        <div>
+                            <form onSubmit={handleSaveEntry}>
+                                {/* CONDITIONAL CONTENT: STAMP CARD vs MEMBERSHIP CARD */}
+                                {(Number(selectedCard.card_type) === 1) ? (
+                                    <div>
+                                        {/* Current Stamp Progress & Remaining Stamps Display */}
+                                        {(() => {
+                                            const totalStamps = selectedCardDetails?.total_stamps || selectedCard.total_stamps || selectedCard.total || 8;
+                                            const collectedStamps = Number(selectedCard.collected || selectedCard.current_stamps || 0)
+                                            const remainingStamps = Math.max(0, totalStamps - collectedStamps)
 
-                            <div className="form-group mb-3">
-                                <label style={{ fontSize: '0.8rem', fontWeight: 700, marginBottom: 4, display: 'block' }}>Phone Number</label>
-                                <input type="text" className="form-control" value={enrollForm.phone} onChange={(e) => setEnrollForm({ ...enrollForm, phone: e.target.value })} required style={{ height: 42, borderRadius: 8 }} />
-                            </div>
+                                            return (
+                                                <div style={{ background: '#F8FAFC', borderRadius: 16, padding: 18, border: '1px solid #E2E8F0', marginBottom: 20 }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                                                        <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                                                            Current Stamp Progress:
+                                                        </span>
+                                                        <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--firstloop-primary)' }}>
+                                                            {remainingStamps} Remaining ({collectedStamps}/{totalStamps})
+                                                        </span>
+                                                    </div>
 
-                            <div className="form-group mb-3">
-                                <label style={{ fontSize: '0.8rem', fontWeight: 700, marginBottom: 4, display: 'block' }}>Email Address</label>
-                                <input type="email" className="form-control" placeholder="chloe@example.com" value={enrollForm.email} onChange={(e) => setEnrollForm({ ...enrollForm, email: e.target.value })} style={{ height: 42, borderRadius: 8 }} />
-                            </div>
+                                                    {/* Visual Stamp Circles */}
+                                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                                                        {Array.from({ length: totalStamps }).map((_, idx) => {
+                                                            const levelData = selectedCardDetails?.CustomerStampLevels?.[idx] || selectedCardDetails?.levelRewards?.[idx]
+                                                            const isPaid = levelData?.status !== undefined
+                                                                ? Number(levelData.status) === 1
+                                                                : idx < collectedStamps
 
-                            {/* SELECT CARD TYPE */}
-                            <div className="form-group mb-3">
-                                <label style={{ fontSize: '0.82rem', fontWeight: 800, marginBottom: 8, display: 'block', color: 'var(--text-primary)' }}>
-                                    Select Initial Card Pass to Issue:
-                                </label>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                                    <div
-                                        onClick={() => setEnrollForm({
-                                            ...enrollForm,
-                                            cardType: 'stamp',
-                                            selectedCardTitle: INITIAL_STAMP_CARDS[0].title
-                                        })}
-                                        style={{
-                                            padding: 12,
-                                            borderRadius: 12,
-                                            border: enrollForm.cardType === 'stamp' ? '2px solid var(--firstloop-primary)' : '1px solid #E2E8F0',
-                                            background: enrollForm.cardType === 'stamp' ? 'var(--firstloop-primary-light)' : '#F8FAFC',
-                                            color: enrollForm.cardType === 'stamp' ? 'var(--firstloop-primary)' : 'var(--text-secondary)',
-                                            cursor: 'pointer',
-                                            textAlign: 'center',
-                                            fontWeight: 800,
-                                            fontSize: '0.85rem'
-                                        }}
-                                    >
-                                        <i className="fas fa-stamp" style={{ display: 'block', marginBottom: 4 }} />
-                                        Stamp Card
+                                                            return (
+                                                                <div
+                                                                    key={idx}
+                                                                    title={`Stamp ${idx + 1}: ${isPaid ? 'Paid' : 'Not Paid'}`}
+                                                                    style={{
+                                                                        width: 32,
+                                                                        height: 32,
+                                                                        borderRadius: `${selectedCardDetails?.stamp_radius ?? 50}%`,
+                                                                        background: isPaid ? 'var(--firstloop-gradient-primary)' : '#FFFFFF',
+                                                                        color: isPaid ? '#FFFFFF' : '#94A3B8',
+                                                                        border: isPaid ? 'none' : '2px dashed #CBD5E1',
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        justifyContent: 'center',
+                                                                        fontWeight: 800,
+                                                                        fontSize: '0.78rem',
+                                                                        boxShadow: isPaid ? '0 2px 6px rgba(14, 136, 184, 0.25)' : 'none',
+                                                                        transition: 'all 0.2s ease'
+                                                                    }}
+                                                                >
+                                                                    {isPaid ? <i className="fas fa-check" /> : idx + 1}
+                                                                </div>
+                                                            )
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )
+                                        })()}
+                                        {/* REWARD LEVEL DETAILS & PRICING BREAKDOWN */}
+                                        {selectedCardDetails && (selectedCardDetails.descption || selectedCardDetails.current_amt !== undefined || selectedCardDetails.discount_val !== undefined) && (
+                                            <div
+                                                style={{
+                                                    background: Number(selectedCardDetails.reward_type) === 2
+                                                        ? 'rgba(14, 136, 184, 0.06)'
+                                                        : '#F8FAFC',
+                                                    borderRadius: 14,
+                                                    padding: '14px 16px',
+                                                    border: Number(selectedCardDetails.reward_type) === 2
+                                                        ? '1px solid rgba(14, 136, 184, 0.25)'
+                                                        : '1px solid #E2E8F0',
+                                                    marginBottom: 16
+                                                }}
+                                            >
+                                                {/* REWARD / PERK TITLE */}
+                                                {selectedCardDetails.descption && (
+                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, paddingBottom: 8, borderBottom: '1px solid #E2E8F0' }}>
+                                                        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)' }}>
+                                                            Current Stamp Perk:
+                                                        </span>
+                                                        <span
+                                                            className="badge"
+                                                            style={{
+                                                                background: Number(selectedCardDetails.reward_type) === 2 ? '#0284C7' : (Number(selectedCardDetails.reward_type) === 3 ? '#F59E0B' : '#10B981'),
+                                                                color: '#FFF',
+                                                                fontWeight: 800,
+                                                                padding: '4px 10px',
+                                                                borderRadius: 6,
+                                                                fontSize: '0.78rem'
+                                                            }}
+                                                        >
+                                                            <i
+                                                                className={Number(selectedCardDetails.reward_type) === 2 ? 'fas fa-percent' : (Number(selectedCardDetails.reward_type) === 3 ? 'fas fa-tag' : 'fas fa-gift')}
+                                                                style={{ marginRight: 5 }}
+                                                            />
+                                                            {selectedCardDetails.descption}
+                                                        </span>
+                                                    </div>
+                                                )}
+
+                                                {/* PRICING BREAKDOWN */}
+                                                {Number(selectedCardDetails.reward_type) === 2 ? (
+                                                    /* DISCOUNT BREAKDOWN VIEW */
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.84rem' }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
+                                                            <span>Standard Amount:</span>
+                                                            <span style={{ textDecoration: 'line-through', color: '#94A3B8' }}>
+                                                                {Number(selectedCardDetails.current_amt || 0).toFixed(2)}
+                                                            </span>
+                                                        </div>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#0284C7', fontWeight: 700 }}>
+                                                            <span>Discount Applied ({selectedCardDetails.discount_val}%):</span>
+                                                            <span>
+                                                                -{((Number(selectedCardDetails.current_amt || 0) * Number(selectedCardDetails.discount_val || 0)) / 100).toFixed(2)}
+                                                            </span>
+                                                        </div>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px dashed #CBD5E1', paddingTop: 6, marginTop: 2, fontWeight: 800, color: '#0F172A', fontSize: '0.92rem' }}>
+                                                            <span>Net Payable Amount:</span>
+                                                            <strong style={{ color: 'var(--firstloop-primary)' }}>
+                                                                {Number(selectedCardDetails.overAll_amt ?? selectedCardDetails.current_amt ?? 0).toFixed(2)}
+                                                            </strong>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    /* STANDARD / PAID / FREE PERK VIEW */
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.88rem' }}>
+                                                        <span style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>Payable Amount:</span>
+                                                        <strong style={{ color: 'var(--firstloop-primary)', fontWeight: 800, fontSize: '0.95rem' }}>
+                                                            {Number(selectedCardDetails.overAll_amt ?? selectedCardDetails.current_amt ?? 0).toFixed(2)}
+                                                        </strong>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* Payment Method Selector: Cash vs Online */}
+                                        <div className="form-group mb-3">
+                                            <label style={{ fontSize: '0.85rem', fontWeight: 800, marginBottom: 8, display: 'block', color: 'var(--text-primary)' }}>
+                                                Select Payment Method:
+                                            </label>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                                                <div
+                                                    onClick={() => setPaymentMethod('Cash')}
+                                                    style={{
+                                                        padding: 12,
+                                                        borderRadius: 12,
+                                                        border: paymentMethod === 'Cash' ? '2px solid #059669' : '1px solid #E2E8F0',
+                                                        background: paymentMethod === 'Cash' ? 'rgba(16, 185, 129, 0.12)' : '#F8FAFC',
+                                                        color: paymentMethod === 'Cash' ? '#059669' : 'var(--text-secondary)',
+                                                        cursor: 'pointer',
+                                                        fontWeight: 800,
+                                                        textAlign: 'center',
+                                                        fontSize: '0.86rem',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        gap: 6
+                                                    }}
+                                                >
+                                                    <i className="fas fa-money-bill-wave" />
+                                                    <span>Cash Payment</span>
+                                                </div>
+
+                                                <div
+                                                    onClick={() => setPaymentMethod('Online')}
+                                                    style={{
+                                                        padding: 12,
+                                                        borderRadius: 12,
+                                                        border: paymentMethod === 'Online' ? '2px solid #0284C7' : '1px solid #E2E8F0',
+                                                        background: paymentMethod === 'Online' ? 'rgba(2, 132, 199, 0.12)' : '#F8FAFC',
+                                                        color: paymentMethod === 'Online' ? '#0284C7' : 'var(--text-secondary)',
+                                                        cursor: 'pointer',
+                                                        fontWeight: 800,
+                                                        textAlign: 'center',
+                                                        fontSize: '0.86rem',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        gap: 6
+                                                    }}
+                                                >
+                                                    <i className="fas fa-credit-card" />
+                                                    <span>Online (UPI / Card)</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Amount Input */}
+                                        <div className="form-group mb-4">
+                                            <label style={{ fontSize: '0.85rem', fontWeight: 800, marginBottom: 4, display: 'block', color: 'var(--text-primary)' }}>
+                                                Transaction Payment Amount
+                                            </label>
+                                            <input
+                                            readOnly
+                                                type="text"
+                                                className="form-control"
+                                                value={paymentAmount}
+                                                onChange={(e) => setPaymentAmount(e.target.value)}
+                                                placeholder="25.00"
+                                                required
+                                                style={{ height: 42, borderRadius: 10, fontWeight: 700 }}
+                                            />
+                                        </div>
                                     </div>
-
-                                    <div
-                                        onClick={() => setEnrollForm({
-                                            ...enrollForm,
-                                            cardType: 'membership',
-                                            selectedCardTitle: INITIAL_MEMBERSHIP_CARDS[0].name
-                                        })}
-                                        style={{
-                                            padding: 12,
-                                            borderRadius: 12,
-                                            border: enrollForm.cardType === 'membership' ? '2px solid #D97706' : '1px solid #E2E8F0',
-                                            background: enrollForm.cardType === 'membership' ? 'rgba(245, 158, 11, 0.12)' : '#F8FAFC',
-                                            color: enrollForm.cardType === 'membership' ? '#D97706' : 'var(--text-secondary)',
-                                            cursor: 'pointer',
-                                            textAlign: 'center',
-                                            fontWeight: 800,
-                                            fontSize: '0.85rem'
-                                        }}
-                                    >
-                                        <i className="fas fa-crown" style={{ display: 'block', marginBottom: 4 }} />
-                                        Membership Card
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* CARD DROPDOWN */}
-                            <div className="form-group mb-4">
-                                <label style={{ fontSize: '0.8rem', fontWeight: 700, marginBottom: 4, display: 'block' }}>
-                                    Select Card Pass Design
-                                </label>
-                                {enrollForm.cardType === 'stamp' ? (
-                                    <select
-                                        className="form-select"
-                                        value={enrollForm.selectedCardTitle}
-                                        onChange={(e) => setEnrollForm({ ...enrollForm, selectedCardTitle: e.target.value })}
-                                        style={{ height: 42, borderRadius: 8, fontSize: '0.85rem' }}
-                                    >
-                                        {INITIAL_STAMP_CARDS.map(sc => (
-                                            <option key={sc.id} value={sc.title}>{sc.title}</option>
-                                        ))}
-                                    </select>
                                 ) : (
-                                    <select
-                                        className="form-select"
-                                        value={enrollForm.selectedCardTitle}
-                                        onChange={(e) => setEnrollForm({ ...enrollForm, selectedCardTitle: e.target.value })}
-                                        style={{ height: 42, borderRadius: 8, fontSize: '0.85rem' }}
-                                    >
-                                        {INITIAL_MEMBERSHIP_CARDS.map(mc => (
-                                            <option key={mc.id} value={mc.name}>{mc.name}</option>
-                                        ))}
-                                    </select>
-                                )}
-                            </div>
+                                    /* MEMBERSHIP CARD FLOW */
+                                    <div>
+                                        <div style={{ background: 'rgba(245, 158, 11, 0.08)', borderRadius: 16, padding: 18, border: '1px solid rgba(245, 158, 11, 0.3)', marginBottom: 18 }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <div>
+                                                    <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#B45309', fontWeight: 800 }}>
+                                                        MEMBERSHIP STATUS: ACTIVE PASS
+                                                    </span>
+                                                    <h4 style={{ fontSize: '1.1rem', fontWeight: 800, margin: '2px 0 0 0', color: '#D97706' }}>
+                                                        {selectedCard.title || 'Membership Pass'} ({selectedCard.tier || 'VIP'} Tier)
+                                                    </h4>
+                                                    {selectedCard.card_number && (
+                                                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontFamily: 'monospace', margin: '4px 0 0 0' }}>
+                                                            {selectedCard.card_number}
+                                                        </p>
+                                                    )}
+                                                </div>
 
-                            <button type="submit" className="btn firstloop-btn-primary" style={{ width: '100%', height: 44, borderRadius: 10, fontWeight: 800, fontSize: '0.9rem' }}>
-                                Save & Enroll Customer to Terminal
-                            </button>
-                        </form>
+                                                <span className="badge" style={{ background: '#D97706', color: '#FFF', padding: '6px 12px', borderRadius: 8, fontWeight: 800, fontSize: '0.78rem' }}>
+                                                    <i className="fas fa-crown" style={{ marginRight: 4 }} /> {selectedCard.tier || 'VIP'} Member
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div style={{ padding: 14, background: '#F8FAFC', borderRadius: 12, border: '1px solid #E2E8F0', marginBottom: 20 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                <div style={{ width: 32, height: 32, borderRadius: 8, background: '#10B981', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem' }}>
+                                                    <i className="fas fa-calendar-check" />
+                                                </div>
+                                                <div>
+                                                    <strong style={{ fontSize: '0.85rem', color: 'var(--text-primary)', display: 'block' }}>
+                                                        Logging Current Day's Visit Check-In
+                                                    </strong>
+                                                    <small style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>
+                                                        Date: <strong>Today ({new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })})</strong> • Timestamp logged automatically.
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Submit Button */}
+                                <button
+                                    type="submit"
+                                    disabled={savingEntry}
+                                    className="btn firstloop-btn-primary"
+                                    style={{
+                                        width: '100%',
+                                        height: 48,
+                                        borderRadius: 12,
+                                        fontWeight: 800,
+                                        fontSize: '0.95rem',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: 8,
+                                        opacity: savingEntry ? 0.75 : 1,
+                                        cursor: savingEntry ? 'not-allowed' : 'pointer'
+                                    }}
+                                >
+                                    {savingEntry ? (
+                                        <>
+                                            <div className="spinner-border spinner-border-sm text-light" role="status" />
+                                            <span>Processing Entry & Payment...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <i className="fas fa-check-circle" />
+                                            <span>{(Number(selectedCard.card_type) === 1 || selectedCard.type === 'stamp') ? 'Save Card Entry & Generate Payment Receipt' : "Save Today's Check-In Entry"}</span>
+                                        </>
+                                    )}
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             )}
@@ -856,7 +1144,7 @@ export default function CardCheckInPayment() {
                             ) : (
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, color: '#D97706' }}>
                                     <span>Check-In Entry:</span>
-                                    <strong>Today ({successReceiptModal.time}) Validated • 1 month to expire</strong>
+                                    <strong>Today ({successReceiptModal.time}) Validated • Active Member</strong>
                                 </div>
                             )}
 
@@ -877,7 +1165,8 @@ export default function CardCheckInPayment() {
                                 setSuccessReceiptModal(null)
                                 setMatchedCustomer(null)
                                 setSelectedCard(null)
-                                setPhoneInput('')
+                                setSelectedCardDetails(null)
+                                setSearchInput('')
                             }}
                             style={{ width: '100%', height: 44, borderRadius: 10, fontWeight: 800 }}
                         >
@@ -886,6 +1175,13 @@ export default function CardCheckInPayment() {
                     </div>
                 </div>
             )}
+            {/* CUSTOMER CARD HISTORY POPUP MODAL */}
+            <CustomerCardHistory
+                isOpen={historyModalOpen}
+                onClose={() => setHistoryModalOpen(false)}
+                cardId={selectedCard?.id}
+                card={selectedCard}
+            />
         </div>
     )
 }

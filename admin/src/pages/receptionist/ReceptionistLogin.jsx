@@ -52,10 +52,10 @@ export default function ReceptionistLogin() {
                     localStorage.setItem("rec_refresh_token", refreshToken)
                 }
                 if (userId) {
-                    localStorage.setItem("user_id", String(userId))
+                    localStorage.setItem("rec_user_id", String(userId))
                 }
                 if (userRepId) {
-                    localStorage.setItem("user_repId", String(userRepId))
+                    localStorage.setItem("rec_user_repId", String(userRepId))
                 }
 
                 localStorage.setItem("receptionist_data", JSON.stringify({

@@ -1,4 +1,5 @@
-const { Merchant, Coupon, RefreshToken, Branch, Receptionist, MerchantFp, Category, BranchTiming, SalePerson, UserNotificationToken, CouponApplied, Notification, Stampcard, StampLevel, customerCard, MembershipCards } = require('../../models');
+const { Merchant, Coupon, RefreshToken, Branch, Receptionist, MerchantFp, Category, BranchTiming, SalePerson, UserNotificationToken, CouponApplied, Notification, Stampcard, StampLevel, MembershipCards, CustomerCard,
+    CustomerStampLevel, } = require('../../models');
 const bcrypt = require('bcryptjs');
 const { parsePhoneNumber } = require('libphonenumber-js');
 const jwt = require('jsonwebtoken');
@@ -208,13 +209,7 @@ exports.logout = async (req, res) => {
 };
 exports.dashboard = async (req, res) => {
     try {
-
         const merchant_id = req.user?.id;
-
-
-        /* ---------------------------------------
-           Validate Merchant ID
-        --------------------------------------- */
 
         if (!merchant_id) {
             return res.status(400).json({
@@ -223,33 +218,12 @@ exports.dashboard = async (req, res) => {
             });
         }
 
-
-        /* ---------------------------------------
-           Find Merchant
-        --------------------------------------- */
-
         const merchant = await Merchant.findOne({
             where: {
                 id: merchant_id,
                 del_status: 0
-            },
-
-            include: [
-                {
-                    model: Branch,
-                    attributes: ["id"],
-                    where: {
-                        del_status: 0
-                    },
-                    required: false
-                }
-            ]
+            }
         });
-
-
-        /* ---------------------------------------
-           Merchant Not Found
-        --------------------------------------- */
 
         if (!merchant) {
             return res.status(404).json({
@@ -258,10 +232,62 @@ exports.dashboard = async (req, res) => {
             });
         }
 
+        // Get merchant branches
+        const branches = await Branch.findAll({
+            where: {
+                merchant_id: merchant_id,
+                del_status: 0
+            },
+            attributes: ["id"],
+            raw: true
+        });
 
-        /* ---------------------------------------
-           Dashboard Response
-        --------------------------------------- */
+        const branchIds = branches.map(branch => Number(branch.id));
+
+        console.log("Branch IDs:", branchIds);
+
+        // ---------------------------------------
+        // CUSTOMER COUNT
+        // ---------------------------------------
+
+        let customer_count = 0;
+
+        if (branchIds.length > 0) {
+            customer_count = await CustomerCard.count({
+                distinct: true,
+                col: "customer_id",
+                where: {
+                    branch_id: {
+                        [Op.in]: branchIds
+                    }
+                }
+            });
+        }
+
+        // ---------------------------------------
+        // ACTIVE STAMP CARDS
+        // ---------------------------------------
+
+        const active_stamp_card_count = await Stampcard.count({
+            where: {
+                merchant_id: merchant_id,
+                status: 1
+            }
+        });
+
+        // ---------------------------------------
+        // ACTIVE MEMBERSHIP CARDS
+        // ---------------------------------------
+
+        const active_membership_card_count = await MembershipCards.count({
+            where: {
+                merchant_id: merchant_id
+            }
+        });
+
+        // ---------------------------------------
+        // RESPONSE
+        // ---------------------------------------
 
         return res.status(200).json({
             status: 1,
@@ -275,20 +301,17 @@ exports.dashboard = async (req, res) => {
                     merchant.name ||
                     "Merchant",
 
-                active_br:
-                    merchant.Branch?.length || 0,
+                active_br: branches.length,
 
-                active_mem_cr: 0,
+                active_mem_cr: active_membership_card_count,
 
-                active_st_cr: 0,
+                active_st_cr: active_stamp_card_count,
 
-                active_cus: 0
+                active_cus: customer_count
             }
         });
 
-    }
-
-    catch (err) {
+    } catch (err) {
 
         console.error(
             "Merchant Dashboard Error:",
@@ -504,7 +527,7 @@ exports.stamp_card = async (req, res) => {
             stamp_border_color,
             stamp_text_color,
             stamp_levels,
-            
+
         } = req.body;
 
         const merchant_id = req.body.merchant_id;
@@ -689,7 +712,7 @@ exports.stamp_card = async (req, res) => {
                 level.category_id = null;
                 level.discount = 0;
                 level.amt = 0;
-                level.icon =level.icon || null;
+                level.icon = level.icon || null;
             }
 
             // -----------------------------------
@@ -720,7 +743,7 @@ exports.stamp_card = async (req, res) => {
                         level.amt !== ""
                         ? Number(level.amt)
                         : 0;
-             level.icon =level.icon || null;
+                level.icon = level.icon || null;
             }
 
             // -----------------------------------
@@ -758,7 +781,7 @@ exports.stamp_card = async (req, res) => {
                         ? Number(level.amt)
                         : 0;
 
-                 level.icon =level.icon || null;
+                level.icon = level.icon || null;
             }
         }
 
@@ -2120,3 +2143,4 @@ exports.fetch_membership_id = async (req, res) => {
         });
     }
 };
+

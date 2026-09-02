@@ -25,6 +25,7 @@ module.exports = (sequelize, DataTypes) => {
             amt: {
                 type: DataTypes.DECIMAL(10, 2),
                 allowNull: false,
+                defaultValue: 0,
             },
 
             discount: {
@@ -34,10 +35,29 @@ module.exports = (sequelize, DataTypes) => {
                 comment: 'Discount percentage',
             },
 
+            // 1 = Free
+            // 2 = Discount
+            // 3 = Paid
             reward_type: {
                 type: DataTypes.ENUM('1', '2', '3'),
                 allowNull: false,
                 defaultValue: '1',
+            },
+
+            // Amount customer needs to pay
+            paid_amt: {
+                type: DataTypes.DECIMAL(10, 2),
+                allowNull: true,
+                defaultValue: 0,
+                comment: 'Paid reward amount',
+            },
+
+            // 1 = Cash
+            // 2 = Online
+            payment_type: {
+                type: DataTypes.ENUM('1', '2'),
+                allowNull: true,
+                comment: '1 = Cash, 2 = Online',
             },
 
             reward_text: {
@@ -51,6 +71,15 @@ module.exports = (sequelize, DataTypes) => {
             },
 
             category_id: {
+                type: DataTypes.BIGINT,
+                allowNull: true,
+            },
+
+            role: {
+                type: DataTypes.STRING(255),
+                allowNull: true,
+            },
+            role_id: {
                 type: DataTypes.BIGINT,
                 allowNull: true,
             },
