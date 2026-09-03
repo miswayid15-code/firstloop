@@ -1,4 +1,4 @@
-const { Merchant, Coupon, RefreshToken, Branch, Receptionist, MerchantFp, BranchTiming, UserNotificationToken, CouponApplied, Notification,Stampcard, StampLevel, MembershipCards, CustomerCard,
+const { Merchant, Coupon, RefreshToken, Branch, Receptionist, MerchantFp, BranchTiming, UserNotificationToken, CouponApplied, Notification, Stampcard, StampLevel, MembershipCards, CustomerCard,
     CustomerStampLevel, } = require('../../models');
 const bcrypt = require('bcryptjs');
 const { parsePhoneNumber } = require('libphonenumber-js');
@@ -36,7 +36,7 @@ exports.login = async (req, res) => {
             return res.json({ status: 0, message: "Invalid password" });
         }
         const branch = await Branch.findOne({ where: { id: receptionist.branch_id } });
-        
+
         const refreshToken = jwt.sign(
             {
                 id: receptionist.id,
@@ -71,8 +71,8 @@ exports.login = async (req, res) => {
             status: 1,
             message: "Login successful",
             user_id: receptionist.id,
-            user_repId:receptionist.rep_id,
-            user_name:receptionist.name,
+            user_repId: receptionist.rep_id,
+            user_name: receptionist.name,
             user_branch: branch.name,
             user_branch_id: branch.id,
             access_token: accessToken,
@@ -111,46 +111,105 @@ exports.logout = async (req, res) => {
 };
 
 exports.dashboard = async (req, res) => {
-    try{
+    try {
         const rep_id = req.user.id;
-        const receptionist = await Receptionist.findOne({ where: { id: rep_id } });
+
+        // ---------------------------------
+        // RECEPTIONIST
+        // ---------------------------------
+
+        const receptionist = await Receptionist.findOne({
+            where: {
+                id: rep_id
+            }
+        });
+
         if (!receptionist) {
-            return res.json({ status: 0, message: "Receptionist not found" });
+            return res.json({
+                status: 0,
+                message: "Receptionist not found"
+            });
         }
-        const branch_id=receptionist.branch_id;
-       
-        const branch = await Branch.findOne({ where: { id: branch_id } });
+
+        const branch_id = receptionist.branch_id;
+
+        // ---------------------------------
+        // BRANCH
+        // ---------------------------------
+
+        const branch = await Branch.findOne({
+            where: {
+                id: branch_id
+            }
+        });
+
+        if (!branch) {
+            return res.json({
+                status: 0,
+                message: "Branch not found"
+            });
+        }
+
+        // ---------------------------------
+        // TOTAL CUSTOMERS
+        // ---------------------------------
+
         const total_cus = await CustomerCard.count({
-            branch_id: branch_id,
-        });
-        const total_stamp_card = await Stampcard.count({
             where: {
-                branch_ids:{ [Op.contains]: [branch_id] },
-            }
+                branch_id: branch_id
+            },
+            distinct: true,
+            col: "customer_id"
         });
-        const total_membership_card = await MembershipCards.count({
+
+        // ---------------------------------
+        // TOTAL STAMP CARDS
+        // ---------------------------------
+
+        const total_stamp_card = await CustomerCard.count({
             where: {
-                branch_ids:{ [Op.contains]: [branch_id] },
+                card_type:1,
+                branch_id: branch_id
             }
         });
 
+        // ---------------------------------
+        // TOTAL MEMBERSHIP CARDS
+        // ---------------------------------
 
+        const total_membership_card = await CustomerCard.count({
+            where: {
+                card_type:2,
+                branch_id: branch_id
+            }
+        });
+
+        // ---------------------------------
+        // RESPONSE
+        // ---------------------------------
 
         return res.status(200).json({
             status: 1,
             message: "Dashboard data fetched successfully",
+
             name: receptionist.name,
+
             branch_id: branch.id,
             branch_name: branch.name,
+
             total_cus: total_cus || 0,
-            total_stamp_card: total_stamp_card|| 0,
-            total_membership_card: total_membership_card|| 0,
-          
+            total_stamp_card: total_stamp_card || 0,
+            total_membership_card: total_membership_card || 0
         });
 
+    } catch (err) {
+
+        console.error("Dashboard Error:", err);
+
+        return res.status(500).json({
+            status: 0,
+            message: "Error",
+            error: err.message
+        });
     }
-    catch(err){
-        console.log(err);
-        return res.json({ status: 0, message: "Error" });
-    }
-}
+};

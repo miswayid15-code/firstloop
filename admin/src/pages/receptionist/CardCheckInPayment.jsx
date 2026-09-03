@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { toast } from "react-hot-toast"
 import API from '../../api.js'
@@ -6,6 +6,7 @@ import CustomerCard from '../../components/CustomerCard.jsx'
 import CustomerCardHistory from '../../components/CustomerCardHistory.jsx'
 import { fetchCustomerStampLevelsApi } from '../../services/cardService.js'
 import qrImg from '../../assets/img/qr-img.png'
+import { Html5Qrcode } from 'html5-qrcode'
 
 export default function CardCheckInPayment() {
     const navigate = useNavigate()
@@ -38,6 +39,10 @@ export default function CardCheckInPayment() {
     // QR Modal Scanner state
     const [qrScannerOpen, setQrScannerOpen] = useState(false)
     const [qrScanningState, setQrScanningState] = useState(false)
+    const [scannerError, setScannerError] = useState(null)
+    const [cameraFacing, setCameraFacing] = useState('environment') // 'environment' | 'user'
+    const scannerRef = useRef(null)
+    const fileInputRef = useRef(null)
 
     // Card Payment / Entry Form state
     const [paymentMethod, setPaymentMethod] = useState('Cash') // 'Cash' | 'Online'
@@ -190,23 +195,180 @@ export default function CardCheckInPayment() {
         navigate(`/merchant/add-card-customer/${branchId}`)
     }
 
-    // QR Code Scanning Simulation
-    const handleStartQRScan = () => {
-        setQrScannerOpen(true)
+    // Stop and cleanup html5QrCode scanner instance
+    const stopScanner = async () => {
+        if (scannerRef.current) {
+            try {
+                if (scannerRef.current.isScanning) {
+                    await scannerRef.current.stop()
+                }
+                scannerRef.current.clear()
+            } catch (err) {
+                console.error("Error stopping QR scanner:", err)
+            }
+            scannerRef.current = null
+        }
+        setQrScanningState(false)
+    }
+
+    // Process decoded QR text and match to customer/card
+    const handleQrCodeScanned = async (decodedText) => {
+        if (!decodedText) return
+        console.log("QR Code Decoded:", decodedText)
+
+        await stopScanner()
+        setQrScannerOpen(false)
+
+        const raw = String(decodedText).trim()
+
+        // 1. Try finding match in already fetched customerList
+        let matchedCus = null
+        let matchedCard = null
+
+        for (const cus of customerList) {
+            if (Array.isArray(cus.cards)) {
+                for (const card of cus.cards) {
+                    const cardNo = String(card.card_number || '').toLowerCase()
+                    const cardId = String(card.id || '')
+                    const target = raw.toLowerCase()
+
+                    if (
+                        (cardNo && (cardNo === target || target.includes(cardNo))) ||
+                        (cardId && (cardId === raw || target.includes(`/card-preview/${cardId}`) || target.includes(`id=${cardId}`)))
+                    ) {
+                        matchedCus = cus
+                        matchedCard = card
+                        break
+                    }
+                }
+            }
+            if (matchedCus) break
+
+            const phoneDigits = String(cus.phone || '').replace(/\D/g, '')
+            const rawDigits = raw.replace(/\D/g, '')
+            if (
+                String(cus.id) === raw ||
+                (phoneDigits.length >= 7 && rawDigits.includes(phoneDigits)) ||
+                (cus.email && cus.email.toLowerCase() === raw.toLowerCase())
+            ) {
+                matchedCus = cus
+                if (Array.isArray(cus.cards) && cus.cards.length > 0) {
+                    matchedCard = cus.cards[0]
+                }
+                break
+            }
+        }
+
+        if (matchedCus) {
+            setMatchedCustomer(matchedCus)
+            setSearchInput(matchedCus.name || matchedCus.phone || '')
+            setSearchResults([])
+            if (matchedCard) {
+                setSelectedCard(matchedCard)
+            } else if (Array.isArray(matchedCus.cards) && matchedCus.cards.length > 0) {
+                setSelectedCard(matchedCus.cards[0])
+            }
+            toast.success(`QR Pass Identified: ${matchedCus.name || 'Customer'}`)
+            return
+        }
+
+        // 2. If not matched in memory, set search input to trigger search / filter
+        setSearchInput(raw)
+        toast.success(`Scanned: "${raw}". Searching customer records...`)
+    }
+
+    // Start html5QrCode scanner camera stream
+    const startScanner = async () => {
+        setScannerError(null)
         setQrScanningState(true)
 
-        setTimeout(() => {
-            setQrScanningState(false)
-            if (customerList.length > 0) {
-                const scannedCus = customerList[0]
-                selectCustomer(scannedCus)
-                toast.success(`QR Identified: ${scannedCus.name}`)
-            } else {
-                toast.error("No customer records found to match QR")
+        try {
+            if (scannerRef.current) {
+                try {
+                    await scannerRef.current.stop()
+                } catch (e) {}
             }
-            setQrScannerOpen(false)
-        }, 1500)
+
+            const html5QrCode = new Html5Qrcode("receptionist-qr-reader")
+            scannerRef.current = html5QrCode
+
+            const config = {
+                fps: 15,
+                qrbox: (viewfinderWidth, viewfinderHeight) => {
+                    const minEdge = Math.min(viewfinderWidth, viewfinderHeight)
+                    const qrboxSize = Math.floor(minEdge * 0.72)
+                    return {
+                        width: Math.max(200, Math.min(280, qrboxSize)),
+                        height: Math.max(200, Math.min(280, qrboxSize))
+                    }
+                },
+                aspectRatio: 1.0
+            }
+
+            await html5QrCode.start(
+                { facingMode: cameraFacing },
+                config,
+                (decodedText) => {
+                    handleQrCodeScanned(decodedText)
+                },
+                (errorMessage) => {
+                    // Ongoing frame parse, normal while aiming camera
+                }
+            )
+            setQrScanningState(false)
+        } catch (err) {
+            console.error("Camera scanner start error:", err)
+            setScannerError(err?.message || "Camera access failed. Please ensure camera permissions are granted.")
+            setQrScanningState(false)
+        }
     }
+
+    // Trigger QR modal opening
+    const handleStartQRScan = () => {
+        setScannerError(null)
+        setQrScannerOpen(true)
+    }
+
+    // Toggle Front / Back Camera
+    const toggleCameraFacing = async () => {
+        await stopScanner()
+        setCameraFacing(prev => prev === 'environment' ? 'user' : 'environment')
+    }
+
+    // Scan QR from image file upload
+    const handleScanFile = async (e) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        try {
+            setQrScanningState(true)
+            const html5QrCode = new Html5Qrcode("receptionist-qr-reader-file-temp")
+            const decodedText = await html5QrCode.scanFile(file, true)
+            html5QrCode.clear()
+            handleQrCodeScanned(decodedText)
+        } catch (err) {
+            console.error("File scan error:", err)
+            toast.error("Could not find a valid QR code in this image.")
+        } finally {
+            setQrScanningState(false)
+            if (fileInputRef.current) fileInputRef.current.value = ''
+        }
+    }
+
+    // Handle scanner lifecycle when modal opens / camera facing changes
+    useEffect(() => {
+        if (qrScannerOpen) {
+            const timer = setTimeout(() => {
+                startScanner()
+            }, 250)
+            return () => {
+                clearTimeout(timer)
+                stopScanner()
+            }
+        } else {
+            stopScanner()
+        }
+    }, [qrScannerOpen, cameraFacing])
 
     // Handler: Save & Submit Card Payment / Entry Update
     const handleSaveEntry = async (e) => {
@@ -1173,46 +1335,136 @@ export default function CardCheckInPayment() {
                 </div>
             )})()}
 
-            {/* QR SCANNER POPUP MODAL SIMULATION */}
+            {/* REAL-TIME HTML5 QR SCANNER POPUP MODAL */}
             {qrScannerOpen && (
-                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(8px)', zIndex: 1050, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-                    <div style={{ width: '100%', maxWidth: 420, background: '#FFFFFF', borderRadius: 24, padding: 24, textAlign: 'center', boxShadow: '0 25px 50px rgba(0,0,0,0.4)', position: 'relative' }}>
-                        <button type="button" onClick={() => setQrScannerOpen(false)} style={{ position: 'absolute', right: 16, top: 16, background: 'none', border: 'none', fontSize: '1.2rem', color: 'var(--text-muted)', cursor: 'pointer' }}>&times;</button>
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.88)', backdropFilter: 'blur(8px)', zIndex: 1050, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+                    <div style={{ width: '100%', maxWidth: 460, background: '#FFFFFF', borderRadius: 24, padding: '24px 24px 20px', boxShadow: '0 25px 50px rgba(0,0,0,0.4)', position: 'relative', overflow: 'hidden' }}>
 
-                        <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: '0 0 12px 0', color: 'var(--text-primary)' }}>
-                            Scanning Customer QR Pass...
-                        </h3>
-
-                        <div
-                            style={{
-                                width: 220,
-                                height: 220,
-                                borderRadius: 20,
-                                border: '3px dashed var(--firstloop-primary)',
-                                margin: '0 auto 16px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                background: '#F8FAFC',
-                                position: 'relative',
-                                overflow: 'hidden'
-                            }}
-                        >
-                            {qrScanningState ? (
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-                                    <div className="spinner-border text-primary" role="status" style={{ width: '2.5rem', height: '2.5rem' }}>
-                                        <span className="visually-hidden">Scanning...</span>
-                                    </div>
-                                    <small style={{ fontWeight: 800, color: 'var(--firstloop-primary)' }}>Scanning QR Camera View...</small>
+                        {/* Modal Header */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <div style={{ width: 38, height: 38, borderRadius: 10, background: 'var(--firstloop-primary-light)', color: 'var(--firstloop-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem' }}>
+                                    <i className="fas fa-qrcode" />
                                 </div>
-                            ) : (
-                                <img src={qrImg} alt="Scanned Pass" style={{ width: 160, height: 160, objectFit: 'contain' }} />
-                            )}
+                                <div>
+                                    <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
+                                        Scan Customer Pass
+                                    </h3>
+                                    <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0 }}>
+                                        Align customer's QR pass within the viewfinder
+                                    </p>
+                                </div>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    stopScanner()
+                                    setQrScannerOpen(false)
+                                }}
+                                style={{ background: '#F1F5F9', border: 'none', width: 32, height: 32, borderRadius: '50%', fontSize: '0.9rem', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                            >
+                                <i className="fas fa-times" />
+                            </button>
                         </div>
 
-                        <small style={{ color: 'var(--text-muted)', display: 'block' }}>
-                            Simulating QR Pass camera scan for Receptionist Terminal.
-                        </small>
+                        {/* Error Banner if Camera is Blocked */}
+                        {scannerError ? (
+                            <div style={{ padding: 20, background: '#FEF2F2', border: '1px solid #FCA5A5', borderRadius: 16, textAlign: 'center', marginBottom: 16 }}>
+                                <i className="fas fa-video-slash" style={{ fontSize: '2rem', color: '#DC2626', marginBottom: 10 }} />
+                                <h5 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#991B1B', margin: '0 0 6px' }}>Camera Permission Blocked</h5>
+                                <p style={{ fontSize: '0.8rem', color: '#B91C1C', margin: '0 0 14px' }}>
+                                    {scannerError}
+                                </p>
+                                <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+                                    <button
+                                        type="button"
+                                        className="btn btn-sm firstloop-btn-primary"
+                                        onClick={startScanner}
+                                        style={{ padding: '6px 14px', borderRadius: 8, fontSize: '0.8rem' }}
+                                    >
+                                        <i className="fas fa-redo" style={{ marginRight: 6 }} />
+                                        Try Again
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="btn btn-sm btn-outline-secondary"
+                                        onClick={() => fileInputRef.current?.click()}
+                                        style={{ padding: '6px 14px', borderRadius: 8, fontSize: '0.8rem' }}
+                                    >
+                                        <i className="fas fa-upload" style={{ marginRight: 6 }} />
+                                        Upload QR Image
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            /* Real Live Video Camera Box */
+                            <div
+                                style={{
+                                    position: 'relative',
+                                    width: '100%',
+                                    borderRadius: 18,
+                                    overflow: 'hidden',
+                                    background: '#0F172A',
+                                    minHeight: 280,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    boxShadow: 'inset 0 0 20px rgba(0,0,0,0.5)',
+                                    marginBottom: 16
+                                }}
+                            >
+                                {/* HTML5 QR Camera Container */}
+                                <div
+                                    id="receptionist-qr-reader"
+                                    style={{
+                                        width: '100%',
+                                        height: '100%'
+                                    }}
+                                />
+
+                                {/* Camera Loading Overlay */}
+                                {qrScanningState && (
+                                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(15, 23, 42, 0.75)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, zIndex: 10 }}>
+                                        <div className="spinner-border text-primary" role="status" style={{ width: '2rem', height: '2rem' }} />
+                                        <small style={{ color: '#FFFFFF', fontWeight: 700, fontSize: '0.8rem' }}>Starting Camera Stream...</small>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Hidden temp container for scanning image files */}
+                        <div id="receptionist-qr-reader-file-temp" style={{ display: 'none' }} />
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={handleScanFile}
+                            style={{ display: 'none' }}
+                        />
+
+                        {/* Bottom Actions & Camera Switch */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, paddingTop: 10, borderTop: '1px solid #E2E8F0' }}>
+                            <button
+                                type="button"
+                                className="btn btn-sm btn-light"
+                                onClick={toggleCameraFacing}
+                                style={{ borderRadius: 8, fontSize: '0.8rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                            >
+                                <i className="fas fa-camera-rotate" />
+                                <span>Switch Camera ({cameraFacing === 'environment' ? 'Back' : 'Front'})</span>
+                            </button>
+
+                            <button
+                                type="button"
+                                className="btn btn-sm btn-link text-primary"
+                                onClick={() => fileInputRef.current?.click()}
+                                style={{ fontSize: '0.8rem', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                            >
+                                <i className="fas fa-file-image" />
+                                <span>Scan from Image File</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
