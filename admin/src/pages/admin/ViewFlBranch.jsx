@@ -1124,10 +1124,17 @@ export default function ViewFlBranch() {
                                                 className="btn firstloop-btn-secondary"
                                                 onClick={() => navigate(
                                                     isMerchantMode
-                                                        ? `/merchant/customers/${cus.id}?branchId=${branch?.id || id}`
+                                                        ? `/merchant/customers/${cus.id}?branchId=${branch?.id || id}&from=branch&fromBranchId=${branch?.id || id}&branchName=${encodeURIComponent(branch?.name || '')}`
                                                         : isReceptionistMode
-                                                            ? `/receptionist/customers/${cus.id}?branchId=${branch?.id || id}`
-                                                            : `/fp-customer_details/${cus.id}?branchId=${branch?.id || id}`
+                                                            ? `/receptionist/customers/${cus.id}?branchId=${branch?.id || id}&from=branch&fromBranchId=${branch?.id || id}&branchName=${encodeURIComponent(branch?.name || '')}`
+                                                            : `/fp-customer_details/${cus.id}?branchId=${branch?.id || id}&from=branch&fromBranchId=${branch?.id || id}&branchName=${encodeURIComponent(branch?.name || '')}`,
+                                                    {
+                                                        state: {
+                                                            fromPath: location.pathname,
+                                                            fromBranchId: branch?.id || id,
+                                                            fromBranchName: branch?.name
+                                                        }
+                                                    }
                                                 )}
                                                 style={{ padding: '6px 12px', fontSize: '0.78rem', borderRadius: 6 }}
                                             >

@@ -107,7 +107,7 @@ exports.Link_customer = async (req, res) => {
 
     try {
 
-        console.log("Link_customer req.body:", req.body);
+        // console.log("Link_customer req.body:", req.body);
 
         const {
             cardType,
@@ -388,7 +388,8 @@ exports.Link_customer = async (req, res) => {
 
                 branch_id: br_id,
 
-                card_type: card_type
+                card_type: card_type,
+                is_completed: 0
 
             },
 
@@ -810,6 +811,7 @@ exports.fetch_card = async (req, res) => {
                 "branch_id",
                 "card_type",
 
+
                 // ---------------------------------
                 // CARD SNAPSHOT
                 // ---------------------------------
@@ -847,6 +849,7 @@ exports.fetch_card = async (req, res) => {
                 "qr_token",
                 "current_stamp",
                 "status",
+                "is_completed",
                 "issued_at",
                 "expires_at"
             ],
@@ -1219,6 +1222,9 @@ exports.get_branch_cus = async (req, res) => {
                 "card_number",
                 "card_type",
                 "title",
+                "current_stamp",
+                "number_of_stamps",
+                "is_completed",
             ],
 
             order: [
@@ -1407,7 +1413,8 @@ exports.get_merchant_customers = async (req, res) => {
                 "card_number",
                 "card_type",
                 "title",
-                "branch_id"
+                "branch_id",
+                "is_completed"
             ],
             order: [
                 ["id", "DESC"]
@@ -1682,7 +1689,7 @@ exports.stamp_paid = async (req, res) => {
         // 2 = Discount
         // 3 = Paid
 
-        if (!['2', '3'].includes(rewardType)) {
+        if (!['1', '2', '3'].includes(rewardType)) {
             await transaction.rollback();
 
             return res.status(400).json({
@@ -1798,45 +1805,193 @@ exports.stamp_paid = async (req, res) => {
 
 exports.get_customer_details = async (req, res) => {
     try {
-        const { customer_id } = req.body;
-        const customer = await Customer.findByPk(customer_id);
+        const { customer_id, branch_id } = req.body;
+
+        // ---------------------------------
+        // CUSTOMER VALIDATION
+        // ---------------------------------
+
+        const customer = await Customer.findByPk(customer_id, {
+            attributes: [
+                "id",
+                "name",
+                "email",
+                "phone",
+                "country_code",
+                "profile_image"
+            ]
+        });
+
         if (!customer) {
             return res.status(404).json({
                 status: 0,
                 message: 'Customer not found'
             });
         }
+
+        // ---------------------------------
+        // FETCH CUSTOMER CARDS
+        // ---------------------------------
+        const cardWhere = {
+            customer_id: customer_id
+        };
+        if (
+            branch_id !== undefined &&
+            branch_id !== null &&
+            branch_id !== ''
+        ) {
+            cardWhere.branch_id = branch_id;
+        }
         const customerCards = await CustomerCard.findAll({
-            where: {
-                customer_id: customer_id
-            }
+            where: cardWhere,
+            attributes: [
+                "id",
+                "merchant_card_id",
+                "customer_id",
+                "branch_id",
+                "card_type",
+
+                // CARD SNAPSHOT
+                "title",
+                "brand_name",
+                "brand_image",
+                "background_image",
+                "background_color",
+                "text_color",
+                "border_color",
+
+                // STAMP CARD SNAPSHOT
+                "number_of_stamps",
+                "stamp_radius",
+                "stamp_background",
+                "stamp_border_color",
+                "stamp_text_color",
+
+                // MEMBERSHIP CARD SNAPSHOT
+                "month",
+
+                // CUSTOMER CARD DETAILS
+                "card_number",
+                "qr_token",
+                "current_stamp",
+                "status",
+                "is_completed",
+                "issued_at",
+                "expires_at"
+            ],
+
+            include: [
+                {
+                    model: Customer,
+                    as: "Customer",
+                    required: false,
+                    attributes: [
+                        "id",
+                        "name"
+                    ]
+                }, {
+                    model: Branch,
+                    as: "Branch",
+                    required: false,
+                    attributes: [
+                        "id",
+                        "name"
+                    ]
+                }
+            ]
         });
+
+        const stamp_card = [];
+        const membership_card = [];
+        for (card of customerCards) {
+            const cardData = card.toJSON();
+
+            if (cardData.brand_image) {
+                cardData.brand_image = baseUrl + '/' + cardData.brand_image;
+            }
+            if (cardData.background_image) {
+                cardData.background_image = baseUrl + '/' + cardData.background_image;
+            }
+            if (Number(cardData.card_type) === 1) {
+                const stampLevels = await CustomerStampLevel.findAll({
+                    where: {
+                        customer_card_id: cardData.id
+                    },
+                    attributes: [
+                        "id",
+                        "customer_card_id",
+                        "stamp_number",
+                        "amt",
+                        "paid_amt",
+                        "discount",
+                        "reward_type",
+                        "reward_text",
+                        "icon",
+                        "category_id",
+                        "status"
+                    ],
+                    order: [
+                        ["stamp_number", "ASC"]
+                    ]
+                })
+                cardData.CustomerStampLevels = stampLevels;
+                stamp_card.push(cardData);
+            }
+            else {
+                cardData.expires_at =
+                    formatExpiry(
+                        cardData.expires_at
+                    );
+                membership_card.push(cardData);
+            }
+        }
+        if (customer.profile_image) {
+            customer.profile_image = baseUrl + '/' + customer.profile_image;
+        }
+
+        // ===================================
+        // RESPONSE
+        // ===================================
+
+    const total_spend = stamp_card.reduce((cardTotal, card) => {
+            const cur_st = Number(card.current_stamp || 0);
+            const levels = card.CustomerStampLevels || [];
+             return cardTotal +levels.reduce((tot,lel)=>{
+                if(Number(lel.stamp_number)<=cur_st){
+                   return  tot + Number(lel.paid_amt || 0)
+                }
+                return tot;
+             },0)
+        }, 0)
+
+
 
         return res.status(200).json({
             status: 1,
             message: 'Customer details fetched successfully',
             data: {
                 customer: customer,
-                cards: customerCards
+                total_spend: total_spend,
+                total_stamps_card: stamp_card.length,
+                total_membership_card: membership_card.length,
+                stamp_card: stamp_card,
+                membership_card: membership_card
             }
         });
 
-    }
-    catch (err) {
+    } catch (err) {
         console.error(
             'get_customer_details Error:',
             err
         );
+
         return res.status(500).json({
-
             status: 0,
-
             message: 'Something went wrong',
-
             error: err.message
         });
     }
-}
+};
 
 
 exports.get_customer_card_details = async (req, res) => {
@@ -1850,27 +2005,27 @@ exports.get_customer_card_details = async (req, res) => {
             });
         }
 
-const customerCard = await CustomerCard.findByPk(card_id, {
-    include: [
-        {
-            model: Customer,
-            as: 'Customer',
-            attributes: [
-                'id',
-                'name',
-                'email',
-                'phone',
-                'country_code'
+        const customerCard = await CustomerCard.findByPk(card_id, {
+            include: [
+                {
+                    model: Customer,
+                    as: 'Customer',
+                    attributes: [
+                        'id',
+                        'name',
+                        'email',
+                        'phone',
+                        'country_code'
+                    ]
+                },
+                {
+                    model: CustomerStampLevel,
+                    as: 'CustomerStampLevels',
+                    separate: true,
+                    order: [['stamp_number', 'ASC']]
+                }
             ]
-        },
-        {
-            model: CustomerStampLevel,
-            as: 'CustomerStampLevels',
-            separate: true,
-            order: [['stamp_number', 'ASC']]
-        }
-    ]
-});
+        });
 
         if (!customerCard) {
             return res.status(404).json({

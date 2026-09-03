@@ -503,8 +503,7 @@ export default function StampCardBuilderModal({
             setStampForm(prev => ({
                 ...prev,
                 brandLogoFile: file,
-                brandLogo: reader.result
-
+                brandLogo: previewUrl
             }))
         }
     }

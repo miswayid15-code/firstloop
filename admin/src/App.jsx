@@ -57,7 +57,7 @@ import MerchantDashboard from './pages/merchant/MerchantDashboard.jsx';
 import MerchantCustomerList from './pages/merchant/CustomerList.jsx';
 import MerchantCardList from './pages/merchant/CardList.jsx';
 import MerchantBranchList from './pages/merchant/BranchList.jsx';
-import MerchantViewBranch from './pages/merchant/ViewFlBranch.jsx';
+// import MerchantViewBranch from './pages/merchant/ViewFlBranch.jsx';
 import MerchantBranchReceptionists from './pages/merchant/BranchReceptionists.jsx';
 import MerchantReportsView from './pages/merchant/MerchantReports.jsx';
 

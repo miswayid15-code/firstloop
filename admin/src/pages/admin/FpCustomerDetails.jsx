@@ -1,222 +1,220 @@
 import { useState, useMemo, useEffect } from 'react'
 import { NavLink, useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom'
+import { QRCodeCanvas } from 'qrcode.react'
 import logo from '../../assets/img/firstloop-favicon.png'
 import flLogo from '../../assets/img/firstloop-favicon.png'
 import qrImg from '../../assets/img/qr-img.png'
 import { getCardStyle, formatImageUrl } from '../../services/cardService.js'
+import API from '../../api.js'
+import { toast } from 'react-hot-toast'
+import CustomerCardHistory from '../../components/CustomerCardHistory.jsx'
+import StampCardPreviewModal from '../../components/StampCardPreviewModal.jsx'
+import MembershipCardPreviewModal from '../../components/MembershipCardPreviewModal.jsx'
 
-// --- QR Code Component Using qr-img.png ---
-const RealQRCode = ({ size = 80 }) => (
-    <img
-        src={qrImg}
-        alt="QR Code"
-        style={{
-            width: size,
-            height: size,
-            objectFit: 'contain',
-            flexShrink: 0
-        }}
-    />
-)
-
-// List of Branches for Dropdown Filter
-const MOCK_BRANCHES = [
-    { id: 'all', name: 'All Outlets / Branches (4 Outlets)' },
-    { id: 'fl-br-101', name: 'FirstLoop Flagship Hub - Downtown (San Francisco)' },
-    { id: 'br-102', name: 'Westside Salon & Beauty Lounge (San Jose)' },
-    { id: 'br-103', name: 'Sunset Bay Gourmet Bakery (Oakland)' },
-    { id: 'br-104', name: 'Northside Fashion Outlet (Palo Alto)' }
-]
-
-// Mock Customer Data with Multiple Stamp Cards & Membership Passes across Branches
-const MOCK_CUSTOMER_FULL = {
-    id: 'cus-501',
-    name: 'Sophia Reynolds',
-    email: 'sophia.reynolds@example.com',
-    phone: '+1 (555) 234-5678',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=120',
-    joinedDate: '10 Feb 2025',
-    // status: 'VIP CUSTOMER',
-    totalVisitsAllBranches: 54,
-    totalSpendAllBranches: '$1,480.50',
-
-    // Multiple Stamp Cards across branches
-    stampCards: [
-        {
-            id: 'sc-101',
-            branchId: 'fl-br-101',
-            branchName: 'FirstLoop Flagship Hub - Downtown',
-            title: 'Artisanal Coffee 8-Stamp Pass',
-            brandName: 'Elite Brews',
-            collected: 7,
-            total: 8,
-            totalVisits: 18,
-            reward: 'Free Gourmet Muffin or Specialty Beverage',
-            bgColor: '#EF0003',
-            textColor: '#FFFFFF',
-            borderColor: '#FF3B3B',
-            stampBgColor: 'rgba(255, 255, 255, 0.3)',
-            stampBorderColor: '#FFFFFF',
-            stampTextColor: '#FFFFFF',
-            usageNote: '7 of 8 stamps collected — 1 stamp away from unlocking Free Muffin reward!',
-            history: [
-                { date: '12 Aug 2026 • 02:45 PM', branch: 'FirstLoop Flagship Hub', event: '+1 Stamp Earned (Specialty Cold Brew)', balance: '7 / 8 Stamps', operator: 'Samantha Vance', amt: '100.00' },
-                { date: '05 Aug 2026 • 11:15 AM', branch: 'FirstLoop Flagship Hub', event: '+1 Stamp Earned (Flat White)', balance: '6 / 8 Stamps', operator: 'Samantha Vance', amt: '100.00' },
-                { date: '28 Jul 2026 • 09:30 AM', branch: 'FirstLoop Flagship Hub', event: 'Reward Claimed (20% Off Coupon)', balance: '5 / 8 Stamps', operator: 'John Miller', amt: '100.00' },
-                { date: '20 Jul 2026 • 04:20 PM', branch: 'FirstLoop Flagship Hub', event: '+1 Stamp Earned (Iced Mocha)', balance: '5 / 8 Stamps', operator: 'Samantha Vance', amt: '100.00' },
-                { date: '10 Jul 2026 • 08:00 AM', branch: 'FirstLoop Flagship Hub', event: '+1 Stamp Earned (Espresso Shot)', balance: '4 / 8 Stamps', operator: 'Samantha Vance', amt: '100.00' }
-            ]
-        },
-        {
-            id: 'sc-102',
-            branchId: 'br-102',
-            branchName: 'Westside Salon & Beauty Lounge',
-            title: 'Beauty Styling 6-Stamp Card',
-            brandName: 'FirstLoop Salon',
-            collected: 5,
-            total: 6,
-            totalVisits: 14,
-            reward: '50% Discount on Next Hair Styling',
-            bgColor: '#0284C7',
-            textColor: '#FFFFFF',
-            borderColor: '#00A6D6',
-            stampBgColor: 'rgba(255, 255, 255, 0.3)',
-            stampBorderColor: '#FFFFFF',
-            stampTextColor: '#FFFFFF',
-            usageNote: '5 of 6 stamps collected — 1 stamp remaining for 50% Off Styling reward.',
-            history: [
-                { date: '10 Aug 2026 • 04:10 PM', branch: 'Westside Salon & Beauty', event: '+1 Stamp Earned (Hydrating Spa Treatment)', balance: '5 / 6 Stamps', operator: 'Elena Rostova (SP-44)', amt: '100.00' },
-                { date: '01 Aug 2026 • 01:20 PM', branch: 'Westside Salon & Beauty', event: '+1 Stamp Earned (Blowout Styling)', balance: '4 / 6 Stamps', operator: 'Elena Rostova (SP-44)', amt: '100.00' },
-                { date: '15 Jul 2026 • 05:00 PM', branch: 'Westside Salon & Beauty', event: '+1 Stamp Earned (Hair Color Touchup)', balance: '3 / 6 Stamps', operator: 'Marcus Wu (SP-19)', amt: '100.00' }
-            ]
-        },
-        {
-            id: 'sc-103',
-            branchId: 'br-103',
-            branchName: 'Sunset Bay Gourmet Bakery',
-            title: 'Gourmet Pastry 10-Stamp Pass',
-            brandName: 'Sunset Bakery',
-            collected: 9,
-            total: 10,
-            totalVisits: 22,
-            reward: 'Free Deluxe Croissant & Coffee Combo',
-            bgColor: '#D97706',
-            textColor: '#FFFFFF',
-            borderColor: '#F59E0B',
-            stampBgColor: 'rgba(255, 255, 255, 0.3)',
-            stampBorderColor: '#FFFFFF',
-            stampTextColor: '#FFFFFF',
-            usageNote: '9 of 10 stamps collected — Only 1 stamp needed for Deluxe Combo reward!',
-            history: [
-                { date: '11 Aug 2026 • 08:30 AM', branch: 'Sunset Bay Gourmet Bakery', event: '+1 Stamp Earned (Almond Croissant)', balance: '9 / 10 Stamps', operator: 'Carlos Mendez (SP-05)', amt: '100.00' },
-                { date: '04 Aug 2026 • 09:15 AM', branch: 'Sunset Bay Gourmet Bakery', event: '+1 Stamp Earned (Artisanal Sourdough)', balance: '8 / 10 Stamps', operator: 'Carlos Mendez (SP-05)', amt: '100.00' }
-            ]
-        },
-        {
-            id: 'sc-104',
-            branchId: 'br-104',
-            branchName: 'Northside Fashion Outlet',
-            title: 'Apparel VIP 8-Stamp Pass',
-            brandName: 'Northside Style',
-            collected: 3,
-            total: 8,
-            totalVisits: 6,
-            reward: '$30 Cash Voucher on Fashion Items',
-            bgColor: '#8B5CF6',
-            textColor: '#FFFFFF',
-            borderColor: '#A855F7',
-            stampBgColor: 'rgba(255, 255, 255, 0.3)',
-            stampBorderColor: '#FFFFFF',
-            stampTextColor: '#FFFFFF',
-            usageNote: '3 of 8 stamps collected — 5 stamps remaining for $30 Voucher.',
-            history: [
-                { date: '02 Aug 2026 • 03:30 PM', branch: 'Northside Fashion Outlet', event: '+1 Stamp Earned (Denim Jacket Purchase)', balance: '3 / 8 Stamps', operator: 'Lisa Ray (SP-77)', amt: '100.00' }
-            ]
-        }
-    ],
-
-    // Multiple Membership Passes across branches
-    membershipCards: [
-        {
-            id: 'mc-201',
-            branchId: 'fl-br-101',
-            branchName: 'FirstLoop Flagship Hub - Downtown',
-            name: 'Gold Elite Membership',
-            cardholderName: 'Sophia Reynolds',
-            brandName: 'FirstLoop Elite',
-            brandLogo: flLogo,
-            validThru: '03/25',
-            expiryDate: '28 Dec 2026',
-            expiryNotice: 'Going to expire on 28 Dec 2026',
-            tier: 'Gold',
-            totalVisits: 24,
-            bgColor: '#D97706',
-            textColor: '#FFFFFF',
-            borderColor: '#F59E0B',
-            status: 'Active',
-            perks: ['15% Instant Discount', 'Priority Queue', 'Free Birthday Gift'],
-            history: [
-                { date: '15 Jan 2026 • 10:00 AM', branch: 'FirstLoop Flagship Hub', event: 'Membership Renewed for 12 Months', balance: 'Gold Tier Active', operator: 'System Admin', amt: '250.00' },
-                { date: '15 Jan 2025 • 09:00 AM', branch: 'FirstLoop Flagship Hub', event: 'Initial Gold Tier Membership Issued', balance: 'Gold Tier Active', operator: 'Samantha Vance', amt: '250.00' }
-            ]
-        },
-        {
-            id: 'mc-202',
-            branchId: 'br-102',
-            branchName: 'Westside Salon & Beauty Lounge',
-            name: 'Platinum Black VIP Pass',
-            cardholderName: 'Sophia Reynolds',
-            brandName: 'VIP Club',
-            brandLogo: logo,
-            validThru: '03/25',
-            expiryDate: '15 Nov 2026',
-            expiryNotice: 'Going to expire on 15 Nov 2026',
-            tier: 'Platinum',
-            totalVisits: 16,
-            bgColor: '#1E293B',
-            textColor: '#FFFFFF',
-            borderColor: '#64748B',
-            status: 'Active',
-            perks: ['25% Styling Discount', 'Dedicated Stylist', 'Free Valet'],
-            history: [
-                { date: '10 Nov 2025 • 02:00 PM', branch: 'Westside Salon & Beauty', event: 'Upgraded to Platinum Black VIP Tier', balance: 'Platinum Tier Active', operator: 'Elena Rostova (SP-44)', amt: '500.00' }
-            ]
-        },
-        {
-            id: 'mc-203',
-            branchId: 'br-103',
-            branchName: 'Sunset Bay Gourmet Bakery',
-            name: 'Diamond Gourmet Pass',
-            cardholderName: 'Sophia Reynolds',
-            brandName: 'Sunset Diamond',
-            brandLogo: flLogo,
-            validThru: '06/26',
-            expiryDate: '10 Jan 2027',
-            expiryNotice: 'Going to expire on 10 Jan 2027',
-            tier: 'Diamond',
-            totalVisits: 12,
-            bgColor: '#0284C7',
-            textColor: '#FFFFFF',
-            borderColor: '#00A6D6',
-            status: 'Active',
-            perks: ['Unlimited Free Coffee Top-ups', 'Reserved Seating', 'Monthly Pastry Box'],
-            history: [
-                { date: '10 Jan 2026 • 11:30 AM', branch: 'Sunset Bay Gourmet Bakery', event: 'Diamond Pass Enrolled', balance: 'Diamond Tier Active', operator: 'Carlos Mendez (SP-05)', amt: '350.00' }
-            ]
-        }
-    ]
+// --- QR Code Component Supporting Live Tokens or Default Static QR ---
+const RealQRCode = ({ token, size = 80 }) => {
+    if (token) {
+        return (
+            <div style={{ background: '#FFFFFF', padding: 4, borderRadius: 6, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                <QRCodeCanvas value={String(token)} size={size - 8} />
+            </div>
+        )
+    }
+    return (
+        <img
+            src={qrImg}
+            alt="QR Code"
+            style={{
+                width: size,
+                height: size,
+                objectFit: 'contain',
+                flexShrink: 0
+            }}
+        />
+    )
 }
 
 export default function FpCustomerDetails() {
     const navigate = useNavigate()
     const { id } = useParams()
     const [searchParams] = useSearchParams()
+    const location = useLocation()
 
-    const customer = MOCK_CUSTOMER_FULL
+    // Determine navigation source: Branch view or general Customer list
+    const fromSource = searchParams.get('from') || (location.state?.fromPath ? 'branch' : '')
+    const fromBranchId = searchParams.get('fromBranchId') || (fromSource === 'branch' ? (searchParams.get('branchId') || searchParams.get('branch')) : '') || location.state?.fromBranchId || ''
+    const fromBranchName = searchParams.get('branchName') || location.state?.fromBranchName || ''
+    
+    const isFromBranch = fromSource === 'branch' || Boolean(location.state?.fromPath && location.state.fromPath.includes('branch'))
+    const isMerchant = location.pathname.startsWith('/merchant') || (location.state?.fromPath && location.state.fromPath.startsWith('/merchant'))
+    const isReceptionist = location.pathname.startsWith('/receptionist') || (location.state?.fromPath && location.state.fromPath.startsWith('/receptionist'))
+
+    const defaultBackPath = isMerchant ? '/merchant/customers' : (isReceptionist ? '/receptionist/customers' : '/customers')
+    const branchBackPath = location.state?.fromPath || (fromBranchId
+        ? (isMerchant ? `/merchant/view-fl-branch/${fromBranchId}` : (isReceptionist ? `/receptionist/branches/${fromBranchId}` : `/view-fl-branch/${fromBranchId}`))
+        : (isMerchant ? '/merchant/branches' : '/branches'))
+
+    const backPath = isFromBranch ? branchBackPath : defaultBackPath
+    const backLabel = isFromBranch ? `Back to ${fromBranchName || 'Branch'}` : 'Back to Customers List'
+
+    const [customer, setCustomer] = useState(null)
+    const [loading, setLoading] = useState(true)
+    const [branchesList, setBranchesList] = useState([])
+
 
     // Branch Filter State - Auto pre-select from URL query params if provided
     const branchFromUrl = searchParams.get('branchId') || searchParams.get('branch') || 'all'
     const [selectedBranchId, setSelectedBranchId] = useState(branchFromUrl)
+
+    const fetchCustomers = async (branchIdToFetch = selectedBranchId) => {
+        setLoading(true)
+        try {
+            const payload = {
+                customer_id: Number(id) || id
+            }
+            if (branchIdToFetch && branchIdToFetch !== 'all') {
+                payload.branch_id = Number(branchIdToFetch) || branchIdToFetch
+                payload.br_id = Number(branchIdToFetch) || branchIdToFetch
+            }
+
+            const response = await API.post(`/firstloop/customer/get-customer-details`, payload)
+            if (response?.data?.status == 1 && response?.data?.data) {
+                const raw = response.data.data
+                const cusInfo = raw.customer || {}
+
+                const stampCards = (raw.stamp_card || raw.stampCards || []).map(sc => {
+                    const total = Number(sc.number_of_stamps || sc.total_stamps || sc.total || 8)
+                    const collected = Number(sc.current_stamp ?? sc.current_stamps ?? sc.collected ?? 0)
+                    const remaining = Math.max(0, total - collected)
+                    const isCompleted = Number(sc.is_completed ?? (collected >= total ? 1 : 0)) === 1
+                    const usageNote = isCompleted
+                        ? `All ${total} stamps collected — Card Completed!`
+                        : `${collected} of ${total} stamps collected — ${remaining} stamp${remaining > 1 ? 's' : ''} remaining.`
+
+                    const stampLevels = Array.isArray(sc.CustomerStampLevels) ? sc.CustomerStampLevels : (Array.isArray(sc.stamp_levels) ? sc.stamp_levels : [])
+                    const branchTitle = sc.Branch?.name || sc.branch_name || sc.branchName || (sc.branch_id ? `Branch #${sc.branch_id}` : 'Main Branch')
+                    const historyLogs = stampLevels
+                        .filter(lvl => Number(lvl.status) === 1)
+                        .map((lvl, idx) => ({
+                            date: sc.issued_at ? new Date(sc.issued_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Logged',
+                            branch: branchTitle,
+                            event: `Stamp #${lvl.stamp_number || idx + 1} Earned ${lvl.reward_text ? `(${lvl.reward_text})` : ''}`,
+                            balance: `${lvl.stamp_number || idx + 1} / ${total} Stamps`,
+                            operator: 'Receptionist / Staff',
+                            amt: Number(lvl.amt || 0).toFixed(2)
+                        }))
+
+                    return {
+                        ...sc,
+                        id: sc.id,
+                        branchId: String(sc.Branch?.id || sc.branch_id || sc.branchId || ''),
+                        branchName: branchTitle,
+                        title: sc.title || 'Stamp Card',
+                        brandName: sc.brand_name || 'Brand',
+                        brandLogo: sc.brand_image ? formatImageUrl(sc.brand_image) : null,
+                        bgImage: sc.background_image ? formatImageUrl(sc.background_image) : null,
+                        bgColor: sc.background_color || '#0E88B8',
+                        textColor: sc.text_color || '#FFFFFF',
+                        borderColor: sc.border_color || '#00A6D6',
+                        stampBgColor: sc.stamp_background || 'rgba(255, 255, 255, 0.3)',
+                        stampBorderColor: sc.stamp_border_color || '#FFFFFF',
+                        stampTextColor: sc.stamp_text_color || '#FFFFFF',
+                        stamp_radius: Number(sc.stamp_radius ?? 50),
+                        collected,
+                        total,
+                        is_completed: isCompleted ? 1 : 0,
+                        usageNote: sc.usageNote || usageNote,
+                        cardholderName: sc.Customer?.name || cusInfo.name || 'Customer',
+                        qrImg: sc.qr_token,
+                        card_number: sc.card_number,
+                        CustomerStampLevels: stampLevels,
+                        history: sc.history && sc.history.length > 0 ? sc.history : historyLogs,
+                        totalVisits: collected
+                    }
+                })
+
+                const membershipCards = (raw.membership_card || raw.membershipCards || []).map(mc => {
+                    const expiryStr = mc.expires_at ? new Date(mc.expires_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : (mc.expiryDate || 'Active')
+                    const validThru = mc.month ? `${mc.month} Months` : (mc.validThru || '12 Months')
+                    const branchTitle = mc.Branch?.name || mc.branch_name || mc.branchName || (mc.branch_id ? `Branch #${mc.branch_id}` : 'Main Branch')
+
+                    return {
+                        ...mc,
+                        id: mc.id,
+                        branchId: String(mc.Branch?.id || mc.branch_id || mc.branchId || ''),
+                        branchName: branchTitle,
+                        name: mc.title || mc.name || 'Membership Pass',
+                        title: mc.title || mc.name || 'Membership Pass',
+                        cardholderName: mc.Customer?.name || cusInfo.name || 'Member',
+                        brandName: mc.brand_name || 'Brand',
+                        brandLogo: mc.brand_image ? formatImageUrl(mc.brand_image) : null,
+                        bgImage: mc.background_image ? formatImageUrl(mc.background_image) : null,
+                        bgColor: mc.background_color || '#D97706',
+                        textColor: mc.text_color || '#FFFFFF',
+                        borderColor: mc.border_color || '#F59E0B',
+                        validThru: validThru,
+                        expiryDate: expiryStr,
+                        expiryNotice: mc.expires_at ? `Expires on ${expiryStr}` : 'Active Pass',
+                        tier: mc.tier || 'VIP',
+                        qrImg: mc.qr_token,
+                        card_number: mc.card_number,
+                        status: Number(mc.status) === 1 ? 'Active' : 'Inactive',
+                        history: mc.history || [],
+                        totalVisits: mc.totalVisits || (Number(mc.status) === 1 ? 1 : 0)
+                    }
+                })
+
+                // Extract all unique branches directly from the customer's cards
+                const allRawCards = [...(raw.stamp_card || []), ...(raw.membership_card || [])]
+                const extractedBranches = []
+                const branchSet = new Set()
+
+                allRawCards.forEach(c => {
+                    const bId = String(c.Branch?.id || c.branch_id || c.branchId || '')
+                    const bName = c.Branch?.name || c.branch_name || c.branchName || (bId ? `Branch #${bId}` : '')
+                    if (bId && !branchSet.has(bId)) {
+                        branchSet.add(bId)
+                        extractedBranches.push({ id: bId, name: bName })
+                    }
+                })
+
+                setBranchesList(prev => {
+                    const branchMap = new Map()
+                    if (Array.isArray(prev)) {
+                        prev.forEach(b => branchMap.set(String(b.id), b.name))
+                    }
+                    extractedBranches.forEach(b => branchMap.set(String(b.id), b.name))
+                    return Array.from(branchMap.entries()).map(([id, name]) => ({ id, name }))
+                })
+
+                const formattedCustomer = {
+                    id: cusInfo.id || id,
+                    name: cusInfo.name || 'Customer',
+                    email: cusInfo.email || '-',
+                    phone: cusInfo.phone ? `${cusInfo.country_code ? `+${cusInfo.country_code} ` : ''}${cusInfo.phone}` : '-',
+                    avatar: cusInfo.profile_image ? formatImageUrl(cusInfo.profile_image) : null,
+                    joinedDate: cusInfo.created_at ? new Date(cusInfo.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Registered Member',
+                    totalSpendAllBranches: `${Number(raw.total_spend || 0).toFixed(2)}`,
+                    stampCards,
+                    membershipCards
+                }
+
+                setCustomer(formattedCustomer)
+                
+            } else {
+                toast.error(response?.data?.message || 'Customer details not found')
+            }
+        } catch (error) {
+            console.error('Error fetching customer details:', error)
+            toast.error('Error fetching customer details')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        fetchCustomers(selectedBranchId)
+    }, [id, selectedBranchId])
 
     useEffect(() => {
         const b = searchParams.get('branchId') || searchParams.get('branch')
@@ -225,35 +223,302 @@ export default function FpCustomerDetails() {
         }
     }, [searchParams])
 
+    const handleBranchChange = (newBranchId) => {
+        setSelectedBranchId(newBranchId)
+    }
+
     // Card History & Preview Modal States
     const [historyModalCard, setHistoryModalCard] = useState(null)
     const [previewModalCard, setPreviewModalCard] = useState(null)
 
-    // Filter Stamp Cards by Branch
-    const filteredStampCards = useMemo(() => {
-        if (selectedBranchId === 'all') return customer.stampCards
-        return customer.stampCards.filter(sc => sc.branchId === selectedBranchId)
-    }, [customer.stampCards, selectedBranchId])
+    // Search & Pagination States for Stamp Cards
+    const [stampSearch, setStampSearch] = useState('')
+    const [stampPage, setStampPage] = useState(1)
+    const stampPerPage = 6
 
-    // Filter Membership Passes by Branch
-    const filteredMemberships = useMemo(() => {
-        if (selectedBranchId === 'all') return customer.membershipCards
-        return customer.membershipCards.filter(mc => mc.branchId === selectedBranchId)
-    }, [customer.membershipCards, selectedBranchId])
+    // Search & Pagination States for Membership Passes
+    const [membershipSearch, setMembershipSearch] = useState('')
+    const [membershipPage, setMembershipPage] = useState(1)
+    const membershipPerPage = 6
 
+    useEffect(() => {
+        setStampPage(1)
+    }, [stampSearch, selectedBranchId])
 
+    useEffect(() => {
+        setMembershipPage(1)
+    }, [membershipSearch, selectedBranchId])
 
-    const location = useLocation()
-    const backPath = location.pathname.startsWith('/merchant') ? '/merchant/customers' : '/customers'
+    // Dynamic Branch Filter Options
+    const branchOptions = useMemo(() => {
+        const branchMap = new Map()
+        branchMap.set('all', 'All Outlets / Branches')
+
+        if (Array.isArray(branchesList)) {
+            branchesList.forEach(b => {
+                const bId = String(b.id || '')
+                if (bId) {
+                    branchMap.set(bId, b.name || `Branch #${bId}`)
+                }
+            })
+        }
+
+        return Array.from(branchMap.entries()).map(([id, name]) => ({ id, name }))
+    }, [branchesList])
+
+    // Filter & Search Stamp Cards
+    const searchedStampCards = useMemo(() => {
+        if (!customer?.stampCards) return []
+        return customer.stampCards.filter(sc => {
+            const matchesBranch = selectedBranchId === 'all' || String(sc.branchId) === String(selectedBranchId)
+            if (!matchesBranch) return false
+            if (!stampSearch.trim()) return true
+            const query = stampSearch.toLowerCase().trim()
+            return (
+                (sc.title && sc.title.toLowerCase().includes(query)) ||
+                (sc.brandName && sc.brandName.toLowerCase().includes(query)) ||
+                (sc.card_number && sc.card_number.toLowerCase().includes(query)) ||
+                (sc.branchName && sc.branchName.toLowerCase().includes(query))
+            )
+        })
+    }, [customer, selectedBranchId, stampSearch])
+
+    const totalStampPages = Math.max(1, Math.ceil(searchedStampCards.length / stampPerPage))
+    const paginatedStampCards = useMemo(() => {
+        const start = (stampPage - 1) * stampPerPage
+        return searchedStampCards.slice(start, start + stampPerPage)
+    }, [searchedStampCards, stampPage, stampPerPage])
+
+    // Filter & Search Membership Passes
+    const searchedMemberships = useMemo(() => {
+        if (!customer?.membershipCards) return []
+        return customer.membershipCards.filter(mc => {
+            const matchesBranch = selectedBranchId === 'all' || String(mc.branchId) === String(selectedBranchId)
+            if (!matchesBranch) return false
+            if (!membershipSearch.trim()) return true
+            const query = membershipSearch.toLowerCase().trim()
+            return (
+                (mc.title && mc.title.toLowerCase().includes(query)) ||
+                (mc.name && mc.name.toLowerCase().includes(query)) ||
+                (mc.brandName && mc.brandName.toLowerCase().includes(query)) ||
+                (mc.card_number && mc.card_number.toLowerCase().includes(query)) ||
+                (mc.branchName && mc.branchName.toLowerCase().includes(query))
+            )
+        })
+    }, [customer, selectedBranchId, membershipSearch])
+
+    const totalMembershipPages = Math.max(1, Math.ceil(searchedMemberships.length / membershipPerPage))
+    const paginatedMemberships = useMemo(() => {
+        const start = (membershipPage - 1) * membershipPerPage
+        return searchedMemberships.slice(start, start + membershipPerPage)
+    }, [searchedMemberships, membershipPage, membershipPerPage])
+
+    if (loading) {
+        return (
+            <div style={{ paddingBottom: 40 }}>
+                {/* Header & Breadcrumbs Skeleton */}
+                <div style={{ marginBottom: 20 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                        <span className="skeleton-text" style={{ width: 70, height: 14 }} />
+                        <span className="skeleton-text" style={{ width: 12, height: 14 }} />
+                        <span className="skeleton-text" style={{ width: 90, height: 14 }} />
+                        <span className="skeleton-text" style={{ width: 12, height: 14 }} />
+                        <span className="skeleton-text" style={{ width: 110, height: 14 }} />
+                    </div>
+
+                    <div className="flex-between" style={{ gap: 20, flexWrap: 'wrap' }}>
+                        <div>
+                            <span className="skeleton-text" style={{ width: 260, height: 28, display: 'block', borderRadius: 8 }} />
+                            <span className="skeleton-text" style={{ width: 340, height: 14, marginTop: 8, display: 'block' }} />
+                        </div>
+                        <span className="skeleton-text" style={{ width: 160, height: 40, borderRadius: 10 }} />
+                    </div>
+                </div>
+
+                {/* Profile Overview Card Skeleton */}
+                <div className="card card-glass firstloop-card" style={{ marginBottom: 24, padding: 20 }}>
+                    <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'center' }}>
+                        <div className="skeleton-avatar" style={{ width: 80, height: 80, borderRadius: '50%', flexShrink: 0 }} />
+
+                        <div style={{ flex: 1, minWidth: 260 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+                                <div>
+                                    <span className="skeleton-text" style={{ width: 180, height: 22, display: 'block', borderRadius: 6 }} />
+                                    <span className="skeleton-text" style={{ width: 280, height: 14, marginTop: 8, display: 'block' }} />
+                                </div>
+                                <span className="skeleton-text" style={{ width: 140, height: 16 }} />
+                            </div>
+
+                            {/* Stat Badges Skeleton */}
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                                {[1, 2, 3].map((i) => (
+                                    <div key={i} style={{ padding: 14, background: '#F8FAFC', borderRadius: 10, border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                                        <span className="skeleton-text" style={{ width: 75, height: 10 }} />
+                                        <span className="skeleton-text" style={{ width: 90, height: 22, borderRadius: 6 }} />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Branch Filter Skeleton */}
+                <div className="card" style={{ marginBottom: 24, padding: 18, background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: 16 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <div className="skeleton-avatar" style={{ width: 38, height: 38, borderRadius: 10 }} />
+                            <div>
+                                <span className="skeleton-text" style={{ width: 190, height: 16, display: 'block' }} />
+                                <span className="skeleton-text" style={{ width: 300, height: 12, marginTop: 6, display: 'block' }} />
+                            </div>
+                        </div>
+                        <span className="skeleton-text" style={{ height: 42, width: 320, maxWidth: '100%', borderRadius: 10 }} />
+                    </div>
+                </div>
+
+                {/* 1. Stamp Cards Section Skeleton */}
+                <div className="card" style={{ marginBottom: 28, padding: 20 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 14, marginBottom: 22 }}>
+                        <div>
+                            <span className="skeleton-text" style={{ width: 220, height: 22, display: 'block', borderRadius: 6 }} />
+                            <span className="skeleton-text" style={{ width: 180, height: 12, marginTop: 6, display: 'block' }} />
+                        </div>
+                        <span className="skeleton-text" style={{ width: 260, height: 38, borderRadius: 10 }} />
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 380px))', gap: 24 }}>
+                        {[1, 2].map((k) => (
+                            <div key={k} style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 380, width: '100%' }}>
+                                {/* Branch Badge line */}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span className="skeleton-text" style={{ width: 100, height: 14 }} />
+                                    <span className="skeleton-text" style={{ width: 80, height: 18, borderRadius: 6 }} />
+                                </div>
+
+                                {/* Card Canvas Placeholder */}
+                                <div style={{ width: '100%', height: 220, borderRadius: 20, background: 'linear-gradient(135deg, #F1F5F9 0%, #E2E8F0 100%)', padding: 18, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', position: 'relative', overflow: 'hidden' }}>
+                                    <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                                                <div className="skeleton-avatar" style={{ width: 28, height: 28, borderRadius: 8 }} />
+                                                <span className="skeleton-text" style={{ width: 100, height: 16 }} />
+                                            </div>
+                                            <span className="skeleton-text" style={{ width: 130, height: 14, display: 'block', marginBottom: 8 }} />
+                                            <span className="skeleton-text" style={{ width: 110, height: 14, display: 'block', marginBottom: 12 }} />
+
+                                            {/* Stamps grid skeleton */}
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, maxWidth: 220 }}>
+                                                {[1, 2, 3, 4, 5, 6].map((s) => (
+                                                    <div key={s} className="skeleton-avatar" style={{ width: 36, height: 36, borderRadius: '50%' }} />
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* QR Code box skeleton */}
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                                            <div className="skeleton-avatar" style={{ width: 86, height: 86, borderRadius: 12 }} />
+                                            <span className="skeleton-text" style={{ width: 65, height: 10 }} />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Action Buttons Skeleton */}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#F8FAFC', padding: '10px 14px', borderRadius: 10, border: '1px solid #E2E8F0' }}>
+                                    <span className="skeleton-text" style={{ width: 120, height: 14 }} />
+                                    <div style={{ display: 'flex', gap: 6 }}>
+                                        <span className="skeleton-text" style={{ width: 68, height: 28, borderRadius: 8 }} />
+                                        <span className="skeleton-text" style={{ width: 88, height: 28, borderRadius: 8 }} />
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* 2. Membership Passes Section Skeleton */}
+                <div className="card" style={{ padding: 20 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 14, marginBottom: 22 }}>
+                        <div>
+                            <span className="skeleton-text" style={{ width: 240, height: 22, display: 'block', borderRadius: 6 }} />
+                            <span className="skeleton-text" style={{ width: 180, height: 12, marginTop: 6, display: 'block' }} />
+                        </div>
+                        <span className="skeleton-text" style={{ width: 260, height: 38, borderRadius: 10 }} />
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 380px))', gap: 24 }}>
+                        {[1].map((k) => (
+                            <div key={k} style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 380, width: '100%' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span className="skeleton-text" style={{ width: 100, height: 14 }} />
+                                    <span className="skeleton-text" style={{ width: 80, height: 18, borderRadius: 6 }} />
+                                </div>
+
+                                <div style={{ width: '100%', height: 210, borderRadius: 20, background: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)', padding: 18, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', position: 'relative', overflow: 'hidden' }}>
+                                    <div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                                            <div className="skeleton-avatar" style={{ width: 34, height: 34, borderRadius: 10 }} />
+                                            <span className="skeleton-text" style={{ width: 110, height: 16 }} />
+                                        </div>
+
+                                        <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                                            <div style={{ flex: 1 }}>
+                                                <span className="skeleton-text" style={{ width: 140, height: 20, display: 'block', marginBottom: 6, borderRadius: 4 }} />
+                                                <span className="skeleton-text" style={{ width: 100, height: 14, display: 'block', marginBottom: 12 }} />
+                                                <span className="skeleton-text" style={{ width: 80, height: 12, display: 'block' }} />
+                                            </div>
+                                            <div className="skeleton-avatar" style={{ width: 92, height: 92, borderRadius: 12 }} />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FFFBEB', padding: '10px 14px', borderRadius: 10, border: '1px solid #FDE68A' }}>
+                                    <span className="skeleton-text" style={{ width: 100, height: 14 }} />
+                                    <div style={{ display: 'flex', gap: 6 }}>
+                                        <span className="skeleton-text" style={{ width: 68, height: 28, borderRadius: 8 }} />
+                                        <span className="skeleton-text" style={{ width: 88, height: 28, borderRadius: 8 }} />
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
+    if (!customer) {
+        return (
+            <div className="card text-center" style={{ padding: 40, margin: '40px auto', maxWidth: 480 }}>
+                <i className="fas fa-user-slash" style={{ fontSize: '2.5rem', color: 'var(--text-muted)', marginBottom: 12 }} />
+                <h4 style={{ fontWeight: 800 }}>Customer Record Not Found</h4>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>The requested customer details could not be loaded.</p>
+                <button type="button" className="btn firstloop-btn-primary" onClick={() => navigate(backPath)} style={{ marginTop: 10 }}>
+                    {backLabel}
+                </button>
+            </div>
+        )
+    }
 
     return (
         <div style={{ paddingBottom: 40 }}>
             {/* Header & Breadcrumbs */}
             <div style={{ marginBottom: 20 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 500, marginBottom: 8 }}>
-                    <NavLink to={backPath} style={{ color: 'var(--firstloop-primary)' }}>
-                        Customers
-                    </NavLink>
+                    {isFromBranch ? (
+                        <>
+                            <NavLink to={isMerchant ? '/merchant/branches' : '/branches'} style={{ color: 'var(--firstloop-primary)' }}>
+                                Branches
+                            </NavLink>
+                            <i className="fas fa-chevron-right" style={{ fontSize: '0.7rem' }} />
+                            <NavLink to={branchBackPath} style={{ color: 'var(--firstloop-primary)' }}>
+                                {fromBranchName || (fromBranchId ? `Branch #${fromBranchId}` : 'Branch')}
+                            </NavLink>
+                        </>
+                    ) : (
+                        <NavLink to={defaultBackPath} style={{ color: 'var(--firstloop-primary)' }}>
+                            Customers
+                        </NavLink>
+                    )}
                     <i className="fas fa-chevron-right" style={{ fontSize: '0.7rem' }} />
                     <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{customer.name}</span>
                 </div>
@@ -275,7 +540,7 @@ export default function FpCustomerDetails() {
                         style={{ padding: '9px 18px', borderRadius: 10, fontSize: '0.85rem' }}
                     >
                         <i className="fas fa-arrow-left" style={{ marginRight: 6 }} />
-                        Back to Customers List
+                        {backLabel}
                     </button>
                 </div>
             </div>
@@ -284,18 +549,39 @@ export default function FpCustomerDetails() {
             <div className="card card-glass firstloop-card" style={{ marginBottom: 24, padding: 20 }}>
                 <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'center' }}>
                     <div style={{ position: 'relative', flexShrink: 0 }}>
-                        <img
-                            src={customer.avatar}
-                            alt={customer.name}
-                            style={{
-                                width: 80,
-                                height: 80,
-                                borderRadius: '50%',
-                                border: '3px solid var(--firstloop-primary)',
-                                boxShadow: '0 8px 24px rgba(14, 136, 184, 0.2)',
-                                objectFit: 'cover'
-                            }}
-                        />
+                        {customer.avatar ? (
+                            <img
+                                src={customer.avatar}
+                                alt={customer.name}
+                                style={{
+                                    width: 80,
+                                    height: 80,
+                                    borderRadius: '50%',
+                                    border: '3px solid var(--firstloop-primary)',
+                                    boxShadow: '0 8px 24px rgba(14, 136, 184, 0.2)',
+                                    objectFit: 'cover'
+                                }}
+                            />
+                        ) : (
+                            <div
+                                style={{
+                                    width: 80,
+                                    height: 80,
+                                    borderRadius: '50%',
+                                    border: '3px solid var(--firstloop-primary)',
+                                    background: 'var(--firstloop-primary-light, #E6F2FA)',
+                                    color: 'var(--firstloop-primary, #0E88B8)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '1.8rem',
+                                    fontWeight: 800,
+                                    boxShadow: '0 8px 24px rgba(14, 136, 184, 0.2)'
+                                }}
+                            >
+                                {customer.name ? customer.name.charAt(0).toUpperCase() : 'C'}
+                            </div>
+                        )}
                     </div>
 
                     <div style={{ flex: 1, minWidth: 260 }}>
@@ -318,7 +604,6 @@ export default function FpCustomerDetails() {
 
                         {/* Counter Stat Badges */}
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(14, 136, 184, 0.12)' }}>
-                        
 
                             <div style={{ padding: 10, background: 'rgba(16, 185, 129, 0.08)', borderRadius: 10, border: '1px solid rgba(16, 185, 129, 0.2)', textAlign: 'center' }}>
                                 <small style={{ fontSize: '0.68rem', color: '#059669', fontWeight: 700, display: 'block' }}>TOTAL SPEND</small>
@@ -327,12 +612,12 @@ export default function FpCustomerDetails() {
 
                             <div style={{ padding: 10, background: 'var(--firstloop-primary-light)', borderRadius: 10, border: '1px solid rgba(14,136,184,0.2)', textAlign: 'center' }}>
                                 <small style={{ fontSize: '0.68rem', color: 'var(--firstloop-primary)', fontWeight: 700, display: 'block' }}>ACTIVE STAMP CARDS</small>
-                                <strong style={{ fontSize: '1.2rem', color: 'var(--firstloop-primary)' }}>{customer.stampCards.length} Cards</strong>
+                                <strong style={{ fontSize: '1.2rem', color: 'var(--firstloop-primary)' }}>{(customer.stampCards || []).length} Cards</strong>
                             </div>
 
                             <div style={{ padding: 10, background: 'rgba(245, 158, 11, 0.1)', borderRadius: 10, border: '1px solid rgba(245,158,11,0.2)', textAlign: 'center' }}>
                                 <small style={{ fontSize: '0.68rem', color: '#D97706', fontWeight: 700, display: 'block' }}>MEMBERSHIP PASSES</small>
-                                <strong style={{ fontSize: '1.2rem', color: '#D97706' }}>{customer.membershipCards.length} Passes</strong>
+                                <strong style={{ fontSize: '1.2rem', color: '#D97706' }}>{(customer.membershipCards || []).length} Passes</strong>
                             </div>
                         </div>
                     </div>
@@ -363,7 +648,7 @@ export default function FpCustomerDetails() {
                             onChange={(e) => setSelectedBranchId(e.target.value)}
                             style={{ height: 42, fontSize: '0.88rem', borderRadius: 10, fontWeight: 600, borderColor: 'var(--firstloop-primary)' }}
                         >
-                            {MOCK_BRANCHES.map(b => (
+                            {branchOptions.map(b => (
                                 <option key={b.id} value={b.id}>
                                     {b.name}
                                 </option>
@@ -375,619 +660,574 @@ export default function FpCustomerDetails() {
 
             {/* 1. STAMP CARDS SECTION */}
             <div className="card" style={{ marginBottom: 28, padding: 20 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
-                    <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-primary)' }}>
-                        <i className="fas fa-stamp" style={{ color: 'var(--firstloop-primary)' }} />
-                        Active Stamp Cards ({filteredStampCards.length})
-                    </h3>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-                        Click any card to view full transaction history
-                    </span>
+                {/* Header with Search Bar */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 14, marginBottom: 18 }}>
+                    <div>
+                        <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-primary)' }}>
+                            <i className="fas fa-stamp" style={{ color: 'var(--firstloop-primary)' }} />
+                            Active Stamp Cards ({searchedStampCards.length})
+                        </h3>
+                        <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                            Click any card to view full transaction history
+                        </span>
+                    </div>
+
+                    {/* Stamp Card Search Input */}
+                    <div style={{ position: 'relative', width: 280, maxWidth: '100%' }}>
+                        <i className="fas fa-search" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.82rem' }} />
+                        <input
+                            type="text"
+                            className="form-control"
+                            placeholder="Search stamp cards by title, brand, card number..."
+                            value={stampSearch}
+                            onChange={(e) => setStampSearch(e.target.value)}
+                            style={{ paddingLeft: 34, paddingRight: stampSearch ? 32 : 12, height: 38, fontSize: '0.82rem', borderRadius: 10, borderColor: '#E2E8F0' }}
+                        />
+                        {stampSearch && (
+                            <button
+                                type="button"
+                                onClick={() => setStampSearch('')}
+                                style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 4 }}
+                            >
+                                <i className="fas fa-times-circle" />
+                            </button>
+                        )}
+                    </div>
                 </div>
 
-                {filteredStampCards.length > 0 ? (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 380px))', gap: 24 }}>
-                        {filteredStampCards.map((card) => (
-                            <div key={card.id} style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 380, width: '100%' }}>
-                                {/* Branch Badge */}
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.75rem', fontWeight: 700, color: 'var(--firstloop-primary)' }}>
-                                    <i className="fas fa-store" />
-                                    <span>{card.branchName}</span>
-                                </div>
+                {paginatedStampCards.length > 0 ? (
+                    <>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 380px))', gap: 24 }}>
+                            {paginatedStampCards.map((card) => (
+                                <div key={card.id} style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 380, width: '100%' }}>
+                                    {/* Branch & Card Number Header Badge */}
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, fontSize: '0.75rem', fontWeight: 700, padding: '0 2px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--firstloop-primary)' }}>
+                                            <i className="fas fa-store" />
+                                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 170 }}>{card.branchName}</span>
+                                        </div>
+                                        {card.card_number && (
+                                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#F1F5F9', border: '1px solid #E2E8F0', padding: '2px 8px', borderRadius: 6, color: '#475569', fontSize: '0.72rem', fontFamily: 'monospace', fontWeight: 700 }}>
+                                                <i className="fas fa-barcode" style={{ fontSize: '0.68rem', opacity: 0.7 }} />
+                                                <span>{card.card_number}</span>
+                                            </div>
+                                        )}
+                                    </div>
 
-                                {/* DIGITAL STAMP CARD CANVAS */}
-                                <div
-                                    onClick={() => setHistoryModalCard({ ...card, type: 'stamp' })}
-                                    style={{
-                                        width: '100%',
-                                        maxWidth: 380,
-                                        borderRadius: 20,
-                                        ...getCardStyle(card),
-                                        color: card.textColor || '#FFFFFF',
-                                        padding: 15,
-                                        boxShadow: '0 14px 30px -6px rgba(0,0,0,0.22)',
-                                        position: 'relative',
-                                        cursor: 'pointer',
-                                        transition: 'transform 0.2s ease',
-                                        minHeight: 220
-                                    }}
-                                    className="card-hover-effect"
-                                >
-                                    <div style={{ position: 'relative', zIndex: 2 }}>
-                                        <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-                                            {/* LEFT SIDE: Brand, Title & Controlled 36px Stamp Circles */}
-                                            <div style={{ flex: 1, minWidth: 0 }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                                                    <div style={{ width: 26, height: 26, borderRadius: 8, background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                        <img src={logo} alt="Logo" style={{ width: 18, height: 18, objectFit: 'contain' }} />
-                                                    </div>
-                                                    <span style={{ fontSize: '0.95rem', fontWeight: 800, color: 'inherit' }}>
-                                                        {card.brandName}
-                                                    </span>
-                                                </div>
-
-                                                <div style={{ fontSize: '0.78rem', opacity: 0.9, marginBottom: 10 }}>
-                                                    <strong>{card.title}</strong>
-                                                </div>
-
-                                                {/* Fixed 36px Sized Stamp Circles Grid */}
-                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 6, maxWidth: 220 }}>
-                                                    {Array.from({ length: card.total }).map((_, i) => (
-                                                        <div
-                                                            key={i}
-                                                            style={{
-                                                                width: 36,
-                                                                height: 36,
-                                                                borderRadius: '50%',
-                                                                border: `2px solid ${card.stampBorderColor || '#FFFFFF'}`,
-                                                                background: i < card.collected ? 'rgba(255, 255, 255, 0.85)' : card.stampBgColor || 'rgba(255, 255, 255, 0.3)',
-                                                                color: i < card.collected ? '#EF0003' : card.stampTextColor || 'inherit',
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                justifyContent: 'center',
-                                                                fontSize: '0.85rem',
-                                                                fontWeight: 800,
-                                                                flexShrink: 0
-                                                            }}
-                                                        >
-                                                            {i < card.collected ? <i className="fas fa-check" /> : i + 1}
+                                    {/* DIGITAL STAMP CARD CANVAS */}
+                                    <div
+                                        onClick={() => setHistoryModalCard({ ...card, type: 'stamp' })}
+                                        style={{
+                                            width: '100%',
+                                            maxWidth: 380,
+                                            borderRadius: 20,
+                                            ...getCardStyle(card),
+                                            color: card.textColor || '#FFFFFF',
+                                            padding: 15,
+                                            boxShadow: '0 14px 30px -6px rgba(0,0,0,0.22)',
+                                            position: 'relative',
+                                            cursor: 'pointer',
+                                            transition: 'transform 0.2s ease',
+                                            minHeight: 220
+                                        }}
+                                        className="card-hover-effect"
+                                    >
+                                        <div style={{ position: 'relative', zIndex: 2 }}>
+                                            <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                                                {/* LEFT SIDE: Brand, Title & Controlled 36px Stamp Circles */}
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    {/* BRAND */}
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                                                        <div style={{ width: 28, height: 28, borderRadius: 8, background: '#FFFFFF', padding: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.1)', flexShrink: 0 }}>
+                                                            <img src={card.brandLogo || logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                                                         </div>
-                                                    ))}
+                                                        <span style={{ fontSize: '1rem', fontWeight: 800, color: 'inherit', lineHeight: 1.35, display: 'inline-block' }}>
+                                                            {card.brandName || 'Merchant'}
+                                                        </span>
+                                                    </div>
+
+                                                    {/* CARD TITLE */}
+                                                    <div style={{ fontSize: '0.85rem', opacity: 0.95, marginBottom: 4, lineHeight: 1.35 }}>
+                                                        <strong>{card.title || 'Stamp Pass'}</strong>
+                                                    </div>
+
+                                                    {/* CARDHOLDER NAME */}
+                                                    <div style={{ fontSize: '0.95rem', opacity: 0.95, fontWeight: 700, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6, lineHeight: 1.35 }}>
+                                                        <i className="fas fa-user" style={{ fontSize: '0.75rem', lineHeight: 1, verticalAlign: '0' }} />
+                                                        <span>{card.cardholderName || customer?.name || 'Customer'}</span>
+                                                    </div>
+
+                                                    {/* Fixed 36px Sized Stamp Circles Grid */}
+                                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 6, maxWidth: 220 }}>
+                                                        {Array.from({ length: card.total }).map((_, i) => {
+                                                            const stampNum = i + 1
+                                                            const levels = card.CustomerStampLevels || card.levelRewards || card.stamp_levels || []
+                                                            const rewardItem = Array.isArray(levels)
+                                                                ? (levels.find(l => Number(l.stamp_number) === stampNum) || levels[i])
+                                                                : null
+
+                                                            let iconMarkup = i + 1
+
+                                                            if (rewardItem) {
+                                                                const rType = rewardItem.type || (rewardItem.reward_type === '2' ? 'Discount' : (rewardItem.reward_type === '3' ? 'Paid' : 'Free'))
+                                                                if (rType === 'Free') {
+                                                                    iconMarkup = (
+                                                                        <i
+                                                                            className={`fas ${rewardItem.icon || 'fa-gift'}`}
+                                                                            style={{
+                                                                                fontSize: '0.82rem',
+                                                                                display: 'inline-flex',
+                                                                                alignItems: 'center',
+                                                                                justifyContent: 'center',
+                                                                                lineHeight: 1,
+                                                                                verticalAlign: '0',
+                                                                                margin: 0,
+                                                                                padding: 0
+                                                                            }}
+                                                                        />
+                                                                    )
+                                                                } else if (rType === 'Discount') {
+                                                                    const disc = Number(rewardItem.discount ?? rewardItem.discountVal ?? (parseInt(rewardItem.reward_text) || 0))
+                                                                    iconMarkup = (
+                                                                        <span
+                                                                            style={{
+                                                                                fontSize: '0.62rem',
+                                                                                fontWeight: 800,
+                                                                                display: 'inline-flex',
+                                                                                alignItems: 'center',
+                                                                                justifyContent: 'center',
+                                                                                lineHeight: 1,
+                                                                                verticalAlign: '0',
+                                                                                margin: 0,
+                                                                                padding: 0
+                                                                            }}
+                                                                        >
+                                                                            {disc}%
+                                                                        </span>
+                                                                    )
+                                                                } else if (rType === 'Paid') {
+                                                                    iconMarkup = (
+                                                                        <i
+                                                                            className={`fas ${rewardItem.icon || 'fa-tag'}`}
+                                                                            style={{
+                                                                                fontSize: '0.82rem',
+                                                                                display: 'inline-flex',
+                                                                                alignItems: 'center',
+                                                                                justifyContent: 'center',
+                                                                                lineHeight: 1,
+                                                                                verticalAlign: '0',
+                                                                                margin: 0,
+                                                                                padding: 0
+                                                                            }}
+                                                                        />
+                                                                    )
+                                                                }
+                                                            } else {
+                                                                iconMarkup = (
+                                                                    <span
+                                                                        style={{
+                                                                            fontSize: '0.82rem',
+                                                                            fontWeight: 800,
+                                                                            display: 'inline-flex',
+                                                                            alignItems: 'center',
+                                                                            justifyContent: 'center',
+                                                                            lineHeight: 1,
+                                                                            verticalAlign: '0',
+                                                                            margin: 0,
+                                                                            padding: 0
+                                                                        }}
+                                                                    >
+                                                                        {i + 1}
+                                                                    </span>
+                                                                )
+                                                            }
+
+                                                            return (
+                                                                <div
+                                                                    key={i}
+                                                                    style={{
+                                                                        width: 36,
+                                                                        height: 36,
+                                                                        borderRadius: `${card.stamp_radius ?? 50}%`,
+                                                                        border: `2px solid ${card.stampBorderColor || '#FFFFFF'}`,
+                                                                        background: card.stampBgColor || 'rgba(255, 255, 255, 0.3)',
+                                                                        color: card.stampTextColor || 'inherit',
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        justifyContent: 'center',
+                                                                        textAlign: 'center',
+                                                                        flexShrink: 0,
+                                                                        boxSizing: 'border-box'
+                                                                    }}
+                                                                    title={rewardItem?.reward_text ? `Stamp #${stampNum}: ${rewardItem.reward_text}` : `Stamp #${stampNum}`}
+                                                                >
+                                                                    {iconMarkup}
+                                                                </div>
+                                                            )
+                                                        })}
+                                                    </div>
+                                                </div>
+
+                                                {/* RIGHT SIDE: QR CODE */}
+                                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                                    <RealQRCode token={card.qrImg || card.card_number} size={86} />
+                                                    <small style={{ fontSize: '0.6rem', fontWeight: 700, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.5px', opacity: 0.9 }}>
+                                                        SCAN TO STAMP
+                                                    </small>
                                                 </div>
                                             </div>
 
-                                            {/* RIGHT SIDE: QR CODE */}
-                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                                <RealQRCode size={86} />
-                                                <small style={{ fontSize: '0.6rem', fontWeight: 700, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.5px', opacity: 0.9 }}>
-                                                    SCAN TO STAMP
-                                                </small>
+                                            {/* BOTTOM RIGHT ALIGNED POWERED BY BADGE WITH FIRSTLOOP LOGO */}
+                                            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 5, fontSize: '0.65rem', opacity: 0.9, fontWeight: 600, marginTop: 10 }}>
+                                                <span>powered by</span>
+                                                <img src={flLogo} alt="FirstLoop" style={{ height: 14, objectFit: 'contain' }} />
+                                                <strong style={{ color: 'inherit' }}>firstloop.co.in</strong>
                                             </div>
                                         </div>
+                                    </div>
 
-                                        {/* BOTTOM RIGHT ALIGNED POWERED BY BADGE WITH FIRSTLOOP LOGO */}
-                                        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 5, fontSize: '0.65rem', opacity: 0.9, fontWeight: 600, marginTop: 10 }}>
-                                            <span>powered by</span>
-                                            <img src={flLogo} alt="FirstLoop" style={{ height: 14, objectFit: 'contain' }} />
-                                            <strong style={{ color: 'inherit' }}>firstloop.co.in</strong>
+                                    {/* Usage & History Trigger Bar */}
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#F8FAFC', padding: '10px 14px', borderRadius: 10, border: '1px solid #E2E8F0', maxWidth: 380, width: '100%' }}>
+                                        <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                                            <i className="fas fa-info-circle" style={{ color: 'var(--firstloop-primary)', marginRight: 6 }} />
+                                            {card.usageNote}
+                                        </div>
+
+                                        <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                                            <button
+                                                type="button"
+                                                className="btn firstloop-btn-secondary"
+                                                onClick={() => setPreviewModalCard({ ...card, type: 'stamp' })}
+                                                style={{ padding: '6px 12px', fontSize: '0.78rem', borderRadius: 8, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                                            >
+                                                <i className="fas fa-eye" />
+                                                <span>Preview</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="btn firstloop-btn-primary"
+                                                onClick={() => setHistoryModalCard({ ...card, type: 'stamp' })}
+                                                style={{ padding: '6px 12px', fontSize: '0.78rem', borderRadius: 8, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                                            >
+                                                <i className="fas fa-history" />
+                                                <span>View History</span>
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
+                            ))}
+                        </div>
 
-                                {/* Usage & History Trigger Bar */}
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#F8FAFC', padding: '10px 14px', borderRadius: 10, border: '1px solid #E2E8F0', maxWidth: 380, width: '100%' }}>
-                                    <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-                                        <i className="fas fa-info-circle" style={{ color: 'var(--firstloop-primary)', marginRight: 6 }} />
-                                        {card.usageNote}
-                                    </div>
+                        {/* Stamp Cards Pagination Controls */}
+                        {totalStampPages > 1 && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginTop: 24, paddingTop: 16, borderTop: '1px solid #E2E8F0' }}>
+                                <small style={{ color: 'var(--text-muted)', fontSize: '0.78rem', fontWeight: 600 }}>
+                                    Showing {((stampPage - 1) * stampPerPage) + 1} to {Math.min(stampPage * stampPerPage, searchedStampCards.length)} of {searchedStampCards.length} stamp cards
+                                </small>
 
-                                    <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <button
+                                        type="button"
+                                        className="btn firstloop-btn-secondary"
+                                        disabled={stampPage === 1}
+                                        onClick={() => setStampPage(p => Math.max(1, p - 1))}
+                                        style={{ padding: '6px 12px', fontSize: '0.78rem', borderRadius: 8, opacity: stampPage === 1 ? 0.5 : 1 }}
+                                    >
+                                        <i className="fas fa-chevron-left" style={{ marginRight: 4 }} /> Prev
+                                    </button>
+
+                                    {Array.from({ length: totalStampPages }).map((_, idx) => (
                                         <button
+                                            key={idx}
                                             type="button"
-                                            className="btn firstloop-btn-secondary"
-                                            onClick={() => setPreviewModalCard({ ...card, type: 'stamp' })}
-                                            style={{ padding: '6px 12px', fontSize: '0.78rem', borderRadius: 8, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                                            onClick={() => setStampPage(idx + 1)}
+                                            style={{
+                                                width: 32,
+                                                height: 32,
+                                                borderRadius: 8,
+                                                border: stampPage === idx + 1 ? 'none' : '1px solid #E2E8F0',
+                                                background: stampPage === idx + 1 ? 'var(--firstloop-primary)' : '#FFFFFF',
+                                                color: stampPage === idx + 1 ? '#FFFFFF' : 'var(--text-primary)',
+                                                fontWeight: 700,
+                                                fontSize: '0.78rem',
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center'
+                                            }}
                                         >
-                                            <i className="fas fa-eye" />
-                                            <span>Preview</span>
+                                            {idx + 1}
                                         </button>
-                                        <button
-                                            type="button"
-                                            className="btn firstloop-btn-primary"
-                                            onClick={() => setHistoryModalCard({ ...card, type: 'stamp' })}
-                                            style={{ padding: '6px 12px', fontSize: '0.78rem', borderRadius: 8, display: 'inline-flex', alignItems: 'center', gap: 4 }}
-                                        >
-                                            <i className="fas fa-history" />
-                                            <span>View History</span>
-                                        </button>
-                                    </div>
+                                    ))}
+
+                                    <button
+                                        type="button"
+                                        className="btn firstloop-btn-secondary"
+                                        disabled={stampPage === totalStampPages}
+                                        onClick={() => setStampPage(p => Math.min(totalStampPages, p + 1))}
+                                        style={{ padding: '6px 12px', fontSize: '0.78rem', borderRadius: 8, opacity: stampPage === totalStampPages ? 0.5 : 1 }}
+                                    >
+                                        Next <i className="fas fa-chevron-right" style={{ marginLeft: 4 }} />
+                                    </button>
                                 </div>
                             </div>
-                        ))}
-                    </div>
+                        )}
+                    </>
                 ) : (
                     <div style={{ padding: 30, textAlign: 'center', color: 'var(--text-muted)', background: '#F8FAFC', borderRadius: 12 }}>
-                        No active stamp cards found for the selected branch.
+                        {stampSearch ? `No stamp cards match "${stampSearch}".` : 'No active stamp cards found for the selected branch.'}
                     </div>
                 )}
             </div>
 
             {/* 2. MEMBERSHIP CARDS SECTION */}
             <div className="card" style={{ padding: 20 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
-                    <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-primary)' }}>
-                        <i className="fas fa-id-card" style={{ color: '#D97706' }} />
-                        Membership Passes ({filteredMemberships.length})
-                    </h3>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-                        Click any pass to view full transaction history
-                    </span>
+                {/* Header with Search Bar */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 14, marginBottom: 18 }}>
+                    <div>
+                        <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-primary)' }}>
+                            <i className="fas fa-id-card" style={{ color: '#D97706' }} />
+                            Membership Passes ({searchedMemberships.length})
+                        </h3>
+                        <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                            Click any pass to view full transaction history
+                        </span>
+                    </div>
+
+                    {/* Membership Pass Search Input */}
+                    <div style={{ position: 'relative', width: 280, maxWidth: '100%' }}>
+                        <i className="fas fa-search" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.82rem' }} />
+                        <input
+                            type="text"
+                            className="form-control"
+                            placeholder="Search membership passes by title, brand, card number..."
+                            value={membershipSearch}
+                            onChange={(e) => setMembershipSearch(e.target.value)}
+                            style={{ paddingLeft: 34, paddingRight: membershipSearch ? 32 : 12, height: 38, fontSize: '0.82rem', borderRadius: 10, borderColor: '#E2E8F0' }}
+                        />
+                        {membershipSearch && (
+                            <button
+                                type="button"
+                                onClick={() => setMembershipSearch('')}
+                                style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 4 }}
+                            >
+                                <i className="fas fa-times-circle" />
+                            </button>
+                        )}
+                    </div>
                 </div>
 
-                {filteredMemberships.length > 0 ? (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 380px))', gap: 24 }}>
-                        {filteredMemberships.map((mem) => (
-                            <div key={mem.id} style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 380, width: '100%' }}>
-                                {/* Branch Badge */}
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.75rem', fontWeight: 700, color: '#D97706' }}>
-                                    <i className="fas fa-store" />
-                                    <span>{mem.branchName}</span>
-                                </div>
-
-                                {/* DIGITAL MEMBERSHIP PASS CANVAS WITH LARGE MIDDLE QR CODE */}
-                                <div
-                                    onClick={() => setHistoryModalCard({ ...mem, type: 'membership' })}
-                                    style={{
-                                        width: '100%',
-                                        maxWidth: 380,
-                                        borderRadius: 20,
-                                        ...getCardStyle(mem),
-                                        color: mem.textColor || '#FFFFFF',
-                                        padding: 15,
-                                        boxShadow: '0 14px 30px -6px rgba(0,0,0,0.22)',
-                                        position: 'relative',
-                                        cursor: 'pointer',
-                                        transition: 'transform 0.2s ease',
-                                        minHeight: 210
-                                    }}
-                                    className="card-hover-effect"
-                                >
-                                    <div style={{ position: 'relative', zIndex: 2 }}>
-                                        {/* Header Row */}
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                <div style={{ width: 34, height: 34, borderRadius: 10, background: '#FFFFFF', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}>
-                                                    <img src={mem.brandLogo || flLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                                                </div>
-                                                <span style={{ fontSize: '1.05rem', fontWeight: 800, color: 'inherit' }}>
-                                                    {mem.brandName || 'FirstLoop'}
-                                                </span>
-                                            </div>
+                {paginatedMemberships.length > 0 ? (
+                    <>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 380px))', gap: 24 }}>
+                            {paginatedMemberships.map((mem) => (
+                                <div key={mem.id} style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 380, width: '100%' }}>
+                                    {/* Branch & Card Number Header Badge */}
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, fontSize: '0.75rem', fontWeight: 700, padding: '0 2px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#D97706' }}>
+                                            <i className="fas fa-store" />
+                                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 170 }}>{mem.branchName}</span>
                                         </div>
+                                        {mem.card_number && (
+                                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#FEF3C7', border: '1px solid #FDE68A', padding: '2px 8px', borderRadius: 6, color: '#92400E', fontSize: '0.72rem', fontFamily: 'monospace', fontWeight: 700 }}>
+                                                <i className="fas fa-barcode" style={{ fontSize: '0.68rem', opacity: 0.7 }} />
+                                                <span>{mem.card_number}</span>
+                                            </div>
+                                        )}
+                                    </div>
 
-                                        {/* Middle Section: Left Info + Right Large Middle QR Code */}
-                                        <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 10 }}>
-                                            <div style={{ flex: 1, minWidth: 0 }}>
-                                                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'inherit' }}>
-                                                    {mem.name}
+                                    {/* DIGITAL MEMBERSHIP PASS CANVAS WITH LARGE MIDDLE QR CODE */}
+                                    <div
+                                        onClick={() => setHistoryModalCard({ ...mem, type: 'membership' })}
+                                        style={{
+                                            width: '100%',
+                                            maxWidth: 380,
+                                            borderRadius: 20,
+                                            ...getCardStyle(mem),
+                                            color: mem.textColor || '#FFFFFF',
+                                            padding: 15,
+                                            boxShadow: '0 14px 30px -6px rgba(0,0,0,0.22)',
+                                            position: 'relative',
+                                            cursor: 'pointer',
+                                            transition: 'transform 0.2s ease',
+                                            minHeight: 210
+                                        }}
+                                        className="card-hover-effect"
+                                    >
+                                        <div style={{ position: 'relative', zIndex: 2 }}>
+                                            {/* Header Row */}
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                    <div style={{ width: 34, height: 34, borderRadius: 10, background: '#FFFFFF', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}>
+                                                        <img src={mem.brandLogo || flLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                                    </div>
+                                                    <span style={{ fontSize: '1.05rem', fontWeight: 800, color: 'inherit' }}>
+                                                        {mem.brandName || 'FirstLoop'}
+                                                    </span>
                                                 </div>
-                                                <div style={{ fontSize: '0.82rem', opacity: 0.9, marginTop: 4, fontWeight: 700 }}>
-                                                    {mem.cardholderName || 'Sophia Reynolds'}
-                                                </div>
+                                            </div>
 
-                                                <div style={{ marginTop: 12, borderTop: '1px solid rgba(255,255,255,0.25)', paddingTop: 8 }}>
-                                                    <small style={{ fontSize: '0.65rem', textTransform: 'uppercase', opacity: 0.85 }}>
-                                                        Valid Thru
-                                                    </small>
-                                                    <div style={{ fontSize: '0.88rem', fontWeight: 800, color: 'inherit' }}>
-                                                        {mem.validThru || '03/25'}
+                                            {/* Middle Section: Left Info + Right Large Middle QR Code */}
+                                            <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 10 }}>
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'inherit' }}>
+                                                        {mem.name}
+                                                    </div>
+                                                    <div style={{ fontSize: '0.95rem', opacity: 0.95, marginTop: 4, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, lineHeight: 1.35 }}>
+                                                        <i className="fas fa-user" style={{ fontSize: '0.75rem', lineHeight: 1, verticalAlign: '0' }} />
+                                                        <span>{mem.cardholderName || customer?.name || 'Member Pass'}</span>
+                                                    </div>
+
+                                                    <div style={{ marginTop: 12, borderTop: '1px solid rgba(255,255,255,0.25)', paddingTop: 8 }}>
+                                                        <small style={{ fontSize: '0.65rem', textTransform: 'uppercase', opacity: 0.85 }}>
+                                                            Valid Thru
+                                                        </small>
+                                                        <div style={{ fontSize: '0.88rem', fontWeight: 800, color: 'inherit' }}>
+                                                            {mem.expires_at || '03/25'}
+                                                        </div>
                                                     </div>
                                                 </div>
+
+                                                {/* Large Centered Middle QR Code */}
+                                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                                    <RealQRCode token={mem.qrImg || mem.card_number} size={92} />
+                                                    <small style={{ fontSize: '0.6rem', fontWeight: 700, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.5px', opacity: 0.9 }}>
+                                                        SCAN PASS
+                                                    </small>
+                                                </div>
                                             </div>
 
-                                            {/* Large Centered Middle QR Code */}
-                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                                <RealQRCode size={92} />
-                                                <small style={{ fontSize: '0.6rem', fontWeight: 700, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.5px', opacity: 0.9 }}>
-                                                    SCAN PASS
-                                                </small>
+                                            {/* Bottom Right Logo Badge */}
+                                            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 5, fontSize: '0.65rem', opacity: 0.9, fontWeight: 600, marginTop: 6 }}>
+                                                <span>powered by</span>
+                                                <img src={flLogo} alt="FirstLoop" style={{ height: 14, objectFit: 'contain' }} />
+                                                <strong style={{ color: 'inherit' }}>firstloop.co.in</strong>
                                             </div>
                                         </div>
+                                    </div>
 
-                                        {/* Bottom Right Logo Badge */}
-                                        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 5, fontSize: '0.65rem', opacity: 0.9, fontWeight: 600, marginTop: 6 }}>
-                                            <span>powered by</span>
-                                            <img src={flLogo} alt="FirstLoop" style={{ height: 14, objectFit: 'contain' }} />
-                                            <strong style={{ color: 'inherit' }}>firstloop.co.in</strong>
+                                    {/* Expiry Notice & Action Bar */}
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FFFBEB', padding: '10px 14px', borderRadius: 10, border: '1px solid #FDE68A', maxWidth: 380, width: '100%' }}>
+                                        <div style={{ fontSize: '0.78rem', color: '#B45309', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                            <i className="fas fa-exclamation-circle" style={{ color: '#D97706' }} />
+                                            <span>{mem.expiryNotice}</span>
+                                        </div>
+
+                                        <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                                            <button
+                                                type="button"
+                                                className="btn firstloop-btn-secondary"
+                                                onClick={() => setPreviewModalCard({ ...mem, type: 'membership' })}
+                                                style={{ padding: '6px 12px', fontSize: '0.78rem', borderRadius: 8, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                                            >
+                                                <i className="fas fa-eye" />
+                                                <span>Preview</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="btn"
+                                                onClick={() => setHistoryModalCard({ ...mem, type: 'membership' })}
+                                                style={{ padding: '6px 12px', fontSize: '0.78rem', borderRadius: 8, background: '#D97706', color: '#FFF', fontWeight: 700, border: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                                            >
+                                                <i className="fas fa-history" />
+                                                <span>View History</span>
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
+                            ))}
+                        </div>
 
-                                {/* Expiry Notice & Action Bar */}
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FFFBEB', padding: '10px 14px', borderRadius: 10, border: '1px solid #FDE68A', maxWidth: 380, width: '100%' }}>
-                                    <div style={{ fontSize: '0.78rem', color: '#B45309', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
-                                        <i className="fas fa-exclamation-circle" style={{ color: '#D97706' }} />
-                                        <span>{mem.expiryNotice}</span>
-                                    </div>
+                        {/* Membership Passes Pagination Controls */}
+                        {totalMembershipPages > 1 && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginTop: 24, paddingTop: 16, borderTop: '1px solid #E2E8F0' }}>
+                                <small style={{ color: 'var(--text-muted)', fontSize: '0.78rem', fontWeight: 600 }}>
+                                    Showing {((membershipPage - 1) * membershipPerPage) + 1} to {Math.min(membershipPage * membershipPerPage, searchedMemberships.length)} of {searchedMemberships.length} membership passes
+                                </small>
 
-                                    <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <button
+                                        type="button"
+                                        className="btn firstloop-btn-secondary"
+                                        disabled={membershipPage === 1}
+                                        onClick={() => setMembershipPage(p => Math.max(1, p - 1))}
+                                        style={{ padding: '6px 12px', fontSize: '0.78rem', borderRadius: 8, opacity: membershipPage === 1 ? 0.5 : 1 }}
+                                    >
+                                        <i className="fas fa-chevron-left" style={{ marginRight: 4 }} /> Prev
+                                    </button>
+
+                                    {Array.from({ length: totalMembershipPages }).map((_, idx) => (
                                         <button
+                                            key={idx}
                                             type="button"
-                                            className="btn firstloop-btn-secondary"
-                                            onClick={() => setPreviewModalCard({ ...mem, type: 'membership' })}
-                                            style={{ padding: '6px 12px', fontSize: '0.78rem', borderRadius: 8, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                                            onClick={() => setMembershipPage(idx + 1)}
+                                            style={{
+                                                width: 32,
+                                                height: 32,
+                                                borderRadius: 8,
+                                                border: membershipPage === idx + 1 ? 'none' : '1px solid #E2E8F0',
+                                                background: membershipPage === idx + 1 ? '#D97706' : '#FFFFFF',
+                                                color: membershipPage === idx + 1 ? '#FFFFFF' : 'var(--text-primary)',
+                                                fontWeight: 700,
+                                                fontSize: '0.78rem',
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center'
+                                            }}
                                         >
-                                            <i className="fas fa-eye" />
-                                            <span>Preview</span>
+                                            {idx + 1}
                                         </button>
-                                        <button
-                                            type="button"
-                                            className="btn"
-                                            onClick={() => setHistoryModalCard({ ...mem, type: 'membership' })}
-                                            style={{ padding: '6px 12px', fontSize: '0.78rem', borderRadius: 8, background: '#D97706', color: '#FFF', fontWeight: 700, border: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}
-                                        >
-                                            <i className="fas fa-history" />
-                                            <span>View History</span>
-                                        </button>
-                                    </div>
+                                    ))}
+
+                                    <button
+                                        type="button"
+                                        className="btn firstloop-btn-secondary"
+                                        disabled={membershipPage === totalMembershipPages}
+                                        onClick={() => setMembershipPage(p => Math.min(totalMembershipPages, p + 1))}
+                                        style={{ padding: '6px 12px', fontSize: '0.78rem', borderRadius: 8, opacity: membershipPage === totalMembershipPages ? 0.5 : 1 }}
+                                    >
+                                        Next <i className="fas fa-chevron-right" style={{ marginLeft: 4 }} />
+                                    </button>
                                 </div>
                             </div>
-                        ))}
-                    </div>
+                        )}
+                    </>
                 ) : (
                     <div style={{ padding: 30, textAlign: 'center', color: 'var(--text-muted)', background: '#F8FAFC', borderRadius: 12 }}>
-                        No membership passes found for the selected branch.
+                        {membershipSearch ? `No membership passes match "${membershipSearch}".` : 'No membership passes found for the selected branch.'}
                     </div>
                 )}
             </div>
 
-            {/* FULL TRANSACTION & ACTIVITY HISTORY MODAL WITH TOTAL VISITS METRIC */}
+            {/* CUSTOMER CARD HISTORY MODAL */}
             {historyModalCard && (
-                <div
-                    style={{
-                        position: 'fixed',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        background: 'rgba(15, 23, 42, 0.7)',
-                        backdropFilter: 'blur(5px)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        zIndex: 9999,
-                        padding: 20
-                    }}
-                >
-                    <div
-                        style={{
-                            background: '#FFFFFF',
-                            borderRadius: 22,
-                            maxWidth: 720,
-                            width: '100%',
-                            maxHeight: '92vh',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            overflow: 'hidden',
-                            boxShadow: '0 25px 50px rgba(0,0,0,0.35)'
-                        }}
-                    >
-                        {/* History Header */}
-                        <div style={{ padding: '18px 24px', background: 'var(--firstloop-gradient-primary)', color: '#FFFFFF', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                <div style={{ width: 38, height: 38, borderRadius: 10, background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--firstloop-primary)', fontSize: '1.2rem' }}>
-                                    <i className={historyModalCard.type === 'stamp' ? 'fas fa-stamp' : 'fas fa-id-card'} />
-                                </div>
-                                <div>
-                                    <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: '#FFFFFF' }}>
-                                        Full History Logs: {historyModalCard.title || historyModalCard.name}
-                                    </h3>
-                                    <small style={{ color: 'rgba(255,255,255,0.85)' }}>
-                                        Branch: {historyModalCard.branchName} • Customer: {customer.name}
-                                    </small>
-                                </div>
-                            </div>
-
-                            <button
-                                type="button"
-                                onClick={() => setHistoryModalCard(null)}
-                                style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: '#FFF', width: 32, height: 32, borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                            >
-                                <i className="fas fa-times" />
-                            </button>
-                        </div>
-
-                        {/* History Log Body */}
-                        <div style={{ padding: 24, overflowY: 'auto', flex: 1 }}>
-                            {/* Summary Card Info with TOTAL VISITS ON CARD Metric */}
-                            <div style={{ padding: 14, background: '#F8FAFC', borderRadius: 12, border: '1px solid #E2E8F0', marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14 }}>
-                                <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
-                                    <div>
-                                        <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>CURRENT CARD STATUS</span>
-                                        <div style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--firstloop-primary)' }}>
-                                            {historyModalCard.type === 'stamp'
-                                                ? `${historyModalCard.collected} of ${historyModalCard.total} Stamps Collected`
-                                                : `${historyModalCard.tier} Tier Active (Expires: ${historyModalCard.expiryDate})`
-                                            }
-                                        </div>
-                                    </div>
-
-                                    <div style={{ paddingLeft: 16, borderLeft: '2px solid #E2E8F0' }}>
-                                        <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>TOTAL VISITS ON CARD</span>
-                                        <div style={{ fontWeight: 800, fontSize: '1rem', color: '#059669', display: 'flex', alignItems: 'center', gap: 6 }}>
-                                            <i className="fas fa-user-check" style={{ color: '#059669', fontSize: '0.85rem' }} />
-                                            <span>{historyModalCard.totalVisits || (historyModalCard.history ? historyModalCard.history.length : 12)} Visits</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <button
-                                    type="button"
-                                    className="btn firstloop-btn-secondary"
-                                    onClick={() => alert(`Exporting history statement for ${historyModalCard.title || historyModalCard.name}...`)}
-                                    style={{ padding: '7px 14px', fontSize: '0.78rem', borderRadius: 8, display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                                >
-                                    <i className="fas fa-download" />
-                                    <span>Export History Log</span>
-                                </button>
-                            </div>
-
-                            {/* Activity History Timeline Table */}
-                            <h4 style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                Activity & Transaction History Timeline
-                            </h4>
-
-                            <div className="table-responsive" style={{ border: '1px solid #E2E8F0', borderRadius: 12, overflow: 'hidden' }}>
-                                <table className="table" style={{ margin: 0, fontSize: '0.82rem' }}>
-                                    <thead>
-                                        <tr style={{ background: '#F8FAFC' }}>
-                                            <th style={{ padding: '10px 14px', fontWeight: 700, color: 'var(--text-muted)' }}>Sl No</th>
-                                            <th style={{ padding: '10px 14px', fontWeight: 700, color: 'var(--text-muted)' }}>DATE & TIME</th>
-                                            <th style={{ padding: '10px 14px', fontWeight: 700, color: 'var(--text-muted)' }}>Receptionist</th>
-                                            <th style={{ padding: '10px 14px', fontWeight: 700, color: 'var(--text-muted)', textAlign: 'right' }}>Amount</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {historyModalCard.history && historyModalCard.history.length > 0 ? (
-                                            historyModalCard.history.map((log, index) => (
-                                                <tr key={index} style={{ verticalAlign: 'middle' }}>
-                                                    <td style={{ padding: '12px 14px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                                                        {index + 1}
-                                                    </td>
-                                                    <td style={{ padding: '12px 14px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                                                        {log.date}
-                                                    </td>
-                                                    <td style={{ padding: '12px 14px', color: 'var(--text-secondary)' }}>
-                                                        {log.operator}
-                                                    </td>
-                                                    <td style={{ padding: '12px 14px', textAlign: 'right', fontWeight: 700, color: '#059669' }}>
-                                                        ${log.amt || '100.00'}
-                                                    </td>
-                                                </tr>
-                                            ))
-                                        ) : (
-                                            <tr>
-                                                <td colSpan="4" style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)' }}>
-                                                    No past activity logged for this card.
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        {/* Modal Footer */}
-                        <div style={{ padding: '14px 24px', background: '#F8FAFC', borderTop: '1px solid #E2E8F0', textAlign: 'right' }}>
-                            <button
-                                type="button"
-                                className="btn firstloop-btn-secondary"
-                                onClick={() => setHistoryModalCard(null)}
-                                style={{ padding: '8px 20px', borderRadius: 8, fontSize: '0.85rem' }}
-                            >
-                                Close History Log
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <CustomerCardHistory
+                    isOpen={!!historyModalCard}
+                    onClose={() => setHistoryModalCard(null)}
+                    cardId={historyModalCard.id}
+                    card={historyModalCard}
+                />
             )}
 
-            {/* PASS PREVIEW MODAL */}
-            {previewModalCard && (
-                <div
-                    style={{
-                        position: 'fixed',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        background: 'rgba(15, 23, 42, 0.75)',
-                        backdropFilter: 'blur(6px)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        zIndex: 9999,
-                        padding: 20
-                    }}
-                >
-                    <div style={{ background: '#FFFFFF', borderRadius: 20, maxWidth: 440, width: '100%', padding: 24, boxShadow: '0 20px 40px rgba(0,0,0,0.3)', position: 'relative' }}>
-                        <button
-                            type="button"
-                            onClick={() => setPreviewModalCard(null)}
-                            style={{ position: 'absolute', right: 16, top: 16, background: 'none', border: 'none', fontSize: '1.2rem', color: 'var(--text-muted)', cursor: 'pointer' }}
-                        >
-                            &times;
-                        </button>
-                        <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: 16 }}>
-                            {previewModalCard.type === 'membership' ? 'Membership Pass Preview' : 'Stamp Card Pass Preview'}
-                        </h3>
+            {/* STAMP CARD PREVIEW MODAL */}
+            {previewModalCard && (Number(previewModalCard.card_type) === 1 || previewModalCard.type === 'stamp') && (
+                <StampCardPreviewModal
+                    isOpen={!!previewModalCard}
+                    card={previewModalCard}
+                    onClose={() => setPreviewModalCard(null)}
+                    fallbackBrandName={previewModalCard.brandName || customer?.name || 'Brand'}
+                />
+            )}
 
-                        {/* Pass Canvas */}
-                        <div
-                            style={{
-                                width: '100%',
-                                borderRadius: 20,
-                                ...getCardStyle(previewModalCard),
-                                color: previewModalCard.textColor || '#FFFFFF',
-                                padding: 18,
-                                boxShadow: '0 14px 30px -6px rgba(0,0,0,0.22)',
-                                minHeight: 210
-                            }}
-                        >
-                            {previewModalCard.type === 'membership' ? (
-                                <div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                            <div style={{ width: 34, height: 34, borderRadius: 10, background: '#FFFFFF', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                <img src={previewModalCard.brandLogo || flLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                                            </div>
-                                            <span style={{ fontSize: '1.05rem', fontWeight: 800, color: 'inherit' }}>
-                                                {previewModalCard.brandName || 'FirstLoop'}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 10 }}>
-                                        <div style={{ flex: 1, minWidth: 0 }}>
-                                            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'inherit' }}>
-                                                {previewModalCard.name}
-                                            </div>
-                                            <div style={{ fontSize: '0.82rem', opacity: 0.9, marginTop: 4, fontWeight: 700 }}>
-                                                {previewModalCard.cardholderName || 'Sophia Reynolds'}
-                                            </div>
-
-                                            <div style={{ marginTop: 12, borderTop: '1px solid rgba(255,255,255,0.25)', paddingTop: 8 }}>
-                                                <small style={{ fontSize: '0.65rem', textTransform: 'uppercase', opacity: 0.85 }}>Valid Thru</small>
-                                                <div style={{ fontSize: '0.88rem', fontWeight: 800, color: 'inherit' }}>
-                                                    {previewModalCard.validThru || '03/25'}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
-                                            <RealQRCode size={92} />
-                                            <small style={{ fontSize: '0.6rem', fontWeight: 700, marginTop: 4, textTransform: 'uppercase', opacity: 0.9 }}>SCAN PASS</small>
-                                        </div>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div>
-                                    <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-                                        <div style={{ flex: 1, minWidth: 0 }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                                                <div style={{ width: 26, height: 26, borderRadius: 8, background: '#FFF', padding: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                    <img src={logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                                                </div>
-                                                <span style={{ fontSize: '0.92rem', fontWeight: 800, color: 'inherit' }}>
-                                                    {previewModalCard.brandName || 'FirstLoop'}
-                                                </span>
-                                            </div>
-
-                                            <div style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: 10 }}>
-                                                {previewModalCard.title}
-                                            </div>
-
-                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 6, maxWidth: 220 }}>
-                                                {Array.from({ length: previewModalCard.total || 8 }).map((_, i) => (
-                                                    <div
-                                                        key={i}
-                                                        style={{
-                                                            width: 36,
-                                                            height: 36,
-                                                            borderRadius: '50%',
-                                                            border: `2px solid ${previewModalCard.stampBorderColor || '#FFFFFF'}`,
-                                                            background: i < (previewModalCard.collected || 0) ? 'rgba(255, 255, 255, 0.85)' : previewModalCard.stampBgColor || 'rgba(255, 255, 255, 0.3)',
-                                                            color: i < (previewModalCard.collected || 0) ? '#EF0003' : previewModalCard.stampTextColor || 'inherit',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'center',
-                                                            fontSize: '0.82rem',
-                                                            fontWeight: 800
-                                                        }}
-                                                    >
-                                                        {i < (previewModalCard.collected || 0) ? <i className="fas fa-check" /> : i + 1}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
-                                            <RealQRCode size={84} />
-                                            <small style={{ fontSize: '0.58rem', fontWeight: 800, marginTop: 4, letterSpacing: '0.5px' }}>
-                                                SCAN TO STAMP
-                                            </small>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 4, fontSize: '0.65rem', opacity: 0.9, marginTop: 10, fontWeight: 700 }}>
-                                <span>powered by</span>
-                                <img src={flLogo} alt="FirstLoop" style={{ height: 12 }} />
-                                <span>firstloop.co.in</span>
-                            </div>
-                        </div>
-
-                        {/* Share & Download Action Buttons */}
-                        <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-                            <a
-                                href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`Check out my ${previewModalCard.name || previewModalCard.title || 'FirstLoop'} Pass! Access your digital loyalty card here: ${window.location.href}`)}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="btn"
-                                style={{
-                                    flex: 1,
-                                    padding: '10px 14px',
-                                    borderRadius: 10,
-                                    background: '#25D366',
-                                    color: '#FFFFFF',
-                                    fontWeight: 700,
-                                    fontSize: '0.85rem',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: 8,
-                                    textDecoration: 'none',
-                                    border: 'none',
-                                    boxShadow: '0 4px 12px rgba(37, 211, 102, 0.25)'
-                                }}
-                            >
-                                <i className="fab fa-whatsapp" style={{ fontSize: '1.1rem' }} />
-                                <span>Share to WhatsApp</span>
-                            </a>
-
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    const cardName = (previewModalCard.name || previewModalCard.title || 'digital-pass').toLowerCase().replace(/\s+/g, '-')
-                                    const link = document.createElement('a')
-                                    link.href = qrImg
-                                    link.download = `${cardName}-pass.png`
-                                    document.body.appendChild(link)
-                                    link.click()
-                                    document.body.removeChild(link)
-                                    alert(`Downloading ${previewModalCard.name || previewModalCard.title} Digital Pass...`)
-                                }}
-                                className="btn firstloop-btn-primary"
-                                style={{
-                                    flex: 1,
-                                    padding: '10px 14px',
-                                    borderRadius: 10,
-                                    fontWeight: 700,
-                                    fontSize: '0.85rem',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: 8,
-                                    boxShadow: '0 4px 12px rgba(14, 136, 184, 0.25)'
-                                }}
-                            >
-                                <i className="fas fa-download" style={{ fontSize: '0.95rem' }} />
-                                <span>Download Card</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
+            {/* MEMBERSHIP PASS PREVIEW MODAL */}
+            {previewModalCard && (Number(previewModalCard.card_type) === 2 || previewModalCard.type === 'membership') && (
+                <MembershipCardPreviewModal
+                    isOpen={!!previewModalCard}
+                    card={previewModalCard}
+                    onClose={() => setPreviewModalCard(null)}
+                    fallbackBrandName={previewModalCard.brandName || customer?.name || 'FirstLoop'}
+                />
             )}
         </div>
     )

@@ -219,9 +219,17 @@ export default function CardCheckInPayment() {
 
         const isStamp = Number(selectedCard.card_type) === 1 || selectedCard.type === 'stamp'
         const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        const totalStamps = Number(selectedCardDetails?.total_stamps || selectedCard.total_stamps || 0)
-        const currentCollected = Number(selectedCard.collected || selectedCard.current_stamps || 0)
+        const totalStamps = Number(selectedCardDetails?.total_stamps || selectedCardDetails?.number_of_stamps || selectedCard?.total_stamps || selectedCard?.number_of_stamps || selectedCard?.total || 8)
+        const currentCollected = Number(selectedCardDetails?.current_stamp ?? selectedCardDetails?.current_stamps ?? selectedCardDetails?.collected ?? selectedCard?.current_stamp ?? selectedCard?.current_stamps ?? selectedCard?.collected ?? 0)
+        const isCompleted = Number(selectedCardDetails?.is_completed ?? selectedCard?.is_completed ?? (currentCollected >= totalStamps ? 1 : 0)) === 1
+
+        if (isStamp && isCompleted) {
+            toast.info('This stamp card is already fully completed!')
+            return
+        }
+
         const updatedStamps = isStamp ? Math.min(totalStamps, currentCollected + 1) : undefined
+        const isNowCompleted = isStamp && updatedStamps >= totalStamps ? 1 : (selectedCardDetails?.is_completed || 0)
 
         setSavingEntry(true)
         try {
@@ -231,6 +239,7 @@ export default function CardCheckInPayment() {
                     selectedCardDetails?.stamp_level_id ||
                     selectedCardDetails?.CustomerStampLevels?.[currentCollected]?.id ||
                     selectedCardDetails?.levelRewards?.[currentCollected]?.id ||
+                    selectedCardDetails?.stamp_levels?.[currentCollected]?.id ||
                     selectedCardDetails?.CustomerStampLevels?.[0]?.id ||
                     0
                 )
@@ -248,6 +257,9 @@ export default function CardCheckInPayment() {
                 if (res?.data?.status == 1) {
                     toast.success(res.data.message || "Stamp payment entry logged successfully 🚀")
                     selectedCard.collected = updatedStamps
+                    selectedCard.current_stamp = updatedStamps
+                    selectedCard.is_completed = isNowCompleted
+                    setSelectedCardDetails(prev => prev ? { ...prev, current_stamp: updatedStamps, collected: updatedStamps, is_completed: isNowCompleted } : prev)
 
                     const receipt = {
                         receiptId: res.data.receipt_id || `RCP-${Date.now().toString().slice(-6)}`,
@@ -291,7 +303,7 @@ export default function CardCheckInPayment() {
                     cardNumber: selectedCard.card_number || '-',
                     cardType: 'membership',
                     paymentMethod: 'Daily Check-In Validated',
-                    paymentAmount: '$0.00',
+                    paymentAmount: '0.00',
                     time: nowTime,
                     date: new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
                 }
@@ -450,6 +462,7 @@ export default function CardCheckInPayment() {
                                     const cards = Array.isArray(cus.cards) ? cus.cards : []
                                     const stampCardsCount = cards.filter(c => Number(c.card_type) === 1).length
                                     const membershipCardsCount = cards.filter(c => Number(c.card_type) === 2).length
+                                    const completedCardsCount = cards.filter(c => Number(c.is_completed) === 1 || (Number(c.card_type) === 1 && Number(c.current_stamp ?? c.current_stamps ?? c.collected ?? 0) >= Number(c.number_of_stamps || c.total_stamps || c.total || 8))).length
 
                                     return (
                                         <div
@@ -499,6 +512,12 @@ export default function CardCheckInPayment() {
                                             </div>
 
                                             <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                                                {completedCardsCount > 0 && (
+                                                    <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.12)', color: '#059669', fontWeight: 700, padding: '3px 8px', borderRadius: 6, fontSize: '0.72rem' }}>
+                                                        <i className="fas fa-check-circle" style={{ marginRight: 3 }} />
+                                                        {completedCardsCount} Completed
+                                                    </span>
+                                                )}
                                                 {stampCardsCount > 0 && (
                                                     <span className="badge" style={{ background: 'var(--firstloop-primary-light)', color: 'var(--firstloop-primary)', fontWeight: 700, padding: '3px 8px', borderRadius: 6, fontSize: '0.72rem' }}>
                                                         <i className="fas fa-stamp" style={{ marginRight: 3 }} />
@@ -629,8 +648,9 @@ export default function CardCheckInPayment() {
                         {(matchedCustomer.cards || []).map(card => {
                             const isSelected = selectedCard?.id === card.id
                             const isStamp = Number(card.card_type) === 1 || card.type === 'stamp'
-                            const totalStamps = Number(card.total_stamps || card.total || 8)
-                            const collectedStamps = Number(card.collected || card.current_stamps || 0)
+                            const totalStamps = Number(card.number_of_stamps || card.total_stamps || card.total || 8)
+                            const collectedStamps = Number(card.current_stamp ?? card.current_stamps ?? card.collected ?? 0)
+                            const isCardCompleted = Number(card.is_completed ?? (isStamp && collectedStamps >= totalStamps ? 1 : 0)) === 1
                             const remainingStamps = Math.max(0, totalStamps - collectedStamps)
 
                             return (
@@ -654,11 +674,11 @@ export default function CardCheckInPayment() {
                                                 fontWeight: 800,
                                                 padding: '3px 8px',
                                                 borderRadius: 6,
-                                                background: isStamp ? 'var(--firstloop-primary)' : '#D97706',
+                                                background: isCardCompleted ? '#10B981' : (isStamp ? 'var(--firstloop-primary)' : '#D97706'),
                                                 color: '#FFFFFF'
                                             }}
                                         >
-                                            {isStamp ? 'STAMP CARD' : 'MEMBERSHIP CARD'}
+                                            {isCardCompleted ? 'COMPLETED' : (isStamp ? 'STAMP CARD' : 'MEMBERSHIP CARD')}
                                         </span>
                                         {isSelected && <i className="fas fa-check-circle" style={{ color: 'var(--firstloop-primary)', fontSize: '1.1rem' }} />}
                                     </div>
@@ -674,7 +694,16 @@ export default function CardCheckInPayment() {
 
                                     {isStamp ? (
                                         <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: 6 }}>
-                                            Remaining: <strong style={{ color: 'var(--firstloop-primary)', fontWeight: 800 }}>{remainingStamps} stamps remaining</strong>
+                                            {isCardCompleted ? (
+                                                <strong style={{ color: '#059669', fontWeight: 800 }}>
+                                                    <i className="fas fa-check-circle" style={{ marginRight: 4 }} />
+                                                    Card Fully Completed
+                                                </strong>
+                                            ) : (
+                                                <>
+                                                    Remaining: <strong style={{ color: 'var(--firstloop-primary)', fontWeight: 800 }}>{remainingStamps} stamps remaining</strong>
+                                                </>
+                                            )}
                                             <div style={{ fontSize: '0.75rem', color: '#059669', marginTop: 4, fontWeight: 700 }}>
                                                 Progress: {collectedStamps}/{totalStamps} Stamps Collected
                                             </div>
@@ -695,63 +724,95 @@ export default function CardCheckInPayment() {
             )}
 
             {/* UNIFIED CARD PAYMENT / UPDATE ENTRY PANEL */}
-            {matchedCustomer && selectedCard && (
-                <div
-                    className="card mb-4"
-                    style={{
-                        padding: 24,
-                        borderRadius: 22,
-                        background: '#FFFFFF',
-                        border: '2px solid #1E293B',
-                        boxShadow: '0 20px 40px rgba(0,0,0,0.1)'
-                    }}
-                >
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 20, borderBottom: '1px solid #E2E8F0', paddingBottom: 16 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                            <div
-                                style={{
-                                    width: 44,
-                                    height: 44,
-                                    borderRadius: 12,
-                                    background: (Number(selectedCard.card_type) === 1 || selectedCard.type === 'stamp') ? 'var(--firstloop-primary)' : '#D97706',
-                                    color: '#FFFFFF',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: '1.2rem',
-                                    fontWeight: 800
-                                }}
-                            >
-                                <i className={(Number(selectedCard.card_type) === 1 || selectedCard.type === 'stamp') ? 'fas fa-stamp' : 'fas fa-crown'} />
+            {matchedCustomer && selectedCard && (() => {
+                const isStampCard = Number(selectedCard.card_type) === 1 || selectedCard.type === 'stamp';
+                const totalStampsVal = Number(selectedCardDetails?.total_stamps || selectedCardDetails?.number_of_stamps || selectedCard?.total_stamps || selectedCard?.number_of_stamps || selectedCard?.total || 8);
+                const collectedStampsVal = Number(selectedCardDetails?.current_stamp ?? selectedCardDetails?.current_stamps ?? selectedCardDetails?.collected ?? selectedCard?.current_stamp ?? selectedCard?.current_stamps ?? selectedCard?.collected ?? 0);
+                const remainingStampsVal = Math.max(0, totalStampsVal - collectedStampsVal);
+
+                return (
+                    <div
+                        className="card mb-4"
+                        style={{
+                            padding: 24,
+                            borderRadius: 22,
+                            background: '#FFFFFF',
+                            border: '2px solid #1E293B',
+                            boxShadow: '0 20px 40px rgba(0,0,0,0.1)'
+                        }}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 20, borderBottom: '1px solid #E2E8F0', paddingBottom: 16 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <div
+                                    style={{
+                                        width: 44,
+                                        height: 44,
+                                        borderRadius: 12,
+                                        background: isStampCard ? 'var(--firstloop-primary)' : '#D97706',
+                                        color: '#FFFFFF',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: '1.2rem',
+                                        fontWeight: 800
+                                    }}
+                                >
+                                    <i className={isStampCard ? 'fas fa-stamp' : 'fas fa-crown'} />
+                                </div>
+                                <div>
+                                    <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 800, color: 'var(--text-muted)' }}>
+                                        CARD ENTRY & PAYMENT TERMINAL
+                                    </span>
+                                    <h3 style={{ fontSize: '1.3rem', fontWeight: 800, margin: '2px 0 0 0', color: 'var(--text-primary)' }}>
+                                        {isStampCard ? 'Stamp Card Payment & Entry Update' : 'Membership Daily Check-In Entry'}
+                                    </h3>
+                                </div>
                             </div>
-                            <div>
-                                <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 800, color: 'var(--text-muted)' }}>
-                                    CARD ENTRY & PAYMENT TERMINAL
-                                </span>
-                                <h3 style={{ fontSize: '1.3rem', fontWeight: 800, margin: '2px 0 0 0', color: 'var(--text-primary)' }}>
-                                    {(Number(selectedCard.card_type) === 1 || selectedCard.type === 'stamp') ? 'Stamp Card Payment & Entry Update' : 'Membership Daily Check-In Entry'}
-                                </h3>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                {isStampCard && remainingStampsVal <= 4 && (
+                                    <button
+                                        type="button"
+                                        className="btn btn-sm btn-primary"
+                                        onClick={() => {
+                                            const branchId = receptionist?.user_branch_id || '';
+                                            const emailQuery = matchedCustomer?.email ? `?email=${encodeURIComponent(matchedCustomer.email)}` : '';
+                                            navigate(`/merchant/add-card-customer/${branchId}${emailQuery}`);
+                                        }}
+                                        style={{
+                                            borderRadius: 10,
+                                            fontWeight: 700,
+                                            fontSize: '0.82rem',
+                                            padding: '8px 14px',
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: 6
+                                        }}
+                                    >
+                                        <i className="fas fa-stamp" />
+                                        <span>Add New Card</span>
+                                    </button>
+                                )}
+
+                                <button
+                                    type="button"
+                                    className="btn btn-sm btn-outline-primary"
+                                    onClick={() => setHistoryModalOpen(true)}
+                                    style={{
+                                        borderRadius: 10,
+                                        fontWeight: 700,
+                                        fontSize: '0.82rem',
+                                        padding: '8px 14px',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: 6
+                                    }}
+                                >
+                                    <i className="fas fa-history" />
+                                    <span>View Card History</span>
+                                </button>
                             </div>
                         </div>
-
-                        <button
-                            type="button"
-                            className="btn btn-sm btn-outline-primary"
-                            onClick={() => setHistoryModalOpen(true)}
-                            style={{
-                                borderRadius: 10,
-                                fontWeight: 700,
-                                fontSize: '0.82rem',
-                                padding: '8px 14px',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 6
-                            }}
-                        >
-                            <i className="fas fa-history" />
-                            <span>View Card History</span>
-                        </button>
-                    </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24, alignItems: 'start' }}>
                         {/* LEFT: REAL DIGITAL PASS CARD PREVIEW */}
@@ -777,36 +838,37 @@ export default function CardCheckInPayment() {
                             <form onSubmit={handleSaveEntry}>
                                 {/* CONDITIONAL CONTENT: STAMP CARD vs MEMBERSHIP CARD */}
                                 {(Number(selectedCard.card_type) === 1) ? (
-                                    <div>
-                                        {/* Current Stamp Progress & Remaining Stamps Display */}
-                                        {(() => {
-                                            const totalStamps = selectedCardDetails?.total_stamps || selectedCard.total_stamps || selectedCard.total || 8;
-                                            const collectedStamps = Number(selectedCard.collected || selectedCard.current_stamps || 0)
-                                            const remainingStamps = Math.max(0, totalStamps - collectedStamps)
+                                    (() => {
+                                        const totalStamps = Number(selectedCardDetails?.total_stamps || selectedCardDetails?.number_of_stamps || selectedCard?.total_stamps || selectedCard?.number_of_stamps || selectedCard?.total || 8);
+                                        const collectedStamps = Number(selectedCardDetails?.current_stamp ?? selectedCardDetails?.current_stamps ?? selectedCardDetails?.collected ?? selectedCard?.current_stamp ?? selectedCard?.current_stamps ?? selectedCard?.collected ?? 0);
+                                        const isCompleted = Number(selectedCardDetails?.is_completed ?? selectedCard?.is_completed ?? (collectedStamps >= totalStamps ? 1 : 0)) === 1;
+                                        const remainingStamps = Math.max(0, totalStamps - collectedStamps);
 
-                                            return (
-                                                <div style={{ background: '#F8FAFC', borderRadius: 16, padding: 18, border: '1px solid #E2E8F0', marginBottom: 20 }}>
+                                        return (
+                                            <div>
+                                                {/* Current Stamp Progress & Remaining Stamps Display */}
+                                                <div style={{ background: isCompleted ? 'rgba(16, 185, 129, 0.08)' : '#F8FAFC', borderRadius: 16, padding: 18, border: isCompleted ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid #E2E8F0', marginBottom: 20 }}>
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                                                         <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-primary)' }}>
                                                             Current Stamp Progress:
                                                         </span>
-                                                        <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--firstloop-primary)' }}>
-                                                            {remainingStamps} Remaining ({collectedStamps}/{totalStamps})
+                                                        <span style={{ fontSize: '0.85rem', fontWeight: 800, color: isCompleted ? '#059669' : 'var(--firstloop-primary)' }}>
+                                                            {isCompleted ? `🎉 Card Completed (${collectedStamps}/${totalStamps})` : `${remainingStamps} Remaining (${collectedStamps}/${totalStamps})`}
                                                         </span>
                                                     </div>
 
                                                     {/* Visual Stamp Circles */}
                                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                                                         {Array.from({ length: totalStamps }).map((_, idx) => {
-                                                            const levelData = selectedCardDetails?.CustomerStampLevels?.[idx] || selectedCardDetails?.levelRewards?.[idx]
+                                                            const levelData = selectedCardDetails?.CustomerStampLevels?.[idx] || selectedCardDetails?.levelRewards?.[idx] || selectedCardDetails?.stamp_levels?.[idx]
                                                             const isPaid = levelData?.status !== undefined
                                                                 ? Number(levelData.status) === 1
-                                                                : idx < collectedStamps
+                                                                : (isCompleted || idx < collectedStamps)
 
                                                             return (
                                                                 <div
                                                                     key={idx}
-                                                                    title={`Stamp ${idx + 1}: ${isPaid ? 'Paid' : 'Not Paid'}`}
+                                                                    title={`Stamp ${idx + 1}: ${isPaid ? 'Paid / Completed' : 'Not Paid'}`}
                                                                     style={{
                                                                         width: 32,
                                                                         height: 32,
@@ -829,153 +891,171 @@ export default function CardCheckInPayment() {
                                                         })}
                                                     </div>
                                                 </div>
-                                            )
-                                        })()}
-                                        {/* REWARD LEVEL DETAILS & PRICING BREAKDOWN */}
-                                        {selectedCardDetails && (selectedCardDetails.descption || selectedCardDetails.current_amt !== undefined || selectedCardDetails.discount_val !== undefined) && (
-                                            <div
-                                                style={{
-                                                    background: Number(selectedCardDetails.reward_type) === 2
-                                                        ? 'rgba(14, 136, 184, 0.06)'
-                                                        : '#F8FAFC',
-                                                    borderRadius: 14,
-                                                    padding: '14px 16px',
-                                                    border: Number(selectedCardDetails.reward_type) === 2
-                                                        ? '1px solid rgba(14, 136, 184, 0.25)'
-                                                        : '1px solid #E2E8F0',
-                                                    marginBottom: 16
-                                                }}
-                                            >
-                                                {/* REWARD / PERK TITLE */}
-                                                {selectedCardDetails.descption && (
-                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, paddingBottom: 8, borderBottom: '1px solid #E2E8F0' }}>
-                                                        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)' }}>
-                                                            Current Stamp Perk:
-                                                        </span>
-                                                        <span
-                                                            className="badge"
-                                                            style={{
-                                                                background: Number(selectedCardDetails.reward_type) === 2 ? '#0284C7' : (Number(selectedCardDetails.reward_type) === 3 ? '#F59E0B' : '#10B981'),
-                                                                color: '#FFF',
-                                                                fontWeight: 800,
-                                                                padding: '4px 10px',
-                                                                borderRadius: 6,
-                                                                fontSize: '0.78rem'
-                                                            }}
-                                                        >
-                                                            <i
-                                                                className={Number(selectedCardDetails.reward_type) === 2 ? 'fas fa-percent' : (Number(selectedCardDetails.reward_type) === 3 ? 'fas fa-tag' : 'fas fa-gift')}
-                                                                style={{ marginRight: 5 }}
-                                                            />
-                                                            {selectedCardDetails.descption}
-                                                        </span>
-                                                    </div>
-                                                )}
 
-                                                {/* PRICING BREAKDOWN */}
-                                                {Number(selectedCardDetails.reward_type) === 2 ? (
-                                                    /* DISCOUNT BREAKDOWN VIEW */
-                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.84rem' }}>
-                                                        <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
-                                                            <span>Standard Amount:</span>
-                                                            <span style={{ textDecoration: 'line-through', color: '#94A3B8' }}>
-                                                                {Number(selectedCardDetails.current_amt || 0).toFixed(2)}
-                                                            </span>
+                                                {/* COMPLETED CARD NOTICE OR PAYMENT CONTROLS */}
+                                                {isCompleted ? (
+                                                    <div style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: 16, padding: '24px 20px', marginBottom: 20, textAlign: 'center' }}>
+                                                        <div style={{ width: 50, height: 50, borderRadius: '50%', background: '#10B981', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', fontSize: '1.4rem', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)' }}>
+                                                            <i className="fas fa-check-double" />
                                                         </div>
-                                                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#0284C7', fontWeight: 700 }}>
-                                                            <span>Discount Applied ({selectedCardDetails.discount_val}%):</span>
-                                                            <span>
-                                                                -{((Number(selectedCardDetails.current_amt || 0) * Number(selectedCardDetails.discount_val || 0)) / 100).toFixed(2)}
-                                                            </span>
-                                                        </div>
-                                                        <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px dashed #CBD5E1', paddingTop: 6, marginTop: 2, fontWeight: 800, color: '#0F172A', fontSize: '0.92rem' }}>
-                                                            <span>Net Payable Amount:</span>
-                                                            <strong style={{ color: 'var(--firstloop-primary)' }}>
-                                                                {Number(selectedCardDetails.overAll_amt ?? selectedCardDetails.current_amt ?? 0).toFixed(2)}
-                                                            </strong>
-                                                        </div>
+                                                        <h4 style={{ fontWeight: 800, color: '#065F46', margin: '0 0 6px', fontSize: '1.05rem' }}>
+                                                            Stamp Card Fully Completed!
+                                                        </h4>
+                                                        <p style={{ fontSize: '0.84rem', color: '#047857', margin: 0, lineHeight: 1.5 }}>
+                                                            All <strong>{totalStamps}</strong> stamps have been successfully collected for this customer card. No further stamps or payment check-ins are required.
+                                                        </p>
                                                     </div>
                                                 ) : (
-                                                    /* STANDARD / PAID / FREE PERK VIEW */
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.88rem' }}>
-                                                        <span style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>Payable Amount:</span>
-                                                        <strong style={{ color: 'var(--firstloop-primary)', fontWeight: 800, fontSize: '0.95rem' }}>
-                                                            {Number(selectedCardDetails.overAll_amt ?? selectedCardDetails.current_amt ?? 0).toFixed(2)}
-                                                        </strong>
-                                                    </div>
+                                                    <>
+                                                        {/* REWARD LEVEL DETAILS & PRICING BREAKDOWN */}
+                                                        {selectedCardDetails && (selectedCardDetails.descption || selectedCardDetails.current_amt !== undefined || selectedCardDetails.discount_val !== undefined) && (
+                                                            <div
+                                                                style={{
+                                                                    background: Number(selectedCardDetails.reward_type) === 2
+                                                                        ? 'rgba(14, 136, 184, 0.06)'
+                                                                        : '#F8FAFC',
+                                                                    borderRadius: 14,
+                                                                    padding: '14px 16px',
+                                                                    border: Number(selectedCardDetails.reward_type) === 2
+                                                                        ? '1px solid rgba(14, 136, 184, 0.25)'
+                                                                        : '1px solid #E2E8F0',
+                                                                    marginBottom: 16
+                                                                }}
+                                                            >
+                                                                {/* REWARD / PERK TITLE */}
+                                                                {selectedCardDetails.descption && (
+                                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, paddingBottom: 8, borderBottom: '1px solid #E2E8F0' }}>
+                                                                        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)' }}>
+                                                                            Current Stamp Perk:
+                                                                        </span>
+                                                                        <span
+                                                                            className="badge"
+                                                                            style={{
+                                                                                background: Number(selectedCardDetails.reward_type) === 2 ? '#0284C7' : (Number(selectedCardDetails.reward_type) === 3 ? '#F59E0B' : '#10B981'),
+                                                                                color: '#FFF',
+                                                                                fontWeight: 800,
+                                                                                padding: '4px 10px',
+                                                                                borderRadius: 6,
+                                                                                fontSize: '0.78rem'
+                                                                            }}
+                                                                        >
+                                                                            <i
+                                                                                className={Number(selectedCardDetails.reward_type) === 2 ? 'fas fa-percent' : (Number(selectedCardDetails.reward_type) === 3 ? 'fas fa-tag' : 'fas fa-gift')}
+                                                                                style={{ marginRight: 5 }}
+                                                                            />
+                                                                            {selectedCardDetails.descption}
+                                                                        </span>
+                                                                    </div>
+                                                                )}
+
+                                                                {/* PRICING BREAKDOWN */}
+                                                                {Number(selectedCardDetails.reward_type) === 2 ? (
+                                                                    /* DISCOUNT BREAKDOWN VIEW */
+                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.84rem' }}>
+                                                                        <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
+                                                                            <span>Standard Amount:</span>
+                                                                            <span style={{ textDecoration: 'line-through', color: '#94A3B8' }}>
+                                                                                {Number(selectedCardDetails.current_amt || 0).toFixed(2)}
+                                                                            </span>
+                                                                        </div>
+                                                                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#0284C7', fontWeight: 700 }}>
+                                                                            <span>Discount Applied ({selectedCardDetails.discount_val}%):</span>
+                                                                            <span>
+                                                                                -{((Number(selectedCardDetails.current_amt || 0) * Number(selectedCardDetails.discount_val || 0)) / 100).toFixed(2)}
+                                                                            </span>
+                                                                        </div>
+                                                                        <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px dashed #CBD5E1', paddingTop: 6, marginTop: 2, fontWeight: 800, color: '#0F172A', fontSize: '0.92rem' }}>
+                                                                            <span>Net Payable Amount:</span>
+                                                                            <strong style={{ color: 'var(--firstloop-primary)' }}>
+                                                                                {Number(selectedCardDetails.overAll_amt ?? selectedCardDetails.current_amt ?? 0).toFixed(2)}
+                                                                            </strong>
+                                                                        </div>
+                                                                    </div>
+                                                                ) : (
+                                                                    /* STANDARD / PAID / FREE PERK VIEW */
+                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.88rem' }}>
+                                                                        <span style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>Payable Amount:</span>
+                                                                        <strong style={{ color: 'var(--firstloop-primary)', fontWeight: 800, fontSize: '0.95rem' }}>
+                                                                            {Number(selectedCardDetails.overAll_amt ?? selectedCardDetails.current_amt ?? 0).toFixed(2)}
+                                                                        </strong>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+
+                                                        {/* Payment Method Selector: Cash vs Online */}
+                                                        <div className="form-group mb-3">
+                                                            <label style={{ fontSize: '0.85rem', fontWeight: 800, marginBottom: 8, display: 'block', color: 'var(--text-primary)' }}>
+                                                                Select Payment Method:
+                                                            </label>
+                                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                                                                <div
+                                                                    onClick={() => setPaymentMethod('Cash')}
+                                                                    style={{
+                                                                        padding: 12,
+                                                                        borderRadius: 12,
+                                                                        border: paymentMethod === 'Cash' ? '2px solid #059669' : '1px solid #E2E8F0',
+                                                                        background: paymentMethod === 'Cash' ? 'rgba(16, 185, 129, 0.12)' : '#F8FAFC',
+                                                                        color: paymentMethod === 'Cash' ? '#059669' : 'var(--text-secondary)',
+                                                                        cursor: 'pointer',
+                                                                        fontWeight: 800,
+                                                                        textAlign: 'center',
+                                                                        fontSize: '0.86rem',
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        justifyContent: 'center',
+                                                                        gap: 6
+                                                                    }}
+                                                                >
+                                                                    <i className="fas fa-money-bill-wave" />
+                                                                    <span>Cash Payment</span>
+                                                                </div>
+
+                                                                <div
+                                                                    onClick={() => setPaymentMethod('Online')}
+                                                                    style={{
+                                                                        padding: 12,
+                                                                        borderRadius: 12,
+                                                                        border: paymentMethod === 'Online' ? '2px solid #0284C7' : '1px solid #E2E8F0',
+                                                                        background: paymentMethod === 'Online' ? 'rgba(2, 132, 199, 0.12)' : '#F8FAFC',
+                                                                        color: paymentMethod === 'Online' ? '#0284C7' : 'var(--text-secondary)',
+                                                                        cursor: 'pointer',
+                                                                        fontWeight: 800,
+                                                                        textAlign: 'center',
+                                                                        fontSize: '0.86rem',
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        justifyContent: 'center',
+                                                                        gap: 6
+                                                                    }}
+                                                                >
+                                                                    <i className="fas fa-credit-card" />
+                                                                    <span>Online (UPI / Card)</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Amount Input */}
+                                                        <div className="form-group mb-4">
+                                                            <label style={{ fontSize: '0.85rem', fontWeight: 800, marginBottom: 4, display: 'block', color: 'var(--text-primary)' }}>
+                                                                Transaction Payment Amount
+                                                            </label>
+                                                            <input
+                                                                readOnly
+                                                                type="text"
+                                                                className="form-control"
+                                                                value={paymentAmount}
+                                                                onChange={(e) => setPaymentAmount(e.target.value)}
+                                                                placeholder="25.00"
+                                                                required
+                                                                style={{ height: 42, borderRadius: 10, fontWeight: 700 }}
+                                                            />
+                                                        </div>
+                                                    </>
                                                 )}
                                             </div>
-                                        )}
-
-                                        {/* Payment Method Selector: Cash vs Online */}
-                                        <div className="form-group mb-3">
-                                            <label style={{ fontSize: '0.85rem', fontWeight: 800, marginBottom: 8, display: 'block', color: 'var(--text-primary)' }}>
-                                                Select Payment Method:
-                                            </label>
-                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                                                <div
-                                                    onClick={() => setPaymentMethod('Cash')}
-                                                    style={{
-                                                        padding: 12,
-                                                        borderRadius: 12,
-                                                        border: paymentMethod === 'Cash' ? '2px solid #059669' : '1px solid #E2E8F0',
-                                                        background: paymentMethod === 'Cash' ? 'rgba(16, 185, 129, 0.12)' : '#F8FAFC',
-                                                        color: paymentMethod === 'Cash' ? '#059669' : 'var(--text-secondary)',
-                                                        cursor: 'pointer',
-                                                        fontWeight: 800,
-                                                        textAlign: 'center',
-                                                        fontSize: '0.86rem',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        gap: 6
-                                                    }}
-                                                >
-                                                    <i className="fas fa-money-bill-wave" />
-                                                    <span>Cash Payment</span>
-                                                </div>
-
-                                                <div
-                                                    onClick={() => setPaymentMethod('Online')}
-                                                    style={{
-                                                        padding: 12,
-                                                        borderRadius: 12,
-                                                        border: paymentMethod === 'Online' ? '2px solid #0284C7' : '1px solid #E2E8F0',
-                                                        background: paymentMethod === 'Online' ? 'rgba(2, 132, 199, 0.12)' : '#F8FAFC',
-                                                        color: paymentMethod === 'Online' ? '#0284C7' : 'var(--text-secondary)',
-                                                        cursor: 'pointer',
-                                                        fontWeight: 800,
-                                                        textAlign: 'center',
-                                                        fontSize: '0.86rem',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        gap: 6
-                                                    }}
-                                                >
-                                                    <i className="fas fa-credit-card" />
-                                                    <span>Online (UPI / Card)</span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Amount Input */}
-                                        <div className="form-group mb-4">
-                                            <label style={{ fontSize: '0.85rem', fontWeight: 800, marginBottom: 4, display: 'block', color: 'var(--text-primary)' }}>
-                                                Transaction Payment Amount
-                                            </label>
-                                            <input
-                                            readOnly
-                                                type="text"
-                                                className="form-control"
-                                                value={paymentAmount}
-                                                onChange={(e) => setPaymentAmount(e.target.value)}
-                                                placeholder="25.00"
-                                                required
-                                                style={{ height: 42, borderRadius: 10, fontWeight: 700 }}
-                                            />
-                                        </div>
-                                    </div>
+                                        );
+                                    })()
                                 ) : (
                                     /* MEMBERSHIP CARD FLOW */
                                     <div>
@@ -1020,41 +1100,78 @@ export default function CardCheckInPayment() {
                                 )}
 
                                 {/* Submit Button */}
-                                <button
-                                    type="submit"
-                                    disabled={savingEntry}
-                                    className="btn firstloop-btn-primary"
-                                    style={{
-                                        width: '100%',
-                                        height: 48,
-                                        borderRadius: 12,
-                                        fontWeight: 800,
-                                        fontSize: '0.95rem',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: 8,
-                                        opacity: savingEntry ? 0.75 : 1,
-                                        cursor: savingEntry ? 'not-allowed' : 'pointer'
-                                    }}
-                                >
-                                    {savingEntry ? (
-                                        <>
-                                            <div className="spinner-border spinner-border-sm text-light" role="status" />
-                                            <span>Processing Entry & Payment...</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <i className="fas fa-check-circle" />
-                                            <span>{(Number(selectedCard.card_type) === 1 || selectedCard.type === 'stamp') ? 'Save Card Entry & Generate Payment Receipt' : "Save Today's Check-In Entry"}</span>
-                                        </>
-                                    )}
-                                </button>
+                                {(() => {
+                                    const isStamp = Number(selectedCard.card_type) === 1 || selectedCard.type === 'stamp';
+                                    const totalStamps = Number(selectedCardDetails?.total_stamps || selectedCardDetails?.number_of_stamps || selectedCard?.total_stamps || selectedCard?.number_of_stamps || selectedCard?.total || 8);
+                                    const collectedStamps = Number(selectedCardDetails?.current_stamp ?? selectedCardDetails?.current_stamps ?? selectedCardDetails?.collected ?? selectedCard?.current_stamp ?? selectedCard?.current_stamps ?? selectedCard?.collected ?? 0);
+                                    const isCompleted = Number(selectedCardDetails?.is_completed ?? selectedCard?.is_completed ?? (isStamp && collectedStamps >= totalStamps ? 1 : 0)) === 1;
+
+                                    if (isStamp && isCompleted) {
+                                        return (
+                                            <button
+                                                type="button"
+                                                disabled
+                                                className="btn"
+                                                style={{
+                                                    width: '100%',
+                                                    height: 48,
+                                                    borderRadius: 12,
+                                                    fontWeight: 800,
+                                                    fontSize: '0.95rem',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    gap: 8,
+                                                    background: '#F1F5F9',
+                                                    color: '#059669',
+                                                    border: '1px solid #CBD5E1',
+                                                    cursor: 'not-allowed'
+                                                }}
+                                            >
+                                                <i className="fas fa-check-circle" style={{ color: '#10B981' }} />
+                                                <span>Card Fully Completed</span>
+                                            </button>
+                                        );
+                                    }
+
+                                    return (
+                                        <button
+                                            type="submit"
+                                            disabled={savingEntry}
+                                            className="btn firstloop-btn-primary"
+                                            style={{
+                                                width: '100%',
+                                                height: 48,
+                                                borderRadius: 12,
+                                                fontWeight: 800,
+                                                fontSize: '0.95rem',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                gap: 8,
+                                                opacity: savingEntry ? 0.75 : 1,
+                                                cursor: savingEntry ? 'not-allowed' : 'pointer'
+                                            }}
+                                        >
+                                            {savingEntry ? (
+                                                <>
+                                                    <div className="spinner-border spinner-border-sm text-light" role="status" />
+                                                    <span>Processing Entry & Payment...</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <i className="fas fa-check-circle" />
+                                                    <span>{isStamp ? 'Save Card Entry & Generate Payment Receipt' : "Save Today's Check-In Entry"}</span>
+                                                </>
+                                            )}
+                                        </button>
+                                    );
+                                })()}
                             </form>
                         </div>
                     </div>
                 </div>
-            )}
+            )})()}
 
             {/* QR SCANNER POPUP MODAL SIMULATION */}
             {qrScannerOpen && (

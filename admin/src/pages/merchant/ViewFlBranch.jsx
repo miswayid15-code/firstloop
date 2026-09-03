@@ -1145,7 +1145,13 @@ export default function ViewFlBranch() {
                                             <button
                                                 type="button"
                                                 className="btn firstloop-btn-secondary"
-                                                onClick={() => navigate(`/fp-customer_details/${cus.id}?branchId=${branch.id || 'br-101'}`)}
+                                                onClick={() => navigate(`/fp-customer_details/${cus.id}?branchId=${branch?.id || id}&from=branch&fromBranchId=${branch?.id || id}&branchName=${encodeURIComponent(branch?.name || '')}`, {
+                                                    state: {
+                                                        fromPath: location.pathname,
+                                                        fromBranchId: branch?.id || id,
+                                                        fromBranchName: branch?.name
+                                                    }
+                                                })}
                                                 style={{ padding: '6px 12px', fontSize: '0.78rem', borderRadius: 6 }}
                                             >
                                                 <i className="fas fa-user-circle" style={{ marginRight: 4 }} />

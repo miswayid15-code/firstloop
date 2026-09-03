@@ -102,8 +102,8 @@ const CustomerCardHistory = ({ isOpen, onClose, cardId, card }) => {
             <div
                 style={{
                     width: '100%',
-                    maxWidth: 880,
-                    maxHeight: '90vh',
+                    maxWidth: 1100,
+                    maxHeight: '100vh',
                     background: '#FFFFFF',
                     borderRadius: 24,
                     boxShadow: '0 25px 60px -15px rgba(0,0,0,0.35)',
@@ -243,7 +243,7 @@ const CustomerCardHistory = ({ isOpen, onClose, cardId, card }) => {
                                     <div style={{ padding: 14, borderRadius: 14, background: 'rgba(14, 136, 184, 0.1)', border: '1px solid rgba(14, 136, 184, 0.3)', textAlign: 'center' }}>
                                         <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--firstloop-primary)', textTransform: 'uppercase' }}>Total Paid</span>
                                         <h4 style={{ fontSize: '1.35rem', fontWeight: 800, margin: '4px 0 0', color: 'var(--firstloop-primary)' }}>
-                                            ${Number(summary.total_paid_amount || 0).toFixed(2)}
+                                            {Number(summary.total_paid_amount || 0).toFixed(2)}
                                         </h4>
                                     </div>
                                 </div>
@@ -267,7 +267,7 @@ const CustomerCardHistory = ({ isOpen, onClose, cardId, card }) => {
                                                 <th style={{ padding: '10px 14px', fontWeight: 700 }}>Stamp</th>
                                                 <th style={{ padding: '10px 14px', fontWeight: 700 }}>Reward / Perk</th>
                                                 <th style={{ padding: '10px 14px', fontWeight: 700 }}>Type</th>
-                                                <th style={{ padding: '10px 14px', fontWeight: 700 }}>Base ($)</th>
+                                                <th style={{ padding: '10px 14px', fontWeight: 700 }}>Base</th>
                                                 <th style={{ padding: '10px 14px', fontWeight: 700 }}>Discount</th>
                                                 <th style={{ padding: '10px 14px', fontWeight: 700 }}>Paid Amount</th>
                                                 <th style={{ padding: '10px 14px', fontWeight: 700 }}>Method</th>
@@ -337,7 +337,7 @@ const CustomerCardHistory = ({ isOpen, onClose, cardId, card }) => {
 
                                                             {/* BASE AMOUNT */}
                                                             <td style={{ padding: '12px 14px' }}>
-                                                                ${Number(item.amt || 0).toFixed(2)}
+                                                                {Number(item.amt || 0).toFixed(2)}
                                                             </td>
 
                                                             {/* DISCOUNT */}
@@ -347,7 +347,7 @@ const CustomerCardHistory = ({ isOpen, onClose, cardId, card }) => {
 
                                                             {/* PAID AMOUNT */}
                                                             <td style={{ padding: '12px 14px', fontWeight: 800, color: isPaid ? 'var(--firstloop-primary)' : 'var(--text-muted)' }}>
-                                                                ${Number(item.paid_amt || item.payable_amount || 0).toFixed(2)}
+                                                                {Number(item.paid_amt || item.payable_amount || 0).toFixed(2)}
                                                             </td>
 
                                                             {/* PAYMENT TYPE */}

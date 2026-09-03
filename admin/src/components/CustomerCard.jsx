@@ -24,7 +24,7 @@ const CustomerCard = forwardRef(({ card, cardType: propCardType, canvasId, style
     const defaultBg = type === 2 ? '#D97706' : '#0E88B8'
     const scanText = type === 2 ? 'SCAN PASS' : 'SCAN TO STAMP'
     const finalCanvasId = canvasId || (type === 2 ? 'membership-pass-preview-canvas' : 'stamp-card-preview-canvas')
-    const totalStamps = Number(card.total_stamps || card.total || 8)
+    const totalStamps = Number(card.total_stamps || card.number_of_stamps || card.total || 8)
 
     return (
         <div
@@ -156,10 +156,18 @@ const CustomerCard = forwardRef(({ card, cardType: propCardType, canvasId, style
                                 {Array.from({
                                     length: totalStamps
                                 }).map((_, i) => {
-                                    const rewardItem = card.levelRewards ? card.levelRewards[i] : null
+                                    const stampNum = i + 1
+                                    const levels = card.CustomerStampLevels || card.levelRewards || card.stamp_levels || []
+                                    const rewardItem = Array.isArray(levels)
+                                        ? (levels.find(l => Number(l.stamp_number) === stampNum) || levels[i])
+                                        : null
                                     let iconMarkup = null
 
-                                    if (rewardItem && rewardItem.type === 'Free') {
+                                    const rType = rewardItem
+                                        ? (rewardItem.type || (rewardItem.reward_type === '2' || Number(rewardItem.reward_type) === 2 ? 'Discount' : (rewardItem.reward_type === '3' || Number(rewardItem.reward_type) === 3 ? 'Paid' : 'Free')))
+                                        : null
+
+                                    if (rewardItem && rType === 'Free') {
                                         iconMarkup = (
                                             <i
                                                 className={`fas ${rewardItem.icon || 'fa-gift'}`}
@@ -175,7 +183,8 @@ const CustomerCard = forwardRef(({ card, cardType: propCardType, canvasId, style
                                                 }}
                                             />
                                         )
-                                    } else if (rewardItem && rewardItem.type === 'Discount') {
+                                    } else if (rewardItem && rType === 'Discount') {
+                                        const disc = Number(rewardItem.discount ?? rewardItem.discountVal ?? (parseInt(rewardItem.reward_text) || 10))
                                         iconMarkup = (
                                             <span
                                                 style={{
@@ -190,10 +199,10 @@ const CustomerCard = forwardRef(({ card, cardType: propCardType, canvasId, style
                                                     padding: 0
                                                 }}
                                             >
-                                                {rewardItem.discountVal || 10}%
+                                                {disc}%
                                             </span>
                                         )
-                                    } else if (rewardItem && rewardItem.type === 'Paid') {
+                                    } else if (rewardItem && rType === 'Paid') {
                                         iconMarkup = (
                                             <i
                                                 className={`fas ${rewardItem.icon || 'fa-tag'}`}

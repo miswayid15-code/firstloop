@@ -53,6 +53,7 @@ export default function StampCardPreviewModal({
     const getWhatsAppShareUrl = () => {
         const brand = card.brandName || card.brand_name || fallbackBrandName
         const title = card.title || 'Digital Stamp Card'
+       
         const total = Number(card.total_stamps || card.number_of_stamps || 8)
         const shareUrl = card.id ? `${window.location.origin}/card-preview/${card.id}?type=1` : window.location.href
         const message = `🎉 *${brand}* - ${title}\n⭐ Collect ${total} stamps to claim special rewards!\n\n👉 *View Card:* ${shareUrl}`
@@ -61,6 +62,7 @@ export default function StampCardPreviewModal({
 
     const totalStamps = Number(card.total_stamps || card.number_of_stamps || 8)
     const brandName = card.brandName || card.brand_name || fallbackBrandName
+    const cardNo = card.card_number || "Card-123456"
     const brandLogo = card.brandLogo || card.brand_image ? formatImageUrl(card.brandLogo || card.brand_image) : logo
 
     return (
@@ -95,19 +97,27 @@ export default function StampCardPreviewModal({
                 }}
             >
                 {/* Modal Header */}
-                <div style={{ padding: '20px 24px', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ padding: '18px 24px', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', background: '#FFFFFF' }}>
                     <div>
-                        <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: '#0F172A' }}>
-                            Digital Stamp Card Preview
-                        </h3>
-                        <p style={{ fontSize: '0.8rem', color: '#64748B', margin: '2px 0 0 0' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                            <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: '#0F172A' }}>
+                                Digital Stamp Card Preview
+                            </h3>
+                            {cardNo && (
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#F1F5F9', border: '1px solid #E2E8F0', padding: '2px 8px', borderRadius: 6, color: '#475569', fontSize: '0.72rem', fontFamily: 'monospace', fontWeight: 700 }}>
+                                    <i className="fas fa-barcode" style={{ fontSize: '0.68rem', opacity: 0.7 }} />
+                                    {cardNo}
+                                </span>
+                            )}
+                        </div>
+                        <p style={{ fontSize: '0.8rem', color: '#64748B', margin: '4px 0 0 0' }}>
                             Live render of the digital stamp pass for customers
                         </p>
                     </div>
                     <button
                         type="button"
                         onClick={onClose}
-                        style={{ background: 'none', border: 'none', fontSize: '1.2rem', color: '#64748B', cursor: 'pointer', padding: 4 }}
+                        style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', width: 32, height: 32, borderRadius: '50%', fontSize: '0.9rem', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s ease' }}
                     >
                         <i className="fas fa-times" />
                     </button>
@@ -115,6 +125,7 @@ export default function StampCardPreviewModal({
 
                 {/* Digital Card Canvas View */}
                 <div style={{ padding: 24, background: '#F8FAFC', display: 'flex', justifyContent: 'center' }}>
+
                     <div
                         ref={cardRef}
                         id="stamp-card-preview-canvas"
@@ -134,24 +145,34 @@ export default function StampCardPreviewModal({
                             <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
                                 {/* Left Side: Brand Logo, Title & Stamp Slots */}
                                 <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                                        <div style={{ width: 26, height: 26, borderRadius: 8, background: '#FFFFFF', padding: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}>
+                                    {/* Brand Logo & Name */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                                        <div style={{ width: 28, height: 28, borderRadius: 8, background: '#FFFFFF', padding: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.1)', flexShrink: 0 }}>
                                             <img src={brandLogo} alt="Logo" crossOrigin="anonymous" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                                         </div>
-                                        <span style={{ fontSize: '0.95rem', fontWeight: 800, color: 'inherit' }}>
+                                        <span style={{ fontSize: '1rem', fontWeight: 800, color: 'inherit', lineHeight: 1.35, display: 'inline-block' }}>
                                             {brandName}
                                         </span>
                                     </div>
 
-                                    <div style={{ fontSize: '0.78rem', opacity: 0.9, marginBottom: 12, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                                    {/* Card Title */}
+                                    <div style={{ fontSize: '0.85rem', opacity: 0.95, marginBottom: 4, lineHeight: 1.35 }}>
                                         <strong>{card.title || 'Stamp Pass'}</strong>
+                                    </div>
+
+                                    {/* Cardholder Name with User Icon */}
+                                    <div style={{ fontSize: '0.95rem', opacity: 0.95, fontWeight: 700, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6, lineHeight: 1.35 }}>
+                                        <i className="fas fa-user" style={{ fontSize: '0.75rem', lineHeight: 1, verticalAlign: '0' }} />
+                                        <span>{card.cardholderName || card.customer_name || 'Customer'}</span>
                                     </div>
 
                                     {/* Stamp Circles Grid */}
                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 6, maxWidth: 220 }}>
                                         {Array.from({ length: totalStamps }).map((_, i) => {
-                                            const rewardItem = card.levelRewards ? card.levelRewards[i] : (card.stamp_levels ? card.stamp_levels[i] : null)
-                                            let iconMarkup = i + 1
+                                            const stampNum = i + 1
+                                            const levels = card.CustomerStampLevels || card.levelRewards || card.stamp_levels || []
+                                            const rewardItem = Array.isArray(levels) ? (levels.find(l => Number(l.stamp_number) === stampNum) || levels[i]) : null
+                                            let iconMarkup = stampNum
 
                                             if (rewardItem) {
                                                 const rType = rewardItem.type || (rewardItem.reward_type === '2' ? 'Discount' : (rewardItem.reward_type === '3' ? 'Paid' : 'Free'))

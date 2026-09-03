@@ -62,7 +62,8 @@ export default function MembershipCardPreviewModal({
     const brandLogo = card.brandLogo || card.brand_image ? formatImageUrl(card.brandLogo || card.brand_image) : logo
     const cardTitle = card.name || card.title || 'Membership Card'
     const cardholder = card.cardholderName || card.cardholder_name || 'Member Pass'
-    const validityText = formatValidity(card.validityMonths || card.month || card.totalMonth)
+    const cardNo = card.card_number || "Card-123456"
+    const validityText = formatValidity(card.expires_at || card.month || card.totalMonth)
 
     return (
         <div
@@ -96,19 +97,27 @@ export default function MembershipCardPreviewModal({
                 }}
             >
                 {/* Modal Header */}
-                <div style={{ padding: '20px 24px', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ padding: '18px 24px', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', background: '#FFFFFF' }}>
                     <div>
-                        <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: '#0F172A' }}>
-                            Digital Membership Pass Preview
-                        </h3>
-                        <p style={{ fontSize: '0.8rem', color: '#64748B', margin: '2px 0 0 0' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                            <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: '#0F172A' }}>
+                                Digital Membership Pass Preview
+                            </h3>
+                            {cardNo && (
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#FEF3C7', border: '1px solid #FDE68A', padding: '2px 8px', borderRadius: 6, color: '#92400E', fontSize: '0.72rem', fontFamily: 'monospace', fontWeight: 700 }}>
+                                    <i className="fas fa-barcode" style={{ fontSize: '0.68rem', opacity: 0.7 }} />
+                                    {cardNo}
+                                </span>
+                            )}
+                        </div>
+                        <p style={{ fontSize: '0.8rem', color: '#64748B', margin: '4px 0 0 0' }}>
                             Live render of the digital membership pass for members
                         </p>
                     </div>
                     <button
                         type="button"
                         onClick={onClose}
-                        style={{ background: 'none', border: 'none', fontSize: '1.2rem', color: '#64748B', cursor: 'pointer', padding: 4 }}
+                        style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', width: 32, height: 32, borderRadius: '50%', fontSize: '0.9rem', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s ease' }}
                     >
                         <i className="fas fa-times" />
                     </button>
@@ -150,8 +159,9 @@ export default function MembershipCardPreviewModal({
                                     <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'inherit', wordBreak: 'break-word' }}>
                                         {cardTitle}
                                     </div>
-                                    <div style={{ fontSize: '0.82rem', opacity: 0.9, marginTop: 4, fontWeight: 700 }}>
-                                        {cardholder}
+                                    <div style={{ fontSize: '0.95rem', opacity: 0.95, marginTop: 4, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, lineHeight: 1.35 }}>
+                                        <i className="fas fa-user" style={{ fontSize: '0.75rem', lineHeight: 1, verticalAlign: '0' }} />
+                                        <span>{cardholder}</span>
                                     </div>
 
                                     <div style={{ marginTop: 12, borderTop: '1px solid rgba(255,255,255,0.25)', paddingTop: 8 }}>

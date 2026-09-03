@@ -270,7 +270,7 @@ export const fetchCustomerStampLevelsApi = async (cardId, cardType, cusId) => {
                         id: Number(lvl.id || lvl.stamp_level_id || 0),
                         stamp: Number(lvl.stamp_number || lvl.stamp) || idx + 1,
                         stamp_number: Number(lvl.stamp_number || lvl.stamp) || idx + 1,
-                        status: lvl.status !== undefined ? Number(lvl.status) : (idx < Number(item.current_stamp ?? item.current_stamps ?? item.collected ?? 0) ? 1 : 0),
+                        status: Number(lvl.status) || 0,
 
                         reward:
                             lvl.reward_text ||
@@ -332,40 +332,50 @@ export const fetchCustomerStampLevelsApi = async (cardId, cardType, cusId) => {
             );
 
             // Get applicable rewards
-            const applicableRewards = levelRewards.filter(
-                (lvl) => Number(lvl.stamp) <= currentStamp + 1
+            const nextStampNumber = currentStamp + 1;
+
+            // ---------------------------------------
+            // GET ONLY THE NEXT STAMP LEVEL
+            // ---------------------------------------
+
+            const latestReward = levelRewards.find(
+                (lvl) => Number(lvl.stamp_number) === nextStampNumber
             );
 
-            // Total amount
-            const currentAmt = applicableRewards.reduce(
-                (acc, lvl) => acc + (Number(lvl.amt) || 0),
-                0
+            // ---------------------------------------
+            // CURRENT AMOUNT
+            // ONLY THIS STAMP AMOUNT
+            // ---------------------------------------
+
+            const currentAmt = Number(
+                latestReward?.amt || 0
             );
 
-            // Total discount percentage
-            const discount_val = applicableRewards.reduce(
-                (acc, lvl) => acc + (Number(lvl.discountVal) || 0),
-                0
+            // ---------------------------------------
+            // DISCOUNT FOR THIS STAMP ONLY
+            // ---------------------------------------
+
+            const discount_val = Number(
+                latestReward?.discountVal || 0
             );
 
-            // Get latest/applicable reward
-            const latestReward =
-                applicableRewards[applicableRewards.length - 1];
+            // ---------------------------------------
+            // REWARD TYPE FOR THIS STAMP
+            // ---------------------------------------
 
             const reward_type = Number(
                 latestReward?.rewardType || 0
             );
 
+            // ---------------------------------------
+            // REWARD DESCRIPTION
+            // ---------------------------------------
+
             const descption =
                 latestReward?.reward || '';
 
-            // ---------------------------------------
-            // CALCULATE FINAL AMOUNT
-            // ---------------------------------------
-
             let overAll_amt = currentAmt;
 
-            // reward_type = 2 => Percentage Discount
             if (reward_type === 2) {
                 const discountAmount =
                     (currentAmt * discount_val) / 100;
@@ -479,7 +489,8 @@ export const fetchCustomerStampLevelsApi = async (cardId, cardType, cusId) => {
                 overAll_amt: item.current_amount
                     || overAll_amt,
 
-                descption:item.reward_text|| descption,
+                descption: item.reward_text || descption,
+                is_completed: Number(item.is_completed ?? (currentStamp >= totalStamps ? 1 : 0))
             };
         }
         else {
@@ -503,7 +514,8 @@ export const fetchCustomerStampLevelsApi = async (cardId, cardType, cusId) => {
                     : item.branch_id
                         ? [Number(item.branch_id)]
                         : [],
-                status: Number(item.status) === 1 ? 'Active' : 'Inactive'
+                status: Number(item.status) === 1 ? 'Active' : 'Inactive',
+                is_completed: Number(item.is_completed || 0)
             };
         }
     } catch (err) {
