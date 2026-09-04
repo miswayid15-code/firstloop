@@ -221,7 +221,7 @@ const today_report_data = await CustomerCard.findAll({
             where: {
                 status: 1
             },
-            required: false
+             required: true
         }
     ],
 

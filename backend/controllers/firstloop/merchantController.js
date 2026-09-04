@@ -329,7 +329,7 @@ exports.dashboard = async (req, res) => {
                     where: {
                         status: 1
                     },
-                    required: false
+                     required: true
                 }
             ],
 
