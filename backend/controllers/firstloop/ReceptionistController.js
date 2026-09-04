@@ -1,4 +1,4 @@
-const { Merchant, Coupon, RefreshToken, Branch, Receptionist, MerchantFp, BranchTiming, UserNotificationToken, CouponApplied, Notification, Stampcard, StampLevel, MembershipCards, CustomerCard,
+const { Merchant, Coupon, RefreshToken, Branch, Receptionist, MerchantFp, BranchTiming, UserNotificationToken, CouponApplied, Notification, Stampcard, StampLevel, MembershipCards, CustomerCard,Customer,
     CustomerStampLevel, } = require('../../models');
 const bcrypt = require('bcryptjs');
 const { parsePhoneNumber } = require('libphonenumber-js');
@@ -168,7 +168,7 @@ exports.dashboard = async (req, res) => {
 
         const total_stamp_card = await CustomerCard.count({
             where: {
-                card_type:1,
+                card_type: 1,
                 branch_id: branch_id
             }
         });
@@ -179,7 +179,7 @@ exports.dashboard = async (req, res) => {
 
         const total_membership_card = await CustomerCard.count({
             where: {
-                card_type:2,
+                card_type: 2,
                 branch_id: branch_id
             }
         });
@@ -209,6 +209,120 @@ exports.dashboard = async (req, res) => {
         return res.status(500).json({
             status: 0,
             message: "Error",
+            error: err.message
+        });
+    }
+};
+exports.scan_qr = async (req, res) => {
+    try {
+        const { qr_code } = req.body;
+
+        // ---------------------------------
+        // VALIDATE QR CODE
+        // ---------------------------------
+
+        if (!qr_code) {
+            return res.status(400).json({
+                status: 0,
+                message: "QR code is required"
+            });
+        }
+
+        // ---------------------------------
+        // FIND CUSTOMER CARD
+        // ---------------------------------
+
+        const customer_card = await CustomerCard.findOne({
+            where: {
+                qr_token: qr_code
+            },
+
+            attributes: [
+                "id",
+                "customer_id",
+                "card_number",
+                "card_type",
+                "title",
+                "current_stamp",
+                "number_of_stamps",
+                "is_completed"
+            ],
+
+            order: [
+                ["id", "DESC"]
+            ]
+        });
+
+        if (!customer_card) {
+            return res.status(404).json({
+                status: 0,
+                message: "Customer card not found"
+            });
+        }
+
+        // ---------------------------------
+        // FIND CUSTOMER
+        // ---------------------------------
+
+        const customer = await Customer.findOne({
+            where: {
+                id: customer_card.customer_id,
+                status: 1,
+                del_status: 0
+            },
+
+            attributes: [
+                "id",
+                "name",
+                "email",
+                "phone",
+                "country_code",
+                "profile_image",
+                "status",
+                "del_status"
+            ]
+        });
+
+        if (!customer) {
+            return res.status(404).json({
+                status: 0,
+                message: "Customer not found"
+            });
+        }
+
+        // ---------------------------------
+        // CUSTOMER DATA
+        // ---------------------------------
+
+        const customerData = customer.toJSON();
+
+        customerData.profile_image = customerData.profile_image
+            ? baseUrl + '/' + customerData.profile_image
+            : null;
+
+        // ---------------------------------
+        // CARD DATA
+        // ---------------------------------
+
+        customerData.cards = [customer_card.toJSON()];
+
+        // ---------------------------------
+        // RESPONSE
+        // ---------------------------------
+
+        return res.status(200).json({
+            status: 1,
+            message: "Customer card found successfully",
+            data: customerData
+        });
+
+    } catch (err) {
+
+        console.log("scan_qr Error:", err);
+
+        return res.status(500).json({
+            status: 0,
+            message: "Something went wrong",
             error: err.message
         });
     }

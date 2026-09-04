@@ -49,4 +49,5 @@ router.post(
     auth(),
     controller.get_customer_details
 );
+
 module.exports = router;

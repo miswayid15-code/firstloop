@@ -47,6 +47,7 @@ export default function CardCheckInPayment() {
     // Card Payment / Entry Form state
     const [paymentMethod, setPaymentMethod] = useState('Cash') // 'Cash' | 'Online'
     const [paymentAmount, setPaymentAmount] = useState('0.00')
+   
     const [savingEntry, setSavingEntry] = useState(false)
     const [historyModalOpen, setHistoryModalOpen] = useState(false)
     const [successReceiptModal, setSuccessReceiptModal] = useState(null)
@@ -72,6 +73,44 @@ export default function CardCheckInPayment() {
         }
     }
 
+    const fetchScanner = async (scannedCode) => {
+        if (!scannedCode) return false
+        setLoading(true)
+        try {
+            const response = await API.post('firstloop/reception/scan-qr', {
+                qr_code: scannedCode
+            })
+
+            if (response?.data?.status == 1 && response.data.data) {
+                const customerData = response.data.data
+                setMatchedCustomer(customerData)
+                setSearchInput(customerData.name || customerData.phone || '')
+                setSearchResults([])
+
+                if (Array.isArray(customerData.cards) && customerData.cards.length > 0) {
+                    // Match specific card from scanned code if possible, else default to first
+                    const exactCard = customerData.cards.find(c =>
+                        String(c.card_number || '').toLowerCase() === String(scannedCode).toLowerCase() ||
+                        String(c.id) === String(scannedCode)
+                    ) || customerData.cards[0]
+                    setSelectedCard(exactCard)
+                } else {
+                    setSelectedCard(null)
+                }
+                toast.success(response.data.message || `Customer found: ${customerData.name || 'Customer'}`)
+                return true
+            } else {
+                toast.error(response?.data?.message || "No customer found for this QR code")
+                return false
+            }
+        } catch (err) {
+            console.error("Error in scan-qr API:", err)
+            toast.error(err?.response?.data?.message || "Failed to identify QR code from server")
+            return false
+        } finally {
+            setLoading(false)
+        }
+    }
     useEffect(() => {
         fetchCustomers()
     }, [])
@@ -214,14 +253,18 @@ export default function CardCheckInPayment() {
     // Process decoded QR text and match to customer/card
     const handleQrCodeScanned = async (decodedText) => {
         if (!decodedText) return
-        console.log("QR Code Decoded:", decodedText)
+        // console.log("QR Code Decoded:", decodedText)
 
         await stopScanner()
         setQrScannerOpen(false)
 
         const raw = String(decodedText).trim()
 
-        // 1. Try finding match in already fetched customerList
+        // 1. First call the scan-qr API
+        const success = await fetchScanner(raw)
+        if (success) return
+
+        // 2. Fallback: Try finding match in already fetched customerList
         let matchedCus = null
         let matchedCard = null
 
@@ -272,9 +315,8 @@ export default function CardCheckInPayment() {
             return
         }
 
-        // 2. If not matched in memory, set search input to trigger search / filter
+        // 3. If still not matched, set search input so receptionist can see what was scanned
         setSearchInput(raw)
-        toast.success(`Scanned: "${raw}". Searching customer records...`)
     }
 
     // Start html5QrCode scanner camera stream

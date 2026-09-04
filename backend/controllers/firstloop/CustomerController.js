@@ -1953,15 +1953,15 @@ exports.get_customer_details = async (req, res) => {
         // RESPONSE
         // ===================================
 
-    const total_spend = stamp_card.reduce((cardTotal, card) => {
+        const total_spend = stamp_card.reduce((cardTotal, card) => {
             const cur_st = Number(card.current_stamp || 0);
             const levels = card.CustomerStampLevels || [];
-             return cardTotal +levels.reduce((tot,lel)=>{
-                if(Number(lel.stamp_number)<=cur_st){
-                   return  tot + Number(lel.paid_amt || 0)
+            return cardTotal + levels.reduce((tot, lel) => {
+                if (Number(lel.stamp_number) <= cur_st) {
+                    return tot + Number(lel.paid_amt || 0)
                 }
                 return tot;
-             },0)
+            }, 0)
         }, 0)
 
 
@@ -2206,3 +2206,5 @@ exports.get_customer_card_details = async (req, res) => {
         });
     }
 };
+
+

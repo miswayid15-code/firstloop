@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react'
 import html2canvas from 'html2canvas'
 import logo from '../assets/img/firstloop-favicon.png'
 import flLogo from '../assets/img/firstloop-favicon.png'
-import qrImg from '../assets/img/qr-img.png'
+import { QRCodeCanvas } from 'qrcode.react'
 
 import {
     getRelativeImagePath,
@@ -53,7 +53,7 @@ export default function StampCardPreviewModal({
     const getWhatsAppShareUrl = () => {
         const brand = card.brandName || card.brand_name || fallbackBrandName
         const title = card.title || 'Digital Stamp Card'
-       
+
         const total = Number(card.total_stamps || card.number_of_stamps || 8)
         const shareUrl = card.id ? `${window.location.origin}/card-preview/${card.id}?type=1` : window.location.href
         const message = `🎉 *${brand}* - ${title}\n⭐ Collect ${total} stamps to claim special rewards!\n\n👉 *View Card:* ${shareUrl}`
@@ -277,7 +277,16 @@ export default function StampCardPreviewModal({
 
                                 {/* Right Side: QR CODE */}
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                    <img src={qrImg} alt="QR Code" crossOrigin="anonymous" style={{ width: 86, height: 86, objectFit: 'contain', flexShrink: 0 }} />
+                                    <QRCodeCanvas
+                                        value={card.qrImg || card.qr_token || 'firstloop'}
+                                        size={92}
+                                        style={{
+                                            width: 92,
+                                            height: 92,
+                                            objectFit: 'contain',
+                                            display: 'block'
+                                        }}
+                                    />
                                     <small style={{ fontSize: '0.6rem', fontWeight: 700, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.5px', opacity: 0.9 }}>
                                         SCAN TO STAMP
                                     </small>
