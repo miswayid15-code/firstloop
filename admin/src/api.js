@@ -16,21 +16,7 @@ export const getAppType = (reqUrl = "") => {
     const url = String(reqUrl || "").toLowerCase();
     const path = String(window.location.pathname || "").toLowerCase();
 
-    // 1. Explicit API endpoint checks
-    if (url.includes("firstloop/merchant/") || url.includes("/merchant/")) {
-        return "merchant";
-    }
-    if (url.includes("firstloop/reception/") || url.includes("/reception/")) {
-        return "receptionist";
-    }
-    if (url.includes("admin/saleperson/") || url.includes("/saleperson/")) {
-        return "saleperson";
-    }
-    if (url.startsWith("admin/") || url.includes("/admin/")) {
-        return "admin";
-    }
-
-    // 2. Browser URL Path checks
+    // 1. Browser URL Path checks
     if (
         path.startsWith("/merchant/") ||
         path === "/merchant" ||
@@ -43,15 +29,10 @@ export const getAppType = (reqUrl = "") => {
     }
 
     if (
-        path.startsWith("/saleperson/") ||
-        path === "/saleperson" ||
+        path.startsWith("/saleperson-") ||
         path === "/saleperson-login" ||
         path === "/saleperson-dashboard" ||
-        path === "/saleperson-add-merchant" ||
-        path.startsWith("/saleperson-") ||
-        path.startsWith("/admin/saleperson-") ||
-        path.startsWith("/admin/saleperson/") ||
-        path === "/admin/saleperson"
+        path === "/saleperson-add-merchant"
     ) {
         return "saleperson";
     }
@@ -66,6 +47,49 @@ export const getAppType = (reqUrl = "") => {
         path === "/admin/receptionist"
     ) {
         return "receptionist";
+    }
+
+    // 2. Admin portal paths
+    if (
+        path.startsWith("/salepersons") ||
+        path === "/" ||
+        path.startsWith("/dashboard") ||
+        path.startsWith("/merchants") ||
+        path.startsWith("/view-merchant") ||
+        path.startsWith("/customers") ||
+        path.startsWith("/categories") ||
+        path.startsWith("/appointments") ||
+        path.startsWith("/stamps") ||
+        path.startsWith("/coupons") ||
+        path.startsWith("/memberships") ||
+        path.startsWith("/reports") ||
+        path.startsWith("/admin")
+    ) {
+        if (url.includes("firstloop/merchant/") || url.includes("/merchant/login")) {
+            const merToken = localStorage.getItem("mer_access_token");
+            if (!merToken && (localStorage.getItem("access_token") || localStorage.getItem("admin_token"))) {
+                return "admin";
+            }
+            return "merchant";
+        }
+        if (url.includes("firstloop/reception/")) {
+            return "receptionist";
+        }
+        return "admin";
+    }
+
+    // 3. Fallback to explicit API endpoint checks
+    if (url.includes("firstloop/merchant/")) {
+        return "merchant";
+    }
+    if (url.includes("firstloop/reception/")) {
+        return "receptionist";
+    }
+    if (url.includes("admin/saleperson/merchant_list")) {
+        return "saleperson";
+    }
+    if (url.startsWith("admin/") || url.includes("/admin/")) {
+        return "admin";
     }
 
     return "admin";
@@ -131,6 +155,20 @@ export const getAccessToken = (reqUrl = "") => {
         const recToken = localStorage.getItem("receptionist_token");
         if (recToken && recToken !== "null" && recToken !== "undefined") {
             return recToken;
+        }
+    }
+    if (keys.role === "saleperson") {
+        const saleToken = localStorage.getItem("sale_access_token");
+        if (saleToken && saleToken !== "null" && saleToken !== "undefined") {
+            return saleToken;
+        }
+    }
+    // Fallback: if admin token exists and user is browsing admin pages
+    const adminToken = localStorage.getItem("access_token") || localStorage.getItem("admin_token");
+    if (adminToken && adminToken !== "null" && adminToken !== "undefined") {
+        const path = String(window.location.pathname || "").toLowerCase();
+        if (!path.startsWith("/merchant") && !path.startsWith("/receptionist") && !path.startsWith("/saleperson-")) {
+            return adminToken;
         }
     }
     return null;

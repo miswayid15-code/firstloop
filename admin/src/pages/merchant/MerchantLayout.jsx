@@ -4,37 +4,65 @@ import { toast } from 'react-hot-toast'
 import { MOCK_MERCHANT_PROFILE } from './mockMerchantData'
 import flLogo from '../../assets/img/firstloop-favicon.png'
 import API from '../../api.js';
+// Helper to safely retrieve merchant data from localStorage
+const getStoredMerchant = () => {
+    try {
+        const raw = localStorage.getItem("merchant_data") || localStorage.getItem("mer_data")
+        if (raw && raw !== "null" && raw !== "undefined") {
+            const parsed = JSON.parse(raw)
+            return parsed?.merchant_data || parsed?.data || parsed?.user || parsed || {}
+        }
+    } catch (e) {
+        console.error("Error parsing merchant_data in MerchantLayout:", e)
+    }
+    return {}
+}
+
 export default function MerchantLayout() {
     const navigate = useNavigate()
     const location = useLocation()
     const [mobileOpen, setMobileOpen] = useState(false)
+    const [merchant, setMerchant] = useState(getStoredMerchant)
 
-    // Ensure FirstLoop theme is set for merchant portal
+    // Ensure FirstLoop theme is set for merchant portal & refresh merchant data on route changes
     useEffect(() => {
         document.documentElement.setAttribute('data-role', 'firstloop')
         document.body.setAttribute('data-role', 'firstloop')
         document.documentElement.setAttribute('data-theme', 'firstloop')
         document.body.setAttribute('data-theme', 'firstloop')
-    }, [])
+
+        setMerchant(getStoredMerchant())
+    }, [location.pathname])
 
     const handleLogout = async () => {
-        const response = await API.post(
-            "firstloop/merchant/logout"
-        );
-        console.log(response);
-        if (response.data.status == 1) {
+        try {
+            let response = null
+            try {
+                response = await API.post("firstloop/merchant/logout", {}, { skipAuthRedirect: true })
+            } catch (err) {
+                // If network/token already invalid, continue cleaning up
+                response = null
+            }
+
+            if (response?.data?.status === 1 || response?.data?.status === "1" || response?.data?.success) {
+                toast.success(response.data.message || 'Logged out successfully 👋')
+            } else if (response?.data?.message) {
+                toast.error(response.data.message)
+            } else {
+                toast.success('Logged out successfully 👋')
+            }
+        } catch (error) {
+            console.error("Logout Error:", error)
+            toast.error("Logged out successfully 👋")
+        } finally {
             localStorage.removeItem('mer_access_token')
             localStorage.removeItem('mer_refresh_token')
+            localStorage.removeItem('merchant_token')
             localStorage.removeItem('merchant_data')
-
-
-            toast.success('Logged out successfully 👋')
+            localStorage.removeItem('mer_data')
+            localStorage.removeItem('mer_user_id')
             navigate('/merchant/login', { replace: true })
         }
-        else{
-            toast.error('Network issues')
-        }
-
     }
 
     const menuItems = [
@@ -111,9 +139,13 @@ export default function MerchantLayout() {
                             </div>
                             <div style={{ overflow: 'hidden' }}>
                                 <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                                    {MOCK_MERCHANT_PROFILE.name}
+                                    {merchant?.business_name || merchant?.user_name || merchant?.name || merchant?.email || "Merchant Admin"}
                                 </div>
-
+                                {merchant?.email && (
+                                    <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                                        {merchant.email}
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -246,8 +278,35 @@ export default function MerchantLayout() {
                         ))}
                     </nav>
 
-                    {/* RIGHT TOP LOGOUT BUTTON */}
+                    {/* RIGHT TOP LOGOUT & PROFILE BUTTON */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 10px', background: '#F1F5F9', borderRadius: 10 }} className="d-none d-sm-flex">
+                            <div
+                                style={{
+                                    width: 28,
+                                    height: 28,
+                                    borderRadius: '50%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    background: 'var(--firstloop-primary)',
+                                    color: '#FFFFFF',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 800
+                                }}
+                            >
+                                {(merchant?.business_name || merchant?.user_name || merchant?.name || merchant?.email || "M").charAt(0).toUpperCase()}
+                            </div>
+                            <div style={{ lineHeight: 1.1, maxWidth: 150, overflow: 'hidden' }}>
+                                <strong style={{ fontSize: '0.78rem', color: 'var(--text-primary)', display: 'block', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                                    {merchant?.business_name || merchant?.user_name || merchant?.name || merchant?.email || "Merchant"}
+                                </strong>
+                                <span style={{ fontSize: '0.66rem', color: 'var(--firstloop-primary)', fontWeight: 700 }}>
+                                    Merchant Portal
+                                </span>
+                            </div>
+                        </div>
+
                         <button
                             type="button"
                             onClick={handleLogout}

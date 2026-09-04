@@ -212,7 +212,10 @@ module.exports = {
 
                 comment: '1 = Paid, 2 = Unpaid',
             },
-
+            paid_date: {
+                type: Sequelize.DATE,
+                allowNull: true,
+            },
             // ===================================
             // STATUS
             // ===================================

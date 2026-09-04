@@ -1089,10 +1089,10 @@ export default function ViewFlBranch() {
                                                     alt={cus.name}
                                                     style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }}
                                                 />
-                                                <div>
+                                                {/* <div>
                                                     <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-primary)' }}>{cus.name}</div>
                                                     <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Joined: {cus.joinedDate}</small>
-                                                </div>
+                                                </div> */}
                                             </div>
                                         </td>
                                         <td style={{ padding: '14px 16px', fontSize: '0.82rem' }}>

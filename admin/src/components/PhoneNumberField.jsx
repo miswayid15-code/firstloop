@@ -12,12 +12,10 @@ export default function PhoneNumberField({
     const cleanDialCode = safeCountryCode ? safeCountryCode.replace('+', '') : ''
 
     return (
-
-        <div className="form-group">
-
+        <div className="form-group phone-number-field-wrapper">
             <label
                 className="form-label-classic"
-                style={{ marginBottom: 8 }}
+                style={{ marginBottom: 8, display: 'block' }}
             >
                 Phone Number {required && <span style={{ color: '#ef4444' }}>*</span>}
             </label>

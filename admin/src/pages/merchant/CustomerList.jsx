@@ -337,9 +337,9 @@ export default function CustomerList() {
                                                         <strong style={{ fontSize: '0.9rem', color: 'var(--text-primary)', display: 'block' }}>
                                                             {cus.name || 'Customer'}
                                                         </strong>
-                                                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                                        {/* <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                                                             Joined: {joinedText}
-                                                        </span>
+                                                        </span> */}
                                                     </div>
                                                 </div>
                                             </td>

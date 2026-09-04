@@ -87,17 +87,19 @@ export default function SalePersons() {
         try {
             const response = await API.post('admin/saleperson/generate-code')
             if (response.data.status === 1) {
+                const generatedCode = response.data.code || response.data.data?.code || (typeof response.data.data === 'string' ? response.data.data : '') || ''
                 if (target === 'add') {
-                    setAddForm(prev => ({ ...prev, code: response.data.code }))
+                    setAddForm(prev => ({ ...prev, code: generatedCode }))
                 } else if (target === 'edit') {
-                    setEditForm(prev => ({ ...prev, code: response.data.code }))
+                    setEditForm(prev => ({ ...prev, code: generatedCode }))
                 }
                 toast.success('Code generated successfully')
             } else {
                 toast.error(response.data.message || 'Failed to generate code')
             }
         } catch (error) {
-            toast.error('Failed to generate code')
+            console.error('Generate Code Error:', error)
+            toast.error(error?.response?.data?.message || 'Failed to generate code')
         } finally {
             setGeneratingCode(false)
         }
@@ -172,14 +174,19 @@ export default function SalePersons() {
         setDetailsLoading(true)
         try {
             const response = await API.post('admin/saleperson/details', { id })
-            if (response.data.status === 1 && response.data.data?.length > 0) {
-                setSelectedSalePerson(response.data.data[0])
+            if (response.data.status === 1) {
+                const item = Array.isArray(response.data.data) ? response.data.data[0] : response.data.data
+                if (item) {
+                    setSelectedSalePerson(item)
+                } else {
+                    toast.error('Sales person details not found')
+                }
             } else {
                 toast.error(response.data.message || 'Failed to fetch sales person details')
             }
         } catch (error) {
             console.error('Fetch Details Error:', error)
-            toast.error('Failed to fetch sales person details')
+            toast.error(error?.response?.data?.message || 'Failed to fetch sales person details')
         } finally {
             setDetailsLoading(false)
         }
@@ -190,12 +197,16 @@ export default function SalePersons() {
             const response = await API.post('admin/saleperson/list')
             console.log('response', response.data)
             if (response.data.status === 1) {
-                setSalePersons(response.data.data)
+                const list = Array.isArray(response.data.data)
+                    ? response.data.data
+                    : (response.data.data?.salepersons || response.data.data?.list || [])
+                setSalePersons(list)
             } else {
                 setSalePersons([])
             }
         } catch (error) {
-            toast.error('Failed to fetch Sales Persons')
+            console.log("err", error)
+            toast.error(error?.response?.data?.message || 'Failed to fetch Sales Persons')
         } finally {
             setLoading(false)
         }

@@ -2,22 +2,25 @@ import { useState } from 'react'
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import API from '../../api.js'
-let receptionist = {};
-try {
-    const rawReceptionist = localStorage.getItem("receptionist_data");
-
-    if (rawReceptionist && rawReceptionist !== "null" && rawReceptionist !== "undefined") {
-        receptionist = JSON.parse(rawReceptionist) || {};
-
-    }
-} catch (e) {
-    console.error("Error parsing receptionist_data:", e);
-}
 
 export default function ReceptionistLayout() {
     const navigate = useNavigate()
     const location = useLocation()
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+    let receptionist = {}
+    try {
+        const rawReceptionist = localStorage.getItem("receptionist_data") || localStorage.getItem("rec_data")
+        if (rawReceptionist && rawReceptionist !== "null" && rawReceptionist !== "undefined") {
+            const parsed = JSON.parse(rawReceptionist)
+            receptionist = parsed?.data || parsed?.user || parsed || {}
+        }
+        if (!receptionist.user_repId && localStorage.getItem("rec_user_repId")) {
+            receptionist.user_repId = localStorage.getItem("rec_user_repId")
+        }
+    } catch (e) {
+        console.error("Error parsing receptionist_data:", e)
+    }
 
     const handleLogout = async () => {
 

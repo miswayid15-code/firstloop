@@ -24,16 +24,24 @@ export default function SalePersonMerchants() {
         try {
             // Fetch Sales Person Details
             const spResponse = await API.post('admin/saleperson/details', { id });
-            if (spResponse.data.status === 1 && spResponse.data.data?.length > 0) {
-                setSalesPerson(spResponse.data.data[0]);
+            if (spResponse.data.status === 1) {
+                const spData = Array.isArray(spResponse.data.data) ? spResponse.data.data[0] : spResponse.data.data;
+                if (spData) {
+                    setSalesPerson(spData);
+                } else {
+                    toast.error("Sales person details not found");
+                }
             } else {
-                toast.error("Sales person details not found");
+                toast.error(spResponse.data.message || "Sales person details not found");
             }
 
             // Fetch Referred Merchants
             const merchantsResponse = await API.post('admin/saleperson/referred-merchants', { id });
-            if (merchantsResponse.data.status === 1 && Array.isArray(merchantsResponse.data.data)) {
-                setMerchants(merchantsResponse.data.data);
+            if (merchantsResponse.data.status === 1) {
+                const list = Array.isArray(merchantsResponse.data.data)
+                    ? merchantsResponse.data.data
+                    : (merchantsResponse.data.data?.merchants || merchantsResponse.data.data?.list || []);
+                setMerchants(list);
             } else {
                 setMerchants([]);
             }

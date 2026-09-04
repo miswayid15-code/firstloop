@@ -737,8 +737,25 @@
     color: #16a34a;
     font-weight: 500;
 }
+/* --------------------------------------------------
+   Phone Number Component Styles (Global react-phone-input-2)
+-------------------------------------------------- */
+.phone-number-field-wrapper {
+    position: relative;
+    z-index: 10;
+}
+
+.phone-number-field-wrapper:focus-within {
+    z-index: 99999;
+}
+
 .phone-input-container {
     width: 100%;
+    position: relative;
+}
+
+.phone-input-container:focus-within {
+    z-index: 99999 !important;
 }
 
 .phone-input-container .phone-input-custom {
@@ -758,37 +775,74 @@
     box-shadow: 0 0 0 4px rgba(255, 77, 128, 0.12) !important;
 }
 
-.phone-input-container .phone-input-button {
+.phone-input-container .phone-input-button,
+.react-tel-input .flag-dropdown {
     border: 1px solid rgba(255, 77, 128, 0.12) !important;
     border-radius: 12px 0 0 12px !important;
     background: rgba(255, 247, 249, 0.92) !important;
 }
 
-.phone-input-container .phone-input-dropdown {
+.react-tel-input .flag-dropdown.open {
+    z-index: 99999 !important;
+    background: #ffffff !important;
+}
+
+/* Country dropdown list */
+.react-tel-input .country-list,
+.react-tel-input .country-list.phone-input-dropdown,
+.phone-input-dropdown {
+    z-index: 999999 !important;
     border-radius: 14px !important;
-    border: 1px solid rgba(255, 77, 128, 0.14) !important;
-    box-shadow: 0 16px 32px rgba(233, 30, 99, 0.12) !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.16), 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+    background: #ffffff !important;
+    max-height: 250px !important;
+    min-width: 290px !important;
+    overflow-y: auto !important;
+    margin-top: 6px !important;
 }
 
-.phone-input-container .phone-input-dropdown .search {
-    position: sticky;
-    top: 0;
-    z-index: 1;
-    background: #fff;
-    padding: 8px;
-    border-bottom: 1px solid rgba(255, 77, 128, 0.08);
+.react-tel-input .country-list .search,
+.phone-input-dropdown .search {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 10 !important;
+    background: #ffffff !important;
+    padding: 8px 10px !important;
+    border-bottom: 1px solid #f1f5f9 !important;
 }
 
-.phone-input-container .phone-input-dropdown .search-box {
-    width: 100%;
-    border: 1px solid rgba(255, 77, 128, 0.18) !important;
-    border-radius: 10px !important;
-    padding: 10px 12px !important;
-    font-size: 0.88rem !important;
+.react-tel-input .country-list .search-box,
+.phone-input-dropdown .search-box {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 8px !important;
+    padding: 7px 10px !important;
+    font-size: 0.86rem !important;
+    outline: none !important;
+    background: #f8fafc !important;
 }
 
-.phone-input-container .phone-input-dropdown .country-list {
-    max-height: 260px;
+.react-tel-input .country-list .search-box:focus,
+.phone-input-dropdown .search-box:focus {
+    border-color: var(--firstloop-primary, #0E88B8) !important;
+    background: #ffffff !important;
+}
+
+.react-tel-input .country-list .country {
+    padding: 9px 12px !important;
+    font-size: 0.86rem !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    color: #1e293b !important;
+    transition: background 0.15s ease !important;
+}
+
+.react-tel-input .country-list .country:hover,
+.react-tel-input .country-list .country.highlight {
+    background-color: #f1f5f9 !important;
 }
 
 /* Merchant details display sub-label and links */

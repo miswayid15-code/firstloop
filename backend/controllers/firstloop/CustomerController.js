@@ -1572,6 +1572,12 @@ exports.stamp_paid = async (req, res) => {
             });
         }
 
+        const user = req.merchant || req.receptionist;
+
+        const userType = req.merchant
+            ? 'merchant'
+            : 'receptionist';
+        const user_id =user.id;
         const customerId = Number(cus_id);
         const cardId = Number(card_id);
         const paidAmount = Number(amount);
@@ -1658,8 +1664,8 @@ exports.stamp_paid = async (req, res) => {
             lock: transaction.LOCK.UPDATE
         });
 
-        console.log("stamp_level:", stamp_level?.toJSON());
-        console.log("whereCondition:", whereCondition);
+        // console.log("stamp_level:", stamp_level?.toJSON());
+        // console.log("whereCondition:", whereCondition);
         const checkLevel = await CustomerStampLevel.findOne({
             where: {
                 id: Number(stamp_level_id)
@@ -1751,6 +1757,9 @@ exports.stamp_paid = async (req, res) => {
                 paid_amt: paidAmount,
                 payment_type: String(payment_type),
                 payment_status: 1,
+                paid_date: new Date(),
+                role:userType,
+                role_id:user_id
             },
             {
                 where: {
@@ -2100,6 +2109,7 @@ exports.get_customer_card_details = async (req, res) => {
                 // Paid reward details
                 paid_amt: paidAmt,
                 payment_type: level.payment_type,
+                payment_date: level.paid_date,
                 payment_type_text: paymentTypeText,
 
                 // Final amount customer needs to pay

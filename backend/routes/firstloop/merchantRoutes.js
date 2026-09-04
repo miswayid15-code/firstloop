@@ -9,7 +9,7 @@ const upload = require('../../middleware/upload');
 
 const auth = require('../../middleware/auth');
 const checkMerchant = require('../../middleware/checkMerchant');
-
+const checkMerchantOrReceptionist = require('../../middleware/checkMerchantOrReceptionist'); 
 // login
 router.post(
     '/login',

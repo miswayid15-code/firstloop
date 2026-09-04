@@ -536,7 +536,7 @@ export default function AddCardCustomer() {
 
 
                         {/* Customer Full Name & Phone Number */}
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, position: "relative", zIndex: 5 }}>
                             <div>
                                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
                                     <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 600, color: "#475569", margin: 0 }}>
@@ -582,7 +582,7 @@ export default function AddCardCustomer() {
                                 </div>
                             </div>
 
-                            <div>
+                            <div style={{ position: "relative", zIndex: 10 }}>
                                 {customerStatus === "Existing Customer" && (
                                     <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: -18, position: "relative", zIndex: 3 }}>
                                         <span style={{ fontSize: "0.7rem", color: "#64748B", fontWeight: 500 }}>

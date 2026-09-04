@@ -59,6 +59,10 @@ module.exports = (sequelize, DataTypes) => {
                 allowNull: true,
                 comment: '1 = Cash, 2 = Online',
             },
+            paid_date: {
+                type: DataTypes.DATE,
+                allowNull: true,
+            },
 
             reward_text: {
                 type: DataTypes.STRING(255),

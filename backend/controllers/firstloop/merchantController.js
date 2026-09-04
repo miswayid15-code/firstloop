@@ -1,4 +1,4 @@
-const { Merchant, Coupon, RefreshToken, Branch, Receptionist, MerchantFp, Category, BranchTiming, SalePerson, UserNotificationToken, CouponApplied, Notification, Stampcard, StampLevel, MembershipCards, CustomerCard,
+const { Merchant, Coupon, RefreshToken, Branch, Receptionist, MerchantFp, Category, BranchTiming, SalePerson, UserNotificationToken, CouponApplied, Notification, Stampcard, StampLevel, MembershipCards, CustomerCard,Customer,
     CustomerStampLevel, } = require('../../models');
 const bcrypt = require('bcryptjs');
 const { parsePhoneNumber } = require('libphonenumber-js');
@@ -284,7 +284,87 @@ exports.dashboard = async (req, res) => {
                 merchant_id: merchant_id
             }
         });
+        const today_report_data = await CustomerCard.findAll({
+            where: {
+                branch_id: {
+                    [Op.in]: branchIds
+                }
+            },
 
+            attributes: [
+                "id",
+                "card_type",
+                "title",
+                "branch_id"
+            ],
+
+            include: [
+                {
+                    model: Customer,
+                    as: "Customer",
+                    attributes: [
+                        "name",
+                        "email",
+                        "phone",
+                        "country_code"
+                    ]
+                },
+
+                {
+                    model: Branch,
+                    as: "Branch",
+                    attributes: [
+                        "name"
+                    ]
+                },
+
+                {
+                    model: CustomerStampLevel,
+                    as: "CustomerStampLevels",
+                    attributes: [
+                        "payment_type",
+                        "paid_amt",
+                        "paid_date"
+                    ],
+                    where: {
+                        status: 1
+                    },
+                    required: false
+                }
+            ],
+
+            order: [
+                [
+                    { model: CustomerStampLevel, as: "CustomerStampLevels" },
+                    "paid_date",
+                    "DESC"
+                ]
+            ],
+
+            limit: 10
+        });
+
+        const today_report = today_report_data.map(card => {
+
+            const stampLevel = card.CustomerStampLevels?.[0];
+
+            return {
+                branch_id: card.branch_id,
+                branch_name: card.Branch?.name || null,
+
+                name: card.Customer?.name || null,
+                email: card.Customer?.email || null,
+                phone: card.Customer?.phone || null,
+                country_code: card.Customer?.country_code || null,
+
+                payment_type: stampLevel?.payment_type || null,
+                time: stampLevel?.paid_date || null,
+                amount: stampLevel?.paid_amt || 0,
+
+                card_type: card.card_type,
+                card_name: card.title
+            };
+        });
         // ---------------------------------------
         // RESPONSE
         // ---------------------------------------
@@ -307,7 +387,8 @@ exports.dashboard = async (req, res) => {
 
                 active_st_cr: active_stamp_card_count,
 
-                active_cus: customer_count
+                active_cus: customer_count,
+                today_report: today_report
             }
         });
 

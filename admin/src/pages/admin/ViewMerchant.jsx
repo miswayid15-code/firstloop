@@ -116,13 +116,15 @@ const getProfileImage = (item) => {
 }
 
 const getReceptionistPhone = (receptionist) => {
-    if (!receptionist?.phone) {
+    const phone = receptionist?.phone || receptionist?.phone_number || receptionist?.mobile
+    if (!phone) {
         return '-'
     }
 
-    return receptionist.country_code
-        ? `${receptionist.country_code} ${receptionist.phone}`
-        : receptionist.phone
+    const countryCode = receptionist?.country_code || receptionist?.countryCode
+    return countryCode
+        ? `${countryCode} ${phone}`
+        : phone
 }
 
 const defaultBranchTimings = [
@@ -2858,57 +2860,37 @@ const filteredMemberships = useMemo(() => {
 
                 toast.success(data.message || 'Receptionist registered successfully')
 
-                // Update unassigned receptionists list in merchantData
-                if (merchantData) {
-
-                    const newRec = data.data || {
-
-                        id: data.data?.id || Math.floor(Math.random() * 10000),
-
-                        rep_id: addReceptionistForm.rep_id,
-
-                        name: addReceptionistForm.name,
-
-                        ref_name: addReceptionistForm.ref_name || '',
-
-                        email: addReceptionistForm.email,
-
-                        phone: addReceptionistForm.phone,
-
-                        country_code: addReceptionistForm.country_code,
-
-                        status: 1,
-
-                        profile_image: data.data?.profile_image || addReceptionistForm.profileImagePreview || '',
-
-                        createdAt: new Date().toISOString()
-
-                    }
-
-                    setMerchantData((prev) => {
-
-                        if (!prev) return prev
-
-                        return {
-
-                            ...prev,
-
-                            unassigned_receptionists: [
-
-                                newRec,
-
-                                ...(prev.unassigned_receptionists || [])
-
-                            ],
-
-                            total_receptionists: (Number(prev.total_receptionists) || 0) + 1
-
-                        }
-
-                    })
-
+                // Construct full new receptionist object with fallback to submitted form values
+                const resData = (data.data && typeof data.data === 'object') ? data.data : {}
+                const newRec = {
+                    id: resData.id || resData.receptionist_id || resData.user_id || Math.floor(Math.random() * 10000),
+                    rep_id: resData.rep_id || addReceptionistForm.rep_id,
+                    name: resData.name || resData.user_name || addReceptionistForm.name,
+                    ref_name: resData.ref_name || addReceptionistForm.ref_name || '',
+                    email: resData.email || addReceptionistForm.email,
+                    phone: resData.phone || addReceptionistForm.phone,
+                    country_code: resData.country_code || addReceptionistForm.country_code || '+91',
+                    status: resData.status !== undefined ? resData.status : 1,
+                    profile_image: resData.profile_image || addReceptionistForm.profileImagePreview || '',
+                    createdAt: resData.createdAt || resData.created_at || new Date().toISOString(),
+                    ...resData
                 }
 
+                // Optimistically update unassigned receptionists in merchantData
+                setMerchantData((prev) => {
+                    if (!prev) return prev
+                    return {
+                        ...prev,
+                        unassigned_receptionists: [
+                            newRec,
+                            ...(prev.unassigned_receptionists || []).filter(r => r.id !== newRec.id && r.rep_id !== newRec.rep_id)
+                        ],
+                        total_receptionists: (Number(prev.total_receptionists) || 0) + 1
+                    }
+                })
+
+                // Refresh backend data so full profile is in sync
+                fetchMerchant()
                 fetchReceptionists()
 
                 closeAddReceptionistModal()

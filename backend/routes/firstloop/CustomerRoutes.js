@@ -9,6 +9,7 @@ const upload = require('../../middleware/upload');
 
 const auth = require('../../middleware/auth');
 const checkCustomer = require('../../middleware/checkCustomer');
+const checkMerchantOrReceptionist = require('../../middleware/checkMerchantOrReceptionist'); 
 router.post(
     '/check-customer',
     auth(),
@@ -36,7 +37,7 @@ router.post(
 );
 router.post(
     '/stamp-paid',
-    auth(),
+    auth(),checkMerchantOrReceptionist,
     controller.stamp_paid
 );
 router.post(
