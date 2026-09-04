@@ -824,7 +824,6 @@ export default function ViewFlBranch() {
                                 key={card.id}
                                 card={card}
                                 merchantName={branch?.name || 'Elite Branch'}
-                                onEdit={handleOpenEditStampCard}
                                 onPreview={setSelectedStampCard}
                             />
                         ))}
@@ -846,16 +845,6 @@ export default function ViewFlBranch() {
                     </div>
 
                     <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-                        <button
-                            type="button"
-                            className="btn"
-                            onClick={handleOpenCreateMembership}
-                            style={{ padding: '8px 14px', fontSize: '0.82rem', borderRadius: 8, background: '#D97706', color: '#FFFFFF', fontWeight: 700, border: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                        >
-                            <i className="fas fa-plus-circle" />
-                            <span>+ Create Membership Card</span>
-                        </button>
-
                         <div style={{ position: 'relative', width: 220 }}>
                             <i className="fas fa-search" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.8rem' }} />
                             <input
@@ -883,7 +872,6 @@ export default function ViewFlBranch() {
                                 key={mem.id}
                                 card={mem}
                                 merchantName={branch?.name || 'FirstLoop'}
-                                onEdit={handleOpenEditMembership}
                                 onPreview={setSelectedMembership}
                             />
                         ))}
