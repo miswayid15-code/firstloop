@@ -58,6 +58,7 @@ export default function MembershipCardBuilderModal({
         preset: 'Custom',
         isDefault: false
     })
+    const [isSubmitting, setIsSubmitting] = useState(false)
 
     // Self-contained API call to fetch card designs if not provided via props
     useEffect(() => {
@@ -94,6 +95,8 @@ export default function MembershipCardBuilderModal({
         }
     }
     const membership_cards = async () => {
+        if (isSubmitting) return
+        setIsSubmitting(true)
         try {
             let localMerchantId = null
 
@@ -203,7 +206,9 @@ export default function MembershipCardBuilderModal({
 
             toast.error(serverMsg);
         }
-
+        finally {
+            setIsSubmitting(false)
+        }
     }
     const availableDesigns = (cardDesigns && cardDesigns.length > 0) ? cardDesigns : fetchedDesigns
 
@@ -292,7 +297,12 @@ export default function MembershipCardBuilderModal({
         }
     }
 
-    const handleSubmit = () => {
+    const handleSubmit = (e) => {
+        if (e) {
+            e.preventDefault()
+            e.stopPropagation()
+        }
+        if (isSubmitting) return
         membership_cards()
     }
 
@@ -734,10 +744,20 @@ export default function MembershipCardBuilderModal({
                         type="button"
                         className="btn"
                         onClick={handleSubmit}
-                        style={{ padding: '10px 24px', borderRadius: 10, background: '#D97706', color: '#FFFFFF', fontWeight: 700, border: 'none', display: 'inline-flex', alignItems: 'center', gap: 8 }}
+                        disabled={isSubmitting}
+                        style={{ padding: '10px 24px', borderRadius: 10, background: '#D97706', color: '#FFFFFF', fontWeight: 700, border: 'none', display: 'inline-flex', alignItems: 'center', gap: 8, opacity: isSubmitting ? 0.7 : 1 }}
                     >
-                        <i className="fas fa-save" />
-                        <span>Save Membership Card</span>
+                        {isSubmitting ? (
+                            <>
+                                <i className="fas fa-spinner fa-spin" />
+                                <span>Saving...</span>
+                            </>
+                        ) : (
+                            <>
+                                <i className="fas fa-save" />
+                                <span>Save Membership Card</span>
+                            </>
+                        )}
                     </button>
                 </div>
             </div>

@@ -188,6 +188,7 @@ export default function StampCardBuilderModal({
             discount: 0,
         }))
     })
+    const [isSubmitting, setIsSubmitting] = useState(false)
 
     // Self-contained API call to fetch card designs if not provided via props
     useEffect(() => {
@@ -228,6 +229,8 @@ export default function StampCardBuilderModal({
     }
 
     const stamp_card = async () => {
+        if (isSubmitting) return
+        setIsSubmitting(true)
         try {
             // Get local merchant ID if stored
             let localMerchantId = null
@@ -365,7 +368,7 @@ export default function StampCardBuilderModal({
             );
         }
         finally {
-            // Optional loading handling can be added here
+            setIsSubmitting(false)
         }
     };
 
@@ -510,7 +513,12 @@ export default function StampCardBuilderModal({
 
 
 
-    const handleSubmit = () => {
+    const handleSubmit = (e) => {
+        if (e) {
+            e.preventDefault()
+            e.stopPropagation()
+        }
+        if (isSubmitting) return
         stamp_card()
     }
 
@@ -1335,10 +1343,20 @@ export default function StampCardBuilderModal({
                         type="button"
                         className="btn firstloop-btn-primary"
                         onClick={handleSubmit}
-                        style={{ padding: '9px 22px', borderRadius: 8, fontSize: '0.85rem' }}
+                        disabled={isSubmitting}
+                        style={{ padding: '9px 22px', borderRadius: 8, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}
                     >
-                        <i className="fas fa-check" style={{ marginRight: 6 }} />
-                        Save Design
+                        {isSubmitting ? (
+                            <>
+                                <i className="fas fa-spinner fa-spin" />
+                                <span>Saving...</span>
+                            </>
+                        ) : (
+                            <>
+                                <i className="fas fa-check" />
+                                <span>Save Design</span>
+                            </>
+                        )}
                     </button>
                 </div>
             </div>

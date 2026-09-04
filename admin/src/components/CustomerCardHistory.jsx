@@ -379,7 +379,7 @@ const CustomerCardHistory = ({ isOpen, onClose, cardId, card }) => {
 
                                                             {/* UPDATED AT */}
                                                             <td style={{ padding: '12px 14px', color: 'var(--text-muted)', fontSize: '0.78rem' }}>
-                                                                {isPaid ? formatDate(item.updated_at || item.created_at) : '-'}
+                                                                {isPaid ? formatDate(item.payment_date) : '-'}
                                                             </td>
                                                         </tr>
                                                     )

@@ -5,19 +5,25 @@ export default function PhoneNumberField({
     value,
     countryCode,
     onChange,
-    required = false
+    required = false,
+    isRequired = false,
+    showAsterisk = false,
+    label = "Phone Number",
+    disabled = false,
+    placeholder = "Enter phone number",
+    className = ""
 }) {
-
+    const isFieldRequired = Boolean(required || isRequired || showAsterisk)
     const safeCountryCode = countryCode != null ? String(countryCode).trim() : ''
     const cleanDialCode = safeCountryCode ? safeCountryCode.replace('+', '') : ''
 
     return (
-        <div className="form-group phone-number-field-wrapper">
+        <div className={`form-group phone-number-field-wrapper ${className}`.trim()}>
             <label
                 className="form-label-classic"
                 style={{ marginBottom: 8, display: 'block' }}
             >
-                Phone Number {required && <span style={{ color: '#ef4444' }}>*</span>}
+                {label} {isFieldRequired && <span style={{ color: '#ef4444' }}>*</span>}
             </label>
 
             <PhoneInput
@@ -32,35 +38,26 @@ export default function PhoneNumberField({
 
                     onChange?.(cleanPhone, `+${dialCode}`)
                 }}
-
+                disabled={disabled}
                 enableSearch
-
                 preferredCountries={[
                     'in',
                     'us',
                     'gb'
                 ]}
-
                 inputProps={{
                     name: 'phone',
-                    required: true
+                    required: isFieldRequired,
+                    disabled: disabled
                 }}
-
                 inputClass="phone-input-custom"
-
                 dropdownClass="phone-input-dropdown"
-
                 containerClass="phone-input-container"
-
                 buttonClass="phone-input-button"
-
-                placeholder="Enter phone number"
+                placeholder={placeholder}
             />
-
         </div>
-
     )
-
 }
 
 

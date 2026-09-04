@@ -1172,6 +1172,7 @@ export default function SalePersons() {
                                             value={editForm.phone}
                                             countryCode={editForm.country_code ? String(editForm.country_code) : ''}
                                             onChange={handleEditPhoneChange}
+                                            required
                                         />
                                     </div>
 
@@ -1396,12 +1397,12 @@ export default function SalePersons() {
                                         />
                                         <label htmlFor="add-sp-email" className="form-label">Email Address</label>
                                     </div>
-
                                     <PhoneNumberField
                                         value={addForm.phone}
                                         countryCode={addForm.country_code ? String(addForm.country_code) : ''}
                                         onChange={handleAddPhoneChange}
                                         disabled={addingSalePerson}
+                                        required
                                     />
                                 </div>
 

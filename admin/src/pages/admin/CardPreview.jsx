@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useParams, useSearchParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import html2canvas from 'html2canvas'
 import CustomerCard from '../../components/CustomerCard.jsx'
 import { fetchCustomerStampLevelsApi } from '../../services/cardService.js'
@@ -11,6 +11,7 @@ import { fetchCustomerStampLevelsApi } from '../../services/cardService.js'
 */
 
 export default function CardPreview() {
+    const navigate = useNavigate()
     const { id: paramId, type: paramType } = useParams()
     const [searchParams] = useSearchParams()
 
@@ -171,15 +172,43 @@ export default function CardPreview() {
                         padding: 30,
                         borderRadius: 16,
                         textAlign: 'center',
-                        boxShadow: '0 10px 30px rgba(0,0,0,0.1)'
+                        boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
+                        maxWidth: 400,
+                        width: '100%'
                     }}
                 >
                     <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#1E293B', marginBottom: 8 }}>
                         {cardType === 2 ? 'Membership Pass Not Found' : 'Stamp Card Not Found'}
                     </h3>
-                    <p style={{ marginBottom: 0, color: '#64748B', fontSize: '0.9rem' }}>
+                    <p style={{ marginBottom: 16, color: '#64748B', fontSize: '0.9rem' }}>
                         The requested card could not be found.
                     </p>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (window.history.length > 1) {
+                                navigate(-1)
+                            } else {
+                                navigate('/merchant/cards')
+                            }
+                        }}
+                        style={{
+                            padding: '9px 20px',
+                            borderRadius: 10,
+                            background: '#0E88B8',
+                            color: '#FFFFFF',
+                            fontWeight: 700,
+                            fontSize: '0.88rem',
+                            border: 'none',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 8
+                        }}
+                    >
+                        <i className="fas fa-arrow-left" />
+                        <span>Go Back</span>
+                    </button>
                 </div>
             </div>
         )
@@ -203,9 +232,49 @@ export default function CardPreview() {
                 justifyContent: 'center',
                 padding: '28px 16px',
                 background: '#F8FAFC',
-                gap: 20
+                gap: 16
             }}
         >
+            {/* TOP BAR: BACK NAVIGATION BUTTON */}
+            <div style={{ width: '100%', maxWidth: 420, display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
+                <button
+                    type="button"
+                    onClick={() => {
+                        if (window.history.length > 1) {
+                            navigate(-1)
+                        } else {
+                            navigate('/merchant/cards')
+                        }
+                    }}
+                    style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        padding: '8px 16px',
+                        borderRadius: 10,
+                        background: '#FFFFFF',
+                        border: '1px solid #E2E8F0',
+                        color: '#1E293B',
+                        fontWeight: 700,
+                        fontSize: '0.85rem',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                        transition: 'all 0.15s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#F1F5F9'
+                        e.currentTarget.style.borderColor = '#CBD5E1'
+                    }}
+                    onMouseLeave={(e) => {
+                        e.currentTarget.style.background = '#FFFFFF'
+                        e.currentTarget.style.borderColor = '#E2E8F0'
+                    }}
+                >
+                    <i className="fas fa-arrow-left" style={{ color: '#0E88B8' }} />
+                    <span>Back</span>
+                </button>
+            </div>
+
             {/* REUSABLE CUSTOMER CARD COMPONENT */}
             <CustomerCard
                 ref={cardRef}

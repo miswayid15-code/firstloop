@@ -1,6 +1,4 @@
 import { useState, useEffect, useMemo } from 'react'
-import { INITIAL_STAMP_CARDS, INITIAL_MEMBERSHIP_CARDS } from './mockMerchantData'
-import flLogo from '../../assets/img/firstloop-favicon.png'
 import qrImg from '../../assets/img/qr-img.png'
 import axios from 'axios'
 import API from '../../api.js'
@@ -73,7 +71,7 @@ export default function CardList() {
     const [cardDesignsApi, setCardDesignsApi] = useState([])
 
     const [stampSearch, setStampSearch] = useState('')
-  
+
     const getStoredMerchant = () => {
         try {
             const raw = localStorage.getItem("merchant_data")
@@ -108,45 +106,17 @@ export default function CardList() {
         fetchCardDesignsFromApi()
         const targetId = initialMerId
         if (targetId) {
+            fetchMerchant(targetId)
             fetchStampCards(targetId)
             fetchMembershipCards(targetId)
-            fetchMerchant(targetId)
+
         } else {
+            fetchMerchant()
             fetchStampCards()
             fetchMembershipCards()
-            fetchMerchant()
+
         }
     }, [])
-
-    const fetchCardDesignsFromApi = async () => {
-        try {
-            const response = await API.post('admin/card-design/list')
-            if (response?.data && (response.data.status === 1 || response.data.status === '1' || response.data.success)) {
-                const rawList = response.data.data || response.data.card_designs || response.data.designs || []
-                const list = Array.isArray(rawList) ? rawList : []
-
-                const formattedDesigns = list
-                    .filter(item => Number(item.status) === 1 || item.status === '1' || item.status === undefined)
-                    .map(item => ({
-                        id: item.id || item._id,
-                        name: item.name || item.title || 'Card Design',
-                        image: formatImageUrl(item.image || item.card_image || item.image_url || item.path),
-                        status: Number(item.status)
-                    }))
-
-                if (formattedDesigns.length > 0) {
-                    setCardDesignsApi(formattedDesigns)
-                    return
-                }
-            }
-
-            setCardDesignsApi(DEFAULT_CARD_DESIGNS.map(d => ({ ...d, image: formatImageUrl(d.image) })))
-        } catch (err) {
-            console.error('Error fetching card designs from API:', err)
-            setCardDesignsApi(DEFAULT_CARD_DESIGNS.map(d => ({ ...d, image: formatImageUrl(d.image) })))
-        }
-    }
-
     const fetchMerchant = async (targetId) => {
         const idToFetch = targetId || merId || initialMerId
         try {
@@ -169,7 +139,7 @@ export default function CardList() {
                         const branches = Array.isArray(branchRes.data.data) ? branchRes.data.data : []
                         setBranchesData(branches)
                     }
-                } catch (e) {}
+                } catch (e) { }
             }
 
             console.log("merchant data", response?.data)
@@ -200,6 +170,36 @@ export default function CardList() {
             setLoading(false)
         }
     }
+    const fetchCardDesignsFromApi = async () => {
+        try {
+            const response = await API.post('admin/card-design/list')
+            if (response?.data && (response.data.status === 1 || response.data.status === '1' || response.data.success)) {
+                const rawList = response.data.data || response.data.card_designs || response.data.designs || []
+                const list = Array.isArray(rawList) ? rawList : []
+
+                const formattedDesigns = list
+                    .filter(item => Number(item.status) === 1 || item.status === '1' || item.status === undefined)
+                    .map(item => ({
+                        id: item.id || item._id,
+                        name: item.name || item.title || 'Card Design',
+                        image: formatImageUrl(item.image || item.card_image || item.image_url || item.path),
+                        status: Number(item.status)
+                    }))
+
+                if (formattedDesigns.length > 0) {
+                    setCardDesignsApi(formattedDesigns)
+                    return
+                }
+            }
+
+            setCardDesignsApi(DEFAULT_CARD_DESIGNS.map(d => ({ ...d, image: formatImageUrl(d.image) })))
+        } catch (err) {
+            console.error('Error fetching card designs from API:', err)
+            setCardDesignsApi(DEFAULT_CARD_DESIGNS.map(d => ({ ...d, image: formatImageUrl(d.image) })))
+        }
+    }
+
+
 
     const fetchStampCards = async (targetId) => {
         const mId = targetId || merId || initialMerId

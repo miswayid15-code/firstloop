@@ -202,6 +202,12 @@ export default function AddCardCustomer() {
             return;
         }
 
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(emailToLookup)) {
+            toast.error("Please enter a valid email address (e.g. customer@example.com)");
+            return;
+        }
+
         setIsSearching(true);
         try {
             await fetchCheckCustomer(emailToLookup);
@@ -231,8 +237,15 @@ export default function AddCardCustomer() {
     const handleSubmit = async (e) => {
         e?.preventDefault();
 
-        if (!email.trim()) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const cleanEmail = email.trim();
+
+        if (!cleanEmail) {
             toast.error("Customer email is required");
+            return;
+        }
+        if (!emailRegex.test(cleanEmail)) {
+            toast.error("Please enter a valid email address");
             return;
         }
         if (!customerName.trim()) {
@@ -473,9 +486,13 @@ export default function AddCardCustomer() {
                                     />
                                     <input
                                         type="email"
+                                        name="email"
+                                        id="customer-email-input"
+                                        autoComplete="email"
                                         value={email}
                                         onChange={(e) => {
-                                            setEmail(e.target.value);
+                                            const cleanValue = e.target.value.replace(/\s+/g, '');
+                                            setEmail(cleanValue);
                                             setEmailChecked(false);
                                         }}
                                         onKeyDown={(e) => {
@@ -485,6 +502,7 @@ export default function AddCardCustomer() {
                                             }
                                         }}
                                         placeholder="e.g. customer@example.com"
+                                        required
                                         style={{
                                             width: "100%",
                                             padding: "11px 14px 11px 40px",

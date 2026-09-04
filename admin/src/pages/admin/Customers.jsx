@@ -1427,6 +1427,7 @@ export default function Customers() {
                                                 value={editCustomerForm.phone}
                                                 countryCode={editCustomerForm.country_code ? String(editCustomerForm.country_code) : ''}
                                                 onChange={handleEditCustomerPhoneChange}
+                                                required
                                             />
 
                                             <div className="form-group-classic">
@@ -1681,6 +1682,7 @@ export default function Customers() {
                                             countryCode={addCustomerForm.country_code ? String(addCustomerForm.country_code) : ''}
                                             onChange={handleAddCustomerPhoneChange}
                                             disabled={addingCustomer}
+                                            required
                                         />
 
                                         <div className="form-group-classic">
