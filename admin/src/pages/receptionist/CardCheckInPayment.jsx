@@ -773,26 +773,269 @@ export default function CardCheckInPayment() {
                         )}
                     </div>
                 ) : (
-                    <div style={{ textAlign: 'center', padding: '16px 0' }}>
-                        <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--firstloop-primary-light)', color: 'var(--firstloop-primary)', margin: '0 auto 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.8rem' }}>
-                            <i className="fas fa-qrcode" />
-                        </div>
-                        <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
-                            Scan Customer QR Code Pass
-                        </h3>
-                        <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', marginTop: 4, marginBottom: 16 }}>
-                            Position customer's digital card QR code in front of scanner to load card details instantly.
-                        </p>
-
-                        <button
-                            type="button"
-                            className="btn firstloop-btn-primary"
-                            onClick={handleStartQRScan}
-                            style={{ padding: '12px 28px', borderRadius: 12, fontWeight: 800, fontSize: '0.92rem', display: 'inline-flex', alignItems: 'center', gap: 8 }}
+                    <div style={{ padding: '8px 0' }}>
+                        {/* Interactive Scanner Hub */}
+                        <div
+                            style={{
+                                background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #0F283D 100%)',
+                                borderRadius: 20,
+                                padding: '32px 28px',
+                                color: '#FFFFFF',
+                                position: 'relative',
+                                overflow: 'hidden',
+                                boxShadow: '0 12px 32px rgba(15, 23, 42, 0.25)',
+                                border: '1px solid rgba(255, 255, 255, 0.08)'
+                            }}
                         >
-                            <i className="fas fa-camera" />
-                            <span>Scan QR Code Pass</span>
-                        </button>
+                            {/* Decorative background glow circles */}
+                            <div
+                                style={{
+                                    position: 'absolute',
+                                    top: -60,
+                                    right: -60,
+                                    width: 220,
+                                    height: 220,
+                                    borderRadius: '50%',
+                                    background: 'radial-gradient(circle, rgba(14, 136, 184, 0.3) 0%, rgba(14, 136, 184, 0) 70%)',
+                                    pointerEvents: 'none'
+                                }}
+                            />
+                            <div
+                                style={{
+                                    position: 'absolute',
+                                    bottom: -40,
+                                    left: 40,
+                                    width: 180,
+                                    height: 180,
+                                    borderRadius: '50%',
+                                    background: 'radial-gradient(circle, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0) 70%)',
+                                    pointerEvents: 'none'
+                                }}
+                            />
+
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24, alignItems: 'center', position: 'relative', zIndex: 1 }}>
+                                {/* Left: Info & Actions */}
+                                <div>
+                                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
+                                        <span
+                                            style={{
+                                                background: 'rgba(14, 136, 184, 0.25)',
+                                                color: '#38BDF8',
+                                                border: '1px solid rgba(56, 189, 248, 0.4)',
+                                                fontWeight: 800,
+                                                fontSize: '0.72rem',
+                                                padding: '4px 10px',
+                                                borderRadius: 20,
+                                                letterSpacing: '0.5px',
+                                                textTransform: 'uppercase',
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: 5
+                                            }}
+                                        >
+                                            <i className="fas fa-bolt" style={{ fontSize: '0.7rem' }} /> Instant Pass Lookup
+                                        </span>
+                                        <span
+                                            style={{
+                                                background: 'rgba(16, 185, 129, 0.2)',
+                                                color: '#34D399',
+                                                border: '1px solid rgba(52, 211, 153, 0.35)',
+                                                fontWeight: 800,
+                                                fontSize: '0.72rem',
+                                                padding: '4px 10px',
+                                                borderRadius: 20,
+                                                letterSpacing: '0.5px',
+                                                textTransform: 'uppercase',
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: 5
+                                            }}
+                                        >
+                                            <i className="fas fa-shield-alt" style={{ fontSize: '0.7rem' }} /> Apple & Google Wallet Ready
+                                        </span>
+                                    </div>
+
+                                    <h3 style={{ fontSize: '1.45rem', fontWeight: 800, margin: '0 0 8px 0', color: '#FFFFFF', letterSpacing: '-0.3px' }}>
+                                        Scan Customer Pass QR
+                                    </h3>
+                                    <p style={{ fontSize: '0.88rem', color: '#94A3B8', margin: '0 0 22px 0', lineHeight: 1.55 }}>
+                                        Point the camera at the customer's digital card pass, Apple/Google wallet QR, or upload an image to identify the customer and retrieve stamp balances instantly.
+                                    </p>
+
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+                                        <button
+                                            type="button"
+                                            className="btn"
+                                            onClick={handleStartQRScan}
+                                            style={{
+                                                background: 'linear-gradient(135deg, #0E88B8 0%, #0284C7 100%)',
+                                                color: '#FFFFFF',
+                                                border: 'none',
+                                                padding: '12px 26px',
+                                                borderRadius: 14,
+                                                fontWeight: 800,
+                                                fontSize: '0.92rem',
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: 10,
+                                                boxShadow: '0 6px 20px rgba(14, 136, 184, 0.45)',
+                                                cursor: 'pointer',
+                                                transition: 'transform 0.15s ease, box-shadow 0.15s ease'
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.transform = 'translateY(-2px)'
+                                                e.currentTarget.style.boxShadow = '0 8px 25px rgba(14, 136, 184, 0.6)'
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.transform = 'translateY(0)'
+                                                e.currentTarget.style.boxShadow = '0 6px 20px rgba(14, 136, 184, 0.45)'
+                                            }}
+                                        >
+                                            <div
+                                                style={{
+                                                    width: 26,
+                                                    height: 26,
+                                                    borderRadius: '50%',
+                                                    background: 'rgba(255, 255, 255, 0.2)',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    fontSize: '0.85rem'
+                                                }}
+                                            >
+                                                <i className="fas fa-camera" />
+                                            </div>
+                                            <span>Launch Camera Scanner</span>
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            className="btn"
+                                            onClick={() => fileInputRef.current?.click()}
+                                            style={{
+                                                background: 'rgba(255, 255, 255, 0.08)',
+                                                color: '#E2E8F0',
+                                                border: '1px solid rgba(255, 255, 255, 0.18)',
+                                                padding: '12px 20px',
+                                                borderRadius: 14,
+                                                fontWeight: 700,
+                                                fontSize: '0.88rem',
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: 8,
+                                                cursor: 'pointer',
+                                                backdropFilter: 'blur(4px)'
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.14)'
+                                                e.currentTarget.style.color = '#FFFFFF'
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'
+                                                e.currentTarget.style.color = '#E2E8F0'
+                                            }}
+                                        >
+                                            <i className="fas fa-file-image" style={{ color: '#38BDF8' }} />
+                                            <span>Upload QR Image</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Right: Tech HUD Scanner Graphic Preview */}
+                                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                                    <div
+                                        onClick={handleStartQRScan}
+                                        style={{
+                                            width: 200,
+                                            height: 200,
+                                            borderRadius: 24,
+                                            background: 'rgba(15, 23, 42, 0.7)',
+                                            border: '1.5px dashed rgba(56, 189, 248, 0.5)',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            position: 'relative',
+                                            cursor: 'pointer',
+                                            boxShadow: '0 0 30px rgba(14, 136, 184, 0.15)',
+                                            transition: 'border-color 0.2s ease, transform 0.2s ease'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            e.currentTarget.style.borderColor = '#38BDF8'
+                                            e.currentTarget.style.transform = 'scale(1.03)'
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.currentTarget.style.borderColor = 'rgba(56, 189, 248, 0.5)'
+                                            e.currentTarget.style.transform = 'scale(1)'
+                                        }}
+                                    >
+                                        {/* Scanner Corner Reticles */}
+                                        <div style={{ position: 'absolute', top: 12, left: 12, width: 18, height: 18, borderTop: '3px solid #38BDF8', borderLeft: '3px solid #38BDF8', borderRadius: '4px 0 0 0' }} />
+                                        <div style={{ position: 'absolute', top: 12, right: 12, width: 18, height: 18, borderTop: '3px solid #38BDF8', borderRight: '3px solid #38BDF8', borderRadius: '0 4px 0 0' }} />
+                                        <div style={{ position: 'absolute', bottom: 12, left: 12, width: 18, height: 18, borderBottom: '3px solid #38BDF8', borderLeft: '3px solid #38BDF8', borderRadius: '0 0 0 4px' }} />
+                                        <div style={{ position: 'absolute', bottom: 12, right: 12, width: 18, height: 18, borderBottom: '3px solid #38BDF8', borderRight: '3px solid #38BDF8', borderRadius: '0 0 4px 0' }} />
+
+                                        {/* QR Icon in center */}
+                                        <div
+                                            style={{
+                                                width: 64,
+                                                height: 64,
+                                                borderRadius: 16,
+                                                background: 'rgba(56, 189, 248, 0.15)',
+                                                border: '1px solid rgba(56, 189, 248, 0.3)',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                color: '#38BDF8',
+                                                fontSize: '1.8rem',
+                                                marginBottom: 10,
+                                                boxShadow: '0 0 20px rgba(56, 189, 248, 0.25)'
+                                            }}
+                                        >
+                                            <i className="fas fa-qrcode" />
+                                        </div>
+
+                                        <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#FFFFFF', letterSpacing: '0.3px' }}>
+                                            TAP TO SCAN
+                                        </span>
+                                        <span style={{ fontSize: '0.68rem', color: '#94A3B8', marginTop: 2 }}>
+                                            Auto-Detect Active
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Features Grid Footer */}
+                            <div
+                                style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                                    gap: 12,
+                                    marginTop: 26,
+                                    paddingTop: 20,
+                                    borderTop: '1px solid rgba(255, 255, 255, 0.08)'
+                                }}
+                            >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.8rem', color: '#CBD5E1' }}>
+                                    <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(14, 136, 184, 0.2)', color: '#38BDF8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem' }}>
+                                        <i className="fas fa-mobile-alt" />
+                                    </div>
+                                    <span>Apple & Google Wallet Passes</span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.8rem', color: '#CBD5E1' }}>
+                                    <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(16, 185, 129, 0.2)', color: '#34D399', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem' }}>
+                                        <i className="fas fa-id-card" />
+                                    </div>
+                                    <span>Physical Cards & QR Receipts</span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.8rem', color: '#CBD5E1' }}>
+                                    <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(245, 158, 11, 0.2)', color: '#FBBF24', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem' }}>
+                                        <i className="fas fa-sync" />
+                                    </div>
+                                    <span>Front & Rear Camera Switching</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>
@@ -1379,21 +1622,114 @@ export default function CardCheckInPayment() {
 
             {/* REAL-TIME HTML5 QR SCANNER POPUP MODAL */}
             {qrScannerOpen && (
-                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.88)', backdropFilter: 'blur(8px)', zIndex: 1050, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-                    <div style={{ width: '100%', maxWidth: 460, background: '#FFFFFF', borderRadius: 24, padding: '24px 24px 20px', boxShadow: '0 25px 50px rgba(0,0,0,0.4)', position: 'relative', overflow: 'hidden' }}>
+                <div
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'rgba(10, 15, 29, 0.88)',
+                        backdropFilter: 'blur(10px)',
+                        zIndex: 1050,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: 16
+                    }}
+                >
+                    {/* Embedded Scoped Scanner Animations */}
+                    <style>
+                        {`
+                            @keyframes qrLaserSweep {
+                                0% { top: 6%; opacity: 0.8; }
+                                50% { top: 90%; opacity: 1; }
+                                100% { top: 6%; opacity: 0.8; }
+                            }
+                            @keyframes qrPulseGlow {
+                                0%, 100% { opacity: 0.8; filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.6)); }
+                                50% { opacity: 1; filter: drop-shadow(0 0 14px rgba(56, 189, 248, 0.95)); }
+                            }
+                            @keyframes qrLiveDotPulse {
+                                0%, 100% { opacity: 1; transform: scale(1); }
+                                50% { opacity: 0.4; transform: scale(0.85); }
+                            }
+                            #receptionist-qr-reader {
+                                border: none !important;
+                            }
+                            #receptionist-qr-reader video {
+                                border-radius: 16px !important;
+                                object-fit: cover !important;
+                                width: 100% !important;
+                                max-height: 380px !important;
+                            }
+                            #receptionist-qr-reader__scan_region {
+                                border: none !important;
+                            }
+                            #receptionist-qr-reader__dashboard_section {
+                                display: none !important;
+                            }
+                        `}
+                    </style>
 
-                        {/* Modal Header */}
+                    <div
+                        style={{
+                            width: '100%',
+                            maxWidth: 480,
+                            background: '#0F172A',
+                            borderRadius: 24,
+                            padding: '24px 22px 20px',
+                            boxShadow: '0 25px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.1)',
+                            position: 'relative',
+                            overflow: 'hidden',
+                            color: '#FFFFFF'
+                        }}
+                    >
+                        {/* Header with Live Status Pill */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                <div style={{ width: 38, height: 38, borderRadius: 10, background: 'var(--firstloop-primary-light)', color: 'var(--firstloop-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <div
+                                    style={{
+                                        width: 40,
+                                        height: 40,
+                                        borderRadius: 12,
+                                        background: 'linear-gradient(135deg, rgba(14, 136, 184, 0.3) 0%, rgba(2, 132, 199, 0.2) 100%)',
+                                        border: '1px solid rgba(56, 189, 248, 0.4)',
+                                        color: '#38BDF8',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: '1.2rem',
+                                        boxShadow: '0 0 15px rgba(56, 189, 248, 0.25)'
+                                    }}
+                                >
                                     <i className="fas fa-qrcode" />
                                 </div>
                                 <div>
-                                    <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
-                                        Scan Customer Pass
-                                    </h3>
-                                    <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0 }}>
-                                        Align customer's QR pass within the viewfinder
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0, color: '#FFFFFF', letterSpacing: '-0.2px' }}>
+                                            Live QR Scanner
+                                        </h3>
+                                        <span
+                                            style={{
+                                                background: 'rgba(16, 185, 129, 0.2)',
+                                                border: '1px solid rgba(52, 211, 153, 0.4)',
+                                                color: '#34D399',
+                                                fontSize: '0.68rem',
+                                                fontWeight: 800,
+                                                padding: '2px 8px',
+                                                borderRadius: 12,
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: 5
+                                            }}
+                                        >
+                                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#34D399', animation: 'qrLiveDotPulse 1.5s infinite' }} />
+                                            LIVE
+                                        </span>
+                                    </div>
+                                    <p style={{ fontSize: '0.76rem', color: '#94A3B8', margin: '2px 0 0 0' }}>
+                                        Align pass inside the viewfinder reticle
                                     </p>
                                 </div>
                             </div>
@@ -1404,7 +1740,30 @@ export default function CardCheckInPayment() {
                                     stopScanner()
                                     setQrScannerOpen(false)
                                 }}
-                                style={{ background: '#F1F5F9', border: 'none', width: 32, height: 32, borderRadius: '50%', fontSize: '0.9rem', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                style={{
+                                    background: 'rgba(255, 255, 255, 0.08)',
+                                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                                    width: 34,
+                                    height: 34,
+                                    borderRadius: '50%',
+                                    fontSize: '0.9rem',
+                                    color: '#94A3B8',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    transition: 'all 0.15s ease'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)'
+                                    e.currentTarget.style.color = '#EF4444'
+                                    e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.4)'
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'
+                                    e.currentTarget.style.color = '#94A3B8'
+                                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.12)'
+                                }}
                             >
                                 <i className="fas fa-times" />
                             </button>
@@ -1412,47 +1771,72 @@ export default function CardCheckInPayment() {
 
                         {/* Error Banner if Camera is Blocked */}
                         {scannerError ? (
-                            <div style={{ padding: 20, background: '#FEF2F2', border: '1px solid #FCA5A5', borderRadius: 16, textAlign: 'center', marginBottom: 16 }}>
-                                <i className="fas fa-video-slash" style={{ fontSize: '2rem', color: '#DC2626', marginBottom: 10 }} />
-                                <h5 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#991B1B', margin: '0 0 6px' }}>Camera Permission Blocked</h5>
-                                <p style={{ fontSize: '0.8rem', color: '#B91C1C', margin: '0 0 14px' }}>
+                            <div style={{ padding: 22, background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.35)', borderRadius: 18, textAlign: 'center', marginBottom: 16 }}>
+                                <div style={{ width: 50, height: 50, borderRadius: '50%', background: 'rgba(239, 68, 68, 0.2)', color: '#F87171', margin: '0 auto 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem' }}>
+                                    <i className="fas fa-video-slash" />
+                                </div>
+                                <h5 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#FCA5A5', margin: '0 0 6px' }}>Camera Permission Blocked</h5>
+                                <p style={{ fontSize: '0.8rem', color: '#F87171', margin: '0 0 16px', lineHeight: 1.5 }}>
                                     {scannerError}
                                 </p>
-                                <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+                                <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
                                     <button
                                         type="button"
-                                        className="btn btn-sm firstloop-btn-primary"
+                                        className="btn btn-sm"
                                         onClick={startScanner}
-                                        style={{ padding: '6px 14px', borderRadius: 8, fontSize: '0.8rem' }}
+                                        style={{
+                                            background: '#0E88B8',
+                                            color: '#FFFFFF',
+                                            border: 'none',
+                                            padding: '8px 16px',
+                                            borderRadius: 10,
+                                            fontSize: '0.82rem',
+                                            fontWeight: 700,
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: 6
+                                        }}
                                     >
-                                        <i className="fas fa-redo" style={{ marginRight: 6 }} />
+                                        <i className="fas fa-redo" />
                                         Try Again
                                     </button>
                                     <button
                                         type="button"
-                                        className="btn btn-sm btn-outline-secondary"
+                                        className="btn btn-sm"
                                         onClick={() => fileInputRef.current?.click()}
-                                        style={{ padding: '6px 14px', borderRadius: 8, fontSize: '0.8rem' }}
+                                        style={{
+                                            background: 'rgba(255, 255, 255, 0.1)',
+                                            color: '#E2E8F0',
+                                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                                            padding: '8px 16px',
+                                            borderRadius: 10,
+                                            fontSize: '0.82rem',
+                                            fontWeight: 700,
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: 6
+                                        }}
                                     >
-                                        <i className="fas fa-upload" style={{ marginRight: 6 }} />
+                                        <i className="fas fa-upload" />
                                         Upload QR Image
                                     </button>
                                 </div>
                             </div>
                         ) : (
-                            /* Real Live Video Camera Box */
+                            /* Live High-Tech Viewfinder Camera Box */
                             <div
                                 style={{
                                     position: 'relative',
                                     width: '100%',
-                                    borderRadius: 18,
+                                    borderRadius: 20,
                                     overflow: 'hidden',
-                                    background: '#0F172A',
-                                    minHeight: 280,
+                                    background: '#020617',
+                                    minHeight: 310,
+                                    maxHeight: 360,
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    boxShadow: 'inset 0 0 20px rgba(0,0,0,0.5)',
+                                    boxShadow: 'inset 0 0 30px rgba(0,0,0,0.8), 0 0 0 1px rgba(56, 189, 248, 0.2)',
                                     marginBottom: 16
                                 }}
                             >
@@ -1465,11 +1849,81 @@ export default function CardCheckInPayment() {
                                     }}
                                 />
 
+                                {/* Camera HUD Overlay (Cyber / Fintech Look) */}
+                                <div
+                                    style={{
+                                        position: 'absolute',
+                                        inset: 0,
+                                        pointerEvents: 'none',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        justifyContent: 'center'
+                                    }}
+                                >
+                                    {/* Central Target Viewfinder Box */}
+                                    <div
+                                        style={{
+                                            width: 220,
+                                            height: 220,
+                                            position: 'relative',
+                                            animation: 'qrPulseGlow 3s infinite ease-in-out'
+                                        }}
+                                    >
+                                        {/* 4 Glowing Corner Brackets */}
+                                        <div style={{ position: 'absolute', top: 0, left: 0, width: 24, height: 24, borderTop: '3.5px solid #38BDF8', borderLeft: '3.5px solid #38BDF8', borderRadius: '6px 0 0 0' }} />
+                                        <div style={{ position: 'absolute', top: 0, right: 0, width: 24, height: 24, borderTop: '3.5px solid #38BDF8', borderRight: '3.5px solid #38BDF8', borderRadius: '0 6px 0 0' }} />
+                                        <div style={{ position: 'absolute', bottom: 0, left: 0, width: 24, height: 24, borderBottom: '3.5px solid #38BDF8', borderLeft: '3.5px solid #38BDF8', borderRadius: '0 0 0 6px' }} />
+                                        <div style={{ position: 'absolute', bottom: 0, right: 0, width: 24, height: 24, borderBottom: '3.5px solid #38BDF8', borderRight: '3.5px solid #38BDF8', borderRadius: '0 0 6px 0' }} />
+
+                                        {/* Subtle Center Crosshair */}
+                                        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 14, height: 14, opacity: 0.4 }}>
+                                            <div style={{ position: 'absolute', top: 6, left: 0, right: 0, height: 2, background: '#38BDF8' }} />
+                                            <div style={{ position: 'absolute', left: 6, top: 0, bottom: 0, width: 2, background: '#38BDF8' }} />
+                                        </div>
+
+                                        {/* Moving Neon Laser Scan Line */}
+                                        <div
+                                            style={{
+                                                position: 'absolute',
+                                                left: 8,
+                                                right: 8,
+                                                height: 3,
+                                                background: 'linear-gradient(90deg, rgba(56, 189, 248, 0) 0%, rgba(56, 189, 248, 1) 50%, rgba(56, 189, 248, 0) 100%)',
+                                                boxShadow: '0 0 12px 3px rgba(56, 189, 248, 0.8), 0 0 25px 6px rgba(14, 136, 184, 0.5)',
+                                                animation: 'qrLaserSweep 2.2s ease-in-out infinite'
+                                            }}
+                                        />
+                                    </div>
+
+                                    {/* Viewfinder Target Label */}
+                                    <div
+                                        style={{
+                                            position: 'absolute',
+                                            bottom: 12,
+                                            background: 'rgba(15, 23, 42, 0.75)',
+                                            backdropFilter: 'blur(6px)',
+                                            border: '1px solid rgba(255, 255, 255, 0.15)',
+                                            color: '#E2E8F0',
+                                            fontSize: '0.72rem',
+                                            fontWeight: 700,
+                                            padding: '4px 14px',
+                                            borderRadius: 20,
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: 6
+                                        }}
+                                    >
+                                        <i className="fas fa-crosshairs" style={{ color: '#38BDF8', fontSize: '0.7rem' }} />
+                                        Hold phone steady • Auto-capturing
+                                    </div>
+                                </div>
+
                                 {/* Camera Loading Overlay */}
                                 {qrScanningState && (
-                                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(15, 23, 42, 0.75)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, zIndex: 10 }}>
-                                        <div className="spinner-border text-primary" role="status" style={{ width: '2rem', height: '2rem' }} />
-                                        <small style={{ color: '#FFFFFF', fontWeight: 700, fontSize: '0.8rem' }}>Starting Camera Stream...</small>
+                                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(2, 6, 23, 0.85)', backdropFilter: 'blur(4px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, zIndex: 10 }}>
+                                        <div className="spinner-border text-info" role="status" style={{ width: '2.4rem', height: '2.4rem' }} />
+                                        <small style={{ color: '#FFFFFF', fontWeight: 800, fontSize: '0.84rem', letterSpacing: '0.3px' }}>Starting Camera Stream...</small>
                                     </div>
                                 )}
                             </div>
@@ -1485,26 +1939,60 @@ export default function CardCheckInPayment() {
                             style={{ display: 'none' }}
                         />
 
-                        {/* Bottom Actions & Camera Switch */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, paddingTop: 10, borderTop: '1px solid #E2E8F0' }}>
+                        {/* Bottom Actions Bar */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, paddingTop: 12, borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
                             <button
                                 type="button"
-                                className="btn btn-sm btn-light"
                                 onClick={toggleCameraFacing}
-                                style={{ borderRadius: 8, fontSize: '0.8rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                                style={{
+                                    background: 'rgba(255, 255, 255, 0.08)',
+                                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                                    color: '#E2E8F0',
+                                    padding: '8px 14px',
+                                    borderRadius: 10,
+                                    fontSize: '0.8rem',
+                                    fontWeight: 700,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 7,
+                                    cursor: 'pointer',
+                                    transition: 'background 0.15s ease'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'}
+                                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
                             >
-                                <i className="fas fa-camera-rotate" />
-                                <span>Switch Camera ({cameraFacing === 'environment' ? 'Back' : 'Front'})</span>
+                                <i className="fas fa-camera-rotate" style={{ color: '#38BDF8' }} />
+                                <span>Switch: {cameraFacing === 'environment' ? 'Rear Camera' : 'Front Camera'}</span>
                             </button>
 
                             <button
                                 type="button"
-                                className="btn btn-sm btn-link text-primary"
                                 onClick={() => fileInputRef.current?.click()}
-                                style={{ fontSize: '0.8rem', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                                style={{
+                                    background: 'rgba(56, 189, 248, 0.12)',
+                                    border: '1px solid rgba(56, 189, 248, 0.35)',
+                                    color: '#38BDF8',
+                                    padding: '8px 14px',
+                                    borderRadius: 10,
+                                    fontSize: '0.8rem',
+                                    fontWeight: 700,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 7,
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s ease'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = 'rgba(56, 189, 248, 0.22)'
+                                    e.currentTarget.style.color = '#FFFFFF'
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = 'rgba(56, 189, 248, 0.12)'
+                                    e.currentTarget.style.color = '#38BDF8'
+                                }}
                             >
                                 <i className="fas fa-file-image" />
-                                <span>Scan from Image File</span>
+                                <span>Upload QR Image</span>
                             </button>
                         </div>
                     </div>
