@@ -1,6 +1,18 @@
 {
   "rewrites": [
     {
+      "source": "/api/card-image/:cardId*",
+      "destination": "/api/card-image.js"
+    },
+    {
+      "source": "/api/card-image",
+      "destination": "/api/card-image.js"
+    },
+    {
+      "source": "/card-preview/:path*",
+      "destination": "/api/card-preview.js"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

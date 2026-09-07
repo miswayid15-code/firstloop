@@ -20,30 +20,7 @@
             document.write('<meta name="robots" content="noindex, nofollow">');
             document.write('<meta name="keywords" content="FirstPass admin, merchant management, customer management, admin dashboard, coupon management, reports">');
         }
-        else if (cardPreview) {
-            /* ---- CARD PREVIEW META ---- */
-
-            document.write('<title>First Pass Card</title>');
-            document.write('<meta name="description" content="View your First Pass card.">');
-            document.write('<meta name="author" content="Minsway Solutions Pvt Ltd">');
-            document.write('<meta name="robots" content="index, follow">');
-
-            /*
-             * Open Graph
-             * The card image should be dynamically generated
-             * and assigned to the OG image.
-             */
-            document.write('<meta property="og:type" content="website">');
-            document.write('<meta property="og:title" content="First Pass Card">');
-            document.write('<meta property="og:description" content="View your First Pass card.">');
-            document.write('<meta property="og:image" content="/asset/images/card-preview.png">');
-            document.write('<meta property="og:image:alt" content="First Pass Card Preview">');
-            document.write('<meta name="twitter:card" content="summary_large_image">');
-            document.write('<meta name="twitter:title" content="First Pass Card">');
-            document.write('<meta name="twitter:description" content="View your First Pass card.">');
-            document.write('<meta name="twitter:image" content="/asset/images/card-preview.png">');
-        }
-        else {
+        else if (!cardPreview) {
             /* ---- WEBSITE META ---- */
             document.write('<title>First Pass – Shop Smart, Save More</title>');
             document.write('<meta name="description" content="First Pass is the all-in-one business management platform that helps you shop smart and save more. Discover local deals, redeem coupons and grow your success with merchants near you.">');
