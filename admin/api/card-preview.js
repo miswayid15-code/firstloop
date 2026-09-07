@@ -52,39 +52,30 @@ export default async function handler(req, res) {
         const ogImageUrl = `${baseUrl}/api/card-image/${id}?type=${type}&cus_id=${cus_id}`;
         const ogPageUrl = `${baseUrl}/card-preview/${id}?type=${type}&cus_id=${cus_id}`;
 
-        // 2. If requested by a CRAWLER (WhatsApp, Facebook, etc.): Return SSR HTML with OG tags
+        // 2. If requested by a CRAWLER (WhatsApp, Facebook, etc.): Return SSR HTML with Image-Only OG tags
         if (isBot) {
             const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>${escapeHtml(ogTitle)}</title>
-    <meta name="description" content="${escapeHtml(ogDescription)}">
     <meta name="robots" content="index, follow">
 
-    <!-- Open Graph / Facebook / WhatsApp -->
+    <!-- Open Graph / WhatsApp: Image Only -->
     <meta property="og:type" content="website">
-    <meta property="og:site_name" content="FirstPass">
-    <meta property="og:title" content="${escapeHtml(ogTitle)}">
-    <meta property="og:description" content="${escapeHtml(ogDescription)}">
     <meta property="og:image" content="${ogImageUrl}">
     <meta property="og:image:secure_url" content="${ogImageUrl}">
     <meta property="og:image:type" content="image/png">
     <meta property="og:image:width" content="840">
     <meta property="og:image:height" content="480">
-    <meta property="og:image:alt" content="${escapeHtml(ogTitle)}">
     <meta property="og:url" content="${ogPageUrl}">
 
-    <!-- Twitter Cards -->
+    <!-- Twitter Cards: Large Image Only -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:site" content="@FirstPass">
-    <meta name="twitter:title" content="${escapeHtml(ogTitle)}">
-    <meta name="twitter:description" content="${escapeHtml(ogDescription)}">
     <meta name="twitter:image" content="${ogImageUrl}">
 </head>
 <body>
-    <p>Viewing <a href="${ogPageUrl}">${escapeHtml(ogTitle)}</a>...</p>
+    <p><a href="${ogPageUrl}">View Card</a></p>
 </body>
 </html>`;
 
