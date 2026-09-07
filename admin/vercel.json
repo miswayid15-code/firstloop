@@ -1,14 +1,6 @@
 {
   "rewrites": [
     {
-      "source": "/api/card-image/:cardId",
-      "destination": "/api/card-image?cardId=:cardId"
-    },
-    {
-      "source": "/api/card-image",
-      "destination": "/api/card-image"
-    },
-    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
