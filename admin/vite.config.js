@@ -11,10 +11,10 @@ function apiDevPlugin() {
     configureServer(server) {
       server.middlewares.use(async (req, res, next) => {
         const url = req.url || '';
-        if (url.startsWith('/api/card-image')) {
+        if (url.startsWith('/api/card-image') || (url.startsWith('/card-image') && (req.headers.accept?.includes('image') || req.url.includes('cus_id')))) {
           return cardImageHandler(req, res);
         }
-        if (url.startsWith('/api/card-preview') || (url.startsWith('/card-preview') && req.url.includes('bot=1'))) {
+        if (url.startsWith('/api/card-preview') || (url.startsWith('/card-preview') && (req.url.includes('bot=1') || /bot|crawler|spider|whatsapp/i.test(req.headers['user-agent'] || '')))) {
           return cardPreviewHandler(req, res);
         }
         next();

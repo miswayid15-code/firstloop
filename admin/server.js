@@ -30,8 +30,8 @@ const server = http.createServer(async (req, res) => {
     const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
     const pathname = parsedUrl.pathname;
 
-    // 1. Route: /api/card-image and /api/card-image/:id
-    if (pathname.startsWith('/api/card-image')) {
+    // 1. Route: /api/card-image and /card-image
+    if (pathname.startsWith('/api/card-image') || pathname.startsWith('/card-image')) {
         return cardImageHandler(req, res);
     }
 

@@ -9,6 +9,14 @@
       "destination": "/api/card-image.js"
     },
     {
+      "source": "/card-image/:id",
+      "destination": "/api/card-image.js?id=:id"
+    },
+    {
+      "source": "/card-image",
+      "destination": "/api/card-image.js"
+    },
+    {
       "source": "/card-preview/:id",
       "has": [
         {
