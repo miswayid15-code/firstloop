@@ -36,7 +36,10 @@ export default defineConfig({
     port: 5173,
     allowedHosts: [
       'firstpassapp.co',
-      'www.firstpassapp.co'
+      'www.firstpassapp.co',
+      'firstloop.co.in',
+      'www.firstloop.co.in',
+
     ]
   }
 });
