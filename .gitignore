@@ -23,6 +23,7 @@ backend/uploads/branch/
 backend/uploads/common/
 backend/uploads/customer/
 backend/uploads/merchant/
+backend/uploads/card_design/
 
 admin/dist/
 admin/build/
