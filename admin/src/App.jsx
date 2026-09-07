@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
+
 import Layout from './components/Layout';
 import AppToaster from './components/AppToaster.jsx';
 
-// Admin
+// ============================================================
+// ADMIN
+// ============================================================
+
 import Login from './pages/admin/Login';
 import Dashboard from './pages/admin/Dashboard';
 import Merchants from './pages/admin/Merchants';
@@ -40,16 +44,22 @@ import Settings from './pages/admin/Settings';
 import Support from './pages/admin/Support';
 import ProtectedRoute from './pages/admin/ProtectedRoute';
 import AdminCharts from './pages/admin/AdminCharts';
-// import FirstLoopComingSoon from './pages/admin/FirstLoopComingSoon';
 import AddCardCustomer from './pages/admin/AddCardCustomer';
-import NotFound from './pages/NotFound';
 
-// Sale Person
+
+// ============================================================
+// SALE PERSON
+// ============================================================
+
 import SalePersonLogin from './pages/saleperson/SalePersonLogin.jsx';
 import SalePersonDashboard from './pages/saleperson/SalePersonDashboard.jsx';
 import SalePersonAddMerchant from './pages/saleperson/AddMerchant.jsx';
 
-// Merchant UI
+
+// ============================================================
+// MERCHANT
+// ============================================================
+
 import MerchantLayout from './pages/merchant/MerchantLayout.jsx';
 import MerchantLogin from './pages/merchant/MerchantLogin.jsx';
 import MerchantDashboard from './pages/merchant/MerchantDashboard.jsx';
@@ -60,14 +70,22 @@ import MerchantReceptionistList from './pages/merchant/ReceptionistList.jsx';
 import MerchantBranchReceptionists from './pages/merchant/BranchReceptionists.jsx';
 import MerchantReportsView from './pages/merchant/MerchantReports.jsx';
 
-// Receptionist UI
+
+// ============================================================
+// RECEPTIONIST
+// ============================================================
+
 import ReceptionistLayout from './pages/receptionist/ReceptionistLayout.jsx';
 import ReceptionistLogin from './pages/receptionist/ReceptionistLogin.jsx';
 import ReceptionistDashboard from './pages/receptionist/ReceptionistDashboard.jsx';
 import ReceptionistCustomerList from './pages/receptionist/ReceptionistCustomerList.jsx';
 import CardCheckInPayment from './pages/receptionist/CardCheckInPayment.jsx';
 
-// FirstPass Website
+
+// ============================================================
+// FIRSTPASS WEBSITE
+// ============================================================
+
 import Header from './component/Header.jsx';
 import Footer from './component/Footer.jsx';
 import MobileMenu from './component/MobileMenu.jsx';
@@ -86,13 +104,17 @@ import DeleteAccount from './landing/firstpass/DeleteAccount.jsx';
 import UnderConstruction from './landing/firstpass/UnderConstruction.jsx';
 import CustomerApp from './landing/firstpass/CustomerApp.jsx';
 
-// FirstLoop Website
+
+// ============================================================
+// FIRSTLOOP WEBSITE
+// ============================================================
+
 import FirstLoopWebsite from './landing/firstloop/App.jsx';
 
 
-/* ============================================================
-   Scroll To Top + Animation
-   ============================================================ */
+// ============================================================
+// SCROLL TO TOP
+// ============================================================
 
 function ScrollToTopAndAnimate() {
   const { pathname } = useLocation();
@@ -102,15 +124,20 @@ function ScrollToTopAndAnimate() {
     window.scrollTo(0, 0);
 
     // Close mobile menu drawer if active
-    document.querySelector(".offcanvas-menu")?.classList.remove("show");
-    document.body.classList.remove("overflow-hidden");
+    document
+      .querySelector('.offcanvas-menu')
+      ?.classList.remove('show');
+
+    document.body.classList.remove('overflow-hidden');
 
     // Clean up previous GSAP ScrollTriggers
     if (window.ScrollTrigger) {
-      window.ScrollTrigger.getAll().forEach(trigger => trigger.kill());
+      window.ScrollTrigger
+        .getAll()
+        .forEach(trigger => trigger.kill());
     }
 
-    // Re-initialize dynamic features after React renders the new DOM
+    // Re-initialize dynamic features after React renders
     const timer = setTimeout(() => {
       if (window.runMainInit) {
         window.runMainInit();
@@ -128,9 +155,9 @@ function ScrollToTopAndAnimate() {
 }
 
 
-/* ============================================================
-   FirstPass Website Layout
-   ============================================================ */
+// ============================================================
+// FIRSTPASS WEBSITE LAYOUT
+// ============================================================
 
 function WebsiteLayout() {
   const { pathname } = useLocation();
@@ -153,12 +180,10 @@ function WebsiteLayout() {
   useEffect(() => {
     if (!loading) return;
 
-    // Start fade out transition
     const fadeTimer = setTimeout(() => {
       setFade(true);
     }, 1200);
 
-    // Completely unmount preloader component
     const removeTimer = setTimeout(() => {
       setLoading(false);
     }, 1700);
@@ -173,8 +198,9 @@ function WebsiteLayout() {
     <>
       {loading && (
         <div
-          className={`preloader-wrapper ${fade ? 'preloader-fade-out' : ''
-            }`}
+          className={`preloader-wrapper ${
+            fade ? 'preloader-fade-out' : ''
+          }`}
         >
           <div className="preloader-logo-container">
             <img
@@ -182,6 +208,7 @@ function WebsiteLayout() {
               alt="Logo"
               className="preloader-logo"
             />
+
             <div className="preloader-spinner"></div>
           </div>
         </div>
@@ -190,14 +217,15 @@ function WebsiteLayout() {
       {!hideHeaderFooter && <Header />}
 
       <main
-        id={hideHeaderFooter ? undefined : "wrapper"}
+        id={hideHeaderFooter ? undefined : 'wrapper'}
         style={
           hideHeaderFooter
             ? undefined
-            : { overflowX: "hidden" }
+            : { overflowX: 'hidden' }
         }
       >
         <Routes>
+
           {/* FirstPass Website */}
           <Route path="/" element={<Landing />} />
           <Route path="/how-it-works" element={<HowItWorks />} />
@@ -209,10 +237,16 @@ function WebsiteLayout() {
           <Route path="/data-policy" element={<DataPolicy />} />
           <Route path="/conditions" element={<Conditions />} />
           <Route path="/delete-account" element={<DeleteAccount />} />
-          <Route path="/under-construction" element={<UnderConstruction />} />
-          <Route path="/customer-app" element={<CustomerApp />} />
+          <Route
+            path="/under-construction"
+            element={<UnderConstruction />}
+          />
+          <Route
+            path="/customer-app"
+            element={<CustomerApp />}
+          />
 
-          {/* FirstPass Card Pages */}
+          {/* Card Preview */}
           <Route
             path="/card-preview/:id"
             element={<CardPreview />}
@@ -223,6 +257,7 @@ function WebsiteLayout() {
             element={<CardPreview />}
           />
 
+          {/* Card Image */}
           <Route
             path="/card-image/:id"
             element={<CardImage />}
@@ -233,6 +268,7 @@ function WebsiteLayout() {
             element={<CardImage />}
           />
 
+          {/* Card Only */}
           <Route
             path="/card-only/:id"
             element={<CardImage />}
@@ -243,8 +279,8 @@ function WebsiteLayout() {
             element={<CardImage />}
           />
 
-          {/* Unknown FirstPass Website Route */}
           <Route path="*" element={<NotFound />} />
+
         </Routes>
       </main>
 
@@ -256,9 +292,9 @@ function WebsiteLayout() {
 }
 
 
-/* ============================================================
-   FirstLoop Website Layout
-   ============================================================ */
+// ============================================================
+// FIRSTLOOP WEBSITE LAYOUT
+// ============================================================
 
 function FirstLoopWebsiteLayout() {
   return (
@@ -266,20 +302,30 @@ function FirstLoopWebsiteLayout() {
       <ScrollToTopAndAnimate />
 
       <Routes>
-        {/* FirstLoop Website */}
-        <Route path="/" element={<FirstLoopWebsite />} />
+        <Route
+          path="/"
+          element={<FirstLoopWebsite />}
+        />
 
-        {/* Unknown FirstLoop Website Route */}
-        <Route path="*" element={<NotFound />} />
+        <Route
+          path="*"
+          element={<NotFound />}
+        />
       </Routes>
     </>
   );
 }
 
 
-/* ============================================================
-   Admin Layout
-   ============================================================ */
+// ============================================================
+// ADMIN LAYOUT
+//
+// Used for:
+//
+// firstloop.co.in/admin/...
+// firstpassapp.co/admin/...
+//
+// ============================================================
 
 function AdminLayout() {
   return (
@@ -290,10 +336,6 @@ function AdminLayout() {
 
         {/* =====================================================
             ADMIN LOGIN
-            Works on:
-
-            https://firstloop.co.in/admin
-            https://firstpassapp.co/admin
             ===================================================== */}
 
         <Route
@@ -309,13 +351,6 @@ function AdminLayout() {
 
         {/* =====================================================
             ADMIN PROTECTED ROUTES
-
-            Works on both domains:
-
-            /admin/dashboard
-            /admin/merchants
-            /admin/customers
-            etc.
             ===================================================== */}
 
         <Route
@@ -525,8 +560,7 @@ function AdminLayout() {
 
 
         {/* =====================================================
-            SALE PERSON ROUTES
-            Kept under /admin
+            SALE PERSON
             ===================================================== */}
 
         <Route
@@ -546,9 +580,7 @@ function AdminLayout() {
 
 
         {/* =====================================================
-            ADMIN CARD PREVIEW / IMAGE
-
-            Kept under /admin
+            ADMIN CARD PREVIEW
             ===================================================== */}
 
         <Route
@@ -576,21 +608,43 @@ function AdminLayout() {
           element={<CardImage />}
         />
 
-
         <Route
           path="/admin/card-only/:id/:type"
           element={<CardImage />}
         />
 
-
         {/* =====================================================
-            FIRSTLOOP MERCHANT
-
-            ONLY:
-
-            https://firstloop.co.in/admins/merchant/...
+            FALLBACK
             ===================================================== */}
 
+        <Route
+          path="*"
+          element={<NotFound />}
+        />
+
+      </Routes>
+    </>
+  );
+}
+
+
+// ============================================================
+// MERCHANT LAYOUT
+//
+// ONLY:
+//
+// firstloop.co.in/admins/merchant/...
+//
+// ============================================================
+
+function MerchantAdminLayout() {
+  return (
+    <>
+      <AppToaster />
+
+      <Routes>
+
+        {/* Merchant Login */}
         <Route
           path="/admins/merchant/login"
           element={<MerchantLogin />}
@@ -601,6 +655,7 @@ function AdminLayout() {
           element={<MerchantLogin />}
         />
 
+        {/* Merchant */}
         <Route
           path="/admins/merchant"
           element={<MerchantLayout />}
@@ -689,17 +744,37 @@ function AdminLayout() {
             path="reports"
             element={<MerchantReportsView />}
           />
+
         </Route>
 
+        <Route
+          path="*"
+          element={<NotFound />}
+        />
 
-        {/* =====================================================
-            FIRSTLOOP RECEPTIONIST
+      </Routes>
+    </>
+  );
+}
 
-            ONLY:
 
-            https://firstloop.co.in/admins/receptionist/...
-            ===================================================== */}
+// ============================================================
+// RECEPTIONIST LAYOUT
+//
+// ONLY:
+//
+// firstloop.co.in/admins/receptionist/...
+//
+// ============================================================
 
+function ReceptionistAdminLayout() {
+  return (
+    <>
+      <AppToaster />
+
+      <Routes>
+
+        {/* Receptionist Login */}
         <Route
           path="/admins/receptionist/login"
           element={<ReceptionistLogin />}
@@ -710,6 +785,7 @@ function AdminLayout() {
           element={<ReceptionistLogin />}
         />
 
+        {/* Receptionist */}
         <Route
           path="/admins/receptionist"
           element={<ReceptionistLayout />}
@@ -753,12 +829,8 @@ function AdminLayout() {
             path="view-fl-branch/:id"
             element={<ViewFlBranch />}
           />
+
         </Route>
-
-
-        {/* =====================================================
-            NOT FOUND
-            ===================================================== */}
 
         <Route
           path="*"
@@ -771,86 +843,96 @@ function AdminLayout() {
 }
 
 
-/* ============================================================
-   MAIN APP
-   ============================================================ */
+// ============================================================
+// MAIN APP
+// ============================================================
 
 export default function App() {
+
   const location = useLocation();
 
   const hostname = window.location.hostname;
   const pathname = location.pathname;
 
 
-  /* ==========================================================
-     FIRSTLOOP DOMAIN
-
-     https://firstloop.co.in/
-       → FirstLoop Website
-
-     https://firstloop.co.in/admin/...
-       → FirstLoop Admin
-
-     https://firstloop.co.in/admins/merchant/...
-       → Merchant
-
-     https://firstloop.co.in/admins/receptionist/...
-       → Receptionist
-     ========================================================== */
+  // ==========================================================
+  // FIRSTLOOP DOMAIN
+  // ==========================================================
 
   const isFirstLoop =
     hostname === 'firstloop.co.in' ||
     hostname === 'www.firstloop.co.in';
 
 
-  /* ==========================================================
-     FIRSTPASS DOMAIN
-
-     https://firstpassapp.co/
-       → FirstPass Website
-
-     https://firstpassapp.co/admin/...
-       → FirstPass Admin
-     ========================================================== */
+  // ==========================================================
+  // FIRSTPASS DOMAIN
+  // ==========================================================
 
   const isFirstPass =
     hostname === 'firstpassapp.co' ||
     hostname === 'www.firstpassapp.co';
 
 
-  /* ==========================================================
-     FIRSTLOOP ROUTING
-     ========================================================== */
+  // ==========================================================
+  // FIRSTLOOP
+  //
+  // /
+  // /admin/...
+  // /admins/merchant/...
+  // /admins/receptionist/...
+  // ==========================================================
 
   if (isFirstLoop) {
 
     // FirstLoop Admin
-    if (pathname === '/admin' || pathname.startsWith('/admin/')) {
-      return <AdminLayout />;
+    if (
+      pathname === '/admin' ||
+      pathname.startsWith('/admin/')
+    ) {
+      return (
+        <>
+          <ScrollToTopAndAnimate />
+          <AdminLayout />
+        </>
+      );
     }
+
 
     // FirstLoop Merchant
     if (
       pathname === '/admins/merchant' ||
       pathname.startsWith('/admins/merchant/')
     ) {
-      return <AdminLayout />;
+      return (
+        <>
+          <ScrollToTopAndAnimate />
+          <MerchantAdminLayout />
+        </>
+      );
     }
+
 
     // FirstLoop Receptionist
     if (
       pathname === '/admins/receptionist' ||
       pathname.startsWith('/admins/receptionist/')
     ) {
-      return <AdminLayout />;
+      return (
+        <>
+          <ScrollToTopAndAnimate />
+          <ReceptionistAdminLayout />
+        </>
+      );
     }
+
 
     // FirstLoop Website
     if (pathname === '/') {
       return <FirstLoopWebsiteLayout />;
     }
 
-    // Any other FirstLoop URL
+
+    // Anything else on FirstLoop
     return (
       <>
         <ScrollToTopAndAnimate />
@@ -860,9 +942,15 @@ export default function App() {
   }
 
 
-  /* ==========================================================
-     FIRSTPASS ROUTING
-     ========================================================== */
+  // ==========================================================
+  // FIRSTPASS
+  //
+  // /
+  // /admin/...
+  //
+  // NO MERCHANT
+  // NO RECEPTIONIST
+  // ==========================================================
 
   if (isFirstPass) {
 
@@ -871,8 +959,14 @@ export default function App() {
       pathname === '/admin' ||
       pathname.startsWith('/admin/')
     ) {
-      return <AdminLayout />;
+      return (
+        <>
+          <ScrollToTopAndAnimate />
+          <AdminLayout />
+        </>
+      );
     }
+
 
     // FirstPass Website
     return (
@@ -884,9 +978,9 @@ export default function App() {
   }
 
 
-  /* ==========================================================
-     UNKNOWN DOMAIN
-     ========================================================== */
+  // ==========================================================
+  // UNKNOWN DOMAIN
+  // ==========================================================
 
   return (
     <>
