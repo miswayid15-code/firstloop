@@ -13,7 +13,7 @@ import Customers from './pages/admin/Customers';
 import SalePersons from './pages/admin/SalePersons';
 import SalePersonMerchants from './pages/admin/SalePersonMerchants';
 import Categories from './pages/admin/Categories';
-import Appointments from './pages/admin/Appointments';
+import Appointments from './pages/admin/Appointments'; 
 import MerchantReports from './pages/admin/MerchantReports';
 import CustomerReports from './pages/admin/CustomerReports';
 import CustomerReportDetails from './pages/admin/CustomerReportDetails';
