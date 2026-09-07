@@ -307,6 +307,7 @@ function AdminLayout() {
 
 export default function App() {
   const location = useLocation();
+  const { pathname } = location;
 
   const hostname = window.location.hostname;
 
@@ -314,34 +315,37 @@ export default function App() {
     hostname === 'firstloop.co.in' ||
     hostname === 'www.firstloop.co.in';
 
-  const isFirstLoopMainPage =
-    isFirstLoopDomain &&
-    location.pathname === '/';
-
-  const isFirstLoopAdminLogin =
+  const isFirstLoopWebsite =
     isFirstLoopDomain &&
     (
-      location.pathname === '/admin/merchant/login' ||
-      location.pathname === '/admin/receptionist/login'
+      pathname === '/' ||
+      pathname === '/firstloop' ||
+      pathname.startsWith('/firstloop/')
     );
 
-  const isFirstLoopAllowed =
-    isFirstLoopMainPage || isFirstLoopAdminLogin;
+  const isFirstLoopMerchant =
+    isFirstLoopDomain &&
+    pathname.startsWith('/admin/merchant');
+
+  const isFirstLoopReceptionist =
+    isFirstLoopDomain &&
+    pathname.startsWith('/admin/receptionist');
+
+  const isFirstLoopAllowedAdmin =
+    isFirstLoopMerchant || isFirstLoopReceptionist;
 
   const isAdmin =
-    location.pathname.startsWith('/admin') ||
-    location.pathname.startsWith('/merchant');
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/merchant');
 
   return (
     <>
       <ScrollToTopAndAnimate />
 
-      {isFirstLoopMainPage ? (
+      {isFirstLoopWebsite ? (
         <FirstLoopWebsite />
-      ) : isFirstLoopAdminLogin ? (
+      ) : isFirstLoopAllowedAdmin ? (
         <AdminLayout />
-      ) : isFirstLoopDomain && isAdmin ? (
-        <NotFound />
       ) : isAdmin ? (
         <AdminLayout />
       ) : (
