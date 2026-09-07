@@ -213,7 +213,8 @@ function AdminLayout() {
         <Route path="saleperson-dashboard" element={<SalePersonDashboard />} />
         <Route path="saleperson-add-merchant" element={<SalePersonAddMerchant />} />
         <Route path="firstloop-coming-soon" element={<FirstLoopComingSoon />} />
-        <Route path="firstloop" element={<FirstLoopComingSoon />} />
+        {/* <Route path="firstloop" element={<FirstLoopComingSoon />} /> */}
+        <Route path="firstloop" element={<FirstLoopWebsite />} />
 
         {/* Merchant UI Routes */}
         <Route path="merchant/login" element={<MerchantLogin />} />
