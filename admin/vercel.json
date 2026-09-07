@@ -1,16 +1,23 @@
 {
   "rewrites": [
     {
-      "source": "/api/card-image/:cardId*",
-      "destination": "/api/card-image.js"
+      "source": "/api/card-image/:id",
+      "destination": "/api/card-image.js?id=:id"
     },
     {
       "source": "/api/card-image",
       "destination": "/api/card-image.js"
     },
     {
-      "source": "/card-preview/:path*",
-      "destination": "/api/card-preview.js"
+      "source": "/card-preview/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(bot|crawler|spider|whatsapp|facebookexternalhit|facebot|twitterbot|telegrambot|linkedinbot|slackbot|discordbot|applebot|bingbot|googlebot|yandex).*"
+        }
+      ],
+      "destination": "/api/card-preview.js?id=:id"
     },
     {
       "source": "/(.*)",

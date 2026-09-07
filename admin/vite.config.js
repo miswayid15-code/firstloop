@@ -1,26 +1,21 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import cardImageHandler from './api/card-image.js';
+import cardPreviewHandler from './api/card-preview.js';
 
-// Vite plugin for local /api/card-image and /card-preview SSR meta tags
-function cardApiDevPlugin() {
+// Vite Plugin to mount server endpoints in local development
+function apiDevPlugin() {
   return {
-    name: 'card-api-dev-plugin',
+    name: 'api-dev-middleware',
     configureServer(server) {
       server.middlewares.use(async (req, res, next) => {
-        try {
-          const url = req.url || '';
-          if (url.startsWith('/api/card-image')) {
-            const { default: cardImageHandler } = await import('./api/card-image.js');
-            return await cardImageHandler(req, res);
-          }
-          if (url.startsWith('/card-preview') && (req.headers.accept?.includes('text/html') || req.headers['user-agent']?.includes('WhatsApp') || req.headers['user-agent']?.includes('facebook'))) {
-            // Check if crawler or direct page load
-            const { default: cardPreviewHandler } = await import('./api/card-preview.js');
-            return await cardPreviewHandler(req, res);
-          }
-        } catch (e) {
-          console.error('Error in cardApiDevPlugin middleware:', e);
+        const url = req.url || '';
+        if (url.startsWith('/api/card-image')) {
+          return cardImageHandler(req, res);
+        }
+        if (url.startsWith('/api/card-preview') || (url.startsWith('/card-preview') && req.url.includes('bot=1'))) {
+          return cardPreviewHandler(req, res);
         }
         next();
       });
@@ -29,7 +24,7 @@ function cardApiDevPlugin() {
 }
 
 export default defineConfig({
-  plugins: [react(), cardApiDevPlugin()],
+  plugins: [react(), apiDevPlugin()],
   resolve: {
     alias: {
       '@/asset': path.resolve(__dirname, './public/asset'),
