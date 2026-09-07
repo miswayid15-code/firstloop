@@ -227,49 +227,90 @@ function AdminLayout() {
       <AppToaster />
 
       <Routes>
-        {/* Common routes */}
-        <Route path="/" element={<Login />} />
+        {/* =========================================================
+            FIRSTLOOP DOMAIN
+            Only Merchant and Receptionist Login are allowed
+        ========================================================= */}
 
-        <Route path="card-preview/:id" element={<CardPreview />} />
-        <Route path="card-preview/:id/:type" element={<CardPreview />} />
-        <Route path="card-image/:id" element={<CardImage />} />
-        <Route path="card-image/:id/:type" element={<CardImage />} />
-        <Route path="card-only/:id" element={<CardImage />} />
-        <Route path="card-only/:id/:type" element={<CardImage />} />
-
-        <Route path="saleperson-login" element={<SalePersonLogin />} />
-        <Route path="saleperson-dashboard" element={<SalePersonDashboard />} />
-        <Route path="saleperson-add-merchant" element={<SalePersonAddMerchant />} />
-
-        {/* =====================================================
-            FIRSTLOOP ONLY
-            /admin/merchant/login
-            /admin/receptionist/login
-        ====================================================== */}
         {isFirstLoopDomain && (
           <>
             <Route
-              path="merchant/login"
+              path="/admin/merchant/login"
               element={<MerchantLogin />}
             />
 
             <Route
-              path="receptionist/login"
+              path="/admin/receptionist/login"
               element={<ReceptionistLogin />}
+            />
+
+            {/* Optional old login URLs if you still need them */}
+            <Route
+              path="/admin/merchant-login"
+              element={<MerchantLogin />}
+            />
+
+            <Route
+              path="/admin/receptionist-login"
+              element={<ReceptionistLogin />}
+            />
+
+            {/* Everything else on FirstLoop admin should be React 404 */}
+            <Route
+              path="*"
+              element={<NotFound />}
             />
           </>
         )}
 
-        {/* =====================================================
-            FIRSTPASS ONLY
-            Merchant routes
-        ====================================================== */}
+        {/* =========================================================
+            FIRSTPASS DOMAIN
+            Normal FirstPass admin + merchant + receptionist routes
+        ========================================================= */}
+
         {isFirstPassDomain && (
           <>
-            <Route path="merchant" element={<MerchantLayout />}>
+            {/* Main Admin Login */}
+            <Route
+              path="/admin"
+              element={<Login />}
+            />
+
+            <Route
+              path="/admin/"
+              element={<Login />}
+            />
+
+            {/* Sale Person */}
+            <Route
+              path="/admin/saleperson-login"
+              element={<SalePersonLogin />}
+            />
+
+            <Route
+              path="/admin/saleperson-dashboard"
+              element={<SalePersonDashboard />}
+            />
+
+            <Route
+              path="/admin/saleperson-add-merchant"
+              element={<SalePersonAddMerchant />}
+            />
+
+            {/* Merchant Login */}
+            <Route
+              path="/admin/merchant/login"
+              element={<MerchantLogin />}
+            />
+
+            {/* Merchant UI */}
+            <Route
+              path="/admin/merchant"
+              element={<MerchantLayout />}
+            >
               <Route
                 index
-                element={<Navigate to="/merchant/dashboard" replace />}
+                element={<Navigate to="/admin/merchant/dashboard" replace />}
               />
 
               <Route
@@ -347,73 +388,107 @@ function AdminLayout() {
                 element={<MerchantReportsView />}
               />
             </Route>
-          </>
-        )}
 
-        {/* =====================================================
-            RECEPTIONIST ROUTES
-            Keep these only if they should be accessible from
-            FirstLoop. Otherwise protect them with isFirstLoopDomain.
-        ====================================================== */}
-        {isFirstLoopDomain && (
-          <Route
-            path="receptionist"
-            element={<ReceptionistLayout />}
-          >
+            {/* Receptionist Login */}
             <Route
-              index
+              path="/admin/receptionist/login"
+              element={<ReceptionistLogin />}
+            />
+
+            {/* Receptionist UI */}
+            <Route
+              path="/admin/receptionist"
+              element={<ReceptionistLayout />}
+            >
+              <Route
+                index
+                element={
+                  <Navigate
+                    to="/admin/receptionist/dashboard"
+                    replace
+                  />
+                }
+              />
+
+              <Route
+                path="dashboard"
+                element={<ReceptionistDashboard />}
+              />
+
+              <Route
+                path="customers"
+                element={<ReceptionistCustomerList />}
+              />
+
+              <Route
+                path="checkin"
+                element={<CardCheckInPayment />}
+              />
+
+              <Route
+                path="add-card-customer"
+                element={<AddCardCustomer />}
+              />
+
+              <Route
+                path="add-card-customer/:branchId"
+                element={<AddCardCustomer />}
+              />
+
+              <Route
+                path="view-fl-branch/:id"
+                element={<ViewFlBranch />}
+              />
+            </Route>
+
+            {/* Existing FirstPass Admin routes */}
+            <Route
+              path="/admin/dashboard"
               element={
-                <Navigate
-                  to="/admin/receptionist/dashboard"
-                  replace
-                />
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
               }
             />
 
             <Route
-              path="dashboard"
-              element={<ReceptionistDashboard />}
+              path="/admin/merchants"
+              element={
+                <ProtectedRoute>
+                  <Merchants />
+                </ProtectedRoute>
+              }
             />
 
             <Route
-              path="customers"
-              element={<ReceptionistCustomerList />}
+              path="/admin/customers"
+              element={
+                <ProtectedRoute>
+                  <Customers />
+                </ProtectedRoute>
+              }
             />
 
-            <Route
-              path="checkin"
-              element={<CardCheckInPayment />}
-            />
+            {/* Add your other existing FirstPass admin routes here */}
 
+            {/* Unknown FirstPass admin URL */}
             <Route
-              path="add-card-customer"
-              element={<AddCardCustomer />}
+              path="*"
+              element={<NotFound />}
             />
-
-            <Route
-              path="add-card-customer/:branchId"
-              element={<AddCardCustomer />}
-            />
-
-            <Route
-              path="view-fl-branch/:id"
-              element={<ViewFlBranch />}
-            />
-          </Route>
+          </>
         )}
 
-        {/* =====================================================
-            FIRSTPASS ADMIN ROUTES
-            Keep ALL your existing admin routes here
-        ====================================================== */}
+        {/* =========================================================
+            FALLBACK
+        ========================================================= */}
 
-        {/* Example:
-        <Route path="dashboard" element={<Dashboard />} />
-        <Route path="merchants" element={<Merchants />} />
-        ...
-        */}
-
-        <Route path="*" element={<NotFound />} />
+        {!isFirstLoopDomain && !isFirstPassDomain && (
+          <Route
+            path="*"
+            element={<NotFound />}
+          />
+        )}
       </Routes>
     </>
   );
@@ -422,51 +497,89 @@ function AdminLayout() {
 export default function App() {
   const location = useLocation();
 
+  const hostname = window.location.hostname;
+
   const isFirstLoopDomain =
-    window.location.hostname === 'firstloop.co.in' ||
-    window.location.hostname === 'www.firstloop.co.in';
+    hostname === 'firstloop.co.in' ||
+    hostname === 'www.firstloop.co.in';
 
   const isFirstPassDomain =
-    window.location.hostname === 'firstpassapp.co' ||
-    window.location.hostname === 'www.firstpassapp.co';
+    hostname === 'firstpassapp.co' ||
+    hostname === 'www.firstpassapp.co';
+
+  const pathname = location.pathname;
 
   const isFirstLoopRoot =
-    isFirstLoopDomain && location.pathname === '/';
-
-  const isFirstLoopMerchantLogin =
-    isFirstLoopDomain &&
-    location.pathname === '/admin/merchant/login';
-
-  const isFirstLoopReceptionistLogin =
-    isFirstLoopDomain &&
-    location.pathname === '/admin/receptionist/login';
-
-  const isFirstLoopAllowed =
-    isFirstLoopRoot ||
-    isFirstLoopMerchantLogin ||
-    isFirstLoopReceptionistLogin;
+    isFirstLoopDomain && pathname === '/';
 
   const isAdmin =
-    location.pathname.startsWith('/admin') ||
-    location.pathname.startsWith('/merchant');
+    pathname.startsWith('/admin');
+
+  /*
+   * ============================================================
+   * FIRSTLOOP
+   *
+   * /                       -> FirstLoop website
+   * /admin/merchant/login   -> Merchant Login
+   * /admin/receptionist/login -> Receptionist Login
+   * anything else           -> React 404
+   * ============================================================
+   */
+
+  if (isFirstLoopDomain) {
+    if (isFirstLoopRoot) {
+      return (
+        <>
+          <ScrollToTopAndAnimate />
+          <FirstLoopWebsite />
+        </>
+      );
+    }
+
+    if (isAdmin) {
+      return (
+        <>
+          <ScrollToTopAndAnimate />
+          <AdminLayout />
+        </>
+      );
+    }
+
+    return (
+      <>
+        <ScrollToTopAndAnimate />
+        <FirstLoopWebsite />
+      </>
+    );
+  }
+
+  /*
+   * ============================================================
+   * FIRSTPASS
+   *
+   * /admin/... -> FirstPass Admin
+   * ============================================================
+   */
+
+  if (isFirstPassDomain && isAdmin) {
+    return (
+      <>
+        <ScrollToTopAndAnimate />
+        <AdminLayout />
+      </>
+    );
+  }
+
+  /*
+   * ============================================================
+   * OTHER WEBSITE ROUTES
+   * ============================================================
+   */
 
   return (
     <>
       <ScrollToTopAndAnimate />
-
-      {isFirstLoopAllowed ? (
-        isFirstLoopRoot ? (
-          <FirstLoopWebsite />
-        ) : (
-          <AdminLayout />
-        )
-      ) : isFirstPassDomain && isAdmin ? (
-        <AdminLayout />
-      ) : isAdmin ? (
-        <AdminLayout />
-      ) : (
-        <WebsiteLayout />
-      )}
+      <WebsiteLayout />
     </>
   );
 }
