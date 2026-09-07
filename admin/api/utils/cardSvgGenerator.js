@@ -8,8 +8,7 @@ import axios from 'axios';
 const SVG_ICONS = {
     user: 'M224 256A128 128 0 1 0 224 0a128 128 0 1 0 0 256zm-45.7 48C79.8 304 0 383.8 0 482.3C0 498.7 13.3 512 29.7 512H418.3c16.4 0 29.7-13.3 29.7-29.7C448 383.8 368.2 304 269.7 304H178.3z',
     gift: 'M112 0a64 64 0 0 0 -64 64v32H16C7.2 96 0 103.2 0 112v48c0 8.8 7.2 16 16 16h16v272c0 35.3 28.7 64 64 64h320c35.3 0 64-28.7 64-64V176h16c8.8 0 16-7.2 16-16V112c0-8.8-7.2-16-16-16h-32V64a64 64 0 0 0 -64-64H112zM288 96V64a32 32 0 0 1 32-32h64a32 32 0 0 1 32 32v32H288zM224 96H96V64a32 32 0 0 1 32-32h64a32 32 0 0 1 32 32v32zM80 176h144v288H96c-17.7 0-32-14.3-32-32V176h16zm208 288V176h144v256c0 17.7-14.3 32-32 32H288z',
-    tag: 'M0 80V229.5c0 17 6.7 33.3 18.7 45.3l192 192c25 25 65.5 25 90.5 0L467.5 300.5c25-25 25-65.5 0-90.5l-192-192C263.5 6.7 247.2 0 230.2 0H80C35.8 0 0 35.8 0 80zm112 48a48 48 0 1 1 0-96 48 48 0 1 1 0 96z',
-    dumbbell: 'M104 96H56c-13.3 0-24 10.7-24 24v264c0 13.3 10.7 24 24 24h48c13.3 0 24-10.7 24-24V120c0-13.3-10.7-24-24-24zm352 0h-48c-13.3 0-24 10.7-24 24v264c0 13.3 10.7 24 24 24h48c13.3 0 24-10.7 24-24V120c0-13.3-10.7-24-24-24zM320 216H192c-13.3 0-24 10.7-24 24v32c0 13.3 10.7 24 24 24h128c13.3 0 24-10.7 24-24v-32c0-13.3-10.7-24-24-24z'
+    tag: 'M0 80V229.5c0 17 6.7 33.3 18.7 45.3l192 192c25 25 65.5 25 90.5 0L467.5 300.5c25-25 25-65.5 0-90.5l-192-192C263.5 6.7 247.2 0 230.2 0H80C35.8 0 0 35.8 0 80zm112 48a48 48 0 1 1 0-96 48 48 0 1 1 0 96z'
 };
 
 // Helper: Escape XML entities
@@ -23,36 +22,20 @@ function escapeXml(unsafe) {
         .replace(/'/g, '&apos;');
 }
 
-// Helper: Fetch image and convert to PNG base64 Data URL (supports WebP, PNG, JPEG)
-async function getPngBase64Image(imageUrl, resizeWidth, resizeHeight, fitMode = 'cover') {
+// Helper: Convert remote image or local file to base64 PNG Data URL
+async function getBase64Image(imageUrl) {
     if (!imageUrl) return null;
+    if (imageUrl.startsWith('data:image/')) return imageUrl;
     try {
-        let inputBuffer = null;
-        if (imageUrl.startsWith('data:image/')) {
-            const base64Data = imageUrl.split(',')[1];
-            inputBuffer = Buffer.from(base64Data, 'base64');
-        } else {
-            const response = await axios.get(imageUrl, {
-                responseType: 'arraybuffer',
-                timeout: 5000
-            });
-            inputBuffer = Buffer.from(response.data);
-        }
-
-        if (!inputBuffer || inputBuffer.length === 0) return null;
-
-        // Convert any input format (including WebP) to PNG using Sharp
-        let transformer = sharp(inputBuffer);
-        if (resizeWidth && resizeHeight) {
-            transformer = transformer.resize(resizeWidth, resizeHeight, {
-                fit: fitMode,
-                background: { r: 255, g: 255, b: 255, alpha: 0 }
-            });
-        }
-        const pngBuffer = await transformer.png().toBuffer();
-        return `data:image/png;base64,${pngBuffer.toString('base64')}`;
+        const response = await axios.get(imageUrl, {
+            responseType: 'arraybuffer',
+            timeout: 5000
+        });
+        // Convert any format (including WebP, JPEG, GIF) to standard PNG buffer via Sharp
+        const pngBuf = await sharp(Buffer.from(response.data)).png().toBuffer();
+        return `data:image/png;base64,${pngBuf.toString('base64')}`;
     } catch (e) {
-        console.warn('Failed to convert image to PNG base64:', imageUrl, e.message);
+        console.warn('Could not fetch or convert background/brand image:', imageUrl, e.message);
         return null;
     }
 }
@@ -73,8 +56,8 @@ function getLocalFirstLoopLogo() {
 }
 
 /**
- * Generate 1:1 server-side PNG reproduction of CustomerCard.jsx
- * Dimensions: 840 x 480 (2x high-resolution retina buffer)
+ * Generate a 1:1 server-side PNG reproduction of CustomerCard.jsx
+ * Dimensions: 840 x 480 (2x high-resolution retina buffer for crisp rendering)
  */
 export async function generateCardPngBuffer(card) {
     const width = 840;
@@ -117,22 +100,20 @@ export async function generateCardPngBuffer(card) {
         console.warn('QR Code generation error:', err.message);
     }
 
-    // 2. Fetch & Convert Brand Logo (56x56 @ 2x)
+    // 2. Fetch Brand Logo & Background Image
     let brandLogoBase64 = null;
     if (card.brandLogo) {
-        brandLogoBase64 = await getPngBase64Image(card.brandLogo, 48, 48, 'contain');
+        brandLogoBase64 = await getBase64Image(card.brandLogo);
     }
 
-    // 3. Fetch & Convert Background Image (840x480 @ 2x with cover fit)
     let bgImageBase64 = null;
-    const rawBgImage = card.bgImage || card.background_image;
-    if (rawBgImage && rawBgImage !== 'none' && rawBgImage !== 'null' && rawBgImage !== 'undefined') {
-        bgImageBase64 = await getPngBase64Image(rawBgImage, width, height, 'cover');
+    if (card.bgImage && card.bgImage !== 'none' && card.bgImage !== 'null' && card.bgImage !== 'undefined') {
+        bgImageBase64 = await getBase64Image(card.bgImage);
     }
 
     const flLogoBase64 = getLocalFirstLoopLogo();
 
-    // 4. Build Stamp Grid Elements (Type 1)
+    // 3. Build Stamp Grid Elements (Type 1)
     let stampGridSvg = '';
     if (type === 1) {
         const levels = card.levelRewards || card.CustomerStampLevels || card.stamp_levels || [];
@@ -156,7 +137,6 @@ export async function generateCardPngBuffer(card) {
             const isDiscount = rawType === '2' || rawType === 'discount';
             const isPaid = rawType === '3' || rawType === 'paid';
             const isFree = rawType === '1' || rawType === 'free';
-            const iconName = String(rewardItem?.icon || '').toLowerCase();
 
             let insideContent = '';
             if (rewardItem && isDiscount) {
@@ -169,11 +149,9 @@ export async function generateCardPngBuffer(card) {
                     </text>
                 `;
             } else if (rewardItem && isPaid) {
-                const iconPath = iconName.includes('dumbbell') ? SVG_ICONS.dumbbell : SVG_ICONS.tag;
-                const scale = iconName.includes('dumbbell') ? 0.046 : 0.054;
                 insideContent = `
-                    <g transform="translate(${x + (stampW - 28) / 2}, ${y + (stampH - 28) / 2}) scale(${scale})">
-                        <path d="${iconPath}" fill="${stampTextColor}" />
+                    <g transform="translate(${x + (stampW - 28) / 2}, ${y + (stampH - 28) / 2}) scale(0.054)">
+                        <path d="${SVG_ICONS.tag}" fill="${stampTextColor}" />
                     </g>
                 `;
             } else if (rewardItem && isFree) {
@@ -202,7 +180,7 @@ export async function generateCardPngBuffer(card) {
         }
     }
 
-    // 5. Assemble the Complete SVG
+    // 4. Assemble the Full 1:1 SVG Layout
     const svgString = `
     <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
         <defs>
@@ -213,21 +191,21 @@ export async function generateCardPngBuffer(card) {
 
         <!-- Rounded Card Container -->
         <g clip-path="url(#cardClip)">
-            <!-- Card Background: If Background Image is available, display it (covering full card); Otherwise, use Background Color -->
+            <!-- Card Background: If Background Image is provided, display it with cover; Otherwise, use background color -->
             ${bgImageBase64 ? `
                 <image href="${bgImageBase64}" x="0" y="0" width="${width}" height="${height}" preserveAspectRatio="xMidYMid slice" />
             ` : `
                 <rect x="0" y="0" width="${width}" height="${height}" fill="${bgColor}" />
             `}
 
-            <!-- 4px Border Overlay -->
+            <!-- 4px Border Overlay (2px at 1x) -->
             <rect x="2" y="2" width="${width - 4}" height="${height - 4}" rx="44" ry="44" fill="none" stroke="${borderColor}" stroke-width="4" />
 
-            <!-- LEFT COLUMN -->
+            <!-- LEFT COLUMN (padding 44px) -->
             <g transform="translate(44, 44)">
                 <!-- BRAND LOGO & BRAND NAME -->
                 <g>
-                    <!-- White Rounded Box 56x56 -->
+                    <!-- White Rounded Box 56x56 (28x28 at 1x, borderRadius 16px) -->
                     <rect x="0" y="0" width="56" height="56" rx="16" ry="16" fill="#FFFFFF" />
                     ${brandLogoBase64 ? `
                         <image href="${brandLogoBase64}" x="4" y="4" width="48" height="48" preserveAspectRatio="xMidYMid meet" />
