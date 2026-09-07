@@ -66,8 +66,7 @@ export default async function handler(req, res) {
     <!-- Open Graph / Facebook / WhatsApp -->
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="FirstPass">
-    <meta property="og:title" content="${escapeHtml(ogTitle)}">
-    <meta property="og:description" content="${escapeHtml(ogDescription)}">
+   
     <meta property="og:image" content="${ogImageUrl}">
     <meta property="og:image:secure_url" content="${ogImageUrl}">
     <meta property="og:image:type" content="image/png">
