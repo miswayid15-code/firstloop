@@ -309,28 +309,35 @@ export default function App() {
   const location = useLocation();
 
   const hostname = window.location.hostname;
+  const pathname = location.pathname;
 
   const isFirstLoopDomain =
     hostname === 'firstloop.co.in' ||
     hostname === 'www.firstloop.co.in';
 
-  const isFirstLoopMainPage =
-    isFirstLoopDomain &&
-    location.pathname === '/';
+  const isFirstPassDomain =
+    hostname === 'firstpassapp.co' ||
+    hostname === 'www.firstpassapp.co';
 
-  const isFirstLoopAdminLogin =
+  // FirstLoop public website
+  const isFirstLoopMainPage =
+    isFirstLoopDomain && pathname === '/';
+
+  // FirstLoop allowed admin login pages
+  const isFirstLoopAllowedAdmin =
     isFirstLoopDomain &&
     (
-      location.pathname === '/admin/merchant/login' ||
-      location.pathname === '/admin/receptionist/login'
+      pathname === '/admin/merchant/login' ||
+      pathname === '/admin/receptionist/login'
     );
 
-  const isFirstLoopAllowed =
-    isFirstLoopMainPage || isFirstLoopAdminLogin;
-
-  const isAdmin =
-    location.pathname.startsWith('/admin') ||
-    location.pathname.startsWith('/merchant');
+  // FirstPass admin routes
+  const isFirstPassAdmin =
+    isFirstPassDomain &&
+    (
+      pathname.startsWith('/admin') ||
+      pathname.startsWith('/merchant')
+    );
 
   return (
     <>
@@ -338,11 +345,9 @@ export default function App() {
 
       {isFirstLoopMainPage ? (
         <FirstLoopWebsite />
-      ) : isFirstLoopAdminLogin ? (
+      ) : isFirstLoopAllowedAdmin ? (
         <AdminLayout />
-      ) : isFirstLoopDomain && isAdmin ? (
-        <NotFound />
-      ) : isAdmin ? (
+      ) : isFirstPassAdmin ? (
         <AdminLayout />
       ) : (
         <WebsiteLayout />
