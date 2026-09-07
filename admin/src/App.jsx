@@ -32,6 +32,7 @@ import ViewFlBranch from './pages/admin/ViewFlBranch';
 import FpCustomerDetails from './pages/admin/FpCustomerDetails';
 import CardDesigns from './pages/admin/CardDesigns';
 import CardPreview from './pages/admin/CardPreview';
+import StandaloneCardImagePreview from './card-image/CardPreview.jsx';
 import BranchReport from './pages/admin/BranchReport';
 import BranchChat from './pages/admin/BranchChat';
 import BranchPendingImages from './pages/admin/BranchPendingImages';
@@ -122,7 +123,7 @@ function ScrollToTopAndAnimate() {
 
 function WebsiteLayout() {
   const { pathname } = useLocation();
-  const hideHeaderFooter = ['/under-construction', '/delete-account', '/data-policy', '/conditions', '/customer-app', '/firstloop-coming-soon', '/firstloop'].includes(pathname) || pathname.startsWith('/card-preview');
+  const hideHeaderFooter = ['/under-construction', '/delete-account', '/data-policy', '/conditions', '/customer-app', '/firstloop-coming-soon', '/firstloop'].includes(pathname) || pathname.startsWith('/card-preview') || pathname.startsWith('/card-image');
 
   const [loading, setLoading] = useState(!hideHeaderFooter);
   const [fade, setFade] = useState(false);
@@ -177,6 +178,8 @@ function WebsiteLayout() {
           <Route path="/firstloop" element={<FirstLoopComingSoon />} />
           <Route path="/card-preview/:id" element={<CardPreview />} />
           <Route path="/card-preview/:id/:type" element={<CardPreview />} />
+          <Route path="/card-image/:id" element={<StandaloneCardImagePreview />} />
+          <Route path="/card-image/:id/:type" element={<StandaloneCardImagePreview />} />
         </Routes>
       </main>
 

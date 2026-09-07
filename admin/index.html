@@ -22,26 +22,48 @@
         }
         else if (cardPreview) {
             /* ---- CARD PREVIEW META ---- */
+            var origin = window.location.origin || (window.location.protocol + '//' + window.location.host);
+            var pathname = window.location.pathname;
+            var searchParams = new URLSearchParams(window.location.search);
 
-            document.write('<title>First Pass Card</title>');
-            document.write('<meta name="description" content="View your First Pass card.">');
+            // Extract cardId from path /card-preview/:id or search param
+            var pathParts = pathname.split('/').filter(Boolean);
+            var cardId = '1';
+            if (pathParts.length >= 2 && pathParts[0] === 'card-preview') {
+                cardId = pathParts[1];
+            } else if (searchParams.get('id') || searchParams.get('cardId')) {
+                cardId = searchParams.get('id') || searchParams.get('cardId');
+            }
+
+            var type = searchParams.get('type') || (pathParts.length >= 3 ? pathParts[2] : '1');
+            var cusId = searchParams.get('cus_id') || searchParams.get('customer_id') || '1';
+            var customTitle = searchParams.get('title') || searchParams.get('name') || '';
+            var brandName = searchParams.get('brand') || searchParams.get('brand_name') || 'FirstPass';
+
+            var cardTitle = customTitle ? (brandName + ' - ' + customTitle) : (type === '2' ? brandName + ' - Membership Pass' : brandName + ' - Loyalty Stamp Card');
+            var cardDesc = 'View your ' + (type === '2' ? 'Membership Pass' : 'Loyalty Stamp Card') + ' on ' + brandName + '.';
+            var ogImageUrl = origin + '/api/card-image/' + encodeURIComponent(cardId) + '?type=' + encodeURIComponent(type) + '&cus_id=' + encodeURIComponent(cusId);
+            var ogPageUrl = origin + pathname + window.location.search;
+
+            document.write('<title>' + cardTitle + '</title>');
+            document.write('<meta name="description" content="' + cardDesc + '">');
             document.write('<meta name="author" content="Minsway Solutions Pvt Ltd">');
             document.write('<meta name="robots" content="index, follow">');
 
             /*
-             * Open Graph
-             * The card image should be dynamically generated
-             * and assigned to the OG image.
+             * Dynamic Open Graph & Twitter Card tags
+             * Points to /api/card-image/:cardId?type=:type&cus_id=:cusId directly
              */
             document.write('<meta property="og:type" content="website">');
-            document.write('<meta property="og:title" content="First Pass Card">');
-            document.write('<meta property="og:description" content="View your First Pass card.">');
-            document.write('<meta property="og:image" content="/asset/images/card-preview.png">');
-            document.write('<meta property="og:image:alt" content="First Pass Card Preview">');
+            document.write('<meta property="og:title" content="' + cardTitle + '">');
+            document.write('<meta property="og:description" content="' + cardDesc + '">');
+            document.write('<meta property="og:image" content="' + ogImageUrl + '">');
+            document.write('<meta property="og:url" content="' + ogPageUrl + '">');
+            document.write('<meta property="og:image:alt" content="' + cardTitle + '">');
             document.write('<meta name="twitter:card" content="summary_large_image">');
-            document.write('<meta name="twitter:title" content="First Pass Card">');
-            document.write('<meta name="twitter:description" content="View your First Pass card.">');
-            document.write('<meta name="twitter:image" content="/asset/images/card-preview.png">');
+            document.write('<meta name="twitter:title" content="' + cardTitle + '">');
+            document.write('<meta name="twitter:description" content="' + cardDesc + '">');
+            document.write('<meta name="twitter:image" content="' + ogImageUrl + '">');
         }
         else {
             /* ---- WEBSITE META ---- */
