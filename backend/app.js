@@ -67,14 +67,6 @@ app.use('/admin/card-design', require('./routes/admin/cardDesignRoutes'));
 
 
 
-
-
-
-
-
-
-
-
 app.use('/api', require('./routes/api/notificationRoutes'));
 app.use('/api', require('./routes/api/testRoutes'));
 app.use('/api', require('./routes/api/merchantRoutes'));

@@ -207,8 +207,8 @@ const activeLogouts = new Set();
 
 export const logoutAndRedirect = (message, targetAppType = null) => {
     const path = String(window.location.pathname || "").toLowerCase();
-    if (path.startsWith("/card-preview")) {
-        return; // Allow public preview without session redirection
+    if (path.startsWith("/card-preview") || path.startsWith("/card-image") || path.startsWith("/card-only")) {
+        return; // Allow public preview/image without session redirection
     }
 
     const appType = targetAppType || getAppType();
@@ -334,6 +334,8 @@ API.interceptors.response.use(
         const currentPath = String(window.location.pathname || "").toLowerCase();
         if (
             currentPath.startsWith("/card-preview") ||
+            currentPath.startsWith("/card-image") ||
+            currentPath.startsWith("/card-only") ||
             originalRequest.skipAuthRedirect ||
             originalRequest.headers?.["X-Skip-Auth-Redirect"]
         ) {

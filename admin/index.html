@@ -10,7 +10,7 @@
 <script>
     (function () {
         var isAdmin = window.location.pathname.startsWith('/admin');
-        var cardPreview = window.location.pathname.startsWith('/card-preview');
+        var cardPreview = window.location.pathname.startsWith('/card-preview') || window.location.pathname.startsWith('/card-image') || window.location.pathname.startsWith('/card-only');
 
         if (isAdmin) {
             /* ---- ADMIN PANEL META ---- */

@@ -32,6 +32,7 @@ import ViewFlBranch from './pages/admin/ViewFlBranch';
 import FpCustomerDetails from './pages/admin/FpCustomerDetails';
 import CardDesigns from './pages/admin/CardDesigns';
 import CardPreview from './pages/admin/CardPreview';
+import CardImage from './pages/admin/CardImage';
 import BranchReport from './pages/admin/BranchReport';
 import BranchChat from './pages/admin/BranchChat';
 import BranchPendingImages from './pages/admin/BranchPendingImages';
@@ -122,7 +123,7 @@ function ScrollToTopAndAnimate() {
 
 function WebsiteLayout() {
   const { pathname } = useLocation();
-  const hideHeaderFooter = ['/under-construction', '/delete-account', '/data-policy', '/conditions', '/customer-app', '/firstloop-coming-soon', '/firstloop'].includes(pathname) || pathname.startsWith('/card-preview');
+  const hideHeaderFooter = ['/under-construction', '/delete-account', '/data-policy', '/conditions', '/customer-app', '/firstloop-coming-soon', '/firstloop'].includes(pathname) || pathname.startsWith('/card-preview') || pathname.startsWith('/card-image') || pathname.startsWith('/card-only');
 
   const [loading, setLoading] = useState(!hideHeaderFooter);
   const [fade, setFade] = useState(false);
@@ -177,6 +178,10 @@ function WebsiteLayout() {
           <Route path="/firstloop" element={<FirstLoopComingSoon />} />
           <Route path="/card-preview/:id" element={<CardPreview />} />
           <Route path="/card-preview/:id/:type" element={<CardPreview />} />
+          <Route path="/card-image/:id" element={<CardImage />} />
+          <Route path="/card-image/:id/:type" element={<CardImage />} />
+          <Route path="/card-only/:id" element={<CardImage />} />
+          <Route path="/card-only/:id/:type" element={<CardImage />} />
         </Routes>
       </main>
 
@@ -196,6 +201,10 @@ function AdminLayout() {
         <Route path="/" element={<Login />} />
         <Route path="card-preview/:id" element={<CardPreview />} />
         <Route path="card-preview/:id/:type" element={<CardPreview />} />
+        <Route path="card-image/:id" element={<CardImage />} />
+        <Route path="card-image/:id/:type" element={<CardImage />} />
+        <Route path="card-only/:id" element={<CardImage />} />
+        <Route path="card-only/:id/:type" element={<CardImage />} />
         <Route path="saleperson-login" element={<SalePersonLogin />} />
         <Route path="saleperson-dashboard" element={<SalePersonDashboard />} />
         <Route path="saleperson-add-merchant" element={<SalePersonAddMerchant />} />
