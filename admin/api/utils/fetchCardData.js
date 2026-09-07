@@ -1,5 +1,55 @@
 import axios from 'axios';
 
+// Helper: Clean relative image path
+export function getRelativeImagePath(value) {
+    if (!value) return '';
+    let str = String(value).trim();
+
+    if (str.startsWith('data:') || str.startsWith('blob:')) {
+        return str;
+    }
+
+    const uploadsMatch = str.match(/(uploads\/.*)/i);
+    if (uploadsMatch) {
+        return uploadsMatch[1].replace(/^\/+/, '');
+    }
+
+    while (str.includes('http://') || str.includes('https://')) {
+        const lastHttp = str.lastIndexOf('http://');
+        const lastHttps = str.lastIndexOf('https://');
+        const idx = Math.max(lastHttp, lastHttps);
+        try {
+            const url = new URL(str.substring(idx));
+            str = url.pathname;
+        } catch (e) {
+            str = str.replace(/^https?:\/\/[^/]+/i, '');
+        }
+    }
+
+    return str.replace(/^\/+/, '');
+}
+
+// Helper: Format image URL with base API URL
+export function formatImageUrl(img, baseUrl) {
+    if (!img) return '';
+    let str = String(img).trim();
+
+    if (str === 'none' || str === 'null' || str === 'undefined' || str === 'false') {
+        return '';
+    }
+
+    if (str.startsWith('http://') || str.startsWith('https://') || str.startsWith('data:') || str.startsWith('blob:')) {
+        return str;
+    }
+
+    const rel = getRelativeImagePath(str);
+    if (!rel) return '';
+
+    const cleanBase = (baseUrl || '').replace(/\/+$/, '');
+    const cleanImg = rel.replace(/^\/+/, '');
+    return cleanBase ? `${cleanBase}/${cleanImg}` : cleanImg;
+}
+
 /**
  * Standard Node.js helper to fetch card data from Dealora API
  * Compatible with Localhost, Vercel, and DigitalOcean
@@ -74,16 +124,19 @@ export async function fetchCardData({ id, type = 1, cus_id = 1, query = {} }) {
                         amt: 0
                     }));
 
+                const brandLogoRaw = item.brand_image || item.brand_logo;
+                const bgImageRaw = item.background_image || item.bg_image || item.bgImage;
+
                 return {
                     id: cardId,
                     card_type: cardType,
                     title: item.title || (cardType === 2 ? 'VIP Membership Pass' : 'Loyalty Stamp Card'),
                     brandName: item.brand_name || 'FirstPass',
-                    brandLogo: item.brand_image ? (item.brand_image.startsWith('http') ? item.brand_image : `${baseUrl}/${item.brand_image.replace(/^\/+/, '')}`) : '',
+                    brandLogo: formatImageUrl(brandLogoRaw, baseUrl),
                     total_stamps: totalStamps,
                     cardholderName: item.customer_name || item.customer?.name || 'Customer',
                     bgColor: item.background_color || (cardType === 2 ? '#D97706' : '#0E88B8'),
-                    bgImage: item.background_image ? (item.background_image.startsWith('http') ? item.background_image : `${baseUrl}/${item.background_image.replace(/^\/+/, '')}`) : '',
+                    bgImage: formatImageUrl(bgImageRaw, baseUrl),
                     textColor: item.text_color || '#FFFFFF',
                     borderColor: item.border_color || (cardType === 2 ? '#FFFFFF' : '#00A6D6'),
                     stampBgColor: item.stamp_background || 'rgba(255, 255, 255, 0.3)',
@@ -105,17 +158,19 @@ export async function fetchCardData({ id, type = 1, cus_id = 1, query = {} }) {
     // Fallback from query parameters
     const totalStamps = Number(query.stamps || query.total_stamps || 8);
     const discountVal = query.discount || query.discountVal || '10';
+    const queryBgImage = query.bgImage || query.bg_image || query.background_image || '';
+    const queryLogo = query.logo || query.brand_logo || query.brand_image || '';
 
     return {
         id: cardId,
         card_type: cardType,
         title: query.title || (cardType === 2 ? 'Membership Pass' : 'Digital Stamp Card'),
         brandName: query.brand || query.brand_name || 'FirstPass',
-        brandLogo: query.logo || query.brand_logo || '',
+        brandLogo: formatImageUrl(queryLogo, baseUrl),
         total_stamps: totalStamps,
         cardholderName: query.name || query.customer_name || 'Customer',
         bgColor: query.bgColor || query.bg_color || (cardType === 2 ? '#D97706' : '#0E88B8'),
-        bgImage: query.bgImage || query.bg_image || '',
+        bgImage: formatImageUrl(queryBgImage, baseUrl),
         textColor: query.textColor || '#FFFFFF',
         borderColor: query.borderColor || query.border_color || '#FFFFFF',
         stampBgColor: query.stampBgColor || 'rgba(255, 255, 255, 0.3)',

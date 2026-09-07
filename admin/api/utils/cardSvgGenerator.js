@@ -1,8 +1,18 @@
+import fs from 'fs';
+import path from 'path';
 import sharp from 'sharp';
 import QRCode from 'qrcode';
 import axios from 'axios';
 
-// Helper to escape XML characters
+// FontAwesome 6 SVG Vector Paths
+const SVG_ICONS = {
+    user: 'M224 256A128 128 0 1 0 224 0a128 128 0 1 0 0 256zm-45.7 48C79.8 304 0 383.8 0 482.3C0 498.7 13.3 512 29.7 512H418.3c16.4 0 29.7-13.3 29.7-29.7C448 383.8 368.2 304 269.7 304H178.3z',
+    gift: 'M112 0a64 64 0 0 0 -64 64v32H16C7.2 96 0 103.2 0 112v48c0 8.8 7.2 16 16 16h16v272c0 35.3 28.7 64 64 64h320c35.3 0 64-28.7 64-64V176h16c8.8 0 16-7.2 16-16V112c0-8.8-7.2-16-16-16h-32V64a64 64 0 0 0 -64-64H112zM288 96V64a32 32 0 0 1 32-32h64a32 32 0 0 1 32 32v32H288zM224 96H96V64a32 32 0 0 1 32-32h64a32 32 0 0 1 32 32v32zM80 176h144v288H96c-17.7 0-32-14.3-32-32V176h16zm208 288V176h144v256c0 17.7-14.3 32-32 32H288z',
+    tag: 'M0 80V229.5c0 17 6.7 33.3 18.7 45.3l192 192c25 25 65.5 25 90.5 0L467.5 300.5c25-25 25-65.5 0-90.5l-192-192C263.5 6.7 247.2 0 230.2 0H80C35.8 0 0 35.8 0 80zm112 48a48 48 0 1 1 0-96 48 48 0 1 1 0 96z',
+    dumbbell: 'M104 96H56c-13.3 0-24 10.7-24 24v264c0 13.3 10.7 24 24 24h48c13.3 0 24-10.7 24-24V120c0-13.3-10.7-24-24-24zm352 0h-48c-13.3 0-24 10.7-24 24v264c0 13.3 10.7 24 24 24h48c13.3 0 24-10.7 24-24V120c0-13.3-10.7-24-24-24zM320 216H192c-13.3 0-24 10.7-24 24v32c0 13.3 10.7 24 24 24h128c13.3 0 24-10.7 24-24v-32c0-13.3-10.7-24-24-24z'
+};
+
+// Helper: Escape XML entities
 function escapeXml(unsafe) {
     if (!unsafe) return '';
     return String(unsafe)
@@ -13,90 +23,126 @@ function escapeXml(unsafe) {
         .replace(/'/g, '&apos;');
 }
 
-// Helper to fetch image and convert to base64 Data URL
-async function getBase64Image(imageUrl) {
+// Helper: Fetch image and convert to PNG base64 Data URL (supports WebP, PNG, JPEG)
+async function getPngBase64Image(imageUrl, resizeWidth, resizeHeight, fitMode = 'cover') {
     if (!imageUrl) return null;
-    if (imageUrl.startsWith('data:image/')) return imageUrl;
     try {
-        const response = await axios.get(imageUrl, {
-            responseType: 'arraybuffer',
-            timeout: 4000
-        });
-        const contentType = response.headers['content-type'] || 'image/png';
-        const base64 = Buffer.from(response.data, 'binary').toString('base64');
-        return `data:${contentType};base64,${base64}`;
+        let inputBuffer = null;
+        if (imageUrl.startsWith('data:image/')) {
+            const base64Data = imageUrl.split(',')[1];
+            inputBuffer = Buffer.from(base64Data, 'base64');
+        } else {
+            const response = await axios.get(imageUrl, {
+                responseType: 'arraybuffer',
+                timeout: 5000
+            });
+            inputBuffer = Buffer.from(response.data);
+        }
+
+        if (!inputBuffer || inputBuffer.length === 0) return null;
+
+        // Convert any input format (including WebP) to PNG using Sharp
+        let transformer = sharp(inputBuffer);
+        if (resizeWidth && resizeHeight) {
+            transformer = transformer.resize(resizeWidth, resizeHeight, {
+                fit: fitMode,
+                background: { r: 255, g: 255, b: 255, alpha: 0 }
+            });
+        }
+        const pngBuffer = await transformer.png().toBuffer();
+        return `data:image/png;base64,${pngBuffer.toString('base64')}`;
     } catch (e) {
+        console.warn('Failed to convert image to PNG base64:', imageUrl, e.message);
         return null;
     }
 }
 
+// Pre-load local FirstLoop favicon base64
+let cachedFlLogoBase64 = null;
+function getLocalFirstLoopLogo() {
+    if (cachedFlLogoBase64) return cachedFlLogoBase64;
+    try {
+        const logoPath = path.resolve(process.cwd(), 'src', 'assets', 'img', 'firstloop-favicon.png');
+        if (fs.existsSync(logoPath)) {
+            const buf = fs.readFileSync(logoPath);
+            cachedFlLogoBase64 = `data:image/png;base64,${buf.toString('base64')}`;
+            return cachedFlLogoBase64;
+        }
+    } catch (e) {}
+    return null;
+}
+
 /**
- * Generate high-resolution PNG buffer (840x480, 2x retina) matching CustomerCard.jsx
+ * Generate 1:1 server-side PNG reproduction of CustomerCard.jsx
+ * Dimensions: 840 x 480 (2x high-resolution retina buffer)
  */
 export async function generateCardPngBuffer(card) {
     const width = 840;
     const height = 480;
     const type = Number(card.card_type || 1) === 2 ? 2 : 1;
 
-    // Card Colors & Styles
+    // Card Colors & Dimensions matching CustomerCard.jsx
     const defaultBg = type === 2 ? '#D97706' : '#0E88B8';
     const bgColor = card.bgColor || defaultBg;
-    const borderColor = card.borderColor || '#FFFFFF';
+    const borderColor = card.borderColor || (type === 2 ? '#FFFFFF' : '#00A6D6');
     const textColor = card.textColor || '#FFFFFF';
-    const totalStamps = Number(card.total_stamps || 8);
+    const totalStamps = Number(card.total_stamps || card.number_of_stamps || 8);
     const stampRadiusPercent = Number(card.stamp_radius ?? 50);
-    const stampBorderRadius = (stampRadiusPercent / 100) * 36; // for 72px width
+    const stampBorderRadius = (stampRadiusPercent / 100) * 36; // 72px stamp width
 
     const stampBgColor = card.stampBgColor || 'rgba(255, 255, 255, 0.3)';
     const stampBorderColor = card.stampBorderColor || '#FFFFFF';
     const stampTextColor = card.stampTextColor || textColor;
 
-    const brandName = escapeXml(card.brandName || 'FirstPass');
-    const cardTitle = escapeXml(card.title || (type === 2 ? 'VIP Membership Pass' : 'Loyalty Stamp Card'));
-    const customerName = escapeXml(card.cardholderName || 'Valued Member');
+    const brandName = escapeXml(card.brandName || 'Merchant');
+    const cardTitle = escapeXml(card.title || (type === 2 ? 'Membership Pass' : 'Stamp Pass'));
+    const customerName = escapeXml(card.cardholderName || card.customer_name || (type === 2 ? 'Member Pass' : 'Stamp Pass'));
     const validity = escapeXml(card.validity || '12 Months');
     const scanText = type === 2 ? 'SCAN PASS' : 'SCAN TO STAMP';
 
-    // 1. Generate QR Code SVG / Data URL
-    const qrData = card.qr_token || `dealora-${card.id || 1}`;
+    // 1. Generate QR Code Matrix
+    const qrData = card.qr_token || card.qrImg || `dealora-${card.id || 1}`;
     let qrSvg = '';
     try {
         qrSvg = await QRCode.toString(qrData, {
             type: 'svg',
-            margin: 1,
+            margin: 0,
             color: {
                 dark: '#000000',
                 light: '#FFFFFF'
             }
         });
-        // Remove xml declaration & outer svg tag to embed cleanly inside our main SVG
         qrSvg = qrSvg.replace(/<\?xml.*?\?>/, '').replace(/<svg[^>]*>/, '').replace(/<\/svg>/, '');
     } catch (err) {
         console.warn('QR Code generation error:', err.message);
     }
 
-    // 2. Fetch Brand Logo & Background Image as base64 (if provided)
+    // 2. Fetch & Convert Brand Logo (56x56 @ 2x)
     let brandLogoBase64 = null;
     if (card.brandLogo) {
-        brandLogoBase64 = await getBase64Image(card.brandLogo);
+        brandLogoBase64 = await getPngBase64Image(card.brandLogo, 48, 48, 'contain');
     }
 
+    // 3. Fetch & Convert Background Image (840x480 @ 2x with cover fit)
     let bgImageBase64 = null;
-    if (card.bgImage && card.bgImage !== 'none' && card.bgImage !== 'null') {
-        bgImageBase64 = await getBase64Image(card.bgImage);
+    const rawBgImage = card.bgImage || card.background_image;
+    if (rawBgImage && rawBgImage !== 'none' && rawBgImage !== 'null' && rawBgImage !== 'undefined') {
+        bgImageBase64 = await getPngBase64Image(rawBgImage, width, height, 'cover');
     }
 
-    // 3. Build Stamp Grid Elements (Type 1)
+    const flLogoBase64 = getLocalFirstLoopLogo();
+
+    // 4. Build Stamp Grid Elements (Type 1)
     let stampGridSvg = '';
     if (type === 1) {
-        const levels = card.levelRewards || card.CustomerStampLevels || [];
+        const levels = card.levelRewards || card.CustomerStampLevels || card.stamp_levels || [];
         const stampW = 72;
         const stampH = 72;
         const gapX = 12;
         const gapY = 12;
-        const maxCols = 4;
+        const maxCols = 5;
         const startX = 44;
-        const startY = 220;
+        const startY = 196;
 
         for (let i = 0; i < totalStamps; i++) {
             const col = i % maxCols;
@@ -106,37 +152,41 @@ export async function generateCardPngBuffer(card) {
 
             const stampNum = i + 1;
             const rewardItem = levels.find(l => Number(l.stamp_number) === stampNum) || levels[i];
-            const rType = rewardItem?.type || (rewardItem?.rewardType === 2 ? 'Discount' : (rewardItem?.rewardType === 3 ? 'Paid' : 'Free'));
+            const rawType = String(rewardItem?.reward_type ?? rewardItem?.type ?? '').trim().toLowerCase();
+            const isDiscount = rawType === '2' || rawType === 'discount';
+            const isPaid = rawType === '3' || rawType === 'paid';
+            const isFree = rawType === '1' || rawType === 'free';
+            const iconName = String(rewardItem?.icon || '').toLowerCase();
 
             let insideContent = '';
-            if (rewardItem && rType === 'Discount') {
-                const disc = Number(rewardItem.discountVal ?? rewardItem.discount ?? 10);
+            if (rewardItem && isDiscount) {
+                const disc = Number(rewardItem.discount ?? rewardItem.discountVal ?? (parseInt(rewardItem.reward_text) || 10));
                 insideContent = `
-                    <text x="${x + stampW / 2}" y="${y + stampH / 2 + 6}" 
-                          font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="900" 
-                          fill="${stampTextColor}" text-anchor="middle" dominant-baseline="central">
+                    <text x="${x + stampW / 2}" y="${y + stampH / 2 + 7}" 
+                          font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" 
+                          font-size="20" font-weight="900" fill="${stampTextColor}" text-anchor="middle" dominant-baseline="central">
                         ${disc}%
                     </text>
                 `;
-            } else if (rewardItem && rType === 'Paid') {
+            } else if (rewardItem && isPaid) {
+                const iconPath = iconName.includes('dumbbell') ? SVG_ICONS.dumbbell : SVG_ICONS.tag;
+                const scale = iconName.includes('dumbbell') ? 0.046 : 0.054;
                 insideContent = `
-                    <text x="${x + stampW / 2}" y="${y + stampH / 2}" 
-                          font-size="24" text-anchor="middle" dominant-baseline="central">
-                        🏷️
-                    </text>
+                    <g transform="translate(${x + (stampW - 28) / 2}, ${y + (stampH - 28) / 2}) scale(${scale})">
+                        <path d="${iconPath}" fill="${stampTextColor}" />
+                    </g>
                 `;
-            } else if (rewardItem && rType === 'Free') {
+            } else if (rewardItem && isFree) {
                 insideContent = `
-                    <text x="${x + stampW / 2}" y="${y + stampH / 2}" 
-                          font-size="24" text-anchor="middle" dominant-baseline="central">
-                        🎁
-                    </text>
+                    <g transform="translate(${x + (stampW - 28) / 2}, ${y + (stampH - 28) / 2}) scale(0.054)">
+                        <path d="${SVG_ICONS.gift}" fill="${stampTextColor}" />
+                    </g>
                 `;
             } else {
                 insideContent = `
-                    <text x="${x + stampW / 2}" y="${y + stampH / 2 + 5}" 
-                          font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="800" 
-                          fill="${stampTextColor}" text-anchor="middle" dominant-baseline="central">
+                    <text x="${x + stampW / 2}" y="${y + stampH / 2 + 7}" 
+                          font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" 
+                          font-size="26" font-weight="800" fill="${stampTextColor}" text-anchor="middle" dominant-baseline="central">
                         ${stampNum}
                     </text>
                 `;
@@ -152,100 +202,107 @@ export async function generateCardPngBuffer(card) {
         }
     }
 
-    // 4. Assemble the Full SVG matching CustomerCard.jsx
+    // 5. Assemble the Complete SVG
     const svgString = `
     <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
         <defs>
             <clipPath id="cardClip">
                 <rect x="0" y="0" width="${width}" height="${height}" rx="44" ry="44" />
             </clipPath>
-            <filter id="cardShadow" x="-10%" y="-10%" width="120%" height="130%">
-                <feDropShadow dx="0" dy="20" stdDeviation="25" flood-color="#000000" flood-opacity="0.35" />
-            </filter>
         </defs>
 
-        <!-- Card Container with Rounded Corners & Background -->
+        <!-- Rounded Card Container -->
         <g clip-path="url(#cardClip)">
-            <!-- Solid Color Background -->
-            <rect x="0" y="0" width="${width}" height="${height}" fill="${bgColor}" />
-            
+            <!-- Card Background: If Background Image is available, display it (covering full card); Otherwise, use Background Color -->
             ${bgImageBase64 ? `
-                <!-- Background Image Overlay -->
-                <image href="${bgImageBase64}" x="0" y="0" width="${width}" height="${height}" preserveAspectRatio="xMidYMid slice" opacity="0.35" />
-            ` : ''}
+                <image href="${bgImageBase64}" x="0" y="0" width="${width}" height="${height}" preserveAspectRatio="xMidYMid slice" />
+            ` : `
+                <rect x="0" y="0" width="${width}" height="${height}" fill="${bgColor}" />
+            `}
 
-            <!-- 2px (scaled to 4px) Border Overlay -->
+            <!-- 4px Border Overlay -->
             <rect x="2" y="2" width="${width - 4}" height="${height - 4}" rx="44" ry="44" fill="none" stroke="${borderColor}" stroke-width="4" />
 
-            <!-- BRAND LOGO & NAME -->
+            <!-- LEFT COLUMN -->
             <g transform="translate(44, 44)">
-                <!-- Brand Logo White Box -->
-                <rect x="0" y="0" width="56" height="56" rx="16" ry="16" fill="#FFFFFF" />
-                ${brandLogoBase64 ? `
-                    <image href="${brandLogoBase64}" x="4" y="4" width="48" height="48" preserveAspectRatio="xMidYMid meet" />
-                ` : `
-                    <text x="28" y="28" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#0E88B8" text-anchor="middle" dominant-baseline="central">FP</text>
-                `}
+                <!-- BRAND LOGO & BRAND NAME -->
+                <g>
+                    <!-- White Rounded Box 56x56 -->
+                    <rect x="0" y="0" width="56" height="56" rx="16" ry="16" fill="#FFFFFF" />
+                    ${brandLogoBase64 ? `
+                        <image href="${brandLogoBase64}" x="4" y="4" width="48" height="48" preserveAspectRatio="xMidYMid meet" />
+                    ` : (flLogoBase64 ? `
+                        <image href="${flLogoBase64}" x="4" y="4" width="48" height="48" preserveAspectRatio="xMidYMid meet" />
+                    ` : `
+                        <text x="28" y="32" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="900" fill="#0E88B8" text-anchor="middle" dominant-baseline="central">FP</text>
+                    `)}
 
-                <!-- Brand Name -->
-                <text x="72" y="38" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="900" fill="${textColor}">
-                    ${brandName}
+                    <!-- Brand Name -->
+                    <text x="72" y="38" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" 
+                          font-size="32" font-weight="800" fill="${textColor}">
+                        ${brandName}
+                    </text>
+                </g>
+
+                <!-- CARD TITLE -->
+                <text x="0" y="94" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" 
+                      font-size="24" font-weight="700" fill="${textColor}" opacity="0.95">
+                    ${cardTitle}
                 </text>
-            </g>
 
-            <!-- CARD TITLE -->
-            <text x="44" y="140" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" fill="${textColor}" opacity="0.95">
-                ${cardTitle}
-            </text>
-
-            <!-- CARDHOLDER NAME -->
-            <g transform="translate(44, 175)">
-                <!-- User Icon (SVG Path) -->
-                <path d="M10 2a5 5 0 100 10 5 5 0 000-10zm-8 16c0-2.66 5.33-4 8-4s8 1.34 8 4v2H2v-2z" transform="scale(1.2)" fill="${textColor}" opacity="0.9" />
-                <text x="32" y="18" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700" fill="${textColor}">
-                    ${customerName}
-                </text>
+                <!-- CARDHOLDER NAME with User Vector Icon -->
+                <g transform="translate(0, 114)">
+                    <g transform="scale(0.046)">
+                        <path d="${SVG_ICONS.user}" fill="${textColor}" opacity="0.9" />
+                    </g>
+                    <text x="30" y="21" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" 
+                          font-size="28" font-weight="700" fill="${textColor}">
+                        ${customerName}
+                    </text>
+                </g>
             </g>
 
             <!-- TYPE 1: STAMP GRID -->
             ${type === 1 ? stampGridSvg : `
                 <!-- TYPE 2: VALID THRU -->
-                <g transform="translate(44, 260)">
-                    <line x1="0" y1="0" x2="380" y2="0" stroke="rgba(255,255,255,0.3)" stroke-width="2" />
-                    <text x="0" y="32" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="${textColor}" opacity="0.85" letter-spacing="1">
+                <g transform="translate(44, 250)">
+                    <line x1="0" y1="0" x2="400" y2="0" stroke="rgba(255,255,255,0.25)" stroke-width="2" />
+                    <text x="0" y="30" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="600" fill="${textColor}" opacity="0.85" letter-spacing="1">
                         VALID THRU
                     </text>
-                    <text x="0" y="75" font-family="Arial, sans-serif" font-size="32" font-weight="900" fill="${textColor}">
+                    <text x="0" y="74" font-family="system-ui, -apple-system, sans-serif" font-size="32" font-weight="800" fill="${textColor}">
                         ${validity}
                     </text>
                 </g>
             `}
 
-            <!-- RIGHT COLUMN: QR CODE CONTAINER (184x184 at 2x) -->
-            <g transform="translate(590, 48)">
-                <rect x="0" y="0" width="206" height="206" rx="16" ry="16" fill="#FFFFFF" />
-                <g transform="translate(11, 11) scale(4.8)">
+            <!-- RIGHT COLUMN: QR CODE CONTAINER (192px width, 184x184 QR Canvas) -->
+            <g transform="translate(604, 48)">
+                <rect x="0" y="0" width="192" height="192" rx="16" ry="16" fill="#FFFFFF" />
+                <g transform="translate(4, 4) scale(4.4)">
                     ${qrSvg}
                 </g>
 
-                <!-- Scan Text -->
-                <text x="103" y="244" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="800" fill="${textColor}" opacity="0.95" text-anchor="middle" letter-spacing="1">
+                <!-- SCAN LABEL -->
+                <text x="96" y="228" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" 
+                      font-size="19" font-weight="700" fill="${textColor}" opacity="0.9" text-anchor="middle" letter-spacing="1">
                     ${scanText}
                 </text>
             </g>
 
             <!-- FOOTER: POWERED BY FIRSTLOOP.CO.IN -->
             <g transform="translate(${width - 44}, ${height - 24})">
-                <text x="0" y="0" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" fill="${textColor}" opacity="0.9" text-anchor="end">
-                    powered by <tspan font-weight="900">firstloop.co.in</tspan>
+                <text x="0" y="0" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" 
+                      font-size="19" font-weight="600" fill="${textColor}" opacity="0.9" text-anchor="end">
+                    powered by ${flLogoBase64 ? ' ' : ''}<tspan font-weight="800">firstloop.co.in</tspan>
                 </text>
             </g>
         </g>
     </svg>
     `;
 
-    // Convert SVG to high-quality PNG buffer using Sharp
+    // Convert SVG to crisp PNG buffer via Sharp
     return await sharp(Buffer.from(svgString))
-        .png({ quality: 95 })
+        .png({ quality: 100 })
         .toBuffer();
 }
