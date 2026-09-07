@@ -13,7 +13,7 @@ import Customers from './pages/admin/Customers';
 import SalePersons from './pages/admin/SalePersons';
 import SalePersonMerchants from './pages/admin/SalePersonMerchants';
 import Categories from './pages/admin/Categories';
-import Appointments from './pages/admin/Appointments'; 
+import Appointments from './pages/admin/Appointments';
 import MerchantReports from './pages/admin/MerchantReports';
 import CustomerReports from './pages/admin/CustomerReports';
 import CustomerReportDetails from './pages/admin/CustomerReportDetails';
@@ -421,80 +421,52 @@ function AdminLayout() {
 
 export default function App() {
   const location = useLocation();
-  const hostname = window.location.hostname;
 
   const isFirstLoopDomain =
-    hostname === 'firstloop.co.in' ||
-    hostname === 'www.firstloop.co.in';
+    window.location.hostname === 'firstloop.co.in' ||
+    window.location.hostname === 'www.firstloop.co.in';
 
   const isFirstPassDomain =
-    hostname === 'firstpassapp.co' ||
-    hostname === 'www.firstpassapp.co';
+    window.location.hostname === 'firstpassapp.co' ||
+    window.location.hostname === 'www.firstpassapp.co';
 
-  const pathname = location.pathname;
+  const isFirstLoopRoot =
+    isFirstLoopDomain && location.pathname === '/';
 
-  // FirstLoop website
-  if (isFirstLoopDomain && pathname === '/') {
-    return (
-      <>
-        <ScrollToTopAndAnimate />
-        <FirstLoopWebsite />
-      </>
-    );
-  }
-
-  // FirstLoop merchant/receptionist admin
-  if (
+  const isFirstLoopMerchantLogin =
     isFirstLoopDomain &&
-    (
-      pathname === '/admin/merchant/login' ||
-      pathname === '/admin/receptionist/login' ||
-      pathname.startsWith('/admin/receptionist/') ||
-      pathname.startsWith('/admin/merchant/')
-    )
-  ) {
-    return (
-      <>
-        <ScrollToTopAndAnimate />
-        <AdminLayout />
-      </>
-    );
-  }
+    location.pathname === '/admin/merchant/login';
 
-  // FirstPass admin
-  if (
-    isFirstPassDomain &&
-    (
-      pathname.startsWith('/admin') ||
-      pathname.startsWith('/merchant') ||
-      pathname.startsWith('/receptionist')
-    )
-  ) {
-    return (
-      <>
-        <ScrollToTopAndAnimate />
-        <AdminLayout />
-      </>
-    );
-  }
+  const isFirstLoopReceptionistLogin =
+    isFirstLoopDomain &&
+    location.pathname === '/admin/receptionist/login';
 
-  // FirstLoop: everything else -> React 404
-  if (isFirstLoopDomain) {
-    return (
-      <>
-        <ScrollToTopAndAnimate />
-        <Routes>
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </>
-    );
-  }
+  const isFirstLoopAllowed =
+    isFirstLoopRoot ||
+    isFirstLoopMerchantLogin ||
+    isFirstLoopReceptionistLogin;
 
-  // FirstPass / normal website
+  const isAdmin =
+    location.pathname.startsWith('/admin') ||
+    location.pathname.startsWith('/merchant');
+
   return (
     <>
       <ScrollToTopAndAnimate />
-      <WebsiteLayout />
+
+      {isFirstLoopAllowed ? (
+        isFirstLoopRoot ? (
+          <FirstLoopWebsite />
+        ) : (
+          <AdminLayout />
+        )
+      ) : isFirstPassDomain && isAdmin ? (
+        <AdminLayout />
+      ) : isAdmin ? (
+        <AdminLayout />
+      ) : (
+        <WebsiteLayout />
+      )}
     </>
   );
 }
