@@ -7,33 +7,60 @@
     <!-- ============================================================
          PATH DETECTION: Set page meta based on /admin vs website
     ============================================================ -->
-    <script>
-        (function () {
-            var isAdmin = window.location.pathname.startsWith('/admin');
+<script>
+    (function () {
+        var isAdmin = window.location.pathname.startsWith('/admin');
+        var cardPreview = window.location.pathname.startsWith('/card-preview');
 
-            if (isAdmin) {
-                /* ---- ADMIN PANEL META ---- */
-                document.write('<title>FirstPass Admin Panel</title>');
-                document.write('<meta name="description" content="FirstPass Admin Panel – Securely manage merchants, customers, appointments, coupons, reports, notifications and all platform settings from one central dashboard.">');
-                document.write('<meta name="author" content="FirstPass">');
-                document.write('<meta name="robots" content="noindex, nofollow">');
-                document.write('<meta name="keywords" content="FirstPass admin, merchant management, customer management, admin dashboard, coupon management, reports">');
-            } else {
-                /* ---- WEBSITE META ---- */
-                document.write('<title>First Pass – Shop Smart, Save More</title>');
-                document.write('<meta name="description" content="First Pass is the all-in-one business management platform that helps you shop smart and save more. Discover local deals, redeem coupons and grow your success with merchants near you.">');
-                document.write('<meta name="author" content="Minsway Solutions Pvt Ltd">');
-                document.write('<meta name="robots" content="index, follow">');
-                document.write('<meta name="keywords" content="FirstPass, shop smart, save more, coupons, local deals, merchant app, business management platform">');
-                /* Open Graph for website pages */
-                document.write('<meta property="og:type" content="website">');
-                document.write('<meta property="og:title" content="First Pass – Shop Smart, Save More">');
-                document.write('<meta property="og:description" content="The all-in-one business management platform. Discover deals, redeem coupons and grow your success.">');
-                document.write('<meta property="og:image" content="/asset/images/img/new-logo.png">');
-                document.write('<meta name="twitter:card" content="summary_large_image">');
-            }
-        })();
-    </script>
+        if (isAdmin) {
+            /* ---- ADMIN PANEL META ---- */
+            document.write('<title>FirstPass Admin Panel</title>');
+            document.write('<meta name="description" content="FirstPass Admin Panel – Securely manage merchants, customers, appointments, coupons, reports, notifications and all platform settings from one central dashboard.">');
+            document.write('<meta name="author" content="FirstPass">');
+            document.write('<meta name="robots" content="noindex, nofollow">');
+            document.write('<meta name="keywords" content="FirstPass admin, merchant management, customer management, admin dashboard, coupon management, reports">');
+        }
+        else if (cardPreview) {
+            /* ---- CARD PREVIEW META ---- */
+
+            document.write('<title>First Pass Card</title>');
+            document.write('<meta name="description" content="View your First Pass card.">');
+            document.write('<meta name="author" content="Minsway Solutions Pvt Ltd">');
+            document.write('<meta name="robots" content="index, follow">');
+
+            /*
+             * Open Graph
+             * The card image should be dynamically generated
+             * and assigned to the OG image.
+             */
+            document.write('<meta property="og:type" content="website">');
+            document.write('<meta property="og:title" content="First Pass Card">');
+            document.write('<meta property="og:description" content="View your First Pass card.">');
+            document.write('<meta property="og:image" content="/asset/images/card-preview.png">');
+            document.write('<meta property="og:image:alt" content="First Pass Card Preview">');
+            document.write('<meta name="twitter:card" content="summary_large_image">');
+            document.write('<meta name="twitter:title" content="First Pass Card">');
+            document.write('<meta name="twitter:description" content="View your First Pass card.">');
+            document.write('<meta name="twitter:image" content="/asset/images/card-preview.png">');
+        }
+        else {
+            /* ---- WEBSITE META ---- */
+            document.write('<title>First Pass – Shop Smart, Save More</title>');
+            document.write('<meta name="description" content="First Pass is the all-in-one business management platform that helps you shop smart and save more. Discover local deals, redeem coupons and grow your success with merchants near you.">');
+            document.write('<meta name="author" content="Minsway Solutions Pvt Ltd">');
+            document.write('<meta name="robots" content="index, follow">');
+            document.write('<meta name="keywords" content="FirstPass, shop smart, save more, coupons, local deals, merchant app, business management platform">');
+
+            /* ---- Open Graph for website pages ---- */
+            document.write('<meta property="og:type" content="website">');
+            document.write('<meta property="og:title" content="First Pass – Shop Smart, Save More">');
+            document.write('<meta property="og:description" content="The all-in-one business management platform. Discover deals, redeem coupons and grow your success.">');
+            document.write('<meta property="og:image" content="/asset/images/img/new-logo.png">');
+
+            document.write('<meta name="twitter:card" content="summary_large_image">');
+        }
+    })();
+</script>
 
     <!-- Favicon -->
     <link rel="shortcut icon" href="/asset/images/img/fs.png">
