@@ -308,12 +308,33 @@ function AdminLayout() {
 
 export default function App() {
   const location = useLocation();
-  const isAdmin = window.location.pathname.startsWith('/admin') || window.location.pathname.startsWith('/merchant');
+
+  const isFirstLoopDomain =
+    window.location.hostname === 'firstloop.co.in' ||
+    window.location.hostname === 'www.firstloop.co.in';
+
+  const isFirstLoopMainPage =
+    isFirstLoopDomain &&
+    (
+      location.pathname === '/' ||
+      location.pathname.startsWith('/firstloop')
+    );
+
+  const isAdmin =
+    location.pathname.startsWith('/admin') ||
+    location.pathname.startsWith('/merchant');
 
   return (
     <>
       <ScrollToTopAndAnimate />
-      {isAdmin ? <AdminLayout /> : <WebsiteLayout />}
+
+      {isFirstLoopMainPage ? (
+        <FirstLoopWebsite />
+      ) : isAdmin ? (
+        <AdminLayout />
+      ) : (
+        <WebsiteLayout />
+      )}
     </>
   );
 }
