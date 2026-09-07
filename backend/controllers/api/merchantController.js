@@ -605,9 +605,9 @@ exports.login = async (req, res) => {
         if (!merchant) {
             return res.json({ status: 0, message: "Invalid email " });
         }
-        console.log("Password:", password, typeof password);
-        console.log("Merchant:", merchant);
-        console.log("Merchant password:", merchant?.password, typeof merchant?.password);
+        // console.log("Password:", password, typeof password);
+        // console.log("Merchant:", merchant);
+        // console.log("Merchant password:", merchant?.password, typeof merchant?.password);
 
         const match = await bcrypt.compare(password, merchant.password);
 
@@ -662,8 +662,6 @@ exports.login = async (req, res) => {
                 user_type: "merchant"
             }
         });
-
-
 
         try {
             const result = await sendPushNotification({

@@ -2,25 +2,47 @@ import { useEffect, useRef, useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { FaUserCircle } from "react-icons/fa";
 import API from '../api.js'
-import FirstPass from '../assets/img/FirstPass-logo.png'
+import FirstPassLogo from '../assets/img/FirstPass-logo.png';
+import FirstLoopLogo from '../assets/img/first-loop_logo.png';
 import logo from '../assets/img/new_logo.png'
-const navItems = [
-    { to: '/dashboard', icon: 'fa-chart-pie', label: 'Dashboard' },
-    { to: '/merchants', icon: 'fa-store', label: 'Merchants' },
-    { to: '/customers', icon: 'fa-users', label: 'Customers' },
-    { to: '/categories', icon: 'fa-tags', label: 'Categories' },
-    { to: '/appointments', icon: 'fa-calendar-check', label: 'Appointments' },
+import fl_logo from '../assets/img/firstloop-favicon.png'
+const role = sessionStorage.getItem("role") || localStorage.getItem("role") || "firstpass";
 
-    { to: '/coupon-claim', icon: 'fa-ticket-alt', label: 'Coupon Claim' },
+let Logo;
+let productName;
 
-    { to: '/merchant-reports', icon: 'fa-store', label: 'Reports' },
+if (role === "firstloop") {
+    Logo = FirstLoopLogo;
+    productName = "FirstLoop";
+} else {
+    Logo = FirstPassLogo;
+    productName = "FirstPass";
+}
 
-    { to: '/notifications', icon: 'fa-bell', label: 'Notifications' },
+const navItems = role === "firstloop"
+    ? [
+        { to: '/dashboard', icon: 'fa-chart-pie', label: 'Dashboard' },
+        { to: '/merchants', icon: 'fa-store', label: 'Merchants' },
+        { to: '/categories', icon: 'fa-tags', label: 'Categories' },
+        { to: '/salepersons', icon: 'fa-user-tie', label: 'Sales Persons' },
+        { to: '/customers', icon: 'fa-users', label: 'Customers' },
+        { to: '/card-designs', icon: 'fa-id-card', label: 'Card Designs' },
+        { to: '/support', icon: 'fa-headset', label: 'Support' },
+        { to: '/settings', icon: 'fa-cog', label: 'Settings' },
+    ]
+    : [
+        { to: '/dashboard', icon: 'fa-chart-pie', label: 'Dashboard' },
+        { to: '/merchants', icon: 'fa-store', label: 'Merchants' },
+        { to: '/customers', icon: 'fa-users', label: 'Customers' },
 
-    { to: '/support', icon: 'fa-headset', label: 'Support' },
-    { to: '/settings', icon: 'fa-cog', label: 'Settings' },
-
-]
+        { to: '/categories', icon: 'fa-tags', label: 'Categories' },
+        { to: '/appointments', icon: 'fa-calendar-check', label: 'Appointments' },
+        { to: '/coupon-claim', icon: 'fa-ticket-alt', label: 'Coupon Claim' },
+        { to: '/merchant-reports', icon: 'fa-store', label: 'Reports' },
+        { to: '/notifications', icon: 'fa-bell', label: 'Notifications' },
+        { to: '/support', icon: 'fa-headset', label: 'Support' },
+        { to: '/settings', icon: 'fa-cog', label: 'Settings' },
+    ];
 
 export default function Navbar() {
     const [profileOpen, setProfileOpen] = useState(false)
@@ -28,7 +50,9 @@ export default function Navbar() {
     const [notificationsOpen, setNotificationsOpen] = useState(false)
     const [incomingNotifications, setIncomingNotifications] = useState([])
     const [loadingNotifications, setLoadingNotifications] = useState(true)
-
+    const [activeRole, setActiveRole] = useState(
+        sessionStorage.getItem("role") || localStorage.getItem("role") || "firstpass"
+    );
     const fetchIncomingNotifications = async () => {
         try {
             setLoadingNotifications(true)
@@ -147,7 +171,7 @@ export default function Navbar() {
                                 aria-expanded={profileOpen}
 
                             >
-                                <span className="nav-user-name"> <img src={FirstPass} alt="FirstPass" className="desktop-profile-logo" style={{ width: 150, height: 42, objectFit: 'contain' }} /></span>
+                                <span className="nav-user-name"> <img src={Logo} alt={productName} className="desktop-profile-logo" style={{ width: 150, height: 42, objectFit: 'contain' }} /></span>
                             </button>
 
                         </div>
@@ -273,15 +297,108 @@ export default function Navbar() {
                                 <i className="fas fa-user" />
                             </div>
                         </button>
-                        <div className={`profile-dropdown-menu${profileOpen ? ' active' : ''}`} id="profile-dropdown-menu">
-                            <div className="profile-dropdown-item" style={{ pointerEvents: 'none', color: 'var(--text-primary)', fontWeight: 600, fontSize: '0.9rem' }}>
+                        <div
+                            className={`profile-dropdown-menu${profileOpen ? ' active' : ''}`}
+                            id="profile-dropdown-menu"
+                        >
+                            <div
+                                className="profile-dropdown-item"
+                                style={{
+                                    pointerEvents: 'none',
+                                    color: 'var(--text-primary)',
+                                    fontWeight: 600,
+                                    fontSize: '0.9rem'
+                                }}
+                            >
                                 Welcome First Pass
                             </div>
+
+                            {/* Switch Product */}
+                            <div className="profile-dropdown-divider" />
+
+                            <div className="switch-product-title">
+                                <i className="fas fa-exchange-alt" />
+                                Switch Product
+                            </div>
+
+                            <button
+                                type="button"
+                                className={`profile-dropdown-item product-switch-item ${activeRole === "firstpass" ? "active-product" : ""
+                                    }`}
+                                onClick={() => {
+                                    sessionStorage.setItem("role", "firstpass");
+                                    localStorage.setItem("role", "firstpass");
+                                    window.location.reload();
+                                }}
+                            >
+                                <span className="product-icon firstpass-icon">
+                                    <img
+                                        src={logo}
+                                        alt="FirstPass"
+                                        style={{
+                                            width: "24px",
+                                            height: "24px",
+                                            objectFit: "contain"
+                                        }}
+                                    />
+                                </span>
+
+                                <span className="product-name">
+                                    FirstPass
+                                    <small>Business Management</small>
+                                </span>
+
+                                {activeRole === "firstpass" && (
+                                    <i className="fas fa-check product-check" />
+                                )}
+                            </button>
+
+
+                            <button
+                                type="button"
+                                className={`profile-dropdown-item product-switch-item ${activeRole === "firstloop" ? "active-product" : ""
+                                    }`}
+                                onClick={() => {
+                                    sessionStorage.setItem("role", "firstloop");
+                                    localStorage.setItem("role", "firstloop");
+                                    window.location.reload();
+                                }}
+                            >
+                                <span className="product-icon firstloop-icon">
+                                    <img
+                                        src={fl_logo}
+                                        alt="FirstLoop"
+                                        style={{
+                                            width: "24px",
+                                            height: "24px",
+                                            objectFit: "contain"
+                                        }}
+                                    />
+                                </span>
+
+                                <span className="product-name">
+                                    FirstLoop
+                                    <small>Loyalty & Rewards</small>
+                                </span>
+
+                                {activeRole === "firstloop" && (
+                                    <i className="fas fa-check product-check" />
+                                )}
+                            </button>
+
+                            <div className="profile-dropdown-divider" />
+
                             <NavLink to="/notifications" className="profile-dropdown-item">
                                 <i className="fas fa-bell" /> Notification
                             </NavLink>
+
                             <div className="profile-dropdown-divider" />
-                            <button type="button" className="profile-dropdown-item logout" onClick={handleLogout}>
+
+                            <button
+                                type="button"
+                                className="profile-dropdown-item logout"
+                                onClick={handleLogout}
+                            >
                                 <i className="fas fa-sign-out-alt" /> Logout
                             </button>
                         </div>

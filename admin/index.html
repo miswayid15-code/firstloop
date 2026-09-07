@@ -7,33 +7,64 @@
     <!-- ============================================================
          PATH DETECTION: Set page meta based on /admin vs website
     ============================================================ -->
-    <script>
-        (function () {
-            var isAdmin = window.location.pathname.startsWith('/admin');
+<script>
+    (function () {
+        var isAdmin = window.location.pathname.startsWith('/admin');
+        var cardPreview = window.location.pathname.startsWith('/card-preview') || window.location.pathname.startsWith('/card-image') || window.location.pathname.startsWith('/card-only');
 
-            if (isAdmin) {
-                /* ---- ADMIN PANEL META ---- */
-                document.write('<title>FirstPass Admin Panel</title>');
-                document.write('<meta name="description" content="FirstPass Admin Panel – Securely manage merchants, customers, appointments, coupons, reports, notifications and all platform settings from one central dashboard.">');
-                document.write('<meta name="author" content="FirstPass">');
-                document.write('<meta name="robots" content="noindex, nofollow">');
-                document.write('<meta name="keywords" content="FirstPass admin, merchant management, customer management, admin dashboard, coupon management, reports">');
-            } else {
-                /* ---- WEBSITE META ---- */
-                document.write('<title>First Pass – Shop Smart, Save More</title>');
-                document.write('<meta name="description" content="First Pass is the all-in-one business management platform that helps you shop smart and save more. Discover local deals, redeem coupons and grow your success with merchants near you.">');
-                document.write('<meta name="author" content="Minsway Solutions Pvt Ltd">');
-                document.write('<meta name="robots" content="index, follow">');
-                document.write('<meta name="keywords" content="FirstPass, shop smart, save more, coupons, local deals, merchant app, business management platform">');
-                /* Open Graph for website pages */
-                document.write('<meta property="og:type" content="website">');
-                document.write('<meta property="og:title" content="First Pass – Shop Smart, Save More">');
-                document.write('<meta property="og:description" content="The all-in-one business management platform. Discover deals, redeem coupons and grow your success.">');
-                document.write('<meta property="og:image" content="/asset/images/img/new-logo.png">');
-                document.write('<meta name="twitter:card" content="summary_large_image">');
-            }
-        })();
-    </script>
+        if (isAdmin) {
+            /* ---- ADMIN PANEL META ---- */
+            document.write('<title>FirstPass Admin Panel</title>');
+            document.write('<meta name="description" content="FirstPass Admin Panel – Securely manage merchants, customers, appointments, coupons, reports, notifications and all platform settings from one central dashboard.">');
+            document.write('<meta name="author" content="FirstPass">');
+            document.write('<meta name="robots" content="noindex, nofollow">');
+            document.write('<meta name="keywords" content="FirstPass admin, merchant management, customer management, admin dashboard, coupon management, reports">');
+        }
+        else if (cardPreview) {
+            /* ---- CARD PREVIEW META ---- */
+            var origin = window.location.origin;
+            var pathParts = window.location.pathname.split('/').filter(Boolean);
+            var cardId = pathParts[1] || '35';
+            var search = window.location.search || '?type=1&cus_id=1';
+            var ogImageUrl = origin + '/api/card-image/' + cardId + search;
+
+            document.write('<title>First Pass Card</title>');
+            document.write('<meta name="description" content="View your First Pass digital card.">');
+            document.write('<meta name="author" content="FirstPass">');
+            document.write('<meta name="robots" content="index, follow">');
+
+            /* Open Graph */
+            document.write('<meta property="og:type" content="website">');
+            document.write('<meta property="og:title" content="First Pass Card">');
+            document.write('<meta property="og:description" content="View your First Pass digital card.">');
+            document.write('<meta property="og:image" content="' + ogImageUrl + '">');
+            document.write('<meta property="og:image:type" content="image/png">');
+            document.write('<meta property="og:image:width" content="840">');
+            document.write('<meta property="og:image:height" content="480">');
+            document.write('<meta property="og:image:alt" content="First Pass Card Preview">');
+            document.write('<meta name="twitter:card" content="summary_large_image">');
+            document.write('<meta name="twitter:title" content="First Pass Card">');
+            document.write('<meta name="twitter:description" content="View your First Pass digital card.">');
+            document.write('<meta name="twitter:image" content="' + ogImageUrl + '">');
+        }
+        else {
+            /* ---- WEBSITE META ---- */
+            document.write('<title>First Pass – Shop Smart, Save More</title>');
+            document.write('<meta name="description" content="First Pass is the all-in-one business management platform that helps you shop smart and save more. Discover local deals, redeem coupons and grow your success with merchants near you.">');
+            document.write('<meta name="author" content="Minsway Solutions Pvt Ltd">');
+            document.write('<meta name="robots" content="index, follow">');
+            document.write('<meta name="keywords" content="FirstPass, shop smart, save more, coupons, local deals, merchant app, business management platform">');
+
+            /* ---- Open Graph for website pages ---- */
+            document.write('<meta property="og:type" content="website">');
+            document.write('<meta property="og:title" content="First Pass – Shop Smart, Save More">');
+            document.write('<meta property="og:description" content="The all-in-one business management platform. Discover deals, redeem coupons and grow your success.">');
+            document.write('<meta property="og:image" content="/asset/images/img/new-logo.png">');
+
+            document.write('<meta name="twitter:card" content="summary_large_image">');
+        }
+    })();
+</script>
 
     <!-- Favicon -->
     <link rel="shortcut icon" href="/asset/images/img/fs.png">
@@ -47,25 +78,33 @@
     <!-- Bootstrap (shared – admin uses it for modals/tables; website uses it for grid) -->
     <link rel="stylesheet" href="/asset/css/bootstrap.min.css">
 
-    <!-- Website-only CSS (skipped on admin to avoid conflicts) -->
+    <!-- Website-only CSS (skipped on admin, firstloop, and card preview to avoid conflicts) -->
     <script>
-        if (!window.location.pathname.startsWith('/admin')) {
-            document.write('<link rel="stylesheet" href="/asset/css/swiper-bundle.min.css">');
-            document.write('<link rel="stylesheet" href="/asset/css/animate.css">');
-            document.write('<link rel="stylesheet" href="/asset/css/slick.css">');
-            document.write('<link rel="stylesheet" href="/asset/css/slick.theme.css">');
-            document.write('<link rel="stylesheet" href="/asset/css/styles.css">');
-        }
+        (function() {
+            var p = window.location.pathname;
+            var isExcluded = p.startsWith('/admin') || p.startsWith('/firstloop') || p.startsWith('/card-');
+            if (!isExcluded) {
+                document.write('<link rel="stylesheet" href="/asset/css/swiper-bundle.min.css">');
+                document.write('<link rel="stylesheet" href="/asset/css/animate.css">');
+                document.write('<link rel="stylesheet" href="/asset/css/slick.css">');
+                document.write('<link rel="stylesheet" href="/asset/css/slick.theme.css">');
+                document.write('<link rel="stylesheet" href="/asset/css/styles.css">');
+            }
+        })();
     </script>
 </head>
 
 <body class="counter-scroll">
 
 <script>
-    if (!window.location.pathname.startsWith('/admin')) {
-        document.write('<canvas class="cursor-trail" id="trail" style="display: none;"></canvas>');
-        document.write('<button id="goTop"><span class="border-progress"></span><span class="ic-wrap"><span class="icon icon-long-arrow-alt-up-solid"></span></span></button>');
-    }
+    (function() {
+        var p = window.location.pathname;
+        var isExcluded = p.startsWith('/admin') || p.startsWith('/firstloop') || p.startsWith('/card-');
+        if (!isExcluded) {
+            document.write('<canvas class="cursor-trail" id="trail" style="display: none;"></canvas>');
+            document.write('<button id="goTop"><span class="border-progress"></span><span class="ic-wrap"><span class="icon icon-long-arrow-alt-up-solid"></span></span></button>');
+        }
+    })();
 </script>
 
     <div id="root"></div>
@@ -74,22 +113,26 @@
     <script src="/asset/js/jquery.min.js"></script>
     <script src="/asset/js/bootstrap.min.js"></script>
 
-    <!-- Website-only JS (skipped on admin to avoid GSAP/Swiper errors on admin pages) -->
+    <!-- Website-only JS (skipped on admin, firstloop, and card pages to avoid conflicts) -->
     <script>
-        if (!window.location.pathname.startsWith('/admin')) {
-            document.write('<script src="/asset/js/jquery.nice-select.min.js"><\/script>');
-            document.write('<script src="/asset/js/swiper-bundle.min.js"><\/script>');
-            document.write('<script src="/asset/js/slick.min.js"><\/script>');
-            document.write('<script src="/asset/js/countto.js"><\/script>');
-            document.write('<script src="/asset/js/carousel.js"><\/script>');
-            document.write('<script src="/asset/js/infinityslide.js"><\/script>');
-            document.write('<script src="/asset/js/ScrollSmooth.js"><\/script>');
-            document.write('<script src="/asset/js/gsap.min.js"><\/script>');
-            document.write('<script src="/asset/js/ScrollTrigger.min.js"><\/script>');
-            document.write('<script src="/asset/js/ScrollToPlugin.min.js"><\/script>');
-            document.write('<script src="/asset/js/gsapAnimation.js"><\/script>');
-            document.write('<script src="/asset/js/main.js"><\/script>');
-        }
+        (function() {
+            var p = window.location.pathname;
+            var isExcluded = p.startsWith('/admin') || p.startsWith('/firstloop') || p.startsWith('/card-');
+            if (!isExcluded) {
+                document.write('<script src="/asset/js/jquery.nice-select.min.js"><\/script>');
+                document.write('<script src="/asset/js/swiper-bundle.min.js"><\/script>');
+                document.write('<script src="/asset/js/slick.min.js"><\/script>');
+                document.write('<script src="/asset/js/countto.js"><\/script>');
+                document.write('<script src="/asset/js/carousel.js"><\/script>');
+                document.write('<script src="/asset/js/infinityslide.js"><\/script>');
+                document.write('<script src="/asset/js/ScrollSmooth.js"><\/script>');
+                document.write('<script src="/asset/js/gsap.min.js"><\/script>');
+                document.write('<script src="/asset/js/ScrollTrigger.min.js"><\/script>');
+                document.write('<script src="/asset/js/ScrollToPlugin.min.js"><\/script>');
+                document.write('<script src="/asset/js/gsapAnimation.js"><\/script>');
+                document.write('<script src="/asset/js/main.js"><\/script>');
+            }
+        })();
     </script>
 
     <!-- Vite module entry -->

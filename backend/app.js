@@ -5,8 +5,26 @@ const app = express();
 
 app.use(cors());
 
+const stampCardBodyLimit = '25mb';
+
+app.use(
+    '/firstloop/merchant/create_stamp_card',
+    express.json({ limit: stampCardBodyLimit }),
+    express.urlencoded({ extended: true, limit: stampCardBodyLimit })
+);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use((err, req, res, next) => {
+    if (err?.type === 'entity.too.large') {
+        return res.status(413).json({
+            status: 0,
+            message: 'Request body is too large'
+        });
+    }
+
+    next(err);
+});
 app.use((req, res, next) => {
     req.language =
         req.headers["accept-language"] ||
@@ -41,14 +59,8 @@ app.use('/admin', require('./routes/admin/chatRoutes'));
 app.use('/admin', require('./routes/admin/additionalRoute'));
 app.use('/admin', require('./routes/admin/reportRoutes'));
 app.use('/admin', require('./routes/admin/notificationRoute'));
-
-
-
-
-
-
-
-
+app.use('/admin', require('./routes/admin/salepersonRoute'));
+app.use('/admin/card-design', require('./routes/admin/cardDesignRoutes'));
 
 
 
@@ -65,5 +77,13 @@ app.use('/api', require('./routes/api/couponRoute'));
 app.use('/api', require('./routes/api/customerRoute'));
 app.use('/api', require('./routes/api/additionalRoute'));
 app.use('/api/chats', require('./routes/api/chatRoute'));
+
+
+
+
+app.use('/firstloop/merchant/', require('./routes/firstloop/merchantRoutes'));
+app.use('/firstloop/reception/', require('./routes/firstloop/ReceptionistRoutes'));
+app.use('/firstloop/customer/', require('./routes/firstloop/CustomerRoutes'));
+
 
 module.exports = app;

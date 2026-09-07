@@ -5,18 +5,32 @@ const ZOHO_MAIL_BASE_URL = process.env.ZOHO_MAIL_BASE_URL || "https://mail.zoho.
 
 const getAccessToken = async (refreshToken, type) => {
     try {
+<<<<<<< HEAD
         // console.log("\n==============================================");
         // console.log("          ZOHO ACCESS TOKEN REQUEST");
         // console.log("==============================================");
         // console.log("Mail Type:", type);
+=======
+        console.log("\n==============================================");
+        console.log("          ZOHO ACCESS TOKEN REQUEST");
+        console.log("==============================================");
+        console.log("Mail Type:", type);
+>>>>>>> sub_main
 
         const clientId = process.env.ZOHO_CLIENT_ID;
         const clientSecret = process.env.ZOHO_CLIENT_SECRET;
 
+<<<<<<< HEAD
         // console.log("Client ID:", clientId);
         // console.log("Client Secret Exists:", !!clientSecret);
         // console.log("Refresh Token Exists:", !!refreshToken);
         // console.log("Refresh Token Length:", refreshToken?.length);
+=======
+        console.log("Client ID:", clientId);
+        console.log("Client Secret Exists:", !!clientSecret);
+        console.log("Refresh Token Exists:", !!refreshToken);
+        console.log("Refresh Token Length:", refreshToken?.length);
+>>>>>>> sub_main
 
         if (!clientId) {
             throw new Error("ZOHO_CLIENT_ID is missing");
@@ -48,8 +62,13 @@ const getAccessToken = async (refreshToken, type) => {
                 }
             );
 
+<<<<<<< HEAD
             // console.log("Token Response Status:", response.status);
             // console.log("Full Zoho Response:", response.data);
+=======
+            console.log("Token Response Status:", response.status);
+            console.log("Full Zoho Response:", response.data);
+>>>>>>> sub_main
 
             if (response.data?.access_token) {
                 return {
@@ -61,9 +80,15 @@ const getAccessToken = async (refreshToken, type) => {
             console.warn(`refresh_token grant attempt failed for ${type}:`, refreshErr.response?.data || refreshErr.message);
         }
 
+<<<<<<< HEAD
        
         try {
             // console.log("\n---------- AUTH CODE REQUEST (grant_type=authorization_code) ----------");
+=======
+        // 2. Fallback: Try authorization_code grant type in case refreshToken is a Self Client grant code
+        try {
+            console.log("\n---------- AUTH CODE REQUEST (grant_type=authorization_code) ----------");
+>>>>>>> sub_main
             const params = new URLSearchParams();
             params.append("client_id", clientId);
             params.append("grant_type", "authorization_code");
@@ -81,8 +106,13 @@ const getAccessToken = async (refreshToken, type) => {
                 }
             );
 
+<<<<<<< HEAD
             // console.log("Token Response Status:", response.status);
             // console.log("Full Zoho Response:", response.data);
+=======
+            console.log("Token Response Status:", response.status);
+            console.log("Full Zoho Response:", response.data);
+>>>>>>> sub_main
 
             if (response.data?.access_token) {
                 if (response.data.refresh_token) {
@@ -154,6 +184,7 @@ const sendMail = async (...args) => {
             ? (process.env.MAIL_USER_CUSTOMER || process.env.MAIL_USER)
             : (process.env.MAIL_USER || process.env.MAIL_USER_CUSTOMER);
 
+<<<<<<< HEAD
         // console.log("\n================================================");
         // console.log("                SEND MAIL START");
         // console.log("================================================");
@@ -162,6 +193,16 @@ const sendMail = async (...args) => {
         // console.log("To:", to);
         // console.log("Subject:", subject);
         // console.log("Account ID:", accountId);
+=======
+        console.log("\n================================================");
+        console.log("                SEND MAIL START");
+        console.log("================================================");
+        console.log("Mail Type:", type);
+        console.log("From:", fromEmail);
+        console.log("To:", to);
+        console.log("Subject:", subject);
+        console.log("Account ID:", accountId);
+>>>>>>> sub_main
 
         if (!refreshToken) {
             throw new Error(`Zoho refresh token missing for ${type}`);
@@ -191,11 +232,19 @@ const sendMail = async (...args) => {
             }
         }
 
+<<<<<<< HEAD
         // console.log("\n---------- SEND ZOHO EMAIL VIA REST API ----------");
         // console.log("Mail API Base URL:", ZOHO_MAIL_BASE_URL);
         // console.log("Account ID:", accountId);
         // console.log("From:", fromEmail);
         // console.log("To:", to);
+=======
+        console.log("\n---------- SEND ZOHO EMAIL VIA REST API ----------");
+        console.log("Mail API Base URL:", ZOHO_MAIL_BASE_URL);
+        console.log("Account ID:", accountId);
+        console.log("From:", fromEmail);
+        console.log("To:", to);
+>>>>>>> sub_main
 
         const mailUrl = `${ZOHO_MAIL_BASE_URL}/api/accounts/${accountId}/messages`;
         console.log("Mail URL:", mailUrl);
@@ -219,6 +268,7 @@ const sendMail = async (...args) => {
             }
         );
 
+<<<<<<< HEAD
         // console.log("\n========== EMAIL SENT SUCCESSFULLY ==========");
         // console.log("Type:", type);
         // console.log("From:", fromEmail);
@@ -226,6 +276,15 @@ const sendMail = async (...args) => {
         // console.log("Subject:", subject);
         // console.log("Zoho Response:", response.data);
         // console.log("=============================================\n");
+=======
+        console.log("\n========== EMAIL SENT SUCCESSFULLY ==========");
+        console.log("Type:", type);
+        console.log("From:", fromEmail);
+        console.log("To:", to);
+        console.log("Subject:", subject);
+        console.log("Zoho Response:", response.data);
+        console.log("=============================================\n");
+>>>>>>> sub_main
 
         return true;
     } catch (error) {

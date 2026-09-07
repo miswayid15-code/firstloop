@@ -357,3 +357,67 @@
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
     }
 }
+
+.switch-product-title {
+    padding: 8px 16px 5px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+}
+
+.switch-product-title i {
+    margin-right: 7px;
+}
+
+.product-switch-item {
+    display: flex !important;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+}
+
+.product-icon {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.firstpass-icon {
+    background: rgba(220, 0, 0, 0.10);
+    color: #e31b23;
+}
+
+.firstloop-icon {
+    background: rgba(30, 136, 229, 0.10);
+    color: #1976d2;
+}
+
+.product-name {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+    flex: 1;
+    font-weight: 600;
+}
+
+.product-name small {
+    margin-top: 3px;
+    font-size: 0.68rem;
+    font-weight: 400;
+    color: var(--text-secondary);
+}
+
+.product-check {
+    color: #e31b23;
+    font-size: 0.8rem;
+}
+
+.active-product {
+    background: rgba(220, 0, 0, 0.06);
+}

@@ -6,6 +6,7 @@ const sidebarItems = [
     { to: '/deleted-merchants', icon: 'fa-trash-alt', label: 'Deleted Merchants' },
     { to: '/customers', icon: 'fa-users', label: 'Customers' },
     { to: '/categories', icon: 'fa-tags', label: 'Categories' },
+    { to: '/card-designs', icon: 'fa-id-card', label: 'Card Designs' },
     { to: '/appointments', icon: 'fa-calendar-check', label: 'Appointments' },
     { to: '/merchant-reports', icon: 'fa-store', label: 'Merchant Reports' },
     { to: '/customer-reports', icon: 'fa-users', label: 'Customer Reports' },

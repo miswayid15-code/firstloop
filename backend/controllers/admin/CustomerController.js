@@ -51,7 +51,8 @@ exports.list = async (req, res) => {
                 'del_status',
                 'lat',
                 'lon'
-            ]
+            ],
+           order: [['id', 'DESC']]
         });
         if (customers.length === 0) {
             return res.json({

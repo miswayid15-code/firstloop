@@ -1,8 +1,30 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 import path from 'path';
+import cardImageHandler from './api/card-image.js';
+import cardPreviewHandler from './api/card-preview.js';
+
+// Vite Plugin to mount server endpoints in local development
+function apiDevPlugin() {
+  return {
+    name: 'api-dev-middleware',
+    configureServer(server) {
+      server.middlewares.use(async (req, res, next) => {
+        const url = req.url || '';
+        if (url.startsWith('/api/card-image') || (url.startsWith('/card-image') && (req.headers.accept?.includes('image') || req.url.includes('cus_id')))) {
+          return cardImageHandler(req, res);
+        }
+        if (url.startsWith('/api/card-preview') || (url.startsWith('/card-preview') && (req.url.includes('bot=1') || /bot|crawler|spider|whatsapp/i.test(req.headers['user-agent'] || '')))) {
+          return cardPreviewHandler(req, res);
+        }
+        next();
+      });
+    }
+  };
+}
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), apiDevPlugin()],
   resolve: {
     alias: {
       '@/asset': path.resolve(__dirname, './public/asset'),
@@ -17,4 +39,4 @@ export default defineConfig({
       'www.firstpassapp.co'
     ]
   }
-})
+});

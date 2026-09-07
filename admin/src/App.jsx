@@ -5,44 +5,79 @@ import AppToaster from './components/AppToaster.jsx';
 import Navbar from './components/Navbar.jsx';
 
 // Admin
-import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import Merchants from './pages/Merchants';
-import DeletedMerchants from './pages/DeletedMerchants';
-import Customers from './pages/Customers';
-import Categories from './pages/Categories';
-import Appointments from './pages/Appointments';
-import MerchantReports from './pages/MerchantReports';
-import CustomerReports from './pages/CustomerReports';
-import CustomerReportDetails from './pages/CustomerReportDetails';
-import ViewMerchReport from './pages/ViewMerchReport';
-import Notifications from './pages/Notifications';
-import NotificationList from './pages/NotificationList';
-import Profile from './pages/Profile';
-import AddMerchant from './pages/AddMerchant';
-import EditMerchant from './pages/EditMerchant';
-import Branches from './pages/Branches';
-import Receptionists from './pages/Receptionists';
-import ViewMerchant from './pages/ViewMerchant';
-import ViewDeletedMerchant from './pages/ViewDeletedMerchant';
-import ViewBranch from './pages/ViewBranch';
-import BranchReport from './pages/BranchReport';
-import BranchChat from './pages/BranchChat';
-import BranchPendingImages from './pages/BranchPendingImages';
-import CouponClaim from './pages/CouponClaim';
-import Settings from './pages/Settings';
-import Support from './pages/Support';
-import ProtectedRoute from './pages/ProtectedRoute';
+import Login from './pages/admin/Login';
+import Dashboard from './pages/admin/Dashboard';
+import Merchants from './pages/admin/Merchants';
+import DeletedMerchants from './pages/admin/DeletedMerchants';
+import Customers from './pages/admin/Customers';
+import SalePersons from './pages/admin/SalePersons';
+import SalePersonMerchants from './pages/admin/SalePersonMerchants';
+import Categories from './pages/admin/Categories';
+import Appointments from './pages/admin/Appointments';
+import MerchantReports from './pages/admin/MerchantReports';
+import CustomerReports from './pages/admin/CustomerReports';
+import CustomerReportDetails from './pages/admin/CustomerReportDetails';
+import ViewMerchReport from './pages/admin/ViewMerchReport';
+import Notifications from './pages/admin/Notifications';
+import NotificationList from './pages/admin/NotificationList';
+import Profile from './pages/admin/Profile';
+import AddMerchant from './pages/admin/AddMerchant';
+import EditMerchant from './pages/admin/EditMerchant';
+import Branches from './pages/admin/Branches';
+import Receptionists from './pages/admin/Receptionists';
+import ViewMerchant from './pages/admin/ViewMerchant';
+import ViewDeletedMerchant from './pages/admin/ViewDeletedMerchant';
+import ViewBranch from './pages/admin/ViewBranch';
+import ViewFlBranch from './pages/admin/ViewFlBranch';
+import FpCustomerDetails from './pages/admin/FpCustomerDetails';
+import CardDesigns from './pages/admin/CardDesigns';
+import CardPreview from './pages/admin/CardPreview';
+import CardImage from './pages/admin/CardImage';
+import BranchReport from './pages/admin/BranchReport';
+import BranchChat from './pages/admin/BranchChat';
+import BranchPendingImages from './pages/admin/BranchPendingImages';
+import CouponClaim from './pages/admin/CouponClaim';
+import Settings from './pages/admin/Settings';
+import Support from './pages/admin/Support';
+import ProtectedRoute from './pages/admin/ProtectedRoute';
+import AdminCharts from './pages/admin/AdminCharts';
+import FirstLoopComingSoon from './pages/admin/FirstLoopComingSoon';
+import AddCardCustomer from './pages/admin/AddCardCustomer';
 import NotFound from './pages/NotFound';
-import AdminCharts from './pages/AdminCharts';
 
+
+// SALE LOGIN
+import SalePersonLogin from './pages/saleperson/SalePersonLogin.jsx';
+import SalePersonDashboard from './pages/saleperson/SalePersonDashboard.jsx';
+import SalePersonAddMerchant from './pages/saleperson/AddMerchant.jsx';
+
+// Merchant UI
+import MerchantLayout from './pages/merchant/MerchantLayout.jsx';
+import MerchantLogin from './pages/merchant/MerchantLogin.jsx';
+import MerchantDashboard from './pages/merchant/MerchantDashboard.jsx';
+import MerchantCustomerList from './pages/merchant/CustomerList.jsx';
+import MerchantCardList from './pages/merchant/CardList.jsx';
+import MerchantBranchList from './pages/merchant/BranchList.jsx';
+import MerchantReceptionistList from './pages/merchant/ReceptionistList.jsx';
+// import MerchantViewBranch from './pages/merchant/ViewFlBranch.jsx';
+import MerchantBranchReceptionists from './pages/merchant/BranchReceptionists.jsx';
+import MerchantReportsView from './pages/merchant/MerchantReports.jsx';
+
+// Receptionist UI
+import ReceptionistLayout from './pages/receptionist/ReceptionistLayout.jsx';
+import ReceptionistLogin from './pages/receptionist/ReceptionistLogin.jsx';
+import ReceptionistDashboard from './pages/receptionist/ReceptionistDashboard.jsx';
+import ReceptionistCustomerList from './pages/receptionist/ReceptionistCustomerList.jsx';
+import CardCheckInPayment from './pages/receptionist/CardCheckInPayment.jsx';
 
 // Website
+//first pass
 import Header from './component/Header.jsx';
 import Footer from './component/Footer.jsx';
 import MobileMenu from './component/MobileMenu.jsx';
 import ConfigurationMenu from './component/ConfigurationMenu.jsx';
 
+<<<<<<< HEAD
 import Landing from './page/Home.jsx';
 import Company from './page/About.jsx';
 import Offerings from './page/Services.jsx';
@@ -56,7 +91,23 @@ import DeleteAccount from './page/DeleteAccount.jsx';
 import UnderConstruction from './page/UnderConstruction.jsx';
 import CustomerApp from './page/CustomerApp.jsx';
 import FirstLoopComingSoon from './page/FirstLoopComingSoon.jsx';
+=======
+import Landing from './landing/firstpass/Home.jsx';
+import Company from './landing/firstpass/About.jsx';
+import Offerings from './landing/firstpass/Services.jsx';
+import Portfolio from './landing/firstpass/Works.jsx';
+import Journal from './landing/firstpass/Blog.jsx';
+import ReachUs from './landing/firstpass/Contact.jsx';
+import DataPolicy from './landing/firstpass/PrivacyPolicy.jsx';
+import Conditions from './landing/firstpass/TermsCustomer.jsx';
+import HowItWorks from './landing/firstpass/HowItWorks.jsx';
+import DeleteAccount from './landing/firstpass/DeleteAccount.jsx';
+import UnderConstruction from './landing/firstpass/UnderConstruction.jsx';
+import CustomerApp from './landing/firstpass/CustomerApp.jsx';
+>>>>>>> sub_main
 
+// FirstLoop Standalone Website
+import FirstLoopWebsite from './landing/firstloop/App.jsx';
 function ScrollToTopAndAnimate() {
   const { pathname } = useLocation();
 
@@ -91,7 +142,11 @@ function ScrollToTopAndAnimate() {
 
 function WebsiteLayout() {
   const { pathname } = useLocation();
+<<<<<<< HEAD
   const hideHeaderFooter = ['/under-construction', '/delete-account', '/data-policy', '/conditions', '/customer-app', '/firstloop-coming-soon', '/firstloop'].includes(pathname);
+=======
+  const hideHeaderFooter = ['/under-construction', '/delete-account', '/data-policy', '/conditions', '/customer-app', '/firstloop-coming-soon'].includes(pathname) || pathname.startsWith('/firstloop') || pathname.startsWith('/card-preview') || pathname.startsWith('/card-image') || pathname.startsWith('/card-only');
+>>>>>>> sub_main
 
   const [loading, setLoading] = useState(!hideHeaderFooter);
   const [fade, setFade] = useState(false);
@@ -143,7 +198,18 @@ function WebsiteLayout() {
           <Route path="/under-construction" element={<UnderConstruction />} />
           <Route path="/customer-app" element={<CustomerApp />} />
           <Route path="/firstloop-coming-soon" element={<FirstLoopComingSoon />} />
+<<<<<<< HEAD
           <Route path="/firstloop" element={<FirstLoopComingSoon />} />
+=======
+          <Route path="/firstloop" element={<FirstLoopWebsite />} />
+          <Route path="/firstloop/*" element={<FirstLoopWebsite />} />
+          <Route path="/card-preview/:id" element={<CardPreview />} />
+          <Route path="/card-preview/:id/:type" element={<CardPreview />} />
+          <Route path="/card-image/:id" element={<CardImage />} />
+          <Route path="/card-image/:id/:type" element={<CardImage />} />
+          <Route path="/card-only/:id" element={<CardImage />} />
+          <Route path="/card-only/:id/:type" element={<CardImage />} />
+>>>>>>> sub_main
         </Routes>
       </main>
 
@@ -161,8 +227,59 @@ function AdminLayout() {
 
       <Routes>
         <Route path="/" element={<Login />} />
+<<<<<<< HEAD
         <Route path="firstloop-coming-soon" element={<FirstLoopComingSoon />} />
         <Route path="firstloop" element={<FirstLoopComingSoon />} />
+=======
+        <Route path="card-preview/:id" element={<CardPreview />} />
+        <Route path="card-preview/:id/:type" element={<CardPreview />} />
+        <Route path="card-image/:id" element={<CardImage />} />
+        <Route path="card-image/:id/:type" element={<CardImage />} />
+        <Route path="card-only/:id" element={<CardImage />} />
+        <Route path="card-only/:id/:type" element={<CardImage />} />
+        <Route path="saleperson-login" element={<SalePersonLogin />} />
+        <Route path="saleperson-dashboard" element={<SalePersonDashboard />} />
+        <Route path="saleperson-add-merchant" element={<SalePersonAddMerchant />} />
+        <Route path="firstloop-coming-soon" element={<FirstLoopComingSoon />} />
+        <Route path="firstloop" element={<FirstLoopComingSoon />} />
+
+        {/* Merchant UI Routes */}
+        <Route path="merchant/login" element={<MerchantLogin />} />
+        <Route path="merchant-login" element={<MerchantLogin />} />
+
+        <Route path="merchant" element={<MerchantLayout />}>
+          <Route index element={<Navigate to="/merchant/dashboard" replace />} />
+          <Route path="dashboard" element={<MerchantDashboard />} />
+          <Route path="customers" element={<MerchantCustomerList />} />
+          <Route path="customers/:id" element={<FpCustomerDetails />} />
+          <Route path="cards" element={<MerchantCardList />} />
+          <Route path="branches" element={<MerchantBranchList />} />
+          <Route path="receptionists" element={<MerchantReceptionistList />} />
+          <Route path="branches/:id" element={<ViewFlBranch />} />
+          <Route path="view-fl-branch/:id" element={<ViewFlBranch />} />
+          <Route path="branches/:branchId/checkin" element={<CardCheckInPayment />} />
+          <Route path="checkin" element={<CardCheckInPayment />} />
+          <Route path="checkin/:branchId" element={<CardCheckInPayment />} />
+          <Route path="add-card-customer" element={<AddCardCustomer />} />
+          <Route path="add-card-customer/:branchId" element={<AddCardCustomer />} />
+          <Route path="branches/:branchId/receptionists" element={<MerchantBranchReceptionists />} />
+          <Route path="reports" element={<MerchantReportsView />} />
+        </Route>
+
+        {/* Receptionist UI Routes */}
+        <Route path="receptionist/login" element={<ReceptionistLogin />} />
+        <Route path="receptionist-login" element={<ReceptionistLogin />} />
+
+        <Route path="receptionist" element={<ReceptionistLayout />}>
+          <Route index element={<Navigate to="/receptionist/dashboard" replace />} />
+          <Route path="dashboard" element={<ReceptionistDashboard />} />
+          <Route path="customers" element={<ReceptionistCustomerList />} />
+          <Route path="checkin" element={<CardCheckInPayment />} />
+          <Route path="add-card-customer" element={<AddCardCustomer />} />
+          <Route path="add-card-customer/:branchId" element={<AddCardCustomer />} />
+          <Route path="view-fl-branch/:id" element={<ViewFlBranch />} />
+        </Route>
+>>>>>>> sub_main
 
         <Route
           element={
@@ -175,6 +292,8 @@ function AdminLayout() {
           <Route path="merchants" element={<Merchants />} />
           <Route path="deleted-merchants" element={<DeletedMerchants />} />
           <Route path="customers" element={<Customers />} />
+                    <Route path="salepersons" element={<SalePersons />} />
+          <Route path="salepersons/:id/merchants" element={<SalePersonMerchants />} />
           <Route path="categories" element={<Categories />} />
           <Route path="appointments" element={<Appointments />} />
           <Route path="coupon-claim" element={<CouponClaim />} />
@@ -191,6 +310,12 @@ function AdminLayout() {
           <Route path="view-merchant/:id" element={<ViewMerchant />} />
           <Route path="view-deleted-merchant/:id" element={<ViewDeletedMerchant />} />
           <Route path="view-branch/:id" element={<ViewBranch />} />
+          <Route path="view-fl-branch" element={<ViewFlBranch />} />
+          <Route path="view-fl-branch/:id" element={<ViewFlBranch />} />
+          <Route path="add-card-customer" element={<AddCardCustomer />} />
+          <Route path="add-card-customer/:branchId" element={<AddCardCustomer />} />
+          <Route path="fp-customer_details" element={<FpCustomerDetails />} />
+          <Route path="fp-customer_details/:id" element={<FpCustomerDetails />} />
           <Route path="branch-report/:id" element={<BranchReport />} />
           <Route path="branch-chat/:id" element={<BranchChat />} />
           <Route path="admin-chat/:id" element={<AdminCharts />} />
@@ -199,6 +324,7 @@ function AdminLayout() {
           <Route path="receptionists" element={<Receptionists />} />
           <Route path="settings" element={<Settings />} />
           <Route path="banners" element={<Settings />} />
+          <Route path="card-designs" element={<CardDesigns />} />
           <Route path="support" element={<Support />} />
         </Route>
 
@@ -210,7 +336,7 @@ function AdminLayout() {
 
 export default function App() {
   const location = useLocation();
-  const isAdmin = window.location.pathname.startsWith('/admin');
+  const isAdmin = window.location.pathname.startsWith('/admin') || window.location.pathname.startsWith('/merchant');
 
   return (
     <>
