@@ -42,12 +42,12 @@ export default async function handler(req, res) {
         const card = await fetchCardData({ id, type, cus_id, query });
 
         const brandName = card.brandName || 'FirstPass';
-        // const cardTitle = card.title || (Number(type) === 2 ? 'Membership Pass' : 'Stamp Card');
-        // const ogTitle = `${brandName} - ${cardTitle}`;
-        // const totalStamps = Number(card.total_stamps || 8);
-        // const ogDescription = Number(type) === 2
-        //     ? (card.description || `View your exclusive ${brandName} Membership Pass.`)
-        //     : `Collect ${totalStamps} stamps to earn exclusive rewards at ${brandName}!`;
+        const cardTitle = card.title || (Number(type) === 2 ? 'Membership Pass' : 'Stamp Card');
+        const ogTitle = `${brandName} - ${cardTitle}`;
+        const totalStamps = Number(card.total_stamps || 8);
+        const ogDescription = Number(type) === 2
+            ? (card.description || `View your exclusive ${brandName} Membership Pass.`)
+            : `Collect ${totalStamps} stamps to earn exclusive rewards at ${brandName}!`;
 
         const ogImageUrl = `${baseUrl}/api/card-image/${id}?type=${type}&cus_id=${cus_id}`;
         const ogPageUrl = `${baseUrl}/card-preview/${id}?type=${type}&cus_id=${cus_id}`;
@@ -66,7 +66,7 @@ export default async function handler(req, res) {
     <!-- Open Graph / Facebook / WhatsApp -->
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="FirstPass">
-   
+
     <meta property="og:image" content="${ogImageUrl}">
     <meta property="og:image:secure_url" content="${ogImageUrl}">
     <meta property="og:image:type" content="image/png">
