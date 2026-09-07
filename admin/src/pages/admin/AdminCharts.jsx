@@ -76,11 +76,7 @@ const ROLE_CONFIG = {
 }
 import { getAuth } from "firebase/auth";
 
-<<<<<<< HEAD:admin/src/pages/AdminCharts.jsx
-// console.log("currentUser",getAuth().currentUser);
-=======
 // console.log("currentUser", getAuth().currentUser);
->>>>>>> sub_main:admin/src/pages/admin/AdminCharts.jsx
 /* ═══════════════════════════════════════════════════════
    HELPERS
    ═══════════════════════════════════════════════════════ */

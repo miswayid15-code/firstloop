@@ -77,21 +77,6 @@ import Footer from './component/Footer.jsx';
 import MobileMenu from './component/MobileMenu.jsx';
 import ConfigurationMenu from './component/ConfigurationMenu.jsx';
 
-<<<<<<< HEAD
-import Landing from './page/Home.jsx';
-import Company from './page/About.jsx';
-import Offerings from './page/Services.jsx';
-import Portfolio from './page/Works.jsx';
-import Journal from './page/Blog.jsx';
-import ReachUs from './page/Contact.jsx';
-import DataPolicy from './page/PrivacyPolicy.jsx';
-import Conditions from './page/TermsCustomer.jsx';
-import HowItWorks from './page/HowItWorks.jsx';
-import DeleteAccount from './page/DeleteAccount.jsx';
-import UnderConstruction from './page/UnderConstruction.jsx';
-import CustomerApp from './page/CustomerApp.jsx';
-import FirstLoopComingSoon from './page/FirstLoopComingSoon.jsx';
-=======
 import Landing from './landing/firstpass/Home.jsx';
 import Company from './landing/firstpass/About.jsx';
 import Offerings from './landing/firstpass/Services.jsx';
@@ -104,7 +89,6 @@ import HowItWorks from './landing/firstpass/HowItWorks.jsx';
 import DeleteAccount from './landing/firstpass/DeleteAccount.jsx';
 import UnderConstruction from './landing/firstpass/UnderConstruction.jsx';
 import CustomerApp from './landing/firstpass/CustomerApp.jsx';
->>>>>>> sub_main
 
 // FirstLoop Standalone Website
 import FirstLoopWebsite from './landing/firstloop/App.jsx';
@@ -142,11 +126,7 @@ function ScrollToTopAndAnimate() {
 
 function WebsiteLayout() {
   const { pathname } = useLocation();
-<<<<<<< HEAD
-  const hideHeaderFooter = ['/under-construction', '/delete-account', '/data-policy', '/conditions', '/customer-app', '/firstloop-coming-soon', '/firstloop'].includes(pathname);
-=======
   const hideHeaderFooter = ['/under-construction', '/delete-account', '/data-policy', '/conditions', '/customer-app', '/firstloop-coming-soon'].includes(pathname) || pathname.startsWith('/firstloop') || pathname.startsWith('/card-preview') || pathname.startsWith('/card-image') || pathname.startsWith('/card-only');
->>>>>>> sub_main
 
   const [loading, setLoading] = useState(!hideHeaderFooter);
   const [fade, setFade] = useState(false);
@@ -198,9 +178,6 @@ function WebsiteLayout() {
           <Route path="/under-construction" element={<UnderConstruction />} />
           <Route path="/customer-app" element={<CustomerApp />} />
           <Route path="/firstloop-coming-soon" element={<FirstLoopComingSoon />} />
-<<<<<<< HEAD
-          <Route path="/firstloop" element={<FirstLoopComingSoon />} />
-=======
           <Route path="/firstloop" element={<FirstLoopWebsite />} />
           <Route path="/firstloop/*" element={<FirstLoopWebsite />} />
           <Route path="/card-preview/:id" element={<CardPreview />} />
@@ -209,7 +186,6 @@ function WebsiteLayout() {
           <Route path="/card-image/:id/:type" element={<CardImage />} />
           <Route path="/card-only/:id" element={<CardImage />} />
           <Route path="/card-only/:id/:type" element={<CardImage />} />
->>>>>>> sub_main
         </Routes>
       </main>
 
@@ -227,10 +203,6 @@ function AdminLayout() {
 
       <Routes>
         <Route path="/" element={<Login />} />
-<<<<<<< HEAD
-        <Route path="firstloop-coming-soon" element={<FirstLoopComingSoon />} />
-        <Route path="firstloop" element={<FirstLoopComingSoon />} />
-=======
         <Route path="card-preview/:id" element={<CardPreview />} />
         <Route path="card-preview/:id/:type" element={<CardPreview />} />
         <Route path="card-image/:id" element={<CardImage />} />
@@ -279,7 +251,6 @@ function AdminLayout() {
           <Route path="add-card-customer/:branchId" element={<AddCardCustomer />} />
           <Route path="view-fl-branch/:id" element={<ViewFlBranch />} />
         </Route>
->>>>>>> sub_main
 
         <Route
           element={

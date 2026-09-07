@@ -978,27 +978,6 @@ export default function Customers() {
                                     </td>
                                     <td>
                                         <div className="action-group" style={{ justifyContent: 'flex-end' }}>
-<<<<<<< HEAD:admin/src/pages/Customers.jsx
-=======
-                                            {activeRole === "firstloop" && (
-    <button
-        type="button"
-        className="btn-icon view"
-        title="View Customer Details"
-        onClick={() => navigate(`/fp-customer_details/${row.id}`)}
-    >
-        <img
-            src={fl_logo}
-            alt="FirstLoop"
-            style={{
-                width: "20px",
-                height: "20px",
-                objectFit: "contain"
-            }}
-        />
-    </button>
-)}
->>>>>>> sub_main:admin/src/pages/admin/Customers.jsx
                                             <button
                                                 className="btn-icon view"
                                                 title="View Customer Details"
@@ -1455,10 +1434,7 @@ export default function Customers() {
                                                 value={editCustomerForm.phone}
                                                 countryCode={editCustomerForm.country_code ? String(editCustomerForm.country_code) : ''}
                                                 onChange={handleEditCustomerPhoneChange}
-<<<<<<< HEAD:admin/src/pages/Customers.jsx
-=======
                                                 required
->>>>>>> sub_main:admin/src/pages/admin/Customers.jsx
                                             />
 
                                             <div className="form-group-classic">
