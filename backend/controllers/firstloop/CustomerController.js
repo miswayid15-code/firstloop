@@ -157,7 +157,6 @@ exports.Link_customer = async (req, res) => {
         // --------------------------------------------------
         // 2. CARD TYPE
         // --------------------------------------------------
-
         let card_type;
 
         if (String(cardType).toLowerCase() === 'stamp') {
@@ -719,8 +718,6 @@ exports.Link_customer = async (req, res) => {
         });
     }
 };
-
-
 
 exports.fetch_card = async (req, res) => {
     try {
@@ -2001,7 +1998,6 @@ exports.get_customer_details = async (req, res) => {
         });
     }
 };
-
 
 exports.get_customer_card_details = async (req, res) => {
     try {

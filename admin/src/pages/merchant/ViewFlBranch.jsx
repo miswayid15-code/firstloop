@@ -667,8 +667,16 @@ export default function ViewFlBranch() {
                             className="btn btn-secondary"
                             onClick={() => navigate(-1)}
                         >
-                            <i className="fas fa-arrow-left" />
-                            {' '}Back
+                            <i className="fas fa-arrow-left" /> Back
+                        </button>
+                        <button
+                            type="button"
+                            className="btn btn-primary"
+                            onClick={() => navigate(`/merchant/branches/${branch?.id || id}/checkin`)}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                        >
+                            <i className="fas fa-qrcode" />
+                            <span>Branch Check-In</span>
                         </button>
                     </div>
                 </div>

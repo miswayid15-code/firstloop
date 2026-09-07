@@ -791,23 +791,45 @@ export default function BranchList() {
 
                                             {/* Actions */}
                                             <td style={{ padding: "14px 18px", textAlign: "right" }}>
-                                                <button
-                                                    type="button"
-                                                    className="btn firstloop-btn-primary btn-sm"
-                                                    onClick={() => navigate(`/merchant/branches/${branchId}`)}
-                                                    style={{
-                                                        borderRadius: 8,
-                                                        padding: "6px 14px",
-                                                        fontSize: "0.82rem",
-                                                        fontWeight: 600,
-                                                        display: "inline-flex",
-                                                        alignItems: "center",
-                                                        gap: 6
-                                                    }}
-                                                >
-                                                    <i className="fas fa-eye" />
-                                                    View Branch
-                                                </button>
+                                                <div style={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-sm"
+                                                        onClick={() => navigate(`/merchant/branches/${branchId}/checkin`)}
+                                                        style={{
+                                                            borderRadius: 8,
+                                                            padding: "6px 12px",
+                                                            fontSize: "0.82rem",
+                                                            fontWeight: 700,
+                                                            display: "inline-flex",
+                                                            alignItems: "center",
+                                                            gap: 6,
+                                                            background: "rgba(16, 185, 129, 0.12)",
+                                                            color: "#059669",
+                                                            border: "1px solid rgba(16, 185, 129, 0.25)"
+                                                        }}
+                                                    >
+                                                        <i className="fas fa-qrcode" />
+                                                        Check-In
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        className="btn firstloop-btn-primary btn-sm"
+                                                        onClick={() => navigate(`/merchant/branches/${branchId}`)}
+                                                        style={{
+                                                            borderRadius: 8,
+                                                            padding: "6px 14px",
+                                                            fontSize: "0.82rem",
+                                                            fontWeight: 600,
+                                                            display: "inline-flex",
+                                                            alignItems: "center",
+                                                            gap: 6
+                                                        }}
+                                                    >
+                                                        <i className="fas fa-eye" />
+                                                        View Branch
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     );

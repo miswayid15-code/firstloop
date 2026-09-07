@@ -68,14 +68,14 @@ export default function AddCardCustomer() {
             try {
                 let response = await API.post(`firstloop/merchant/branch_details/${branchId}`);
 
-            
+
                 if (!response?.data) {
                     try {
                         const fallbackRes = await API.post(`firstloop/branch_details/${branchId}`);
                         if (fallbackRes?.data && (fallbackRes.data.status === 1) && fallbackRes.data.data) {
                             response = fallbackRes;
                         }
-                    } catch (e) {}
+                    } catch (e) { }
                 }
 
                 if (response?.data && (response.data.status === 1) && response.data.data) {
@@ -195,28 +195,76 @@ export default function AddCardCustomer() {
     };
 
     // Trigger lookup from input button or Enter key
-    const handleCheckEmail = async (customEmail) => {
-        const emailToLookup = (typeof customEmail === "string" ? customEmail : email).trim().toLowerCase();
-        if (!emailToLookup) {
-            toast.error("Please enter a customer email address");
-            return;
-        }
+const handleCheckEmail = async (customEmail) => {
+    const emailToLookup = (
+        typeof customEmail === "string" ? customEmail : email
+    ).trim().toLowerCase();
 
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(emailToLookup)) {
-            toast.error("Please enter a valid email address (e.g. customer@example.com)");
-            return;
-        }
+    if (!emailToLookup) {
+        toast.error("Please enter a customer email address");
+        return;
+    }
 
-        setIsSearching(true);
-        try {
-            await fetchCheckCustomer(emailToLookup);
-        } catch (err) {
-            console.error("Lookup error:", err);
-        } finally {
-            setIsSearching(false);
-        }
-    };
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailRegex.test(emailToLookup)) {
+        toast.error(
+            "Please enter a valid email address (e.g. customer@gmail.com)"
+        );
+        return;
+    }
+
+    const [username, domain] = emailToLookup.split("@");
+
+    // Common email providers
+    const allowedDomains = [
+        "gmail.com",
+        "googlemail.com",
+        "zoho.com",
+        "zohomail.com",
+        "outlook.com",
+        "hotmail.com",
+        "live.com",
+        "yahoo.com",
+        "icloud.com"
+    ];
+
+    // If the domain looks like a common provider but is misspelled,
+    // reject it instead of treating it as a custom domain.
+    const commonProviders = [
+        "gmail",
+        "googlemail",
+        "zoho",
+        "zohomail",
+        "outlook",
+        "hotmail",
+        "live",
+        "yahoo",
+        "icloud"
+    ];
+
+    const domainName = domain.split(".")[0];
+
+    if (
+        commonProviders.includes(domainName) &&
+        !allowedDomains.includes(domain)
+    ) {
+        toast.error(`Please check the email domain spelling: ${domain}`);
+        return;
+    }
+
+    // Continue with valid email
+    setIsSearching(true);
+
+    try {
+        await fetchCheckCustomer(emailToLookup);
+    } catch (err) {
+        console.error("Lookup error:", err);
+    } finally {
+        setIsSearching(false);
+    }
+};
 
     // Quick fill from demo chip
     const handleSelectDemoProfile = (demo) => {
@@ -296,7 +344,7 @@ export default function AddCardCustomer() {
                 });
                 console.log("Link Customer Response Data:", resData);
 
-                const targetCardId =  resData?.customer_card_id;
+                const targetCardId = resData?.customer_card_id;
                 const typeNum = resData?.card_type || (cardType === "membership" ? 2 : 1);
                 const targetCusId = resData?.customer_id || customerId || (payload.cus_id || 1);
 
@@ -304,14 +352,14 @@ export default function AddCardCustomer() {
                     navigate(`/card-preview/${targetCardId}?type=${typeNum}&cus_id=${targetCusId}`);
                 } else {
                     navigate(`/view-fl-branch/${branchId}`);
-                }  
+                }
             } else if (resData && (resStatus === 0 || resStatus === "0")) {
                 toast(resMsg || "Customer already has this card", {
                     icon: "ℹ️",
                     duration: 4000
                 });
 
-                const targetCardId =  resData?.id;
+                const targetCardId = resData?.id;
                 const typeNum = resData?.card_type || (cardType === "membership" ? 2 : 1);
                 const targetCusId = resData?.customer_id || customerId || (payload.cus_id || 1);
 

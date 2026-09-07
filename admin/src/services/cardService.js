@@ -224,7 +224,12 @@ export const fetchCustomerStampLevelsApi = async (cardId, cardType, cusId) => {
             payload.cus_id = customerId;
         }
 
-        const response = await API.post('firstloop/customer/fetch-card', payload);
+        const response = await API.post('firstloop/customer/fetch-card', payload, {
+            skipAuthRedirect: true,
+            headers: {
+                'X-Skip-Auth-Redirect': 'true'
+            }
+        });
 
         if (response?.data?.status !== 1) {
             console.error('Failed to fetch card:', response?.data?.message || response?.data?.msg);

@@ -6,7 +6,8 @@ import { fetchCustomerStampLevelsApi } from '../../services/cardService.js'
 
 /*
 |--------------------------------------------------------------------------
-| CARD PREVIEW COMPONENT
+| PUBLIC & FREE CARD PREVIEW COMPONENT
+| (Does not require any active session / authentication token)
 |--------------------------------------------------------------------------
 */
 
@@ -21,12 +22,66 @@ export default function CardPreview() {
     const rawCusId = searchParams.get('cus_id') || searchParams.get('customer_id') || '1'
     const cusId = Number(rawCusId) || 1
 
-    const cardId = Number(paramId || searchParams.get('id'))
+    const cardId = Number(paramId || searchParams.get('id')) || (paramId ? paramId : null)
 
     const cardRef = useRef(null)
     const [downloading, setDownloading] = useState(false)
     const [cardData, setCardData] = useState(null)
-    const [loading, setLoading] = useState(true)
+    const [loading, setLoading] = useState(Boolean(cardId))
+
+    /*
+    |--------------------------------------------------------------------------
+    | PARSE PARAMS AS FALLBACK CARD (For real-time preview without API save)
+    |--------------------------------------------------------------------------
+    */
+    const getFallbackCardFromParams = () => {
+        const title = searchParams.get('title') || searchParams.get('name')
+        const brandName = searchParams.get('brand') || searchParams.get('brand_name') || searchParams.get('brandName')
+        const bgColor = searchParams.get('bgColor') || searchParams.get('bg_color')
+        const borderColor = searchParams.get('borderColor') || searchParams.get('border_color')
+        const bgImage = searchParams.get('bgImage') || searchParams.get('bg_image') || searchParams.get('background_image')
+        const logo = searchParams.get('logo') || searchParams.get('brand_logo') || searchParams.get('brand_image')
+        const totalStamps = Number(searchParams.get('stamps') || searchParams.get('total_stamps') || searchParams.get('number_of_stamps')) || 8
+        const discountVal = searchParams.get('discount') || searchParams.get('discountVal') || searchParams.get('percentage') || '10'
+        const validity = searchParams.get('validity') || '12 Months'
+        const description = searchParams.get('description') || ''
+
+        if (title || brandName || bgColor || borderColor || cardId) {
+            return {
+                id: cardId || 1,
+                title: title || (cardType === 2 ? 'VIP Membership Pass' : 'Loyalty Stamp Card'),
+                brandName: brandName || 'FirstLoop',
+                brand_name: brandName || 'FirstLoop',
+                brandLogo: logo || '',
+                bgColor: bgColor || '#0E88B8',
+                bg_color: bgColor || '#0E88B8',
+                borderColor: borderColor || '#FFFFFF',
+                border_color: borderColor || '#FFFFFF',
+                bgImage: bgImage || '',
+                background_image: bgImage || '',
+                totalStamps: totalStamps,
+                number_of_stamps: totalStamps,
+                collected: 0,
+                current_stamp: 0,
+                discountVal: discountVal,
+                discount: discountVal,
+                validity: validity,
+                description: description,
+                card_type: cardType,
+                type: cardType,
+                stamp_levels: Array.from({ length: totalStamps }, (_, i) => ({
+                    id: i + 1,
+                    stamp_number: i + 1,
+                    stamp: i + 1,
+                    type: i + 1 === totalStamps ? 'Discount' : 'Free Item',
+                    reward: i + 1 === totalStamps ? `${discountVal}% OFF Reward` : 'Free Reward',
+                    reward_text: i + 1 === totalStamps ? `${discountVal}% OFF Reward` : 'Free Reward',
+                    status: 0
+                }))
+            }
+        }
+        return null
+    }
 
     /*
     |--------------------------------------------------------------------------
@@ -36,6 +91,8 @@ export default function CardPreview() {
 
     const fetchCardDetails = async () => {
         if (!cardId) {
+            const fallback = getFallbackCardFromParams()
+            setCardData(fallback)
             setLoading(false)
             return
         }
@@ -44,10 +101,17 @@ export default function CardPreview() {
 
         try {
             const data = await fetchCustomerStampLevelsApi(cardId, cardType, cusId)
-            setCardData(data)
+            if (data) {
+                setCardData(data)
+            } else {
+                // Try fallback from URL parameters if available
+                const fallback = getFallbackCardFromParams()
+                setCardData(fallback)
+            }
         } catch (err) {
-            console.error('Error fetching card details from API:', err)
-            setCardData(null)
+            console.error('Error fetching card details:', err)
+            const fallback = getFallbackCardFromParams()
+            setCardData(fallback)
         } finally {
             setLoading(false)
         }
@@ -60,11 +124,7 @@ export default function CardPreview() {
     */
 
     useEffect(() => {
-        if (cardId) {
-            fetchCardDetails()
-        } else {
-            setLoading(false)
-        }
+        fetchCardDetails()
     }, [cardId, cardType, cusId])
 
     /*
@@ -76,7 +136,7 @@ export default function CardPreview() {
     useEffect(() => {
         if (!cardData) return
 
-        const brand = cardData.brandName || 'Merchant'
+        const brand = cardData.brandName || cardData.brand_name || 'Merchant'
         const title = cardData.title || (cardType === 2 ? 'Membership Pass' : 'Digital Stamp Card')
 
         document.title = `${brand} - ${title}`
@@ -117,6 +177,19 @@ export default function CardPreview() {
 
     /*
     |--------------------------------------------------------------------------
+    | HANDLE BACK
+    |--------------------------------------------------------------------------
+    */
+    const handleBack = () => {
+        if (window.history.length > 1) {
+            navigate(-1)
+        } else {
+            navigate('/')
+        }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
     | LOADING STATE
     |--------------------------------------------------------------------------
     */
@@ -139,10 +212,14 @@ export default function CardPreview() {
                     role="status"
                     style={{
                         width: '2.5rem',
-                        height: '2.5rem'
+                        height: '2.5rem',
+                        color: 'var(--firstloop-primary, #0E88B8)'
                     }}
                 >
                     <span className="visually-hidden">Loading...</span>
+                </div>
+                <div style={{ color: 'var(--text-muted, #64748B)', fontSize: '0.9rem', fontWeight: 600 }}>
+                    Loading Card Preview...
                 </div>
             </div>
         )
@@ -169,32 +246,43 @@ export default function CardPreview() {
                 <div
                     style={{
                         background: '#FFFFFF',
-                        padding: 30,
-                        borderRadius: 16,
+                        padding: 32,
+                        borderRadius: 20,
                         textAlign: 'center',
-                        boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
-                        maxWidth: 400,
-                        width: '100%'
+                        boxShadow: '0 10px 30px rgba(0,0,0,0.06)',
+                        maxWidth: 420,
+                        width: '100%',
+                        border: '1px solid #E2E8F0'
                     }}
                 >
+                    <div
+                        style={{
+                            width: 60,
+                            height: 60,
+                            borderRadius: '50%',
+                            background: 'rgba(239, 68, 68, 0.1)',
+                            color: '#EF4444',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            margin: '0 auto 16px',
+                            fontSize: '1.5rem'
+                        }}
+                    >
+                        <i className="fas fa-id-card-alt" />
+                    </div>
                     <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#1E293B', marginBottom: 8 }}>
                         {cardType === 2 ? 'Membership Pass Not Found' : 'Stamp Card Not Found'}
                     </h3>
-                    <p style={{ marginBottom: 16, color: '#64748B', fontSize: '0.9rem' }}>
-                        The requested card could not be found.
+                    <p style={{ marginBottom: 20, color: '#64748B', fontSize: '0.88rem', lineHeight: 1.5 }}>
+                        The requested card could not be loaded. Please check the URL or card ID.
                     </p>
                     <button
                         type="button"
-                        onClick={() => {
-                            if (window.history.length > 1) {
-                                navigate(-1)
-                            } else {
-                                navigate('/merchant/cards')
-                            }
-                        }}
+                        onClick={handleBack}
                         style={{
-                            padding: '9px 20px',
-                            borderRadius: 10,
+                            padding: '10px 24px',
+                            borderRadius: 12,
                             background: '#0E88B8',
                             color: '#FFFFFF',
                             fontWeight: 700,
@@ -203,7 +291,8 @@ export default function CardPreview() {
                             cursor: 'pointer',
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: 8
+                            gap: 8,
+                            boxShadow: '0 4px 12px rgba(14, 136, 184, 0.25)'
                         }}
                     >
                         <i className="fas fa-arrow-left" />
@@ -239,13 +328,7 @@ export default function CardPreview() {
             <div style={{ width: '100%', maxWidth: 420, display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
                 <button
                     type="button"
-                    onClick={() => {
-                        if (window.history.length > 1) {
-                            navigate(-1)
-                        } else {
-                            navigate('/merchant/cards')
-                        }
-                    }}
+                    onClick={handleBack}
                     style={{
                         display: 'inline-flex',
                         alignItems: 'center',

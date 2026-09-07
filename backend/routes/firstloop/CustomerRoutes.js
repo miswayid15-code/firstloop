@@ -22,7 +22,7 @@ router.post(
 );
 router.post(
     '/fetch-card',
-    auth(),
+    // auth(),
     controller.fetch_card
 );
 router.post(

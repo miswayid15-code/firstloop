@@ -57,6 +57,7 @@ import MerchantDashboard from './pages/merchant/MerchantDashboard.jsx';
 import MerchantCustomerList from './pages/merchant/CustomerList.jsx';
 import MerchantCardList from './pages/merchant/CardList.jsx';
 import MerchantBranchList from './pages/merchant/BranchList.jsx';
+import MerchantReceptionistList from './pages/merchant/ReceptionistList.jsx';
 // import MerchantViewBranch from './pages/merchant/ViewFlBranch.jsx';
 import MerchantBranchReceptionists from './pages/merchant/BranchReceptionists.jsx';
 import MerchantReportsView from './pages/merchant/MerchantReports.jsx';
@@ -212,8 +213,12 @@ function AdminLayout() {
           <Route path="customers/:id" element={<FpCustomerDetails />} />
           <Route path="cards" element={<MerchantCardList />} />
           <Route path="branches" element={<MerchantBranchList />} />
+          <Route path="receptionists" element={<MerchantReceptionistList />} />
           <Route path="branches/:id" element={<ViewFlBranch />} />
           <Route path="view-fl-branch/:id" element={<ViewFlBranch />} />
+          <Route path="branches/:branchId/checkin" element={<CardCheckInPayment />} />
+          <Route path="checkin" element={<CardCheckInPayment />} />
+          <Route path="checkin/:branchId" element={<CardCheckInPayment />} />
           <Route path="add-card-customer" element={<AddCardCustomer />} />
           <Route path="add-card-customer/:branchId" element={<AddCardCustomer />} />
           <Route path="branches/:branchId/receptionists" element={<MerchantBranchReceptionists />} />

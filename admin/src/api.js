@@ -206,6 +206,11 @@ export const saveTokens = (accessToken, refreshToken = null, reqUrl = "") => {
 const activeLogouts = new Set();
 
 export const logoutAndRedirect = (message, targetAppType = null) => {
+    const path = String(window.location.pathname || "").toLowerCase();
+    if (path.startsWith("/card-preview")) {
+        return; // Allow public preview without session redirection
+    }
+
     const appType = targetAppType || getAppType();
 
     if (activeLogouts.has(appType)) {
@@ -325,8 +330,10 @@ API.interceptors.response.use(
         const reqUrl = originalRequest.url || "";
         const appType = getAppType(reqUrl);
 
-        // Check for skipAuthRedirect flag
+        // Check for skipAuthRedirect flag or public preview route
+        const currentPath = String(window.location.pathname || "").toLowerCase();
         if (
+            currentPath.startsWith("/card-preview") ||
             originalRequest.skipAuthRedirect ||
             originalRequest.headers?.["X-Skip-Auth-Redirect"]
         ) {

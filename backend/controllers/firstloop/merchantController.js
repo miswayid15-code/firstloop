@@ -1754,7 +1754,6 @@ exports.fetchmerchant = async (req, res) => {
 
 };
 
-
 exports.membership_card = async (req, res) => {
     console.log("data", req.body)
     try {

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useSearchParams, useNavigate } from 'react-router-dom'
+import { useSearchParams, useNavigate, useParams, useLocation } from 'react-router-dom'
 import { toast } from "react-hot-toast"
 import API from '../../api.js'
 import CustomerCard from '../../components/CustomerCard.jsx'
@@ -10,6 +10,10 @@ import { Html5Qrcode } from 'html5-qrcode'
 
 export default function CardCheckInPayment() {
     const navigate = useNavigate()
+    const { branchId: paramBranchId } = useParams()
+    const location = useLocation()
+    const isMerchant = location.pathname.startsWith('/merchant')
+
     let receptionist = {}
     try {
         const rawReceptionist = localStorage.getItem("receptionist_data")
@@ -20,6 +24,7 @@ export default function CardCheckInPayment() {
         console.error("Error parsing receptionist_data:", e)
     }
     const [searchParams] = useSearchParams()
+    const effectiveBranchId = paramBranchId || searchParams.get('branchId') || receptionist?.user_branch_id || receptionist?.branch_id || ''
 
     // Customers State
     const [customerList, setCustomerList] = useState([])
@@ -56,7 +61,7 @@ export default function CardCheckInPayment() {
         setLoading(true)
         try {
             const res = await API.post('firstloop/customer/fetch-branch-customers', {
-                br_id: receptionist?.user_branch_id
+                br_id: effectiveBranchId || undefined
             })
 
             if (res?.data?.status == 1 && res.data.data) {
@@ -113,7 +118,7 @@ export default function CardCheckInPayment() {
     }
     useEffect(() => {
         fetchCustomers()
-    }, [])
+    }, [effectiveBranchId])
 
     // Filter search results whenever search input or customer list changes
     useEffect(() => {
@@ -230,8 +235,12 @@ export default function CardCheckInPayment() {
 
     // Navigate to Add Card to Customer page
     const handleNavigateToAddCustomer = () => {
-        const branchId = receptionist?.user_branch_id || ''
-        navigate(`/merchant/add-card-customer/${branchId}`)
+        const branchId = effectiveBranchId || ''
+        if (isMerchant) {
+            navigate(`/merchant/add-card-customer/${branchId}`)
+        } else {
+            navigate(`/receptionist/add-card-customer/${branchId}`)
+        }
     }
 
     // Stop and cleanup html5QrCode scanner instance
@@ -535,8 +544,20 @@ export default function CardCheckInPayment() {
                     </p>
                 </div>
 
-                {/* Mode Selector Tabs */}
-                <div style={{ display: 'flex', background: '#E2E8F0', padding: 4, borderRadius: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    {isMerchant && (
+                        <button
+                            type="button"
+                            className="btn btn-secondary"
+                            onClick={() => navigate(effectiveBranchId ? `/merchant/branches/${effectiveBranchId}` : '/merchant/branches')}
+                            style={{ borderRadius: 10, padding: '8px 14px', fontSize: '0.84rem', fontWeight: 700 }}
+                        >
+                            <i className="fas fa-arrow-left" /> Back to Branch
+                        </button>
+                    )}
+
+                    {/* Mode Selector Tabs */}
+                    <div style={{ display: 'flex', background: '#E2E8F0', padding: 4, borderRadius: 12 }}>
                     <button
                         type="button"
                         onClick={() => setActiveTab('phone')}
@@ -559,27 +580,28 @@ export default function CardCheckInPayment() {
                         <span>Search Customer</span>
                     </button>
 
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab('qr')}
-                        style={{
-                            padding: '8px 18px',
-                            borderRadius: 10,
-                            border: 'none',
-                            background: activeTab === 'qr' ? 'var(--firstloop-primary)' : 'transparent',
-                            color: activeTab === 'qr' ? '#FFFFFF' : 'var(--text-secondary)',
-                            fontWeight: 800,
-                            fontSize: '0.84rem',
-                            cursor: 'pointer',
-                            boxShadow: activeTab === 'qr' ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 6
-                        }}
-                    >
-                        <i className="fas fa-qrcode" />
-                        <span>QR Code Scanner</span>
-                    </button>
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('qr')}
+                            style={{
+                                padding: '8px 18px',
+                                borderRadius: 10,
+                                border: 'none',
+                                background: activeTab === 'qr' ? 'var(--firstloop-primary)' : 'transparent',
+                                color: activeTab === 'qr' ? '#FFFFFF' : 'var(--text-secondary)',
+                                fontWeight: 800,
+                                fontSize: '0.84rem',
+                                cursor: 'pointer',
+                                boxShadow: activeTab === 'qr' ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 6
+                            }}
+                        >
+                            <i className="fas fa-qrcode" />
+                            <span>QR Code Scanner</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -1222,9 +1244,13 @@ export default function CardCheckInPayment() {
                                         type="button"
                                         className="btn btn-sm btn-primary"
                                         onClick={() => {
-                                            const branchId = receptionist?.user_branch_id || '';
+                                            const branchId = effectiveBranchId || '';
                                             const emailQuery = matchedCustomer?.email ? `?email=${encodeURIComponent(matchedCustomer.email)}` : '';
-                                            navigate(`/merchant/add-card-customer/${branchId}${emailQuery}`);
+                                            if (isMerchant) {
+                                                navigate(`/merchant/add-card-customer/${branchId}${emailQuery}`);
+                                            } else {
+                                                navigate(`/receptionist/add-card-customer/${branchId}${emailQuery}`);
+                                            }
                                         }}
                                         style={{
                                             borderRadius: 10,

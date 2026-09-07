@@ -70,6 +70,7 @@ export default function MerchantLayout() {
         { to: '/merchant/customers', icon: 'fa-users', label: 'Customers' },
         { to: '/merchant/cards', icon: 'fa-id-card', label: 'Cards' },
         { to: '/merchant/branches', icon: 'fa-store', label: 'Branches' },
+        { to: '/merchant/receptionists', icon: 'fa-user-tie', label: 'Receptionists' },
         { to: '/merchant/reports', icon: 'fa-chart-line', label: 'Reports' },
     ]
 
