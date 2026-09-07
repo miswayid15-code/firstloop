@@ -486,7 +486,7 @@
 }
 
 /* Grid helper utilities */
-.grid-cols-1 { display: grid; grid-template-columns: 1fr; }
+.grid-cols-1 { display: grid; }
 .grid-cols-2 { display: grid; grid-template-columns: repeat(2, 1fr); }
 .grid-cols-3 { display: grid; grid-template-columns: repeat(3, 1fr); }
 .grid-cols-4 { display: grid; grid-template-columns: repeat(4, 1fr); }

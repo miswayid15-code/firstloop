@@ -71,24 +71,27 @@ import ReceptionistCustomerList from './pages/receptionist/ReceptionistCustomerL
 import CardCheckInPayment from './pages/receptionist/CardCheckInPayment.jsx';
 
 // Website
+//first pass
 import Header from './component/Header.jsx';
 import Footer from './component/Footer.jsx';
 import MobileMenu from './component/MobileMenu.jsx';
 import ConfigurationMenu from './component/ConfigurationMenu.jsx';
 
-import Landing from './page/Home.jsx';
-import Company from './page/About.jsx';
-import Offerings from './page/Services.jsx';
-import Portfolio from './page/Works.jsx';
-import Journal from './page/Blog.jsx';
-import ReachUs from './page/Contact.jsx';
-import DataPolicy from './page/PrivacyPolicy.jsx';
-import Conditions from './page/TermsCustomer.jsx';
-import HowItWorks from './page/HowItWorks.jsx';
-import DeleteAccount from './page/DeleteAccount.jsx';
-import UnderConstruction from './page/UnderConstruction.jsx';
-import CustomerApp from './page/CustomerApp.jsx';
+import Landing from './landing/firstpass/Home.jsx';
+import Company from './landing/firstpass/About.jsx';
+import Offerings from './landing/firstpass/Services.jsx';
+import Portfolio from './landing/firstpass/Works.jsx';
+import Journal from './landing/firstpass/Blog.jsx';
+import ReachUs from './landing/firstpass/Contact.jsx';
+import DataPolicy from './landing/firstpass/PrivacyPolicy.jsx';
+import Conditions from './landing/firstpass/TermsCustomer.jsx';
+import HowItWorks from './landing/firstpass/HowItWorks.jsx';
+import DeleteAccount from './landing/firstpass/DeleteAccount.jsx';
+import UnderConstruction from './landing/firstpass/UnderConstruction.jsx';
+import CustomerApp from './landing/firstpass/CustomerApp.jsx';
 
+// FirstLoop Standalone Website
+import FirstLoopWebsite from './landing/firstloop/App.jsx';
 function ScrollToTopAndAnimate() {
   const { pathname } = useLocation();
 
@@ -123,7 +126,7 @@ function ScrollToTopAndAnimate() {
 
 function WebsiteLayout() {
   const { pathname } = useLocation();
-  const hideHeaderFooter = ['/under-construction', '/delete-account', '/data-policy', '/conditions', '/customer-app', '/firstloop-coming-soon', '/firstloop'].includes(pathname) || pathname.startsWith('/card-preview') || pathname.startsWith('/card-image') || pathname.startsWith('/card-only');
+  const hideHeaderFooter = ['/under-construction', '/delete-account', '/data-policy', '/conditions', '/customer-app', '/firstloop-coming-soon'].includes(pathname) || pathname.startsWith('/firstloop') || pathname.startsWith('/card-preview') || pathname.startsWith('/card-image') || pathname.startsWith('/card-only');
 
   const [loading, setLoading] = useState(!hideHeaderFooter);
   const [fade, setFade] = useState(false);
@@ -175,7 +178,8 @@ function WebsiteLayout() {
           <Route path="/under-construction" element={<UnderConstruction />} />
           <Route path="/customer-app" element={<CustomerApp />} />
           <Route path="/firstloop-coming-soon" element={<FirstLoopComingSoon />} />
-          <Route path="/firstloop" element={<FirstLoopComingSoon />} />
+          <Route path="/firstloop" element={<FirstLoopWebsite />} />
+          <Route path="/firstloop/*" element={<FirstLoopWebsite />} />
           <Route path="/card-preview/:id" element={<CardPreview />} />
           <Route path="/card-preview/:id/:type" element={<CardPreview />} />
           <Route path="/card-image/:id" element={<CardImage />} />

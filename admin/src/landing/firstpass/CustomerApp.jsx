@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import logo from '../assets/img/FirstPass-logo.png';
+import logo from '../../assets/img/FirstPass-logo.png';
 
 export default function CustomerApp() {
     const [redirectStatus, setRedirectStatus] = useState('Detecting your device...');

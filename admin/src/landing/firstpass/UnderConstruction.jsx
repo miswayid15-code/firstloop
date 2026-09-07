@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import logo from '../assets/img/FirstPass-logo.png'
+import logo from '../../assets/img/FirstPass-logo.png'
 
 export default function UnderConstruction() {
     const [email, setEmail] = useState('')
