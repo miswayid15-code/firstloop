@@ -11179,6 +11179,20 @@ p,
   color: #000000 !important;
 }
 
+.text-firstpass-red,
+h1.text-firstpass-red,
+h2.text-firstpass-red,
+h3.text-firstpass-red,
+h4.text-firstpass-red,
+h5.text-firstpass-red,
+h6.text-firstpass-red,
+div.text-firstpass-red,
+span.text-firstpass-red,
+a.text-firstpass-red,
+p.text-firstpass-red {
+  color: #dd0b0b !important;
+}
+
 .text-white,
 h1.text-white,
 h2.text-white,
@@ -11189,10 +11203,7 @@ h6.text-white,
 div.text-white,
 span.text-white,
 a.text-white,
-p.text-white {
-  color: #dd0b0b !important;
-}
-
+p.text-white,
 .force-white,
 p.force-white,
 div.force-white,
