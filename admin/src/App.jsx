@@ -1,13 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
-
 import Layout from './components/Layout';
 import AppToaster from './components/AppToaster.jsx';
+import Navbar from './components/Navbar.jsx';
 
-// ============================================================
-// ADMIN
-// ============================================================
-
+// Admin
 import Login from './pages/admin/Login';
 import Dashboard from './pages/admin/Dashboard';
 import Merchants from './pages/admin/Merchants';
@@ -44,22 +41,17 @@ import Settings from './pages/admin/Settings';
 import Support from './pages/admin/Support';
 import ProtectedRoute from './pages/admin/ProtectedRoute';
 import AdminCharts from './pages/admin/AdminCharts';
+// import FirstLoopComingSoon from './pages/admin/FirstLoopComingSoon';
 import AddCardCustomer from './pages/admin/AddCardCustomer';
+import NotFound from './pages/NotFound';
 
 
-// ============================================================
-// SALE PERSON
-// ============================================================
-
+// SALE LOGIN
 import SalePersonLogin from './pages/saleperson/SalePersonLogin.jsx';
 import SalePersonDashboard from './pages/saleperson/SalePersonDashboard.jsx';
 import SalePersonAddMerchant from './pages/saleperson/AddMerchant.jsx';
 
-
-// ============================================================
-// MERCHANT
-// ============================================================
-
+// Merchant UI
 import MerchantLayout from './pages/merchant/MerchantLayout.jsx';
 import MerchantLogin from './pages/merchant/MerchantLogin.jsx';
 import MerchantDashboard from './pages/merchant/MerchantDashboard.jsx';
@@ -67,25 +59,19 @@ import MerchantCustomerList from './pages/merchant/CustomerList.jsx';
 import MerchantCardList from './pages/merchant/CardList.jsx';
 import MerchantBranchList from './pages/merchant/BranchList.jsx';
 import MerchantReceptionistList from './pages/merchant/ReceptionistList.jsx';
+// import MerchantViewBranch from './pages/merchant/ViewFlBranch.jsx';
 import MerchantBranchReceptionists from './pages/merchant/BranchReceptionists.jsx';
 import MerchantReportsView from './pages/merchant/MerchantReports.jsx';
 
-
-// ============================================================
-// RECEPTIONIST
-// ============================================================
-
+// Receptionist UI
 import ReceptionistLayout from './pages/receptionist/ReceptionistLayout.jsx';
 import ReceptionistLogin from './pages/receptionist/ReceptionistLogin.jsx';
 import ReceptionistDashboard from './pages/receptionist/ReceptionistDashboard.jsx';
 import ReceptionistCustomerList from './pages/receptionist/ReceptionistCustomerList.jsx';
 import CardCheckInPayment from './pages/receptionist/CardCheckInPayment.jsx';
 
-
-// ============================================================
-// FIRSTPASS WEBSITE
-// ============================================================
-
+// Website
+//first pass
 import Header from './component/Header.jsx';
 import Footer from './component/Footer.jsx';
 import MobileMenu from './component/MobileMenu.jsx';
@@ -104,18 +90,8 @@ import DeleteAccount from './landing/firstpass/DeleteAccount.jsx';
 import UnderConstruction from './landing/firstpass/UnderConstruction.jsx';
 import CustomerApp from './landing/firstpass/CustomerApp.jsx';
 
-
-// ============================================================
-// FIRSTLOOP WEBSITE
-// ============================================================
-
+// FirstLoop Standalone Website
 import FirstLoopWebsite from './landing/firstloop/App.jsx';
-
-
-// ============================================================
-// SCROLL TO TOP
-// ============================================================
-
 function ScrollToTopAndAnimate() {
   const { pathname } = useLocation();
 
@@ -124,25 +100,19 @@ function ScrollToTopAndAnimate() {
     window.scrollTo(0, 0);
 
     // Close mobile menu drawer if active
-    document
-      .querySelector('.offcanvas-menu')
-      ?.classList.remove('show');
-
-    document.body.classList.remove('overflow-hidden');
+    document.querySelector(".offcanvas-menu")?.classList.remove("show");
+    document.body.classList.remove("overflow-hidden");
 
     // Clean up previous GSAP ScrollTriggers
     if (window.ScrollTrigger) {
-      window.ScrollTrigger
-        .getAll()
-        .forEach(trigger => trigger.kill());
+      window.ScrollTrigger.getAll().forEach(trigger => trigger.kill());
     }
 
-    // Re-initialize dynamic features after React renders
+    // Re-initialize dynamic features after React renders the new DOM
     const timer = setTimeout(() => {
       if (window.runMainInit) {
         window.runMainInit();
       }
-
       if (window.runAnimations) {
         window.runAnimations();
       }
@@ -154,25 +124,9 @@ function ScrollToTopAndAnimate() {
   return null;
 }
 
-
-// ============================================================
-// FIRSTPASS WEBSITE LAYOUT
-// ============================================================
-
 function WebsiteLayout() {
   const { pathname } = useLocation();
-
-  const hideHeaderFooter = [
-    '/under-construction',
-    '/delete-account',
-    '/data-policy',
-    '/conditions',
-    '/customer-app',
-    '/firstloop-coming-soon'
-  ].includes(pathname)
-    || pathname.startsWith('/card-preview')
-    || pathname.startsWith('/card-image')
-    || pathname.startsWith('/card-only');
+  const hideHeaderFooter = ['/under-construction', '/delete-account', '/data-policy', '/conditions', '/customer-app', '/firstloop-coming-soon'].includes(pathname) || pathname.startsWith('/firstloop') || pathname.startsWith('/card-preview') || pathname.startsWith('/card-image') || pathname.startsWith('/card-only');
 
   const [loading, setLoading] = useState(!hideHeaderFooter);
   const [fade, setFade] = useState(false);
@@ -180,10 +134,12 @@ function WebsiteLayout() {
   useEffect(() => {
     if (!loading) return;
 
+    // Start fade out transition
     const fadeTimer = setTimeout(() => {
       setFade(true);
     }, 1200);
 
+    // Completely unmount preloader component
     const removeTimer = setTimeout(() => {
       setLoading(false);
     }, 1700);
@@ -197,18 +153,9 @@ function WebsiteLayout() {
   return (
     <>
       {loading && (
-        <div
-          className={`preloader-wrapper ${
-            fade ? 'preloader-fade-out' : ''
-          }`}
-        >
+        <div className={`preloader-wrapper ${fade ? 'preloader-fade-out' : ''}`}>
           <div className="preloader-logo-container">
-            <img
-              src="/asset/images/img/fs.png"
-              alt="Logo"
-              className="preloader-logo"
-            />
-
+            <img src="/asset/images/img/fs.png" alt="Logo" className="preloader-logo" />
             <div className="preloader-spinner"></div>
           </div>
         </div>
@@ -216,17 +163,8 @@ function WebsiteLayout() {
 
       {!hideHeaderFooter && <Header />}
 
-      <main
-        id={hideHeaderFooter ? undefined : 'wrapper'}
-        style={
-          hideHeaderFooter
-            ? undefined
-            : { overflowX: 'hidden' }
-        }
-      >
+      <main id={hideHeaderFooter ? undefined : "wrapper"} style={hideHeaderFooter ? undefined : { overflowX: "hidden" }}>
         <Routes>
-
-          {/* FirstPass Website */}
           <Route path="/" element={<Landing />} />
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/company" element={<Company />} />
@@ -237,50 +175,17 @@ function WebsiteLayout() {
           <Route path="/data-policy" element={<DataPolicy />} />
           <Route path="/conditions" element={<Conditions />} />
           <Route path="/delete-account" element={<DeleteAccount />} />
-          <Route
-            path="/under-construction"
-            element={<UnderConstruction />}
-          />
-          <Route
-            path="/customer-app"
-            element={<CustomerApp />}
-          />
-
-          {/* Card Preview */}
-          <Route
-            path="/card-preview/:id"
-            element={<CardPreview />}
-          />
-
-          <Route
-            path="/card-preview/:id/:type"
-            element={<CardPreview />}
-          />
-
-          {/* Card Image */}
-          <Route
-            path="/card-image/:id"
-            element={<CardImage />}
-          />
-
-          <Route
-            path="/card-image/:id/:type"
-            element={<CardImage />}
-          />
-
-          {/* Card Only */}
-          <Route
-            path="/card-only/:id"
-            element={<CardImage />}
-          />
-
-          <Route
-            path="/card-only/:id/:type"
-            element={<CardImage />}
-          />
-
-          <Route path="*" element={<NotFound />} />
-
+          <Route path="/under-construction" element={<UnderConstruction />} />
+          <Route path="/customer-app" element={<CustomerApp />} />
+          {/* <Route path="/firstloop-coming-soon" element={<FirstLoopComingSoon />} /> */}
+          <Route path="/firstloop" element={<FirstLoopWebsite />} />
+          <Route path="/firstloop/*" element={<FirstLoopWebsite />} />
+          <Route path="/card-preview/:id" element={<CardPreview />} />
+          <Route path="/card-preview/:id/:type" element={<CardPreview />} />
+          <Route path="/card-image/:id" element={<CardImage />} />
+          <Route path="/card-image/:id/:type" element={<CardImage />} />
+          <Route path="/card-only/:id" element={<CardImage />} />
+          <Route path="/card-only/:id/:type" element={<CardImage />} />
         </Routes>
       </main>
 
@@ -291,67 +196,62 @@ function WebsiteLayout() {
   );
 }
 
-
-// ============================================================
-// FIRSTLOOP WEBSITE LAYOUT
-// ============================================================
-
-function FirstLoopWebsiteLayout() {
-  return (
-    <>
-      <ScrollToTopAndAnimate />
-
-      <Routes>
-        <Route
-          path="/"
-          element={<FirstLoopWebsite />}
-        />
-
-        <Route
-          path="*"
-          element={<NotFound />}
-        />
-      </Routes>
-    </>
-  );
-}
-
-
-// ============================================================
-// ADMIN LAYOUT
-//
-// Used for:
-//
-// firstloop.co.in/admin/...
-// firstpassapp.co/admin/...
-//
-// ============================================================
-
 function AdminLayout() {
   return (
     <>
       <AppToaster />
 
       <Routes>
+        <Route path="/" element={<Login />} />
+        <Route path="card-preview/:id" element={<CardPreview />} />
+        <Route path="card-preview/:id/:type" element={<CardPreview />} />
+        <Route path="card-image/:id" element={<CardImage />} />
+        <Route path="card-image/:id/:type" element={<CardImage />} />
+        <Route path="card-only/:id" element={<CardImage />} />
+        <Route path="card-only/:id/:type" element={<CardImage />} />
+        <Route path="saleperson-login" element={<SalePersonLogin />} />
+        <Route path="saleperson-dashboard" element={<SalePersonDashboard />} />
+        <Route path="saleperson-add-merchant" element={<SalePersonAddMerchant />} />
+        {/* <Route path="firstloop-coming-soon" element={<FirstLoopComingSoon />} /> */}
+        {/* <Route path="firstloop" element={<FirstLoopComingSoon />} /> */}
+        <Route path="firstloop" element={<FirstLoopWebsite />} />
+ 
+        {/* Merchant UI Routes */}
+        <Route path="merchant/login" element={<MerchantLogin />} />
+        <Route path="merchant-login" element={<MerchantLogin />} />
 
-        {/* =====================================================
-            ADMIN LOGIN
-            ===================================================== */}
+        <Route path="merchant" element={<MerchantLayout />}>
+          <Route index element={<Navigate to="/merchant/dashboard" replace />} />
+          <Route path="dashboard" element={<MerchantDashboard />} />
+          <Route path="customers" element={<MerchantCustomerList />} />
+          <Route path="customers/:id" element={<FpCustomerDetails />} />
+          <Route path="cards" element={<MerchantCardList />} />
+          <Route path="branches" element={<MerchantBranchList />} />
+          <Route path="receptionists" element={<MerchantReceptionistList />} />
+          <Route path="branches/:id" element={<ViewFlBranch />} />
+          <Route path="view-fl-branch/:id" element={<ViewFlBranch />} />
+          <Route path="branches/:branchId/checkin" element={<CardCheckInPayment />} />
+          <Route path="checkin" element={<CardCheckInPayment />} />
+          <Route path="checkin/:branchId" element={<CardCheckInPayment />} />
+          <Route path="add-card-customer" element={<AddCardCustomer />} />
+          <Route path="add-card-customer/:branchId" element={<AddCardCustomer />} />
+          <Route path="branches/:branchId/receptionists" element={<MerchantBranchReceptionists />} />
+          <Route path="reports" element={<MerchantReportsView />} />
+        </Route>
 
-        <Route
-          path="/admin"
-          element={<Login />}
-        />
+        {/* Receptionist UI Routes */}
+        <Route path="receptionist/login" element={<ReceptionistLogin />} />
+        <Route path="receptionist-login" element={<ReceptionistLogin />} />
 
-        <Route
-          path="/admin/"
-          element={<Login />}
-        />
-
-
-        {/* =====================================================
-            ADMIN PROTECTED ROUTES
-            ===================================================== */}
+        <Route path="receptionist" element={<ReceptionistLayout />}>
+          <Route index element={<Navigate to="/receptionist/dashboard" replace />} />
+          <Route path="dashboard" element={<ReceptionistDashboard />} />
+          <Route path="customers" element={<ReceptionistCustomerList />} />
+          <Route path="checkin" element={<CardCheckInPayment />} />
+          <Route path="add-card-customer" element={<AddCardCustomer />} />
+          <Route path="add-card-customer/:branchId" element={<AddCardCustomer />} />
+          <Route path="view-fl-branch/:id" element={<ViewFlBranch />} />
+        </Route>
 
         <Route
           element={
@@ -360,632 +260,60 @@ function AdminLayout() {
             </ProtectedRoute>
           }
         >
-
-          <Route
-            path="/admin/dashboard"
-            element={<Dashboard />}
-          />
-
-          <Route
-            path="/admin/merchants"
-            element={<Merchants />}
-          />
-
-          <Route
-            path="/admin/deleted-merchants"
-            element={<DeletedMerchants />}
-          />
-
-          <Route
-            path="/admin/customers"
-            element={<Customers />}
-          />
-
-          <Route
-            path="/admin/salepersons"
-            element={<SalePersons />}
-          />
-
-          <Route
-            path="/admin/salepersons/:id/merchants"
-            element={<SalePersonMerchants />}
-          />
-
-          <Route
-            path="/admin/categories"
-            element={<Categories />}
-          />
-
-          <Route
-            path="/admin/appointments"
-            element={<Appointments />}
-          />
-
-          <Route
-            path="/admin/coupon-claim"
-            element={<CouponClaim />}
-          />
-
-          <Route
-            path="/admin/reports"
-            element={
-              <Navigate
-                to="/admin/merchant-reports"
-                replace
-              />
-            }
-          />
-
-          <Route
-            path="/admin/merchant-reports"
-            element={<MerchantReports />}
-          />
-
-          <Route
-            path="/admin/merchant-report/:id"
-            element={<ViewMerchReport />}
-          />
-
-          <Route
-            path="/admin/customer-reports"
-            element={<CustomerReports />}
-          />
-
-          <Route
-            path="/admin/customer-report/:id"
-            element={<CustomerReportDetails />}
-          />
-
-          <Route
-            path="/admin/notifications"
-            element={<Notifications />}
-          />
-
-          <Route
-            path="/admin/notification-list"
-            element={<NotificationList />}
-          />
-
-          <Route
-            path="/admin/profile"
-            element={<Profile />}
-          />
-
-          <Route
-            path="/admin/add-merchant"
-            element={<AddMerchant />}
-          />
-
-          <Route
-            path="/admin/edit-merchant/:id"
-            element={<EditMerchant />}
-          />
-
-          <Route
-            path="/admin/view-merchant/:id"
-            element={<ViewMerchant />}
-          />
-
-          <Route
-            path="/admin/view-deleted-merchant/:id"
-            element={<ViewDeletedMerchant />}
-          />
-
-          <Route
-            path="/admin/view-branch/:id"
-            element={<ViewBranch />}
-          />
-
-          <Route
-            path="/admin/view-fl-branch"
-            element={<ViewFlBranch />}
-          />
-
-          <Route
-            path="/admin/view-fl-branch/:id"
-            element={<ViewFlBranch />}
-          />
-
-          <Route
-            path="/admin/add-card-customer"
-            element={<AddCardCustomer />}
-          />
-
-          <Route
-            path="/admin/add-card-customer/:branchId"
-            element={<AddCardCustomer />}
-          />
-
-          <Route
-            path="/admin/fp-customer_details"
-            element={<FpCustomerDetails />}
-          />
-
-          <Route
-            path="/admin/fp-customer_details/:id"
-            element={<FpCustomerDetails />}
-          />
-
-          <Route
-            path="/admin/branch-report/:id"
-            element={<BranchReport />}
-          />
-
-          <Route
-            path="/admin/branch-chat/:id"
-            element={<BranchChat />}
-          />
-
-          <Route
-            path="/admin/admin-chat/:id"
-            element={<AdminCharts />}
-          />
-
-          <Route
-            path="/admin/branch-pending-images/:id"
-            element={<BranchPendingImages />}
-          />
-
-          <Route
-            path="/admin/branches"
-            element={<Branches />}
-          />
-
-          <Route
-            path="/admin/receptionists"
-            element={<Receptionists />}
-          />
-
-          <Route
-            path="/admin/settings"
-            element={<Settings />}
-          />
-
-          <Route
-            path="/admin/banners"
-            element={<Settings />}
-          />
-
-          <Route
-            path="/admin/card-designs"
-            element={<CardDesigns />}
-          />
-
-          <Route
-            path="/admin/support"
-            element={<Support />}
-          />
-
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="merchants" element={<Merchants />} />
+          <Route path="deleted-merchants" element={<DeletedMerchants />} />
+          <Route path="customers" element={<Customers />} />
+                    <Route path="salepersons" element={<SalePersons />} />
+          <Route path="salepersons/:id/merchants" element={<SalePersonMerchants />} />
+          <Route path="categories" element={<Categories />} />
+          <Route path="appointments" element={<Appointments />} />
+          <Route path="coupon-claim" element={<CouponClaim />} />
+          <Route path="reports" element={<Navigate to="/merchant-reports" replace />} />
+          <Route path="merchant-reports" element={<MerchantReports />} />
+          <Route path="merchant-report/:id" element={<ViewMerchReport />} />
+          <Route path="customer-reports" element={<CustomerReports />} />
+          <Route path="customer-report/:id" element={<CustomerReportDetails />} />
+          <Route path="notifications" element={<Notifications />} />
+          <Route path="notification-list" element={<NotificationList />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="add-merchant" element={<AddMerchant />} />
+          <Route path="edit-merchant/:id" element={<EditMerchant />} />
+          <Route path="view-merchant/:id" element={<ViewMerchant />} />
+          <Route path="view-deleted-merchant/:id" element={<ViewDeletedMerchant />} />
+          <Route path="view-branch/:id" element={<ViewBranch />} />
+          <Route path="view-fl-branch" element={<ViewFlBranch />} />
+          <Route path="view-fl-branch/:id" element={<ViewFlBranch />} />
+          <Route path="add-card-customer" element={<AddCardCustomer />} />
+          <Route path="add-card-customer/:branchId" element={<AddCardCustomer />} />
+          <Route path="fp-customer_details" element={<FpCustomerDetails />} />
+          <Route path="fp-customer_details/:id" element={<FpCustomerDetails />} />
+          <Route path="branch-report/:id" element={<BranchReport />} />
+          <Route path="branch-chat/:id" element={<BranchChat />} />
+          <Route path="admin-chat/:id" element={<AdminCharts />} />
+          <Route path="branch-pending-images/:id" element={<BranchPendingImages />} />
+          <Route path="branches" element={<Branches />} />
+          <Route path="receptionists" element={<Receptionists />} />
+          <Route path="settings" element={<Settings />} />
+          <Route path="banners" element={<Settings />} />
+          <Route path="card-designs" element={<CardDesigns />} />
+          <Route path="support" element={<Support />} />
         </Route>
 
-
-        {/* =====================================================
-            SALE PERSON
-            ===================================================== */}
-
-        <Route
-          path="/admin/saleperson-login"
-          element={<SalePersonLogin />}
-        />
-
-        <Route
-          path="/admin/saleperson-dashboard"
-          element={<SalePersonDashboard />}
-        />
-
-        <Route
-          path="/admin/saleperson-add-merchant"
-          element={<SalePersonAddMerchant />}
-        />
-
-
-        {/* =====================================================
-            ADMIN CARD PREVIEW
-            ===================================================== */}
-
-        <Route
-          path="/admin/card-preview/:id"
-          element={<CardPreview />}
-        />
-
-        <Route
-          path="/admin/card-preview/:id/:type"
-          element={<CardPreview />}
-        />
-
-        <Route
-          path="/admin/card-image/:id"
-          element={<CardImage />}
-        />
-
-        <Route
-          path="/admin/card-image/:id/:type"
-          element={<CardImage />}
-        />
-
-        <Route
-          path="/admin/card-only/:id"
-          element={<CardImage />}
-        />
-
-        <Route
-          path="/admin/card-only/:id/:type"
-          element={<CardImage />}
-        />
-
-        {/* =====================================================
-            FALLBACK
-            ===================================================== */}
-
-        <Route
-          path="*"
-          element={<NotFound />}
-        />
-
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </>
   );
 }
-
-
-// ============================================================
-// MERCHANT LAYOUT
-//
-// ONLY:
-//
-// firstloop.co.in/admins/merchant/...
-//
-// ============================================================
-
-function MerchantAdminLayout() {
-  return (
-    <>
-      <AppToaster />
-
-      <Routes>
-
-        {/* Merchant Login */}
-        <Route
-          path="/admins/merchant/login"
-          element={<MerchantLogin />}
-        />
-
-        <Route
-          path="/admins/merchant-login"
-          element={<MerchantLogin />}
-        />
-
-        {/* Merchant */}
-        <Route
-          path="/admins/merchant"
-          element={<MerchantLayout />}
-        >
-          <Route
-            index
-            element={
-              <Navigate
-                to="/admins/merchant/dashboard"
-                replace
-              />
-            }
-          />
-
-          <Route
-            path="dashboard"
-            element={<MerchantDashboard />}
-          />
-
-          <Route
-            path="customers"
-            element={<MerchantCustomerList />}
-          />
-
-          <Route
-            path="customers/:id"
-            element={<FpCustomerDetails />}
-          />
-
-          <Route
-            path="cards"
-            element={<MerchantCardList />}
-          />
-
-          <Route
-            path="branches"
-            element={<MerchantBranchList />}
-          />
-
-          <Route
-            path="receptionists"
-            element={<MerchantReceptionistList />}
-          />
-
-          <Route
-            path="branches/:id"
-            element={<ViewFlBranch />}
-          />
-
-          <Route
-            path="view-fl-branch/:id"
-            element={<ViewFlBranch />}
-          />
-
-          <Route
-            path="branches/:branchId/checkin"
-            element={<CardCheckInPayment />}
-          />
-
-          <Route
-            path="checkin"
-            element={<CardCheckInPayment />}
-          />
-
-          <Route
-            path="checkin/:branchId"
-            element={<CardCheckInPayment />}
-          />
-
-          <Route
-            path="add-card-customer"
-            element={<AddCardCustomer />}
-          />
-
-          <Route
-            path="add-card-customer/:branchId"
-            element={<AddCardCustomer />}
-          />
-
-          <Route
-            path="branches/:branchId/receptionists"
-            element={<MerchantBranchReceptionists />}
-          />
-
-          <Route
-            path="reports"
-            element={<MerchantReportsView />}
-          />
-
-        </Route>
-
-        <Route
-          path="*"
-          element={<NotFound />}
-        />
-
-      </Routes>
-    </>
-  );
-}
-
-
-// ============================================================
-// RECEPTIONIST LAYOUT
-//
-// ONLY:
-//
-// firstloop.co.in/admins/receptionist/...
-//
-// ============================================================
-
-function ReceptionistAdminLayout() {
-  return (
-    <>
-      <AppToaster />
-
-      <Routes>
-
-        {/* Receptionist Login */}
-        <Route
-          path="/admins/receptionist/login"
-          element={<ReceptionistLogin />}
-        />
-
-        <Route
-          path="/admins/receptionist-login"
-          element={<ReceptionistLogin />}
-        />
-
-        {/* Receptionist */}
-        <Route
-          path="/admins/receptionist"
-          element={<ReceptionistLayout />}
-        >
-          <Route
-            index
-            element={
-              <Navigate
-                to="/admins/receptionist/dashboard"
-                replace
-              />
-            }
-          />
-
-          <Route
-            path="dashboard"
-            element={<ReceptionistDashboard />}
-          />
-
-          <Route
-            path="customers"
-            element={<ReceptionistCustomerList />}
-          />
-
-          <Route
-            path="checkin"
-            element={<CardCheckInPayment />}
-          />
-
-          <Route
-            path="add-card-customer"
-            element={<AddCardCustomer />}
-          />
-
-          <Route
-            path="add-card-customer/:branchId"
-            element={<AddCardCustomer />}
-          />
-
-          <Route
-            path="view-fl-branch/:id"
-            element={<ViewFlBranch />}
-          />
-
-        </Route>
-
-        <Route
-          path="*"
-          element={<NotFound />}
-        />
-
-      </Routes>
-    </>
-  );
-}
-
-
-// ============================================================
-// MAIN APP
-// ============================================================
 
 export default function App() {
-
   const location = useLocation();
-
-  const hostname = window.location.hostname;
-  const pathname = location.pathname;
-
-
-  // ==========================================================
-  // FIRSTLOOP DOMAIN
-  // ==========================================================
-
-  const isFirstLoop =
-    hostname === 'firstloop.co.in' ||
-    hostname === 'www.firstloop.co.in';
-
-
-  // ==========================================================
-  // FIRSTPASS DOMAIN
-  // ==========================================================
-
-  const isFirstPass =
-    hostname === 'firstpassapp.co' ||
-    hostname === 'www.firstpassapp.co';
-
-
-  // ==========================================================
-  // FIRSTLOOP
-  //
-  // /
-  // /admin/...
-  // /admins/merchant/...
-  // /admins/receptionist/...
-  // ==========================================================
-
-  if (isFirstLoop) {
-
-    // FirstLoop Admin
-    if (
-      pathname === '/admin' ||
-      pathname.startsWith('/admin/')
-    ) {
-      return (
-        <>
-          <ScrollToTopAndAnimate />
-          <AdminLayout />
-        </>
-      );
-    }
-
-
-    // FirstLoop Merchant
-    if (
-      pathname === '/admins/merchant' ||
-      pathname.startsWith('/admins/merchant/')
-    ) {
-      return (
-        <>
-          <ScrollToTopAndAnimate />
-          <MerchantAdminLayout />
-        </>
-      );
-    }
-
-
-    // FirstLoop Receptionist
-    if (
-      pathname === '/admins/receptionist' ||
-      pathname.startsWith('/admins/receptionist/')
-    ) {
-      return (
-        <>
-          <ScrollToTopAndAnimate />
-          <ReceptionistAdminLayout />
-        </>
-      );
-    }
-
-
-    // FirstLoop Website
-    if (pathname === '/') {
-      return <FirstLoopWebsiteLayout />;
-    }
-
-
-    // Anything else on FirstLoop
-    return (
-      <>
-        <ScrollToTopAndAnimate />
-        <NotFound />
-      </>
-    );
-  }
-
-
-  // ==========================================================
-  // FIRSTPASS
-  //
-  // /
-  // /admin/...
-  //
-  // NO MERCHANT
-  // NO RECEPTIONIST
-  // ==========================================================
-
-  if (isFirstPass) {
-
-    // FirstPass Admin
-    if (
-      pathname === '/admin' ||
-      pathname.startsWith('/admin/')
-    ) {
-      return (
-        <>
-          <ScrollToTopAndAnimate />
-          <AdminLayout />
-        </>
-      );
-    }
-
-
-    // FirstPass Website
-    return (
-      <>
-        <ScrollToTopAndAnimate />
-        <WebsiteLayout />
-      </>
-    );
-  }
-
-
-  // ==========================================================
-  // UNKNOWN DOMAIN
-  // ==========================================================
+  const isAdmin = window.location.pathname.startsWith('/admin') || window.location.pathname.startsWith('/merchant');
 
   return (
     <>
       <ScrollToTopAndAnimate />
-      <NotFound />
+      {isAdmin ? <AdminLayout /> : <WebsiteLayout />}
     </>
   );
 }
