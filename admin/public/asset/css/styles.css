@@ -4816,8 +4816,23 @@ select option {
   font-size: 15px;
   line-height: 24px;
   padding: 14px 24px;
-  background: radial-gradient(62.56% 62.56% at 28.14% -10.42%, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 100%), linear-gradient(0deg, #ce0909, #d80505););
-  box-shadow: 0px -3px 0px 0px #1c1b1b inset, 0px 1px 0px 0px rgba(255, 255, 255, 0.3019607843) inset, 0px 2.77px 2.21px 0px rgba(0, 0, 0, 0.1215686275), 0px 6.65px 5.32px 0px rgba(0, 0, 0, 0.1294117647), 0px 12.52px 10.02px 0px rgba(0, 0, 0, 0.1333333333), 0px 22.34px 17.87px 0px rgba(0, 0, 0, 0.1411764706), 0px 41.78px 33.42px 0px rgba(0, 0, 0, 0.1490196078), 0px 100px 80px 0px rgba(0, 0, 0, 0.1490196078), 0px 3px 3px 0px rgba(0, 0, 0, 0.1411764706), 0px 2.77px 2.21px 0px rgba(0, 0, 0, 0.1215686275);
+  background: radial-gradient(
+      62.56% 62.56% at 28.14% -10.42%,
+      rgba(255, 255, 255, 0.2) 0%,
+      rgba(255, 255, 255, 0) 100%
+    ),
+    linear-gradient(0deg, #ce0909, #d80505);
+  box-shadow:
+    0px -3px 0px 0px #1c1b1b inset,
+    0px 1px 0px 0px rgba(255, 255, 255, 0.3019607843) inset,
+    0px 2.77px 2.21px 0px rgba(0, 0, 0, 0.1215686275),
+    0px 6.65px 5.32px 0px rgba(0, 0, 0, 0.1294117647),
+    0px 12.52px 10.02px 0px rgba(0, 0, 0, 0.1333333333),
+    0px 22.34px 17.87px 0px rgba(0, 0, 0, 0.1411764706),
+    0px 41.78px 33.42px 0px rgba(0, 0, 0, 0.1490196078),
+    0px 100px 80px 0px rgba(0, 0, 0, 0.1490196078),
+    0px 3px 3px 0px rgba(0, 0, 0, 0.1411764706),
+    0px 2.77px 2.21px 0px rgba(0, 0, 0, 0.1215686275);
   overflow: hidden;
 }
 
