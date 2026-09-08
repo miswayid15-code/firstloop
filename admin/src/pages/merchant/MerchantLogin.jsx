@@ -226,7 +226,7 @@ export default function MerchantLogin() {
                         </div>
 
                         <h1 style={{ fontSize: '2.2rem', fontWeight: 800, color: '#FFFFFF', marginBottom: 16, lineHeight: 1.25 }}>
-                            Merchant Admin Portal
+                            Merchant Panel
                         </h1>
                         <p style={{ fontSize: '0.98rem', color: '#CBD5E1', lineHeight: 1.6, margin: 0 }}>
                             Manage memberships, customer lists, branch outlets, and loyalty passes from one intuitive dashboard.

@@ -116,7 +116,7 @@ export default function MerchantLayout() {
                                 </div>
                                 <div>
                                     <span style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-heading)', display: 'block' }}>
-                                        Merchant Admin
+                                        Merchant Panel
                                     </span>
                                     <span style={{ fontSize: '0.65rem', color: 'var(--firstloop-primary)', fontWeight: 600 }}>
                                         FirstLoop Portal
@@ -140,7 +140,7 @@ export default function MerchantLayout() {
                             </div>
                             <div style={{ overflow: 'hidden' }}>
                                 <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                                    {merchant?.business_name || merchant?.user_name || merchant?.name || merchant?.email || "Merchant Admin"}
+                                    {merchant?.business_name || merchant?.user_name || merchant?.name || merchant?.email || "Merchant Panel"}
                                 </div>
                                 {merchant?.email && (
                                     <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
@@ -356,7 +356,7 @@ export default function MerchantLayout() {
 
                 {/* FOOTER */}
                 <footer style={{ padding: '16px 20px', borderTop: '1px solid rgba(14, 136, 184, 0.1)', background: '#FFFFFF', textAlign: 'center', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                    &copy; 2026 FirstLoop Merchant Admin Portal &bull; All rights reserved.
+                    &copy; 2026 FirstLoop Merchant Panel &bull; All rights reserved.
                 </footer>
             </div>
         </div>

@@ -14,6 +14,8 @@ import './assets/css/dashboard.css'
 import './assets/css/responsive.css'
 
 const isAdminPath = window.location.pathname.startsWith('/admin');
+const isPanelPath = window.location.pathname.startsWith('/panel');
+const basename = isAdminPath ? "/admin" : (isPanelPath ? "/panel" : undefined);
 
 // Global backdrop click interception:
 // Prevents all modals in the application from closing when clicking outside on their backdrop overlay.
@@ -27,7 +29,7 @@ document.addEventListener('click', (e) => {
 
 ReactDOM.createRoot(document.getElementById('root')).render(
     <React.StrictMode>
-        <BrowserRouter basename={isAdminPath ? "/admin" : undefined}>
+        <BrowserRouter basename={basename}>
             <App />
         </BrowserRouter>
     </React.StrictMode>

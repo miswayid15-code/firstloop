@@ -21,6 +21,9 @@ export const getAppType = (reqUrl = "") => {
         path.startsWith("/merchant/") ||
         path === "/merchant" ||
         path === "/merchant-login" ||
+        path.startsWith("/panel/merchant/") ||
+        path === "/panel/merchant" ||
+        path === "/panel/merchant-login" ||
         path.startsWith("/admin/merchant/") ||
         path === "/admin/merchant" ||
         path === "/admin/merchant-login"
@@ -42,6 +45,9 @@ export const getAppType = (reqUrl = "") => {
         path === "/receptionist" ||
         path === "/receptionist-login" ||
         path.startsWith("/receptionist-") ||
+        path.startsWith("/panel/receptionist-") ||
+        path.startsWith("/panel/receptionist/") ||
+        path === "/panel/receptionist" ||
         path.startsWith("/admin/receptionist-") ||
         path.startsWith("/admin/receptionist/") ||
         path === "/admin/receptionist"
@@ -63,16 +69,17 @@ export const getAppType = (reqUrl = "") => {
         path.startsWith("/coupons") ||
         path.startsWith("/memberships") ||
         path.startsWith("/reports") ||
-        path.startsWith("/admin")
+        path.startsWith("/admin") ||
+        path.startsWith("/panel")
     ) {
-        if (url.includes("firstloop/merchant/") || url.includes("/merchant/login")) {
+        if (url.includes("firstloop/merchant/") || url.includes("/merchant/login") || path.includes("/merchant")) {
             const merToken = localStorage.getItem("mer_access_token");
             if (!merToken && (localStorage.getItem("access_token") || localStorage.getItem("admin_token"))) {
                 return "admin";
             }
             return "merchant";
         }
-        if (url.includes("firstloop/reception/")) {
+        if (url.includes("firstloop/reception/") || url.includes("/receptionist/login") || path.includes("/receptionist")) {
             return "receptionist";
         }
         return "admin";
@@ -167,7 +174,7 @@ export const getAccessToken = (reqUrl = "") => {
     const adminToken = localStorage.getItem("access_token") || localStorage.getItem("admin_token");
     if (adminToken && adminToken !== "null" && adminToken !== "undefined") {
         const path = String(window.location.pathname || "").toLowerCase();
-        if (!path.startsWith("/merchant") && !path.startsWith("/receptionist") && !path.startsWith("/saleperson-")) {
+        if (!path.includes("/merchant") && !path.includes("/receptionist") && !path.startsWith("/saleperson-") && !path.startsWith("/panel")) {
             return adminToken;
         }
     }
@@ -229,7 +236,7 @@ export const logoutAndRedirect = (message, targetAppType = null) => {
         localStorage.removeItem("merchant_data");
 
         setTimeout(() => {
-            window.location.href = "/merchant/login";
+            window.location.href = "/panel/merchant/login";
         }, 1200);
     } else if (appType === "saleperson") {
         localStorage.removeItem("sale_access_token");
@@ -249,7 +256,7 @@ export const logoutAndRedirect = (message, targetAppType = null) => {
         localStorage.removeItem("rec_user_repId");
 
         setTimeout(() => {
-            window.location.href = "/receptionist/login";
+            window.location.href = "/panel/receptionist/login";
         }, 1200);
     } else {
         localStorage.removeItem("access_token");
