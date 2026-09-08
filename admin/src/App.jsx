@@ -3,7 +3,7 @@ import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import AppToaster from './components/AppToaster.jsx';
 import Navbar from './components/Navbar.jsx';
-
+import FirstLoopWebsite from './landing/firstloop/App.jsx';
 // Admin
 import Login from './pages/admin/Login';
 import Dashboard from './pages/admin/Dashboard';
@@ -41,7 +41,7 @@ import Settings from './pages/admin/Settings';
 import Support from './pages/admin/Support';
 import ProtectedRoute from './pages/admin/ProtectedRoute';
 import AdminCharts from './pages/admin/AdminCharts';
-// import FirstLoopComingSoon from './pages/admin/FirstLoopComingSoon';
+import FirstLoopComingSoon from './pages/admin/FirstLoopComingSoon';
 import AddCardCustomer from './pages/admin/AddCardCustomer';
 import NotFound from './pages/NotFound';
 
@@ -91,7 +91,6 @@ import UnderConstruction from './landing/firstpass/UnderConstruction.jsx';
 import CustomerApp from './landing/firstpass/CustomerApp.jsx';
 
 // FirstLoop Standalone Website
-import FirstLoopWebsite from './landing/firstloop/App.jsx';
 function ScrollToTopAndAnimate() {
   const { pathname } = useLocation();
 
@@ -177,7 +176,7 @@ function WebsiteLayout() {
           <Route path="/delete-account" element={<DeleteAccount />} />
           <Route path="/under-construction" element={<UnderConstruction />} />
           <Route path="/customer-app" element={<CustomerApp />} />
-          {/* <Route path="/firstloop-coming-soon" element={<FirstLoopComingSoon />} /> */}
+          <Route path="/firstloop-coming-soon" element={<FirstLoopComingSoon />} />
           <Route path="/firstloop" element={<FirstLoopWebsite />} />
           <Route path="/firstloop/*" element={<FirstLoopWebsite />} />
           <Route path="/card-preview/:id" element={<CardPreview />} />
@@ -195,125 +194,384 @@ function WebsiteLayout() {
     </>
   );
 }
+function DomainLoginRoute({ type }) {
+  const hostname = window.location.hostname;
 
+  const isFirstLoopDomain =
+    hostname === 'firstloop.co.in' ||
+    hostname === 'www.firstloop.co.in';
+
+  if (type === 'merchant' && isFirstLoopDomain) {
+    return <MerchantLogin />;
+  }
+
+  if (type === 'receptionist' && isFirstLoopDomain) {
+    return <ReceptionistLogin />;
+  }
+
+  return <Navigate to="/not-found" replace />;
+}
 function AdminLayout() {
+  const hostname = window.location.hostname;
+
+  const isFirstLoopDomain =
+    hostname === 'firstloop.co.in' ||
+    hostname === 'www.firstloop.co.in';
+
+  const isFirstPassDomain =
+    hostname === 'firstpassapp.co' ||
+    hostname === 'www.firstpassapp.co';
+
   return (
     <>
       <AppToaster />
 
       <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="card-preview/:id" element={<CardPreview />} />
-        <Route path="card-preview/:id/:type" element={<CardPreview />} />
-        <Route path="card-image/:id" element={<CardImage />} />
-        <Route path="card-image/:id/:type" element={<CardImage />} />
-        <Route path="card-only/:id" element={<CardImage />} />
-        <Route path="card-only/:id/:type" element={<CardImage />} />
-        <Route path="saleperson-login" element={<SalePersonLogin />} />
-        <Route path="saleperson-dashboard" element={<SalePersonDashboard />} />
-        <Route path="saleperson-add-merchant" element={<SalePersonAddMerchant />} />
-        {/* <Route path="firstloop-coming-soon" element={<FirstLoopComingSoon />} /> */}
-        {/* <Route path="firstloop" element={<FirstLoopComingSoon />} /> */}
-        <Route path="firstloop" element={<FirstLoopWebsite />} />
- 
-        {/* Merchant UI Routes */}
-        <Route path="merchant/login" element={<MerchantLogin />} />
-        <Route path="merchant-login" element={<MerchantLogin />} />
+        {/* =========================================================
+            FIRSTLOOP DOMAIN
+            Only Merchant + Receptionist login are allowed
+        ========================================================= */}
+        {isFirstLoopDomain && (
+          <>
+            <Route
+              path="merchant/login"
+              element={<MerchantLogin />}
+            />
 
-        <Route path="merchant" element={<MerchantLayout />}>
-          <Route index element={<Navigate to="/merchant/dashboard" replace />} />
-          <Route path="dashboard" element={<MerchantDashboard />} />
-          <Route path="customers" element={<MerchantCustomerList />} />
-          <Route path="customers/:id" element={<FpCustomerDetails />} />
-          <Route path="cards" element={<MerchantCardList />} />
-          <Route path="branches" element={<MerchantBranchList />} />
-          <Route path="receptionists" element={<MerchantReceptionistList />} />
-          <Route path="branches/:id" element={<ViewFlBranch />} />
-          <Route path="view-fl-branch/:id" element={<ViewFlBranch />} />
-          <Route path="branches/:branchId/checkin" element={<CardCheckInPayment />} />
-          <Route path="checkin" element={<CardCheckInPayment />} />
-          <Route path="checkin/:branchId" element={<CardCheckInPayment />} />
-          <Route path="add-card-customer" element={<AddCardCustomer />} />
-          <Route path="add-card-customer/:branchId" element={<AddCardCustomer />} />
-          <Route path="branches/:branchId/receptionists" element={<MerchantBranchReceptionists />} />
-          <Route path="reports" element={<MerchantReportsView />} />
-        </Route>
+            <Route
+              path="receptionist/login"
+              element={<ReceptionistLogin />}
+            />
 
-        {/* Receptionist UI Routes */}
-        <Route path="receptionist/login" element={<ReceptionistLogin />} />
-        <Route path="receptionist-login" element={<ReceptionistLogin />} />
+            {/* Optional aliases if you still need them */}
+            <Route
+              path="merchant-login"
+              element={<MerchantLogin />}
+            />
 
-        <Route path="receptionist" element={<ReceptionistLayout />}>
-          <Route index element={<Navigate to="/receptionist/dashboard" replace />} />
-          <Route path="dashboard" element={<ReceptionistDashboard />} />
-          <Route path="customers" element={<ReceptionistCustomerList />} />
-          <Route path="checkin" element={<CardCheckInPayment />} />
-          <Route path="add-card-customer" element={<AddCardCustomer />} />
-          <Route path="add-card-customer/:branchId" element={<AddCardCustomer />} />
-          <Route path="view-fl-branch/:id" element={<ViewFlBranch />} />
-        </Route>
+            <Route
+              path="receptionist-login"
+              element={<ReceptionistLogin />}
+            />
 
+            {/* Anything else under /admin should be React 404 */}
+            <Route
+              path="*"
+              element={<NotFound />}
+            />
+          </>
+        )}
+
+        {/* =========================================================
+            FIRSTPASS DOMAIN
+            Normal FirstPass admin panel
+        ========================================================= */}
+        {isFirstPassDomain && (
+          <>
+            <Route path="/" element={<Login />} />
+
+            {/* Sale Person */}
+            <Route
+              path="saleperson-login"
+              element={<SalePersonLogin />}
+            />
+
+            <Route
+              path="saleperson-dashboard"
+              element={<SalePersonDashboard />}
+            />
+
+            <Route
+              path="saleperson-add-merchant"
+              element={<SalePersonAddMerchant />}
+            />
+
+            {/* FirstPass Merchant UI */}
+            <Route
+              path="merchant"
+              element={<MerchantLayout />}
+            >
+              <Route
+                index
+                element={
+                  <Navigate
+                    to="/merchant/dashboard"
+                    replace
+                  />
+                }
+              />
+
+              <Route
+                path="dashboard"
+                element={<MerchantDashboard />}
+              />
+
+              <Route
+                path="customers"
+                element={<MerchantCustomerList />}
+              />
+
+              <Route
+                path="customers/:id"
+                element={<FpCustomerDetails />}
+              />
+
+              <Route
+                path="cards"
+                element={<MerchantCardList />}
+              />
+
+              <Route
+                path="branches"
+                element={<MerchantBranchList />}
+              />
+
+              <Route
+                path="receptionists"
+                element={<MerchantReceptionistList />}
+              />
+
+              <Route
+                path="branches/:id"
+                element={<ViewFlBranch />}
+              />
+
+              <Route
+                path="view-fl-branch/:id"
+                element={<ViewFlBranch />}
+              />
+
+              <Route
+                path="branches/:branchId/checkin"
+                element={<CardCheckInPayment />}
+              />
+
+              <Route
+                path="checkin"
+                element={<CardCheckInPayment />}
+              />
+
+              <Route
+                path="checkin/:branchId"
+                element={<CardCheckInPayment />}
+              />
+
+              <Route
+                path="add-card-customer"
+                element={<AddCardCustomer />}
+              />
+
+              <Route
+                path="add-card-customer/:branchId"
+                element={<AddCardCustomer />}
+              />
+
+              <Route
+                path="branches/:branchId/receptionists"
+                element={<MerchantBranchReceptionists />}
+              />
+
+              <Route
+                path="reports"
+                element={<MerchantReportsView />}
+              />
+            </Route>
+
+            {/* =====================================================
+                FirstPass Receptionist
+            ===================================================== */}
+            <Route
+              path="receptionist"
+              element={<ReceptionistLayout />}
+            >
+              <Route
+                index
+                element={
+                  <Navigate
+                    to="/receptionist/dashboard"
+                    replace
+                  />
+                }
+              />
+
+              <Route
+                path="dashboard"
+                element={<ReceptionistDashboard />}
+              />
+
+              <Route
+                path="customers"
+                element={<ReceptionistCustomerList />}
+              />
+
+              <Route
+                path="checkin"
+                element={<CardCheckInPayment />}
+              />
+
+              <Route
+                path="add-card-customer"
+                element={<AddCardCustomer />}
+              />
+
+              <Route
+                path="add-card-customer/:branchId"
+                element={<AddCardCustomer />}
+              />
+
+              <Route
+                path="view-fl-branch/:id"
+                element={<ViewFlBranch />}
+              />
+            </Route>
+
+            {/* FirstPass normal admin */}
+            <Route
+              path="dashboard"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Dashboard />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="merchants"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Merchants />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="customers"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Customers />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* IMPORTANT:
+                FirstPass merchant/receptionist login URLs
+                must NOT use MerchantLogin / ReceptionistLogin.
+                They should show React 404.
+            */}
+            <Route
+              path="merchant/login"
+              element={<NotFound />}
+            />
+
+            <Route
+              path="receptionist/login"
+              element={<NotFound />}
+            />
+
+            {/* Any unknown FirstPass admin route */}
+            <Route
+              path="*"
+              element={<NotFound />}
+            />
+          </>
+        )}
+
+        {/* Unknown domain / fallback */}
         <Route
-          element={
-            <ProtectedRoute>
-              <Layout />
-            </ProtectedRoute>
-          }
-        >
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="merchants" element={<Merchants />} />
-          <Route path="deleted-merchants" element={<DeletedMerchants />} />
-          <Route path="customers" element={<Customers />} />
-                    <Route path="salepersons" element={<SalePersons />} />
-          <Route path="salepersons/:id/merchants" element={<SalePersonMerchants />} />
-          <Route path="categories" element={<Categories />} />
-          <Route path="appointments" element={<Appointments />} />
-          <Route path="coupon-claim" element={<CouponClaim />} />
-          <Route path="reports" element={<Navigate to="/merchant-reports" replace />} />
-          <Route path="merchant-reports" element={<MerchantReports />} />
-          <Route path="merchant-report/:id" element={<ViewMerchReport />} />
-          <Route path="customer-reports" element={<CustomerReports />} />
-          <Route path="customer-report/:id" element={<CustomerReportDetails />} />
-          <Route path="notifications" element={<Notifications />} />
-          <Route path="notification-list" element={<NotificationList />} />
-          <Route path="profile" element={<Profile />} />
-          <Route path="add-merchant" element={<AddMerchant />} />
-          <Route path="edit-merchant/:id" element={<EditMerchant />} />
-          <Route path="view-merchant/:id" element={<ViewMerchant />} />
-          <Route path="view-deleted-merchant/:id" element={<ViewDeletedMerchant />} />
-          <Route path="view-branch/:id" element={<ViewBranch />} />
-          <Route path="view-fl-branch" element={<ViewFlBranch />} />
-          <Route path="view-fl-branch/:id" element={<ViewFlBranch />} />
-          <Route path="add-card-customer" element={<AddCardCustomer />} />
-          <Route path="add-card-customer/:branchId" element={<AddCardCustomer />} />
-          <Route path="fp-customer_details" element={<FpCustomerDetails />} />
-          <Route path="fp-customer_details/:id" element={<FpCustomerDetails />} />
-          <Route path="branch-report/:id" element={<BranchReport />} />
-          <Route path="branch-chat/:id" element={<BranchChat />} />
-          <Route path="admin-chat/:id" element={<AdminCharts />} />
-          <Route path="branch-pending-images/:id" element={<BranchPendingImages />} />
-          <Route path="branches" element={<Branches />} />
-          <Route path="receptionists" element={<Receptionists />} />
-          <Route path="settings" element={<Settings />} />
-          <Route path="banners" element={<Settings />} />
-          <Route path="card-designs" element={<CardDesigns />} />
-          <Route path="support" element={<Support />} />
-        </Route>
-
-        <Route path="*" element={<NotFound />} />
+          path="*"
+          element={<NotFound />}
+        />
       </Routes>
     </>
   );
 }
 
+
 export default function App() {
   const location = useLocation();
-  const isAdmin = window.location.pathname.startsWith('/admin') || window.location.pathname.startsWith('/merchant');
+  const hostname = window.location.hostname;
+
+  const isFirstLoopDomain =
+    hostname === 'firstloop.co.in' ||
+    hostname === 'www.firstloop.co.in';
+
+  const isFirstPassDomain =
+    hostname === 'firstpassapp.co' ||
+    hostname === 'www.firstpassapp.co';
+
+  const pathname = location.pathname;
+
+  /* ============================================================
+     FIRSTLOOP WEBSITE
+     ============================================================ */
+
+  if (
+    isFirstLoopDomain &&
+    (
+      pathname === '/' ||
+      pathname.startsWith('/firstloop')
+    )
+  ) {
+    return (
+      <>
+        <ScrollToTopAndAnimate />
+        <FirstLoopWebsite />
+      </>
+    );
+  }
+
+  /* ============================================================
+     FIRSTLOOP ADMIN
+     
+     /admin/merchant/login
+     /admin/receptionist/login
+     ============================================================ */
+
+  if (
+    isFirstLoopDomain &&
+    pathname.startsWith('/admin/')
+  ) {
+    return (
+      <>
+        <ScrollToTopAndAnimate />
+        <AdminLayout />
+      </>
+    );
+  }
+
+  /* ============================================================
+     FIRSTPASS ADMIN
+     ============================================================ */
+
+  if (
+    isFirstPassDomain &&
+    (
+      pathname.startsWith('/admin/') ||
+      pathname === '/admin'
+    )
+  ) {
+    return (
+      <>
+        <ScrollToTopAndAnimate />
+        <AdminLayout />
+      </>
+    );
+  }
+
+  /* ============================================================
+     FIRSTPASS NORMAL WEBSITE
+     ============================================================ */
 
   return (
     <>
       <ScrollToTopAndAnimate />
-      {isAdmin ? <AdminLayout /> : <WebsiteLayout />}
+      <WebsiteLayout />
     </>
   );
 }
