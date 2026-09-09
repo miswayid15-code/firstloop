@@ -6,17 +6,17 @@ module.exports = (...roles) => {
 
         try {
 
-            console.log('\n========== AUTH MIDDLEWARE ==========');
-            console.log('METHOD:', req.method);
-            console.log('URL:', req.originalUrl);
-            console.log('REQUIRED ROLES:', roles);
+            // console.log('\n========== AUTH MIDDLEWARE ==========');
+            // console.log('METHOD:', req.method);
+            // console.log('URL:', req.originalUrl);
+            // console.log('REQUIRED ROLES:', roles);
 
             const authHeader = req.headers.authorization;
 
-            console.log(
-                'AUTH HEADER:',
-                authHeader ? 'Present' : 'Missing'
-            );
+            // console.log(
+            //     'AUTH HEADER:',
+            //     authHeader ? 'Present' : 'Missing'
+            // );
 
             const token = authHeader?.split(' ')[1];
 
@@ -35,10 +35,10 @@ module.exports = (...roles) => {
 
             }
 
-            console.log(
-                'TOKEN:',
-                token.substring(0, 20) + '...'
-            );
+            // console.log(
+            //     'TOKEN:',
+            //     token.substring(0, 20) + '...'
+            // );
 
             // =========================
             // JWT VERIFY
@@ -53,7 +53,7 @@ module.exports = (...roles) => {
                     process.env.JWT_SECRET
                 );
 
-                console.log('TOKEN VERIFIED SUCCESSFULLY');
+                // console.log('TOKEN VERIFIED SUCCESSFULLY');
 
             } catch (jwtError) {
 
@@ -76,23 +76,23 @@ module.exports = (...roles) => {
 
             }
 
-            console.log('TOKEN DATA:', decoded);
+            // console.log('TOKEN DATA:', decoded);
 
             // =========================
             // TOKEN TYPE CHECK
             // =========================
 
-            console.log(
-                'TOKEN TYPE:',
-                decoded.token_type
-            );
+            // console.log(
+            //     'TOKEN TYPE:',
+            //     decoded.token_type
+            // );
 
             if (decoded.token_type !== 'access') {
 
-                console.log(
-                    'AUTH ERROR: Invalid token type:',
-                    decoded.token_type
-                );
+                // console.log(
+                //     'AUTH ERROR: Invalid token type:',
+                //     decoded.token_type
+                // );
 
                 return res.status(401).json({
                     status: 0,
@@ -105,30 +105,30 @@ module.exports = (...roles) => {
             // ROLE CHECK
             // =========================
 
-            console.log(
-                'USER TYPE:',
-                decoded.user_type
-            );
+            // console.log(
+            //     'USER TYPE:',
+            //     decoded.user_type
+            // );
 
-            console.log(
-                'REQUIRED ROLES:',
-                roles
-            );
+            // console.log(
+            //     'REQUIRED ROLES:',
+            //     roles
+            // );
 
             if (
                 roles.length > 0 &&
                 !roles.includes(decoded.user_type)
             ) {
 
-                console.log('ROLE NOT MATCHED');
-                console.log(
-                    'User role:',
-                    decoded.user_type
-                );
-                console.log(
-                    'Allowed roles:',
-                    roles
-                );
+                // console.log('ROLE NOT MATCHED');
+                // console.log(
+                //     'User role:',
+                //     decoded.user_type
+                // );
+                // console.log(
+                //     'Allowed roles:',
+                //     roles
+                // );
 
                 return res.status(401).json({
                     status: 0,
@@ -137,8 +137,8 @@ module.exports = (...roles) => {
 
             }
 
-            console.log('ROLE MATCHED');
-            console.log('AUTH SUCCESS');
+            // console.log('ROLE MATCHED');
+            // console.log('AUTH SUCCESS');
 
             // =========================
             // SET USER

@@ -646,10 +646,19 @@ export default function FpCustomerDetails() {
                             className="form-control"
                             value={selectedBranchId}
                             onChange={(e) => setSelectedBranchId(e.target.value)}
-                            style={{ height: 42, fontSize: '0.88rem', borderRadius: 10, fontWeight: 600, borderColor: 'var(--firstloop-primary)' }}
+                            style={{
+                                height: 42,
+                                fontSize: '0.88rem',
+                                borderRadius: 10,
+                                fontWeight: 600,
+                                borderColor: 'var(--firstloop-primary)',
+                                background: '#FFFFFF',
+                                color: '#0F172A',
+                                colorScheme: 'light'
+                            }}
                         >
                             {branchOptions.map(b => (
-                                <option key={b.id} value={b.id}>
+                                <option key={b.id} value={b.id} style={{ background: '#FFFFFF', color: '#0F172A' }}>
                                     {b.name}
                                 </option>
                             ))}

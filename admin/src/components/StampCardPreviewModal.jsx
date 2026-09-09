@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react'
 import html2canvas from 'html2canvas'
 import logo from '../assets/img/firstloop-favicon.png'
 import flLogo from '../assets/img/firstloop-favicon.png'
+import qrImg from '../assets/img/qr-img.png'
 import { QRCodeCanvas } from 'qrcode.react'
 
 import {
@@ -60,9 +61,19 @@ export default function StampCardPreviewModal({
         return `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`
     }
 
+    const hasCustomer = Boolean(
+        card.card_number ||
+        card.customer_id ||
+        card.cus_id ||
+        card.customer_name ||
+        card.customer ||
+        card.qr_token
+    )
+
     const totalStamps = Number(card.total_stamps || card.number_of_stamps || 8)
     const brandName = card.brandName || card.brand_name || fallbackBrandName
-    const cardNo = card.card_number || "Card-123456"
+    const cardholder = card.cardholderName || card.customer_name || (hasCustomer ? 'Customer' : '')
+    const cardNo = card.card_number || null
     const brandLogo = card.brandLogo || card.brand_image ? formatImageUrl(card.brandLogo || card.brand_image) : logo
 
     return (
@@ -161,10 +172,12 @@ export default function StampCardPreviewModal({
                                     </div>
 
                                     {/* Cardholder Name with User Icon */}
-                                    <div style={{ fontSize: '0.95rem', opacity: 0.95, fontWeight: 700, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6, lineHeight: 1.35 }}>
-                                        <i className="fas fa-user" style={{ fontSize: '0.75rem', lineHeight: 1, verticalAlign: '0' }} />
-                                        <span>{card.cardholderName || card.customer_name || 'Customer'}</span>
-                                    </div>
+                                    {cardholder && (
+                                        <div style={{ fontSize: '0.95rem', opacity: 0.95, fontWeight: 700, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6, lineHeight: 1.35 }}>
+                                            <i className="fas fa-user" style={{ fontSize: '0.75rem', lineHeight: 1, verticalAlign: '0' }} />
+                                            <span>{cardholder}</span>
+                                        </div>
+                                    )}
 
                                     {/* Stamp Circles Grid */}
                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 6, maxWidth: 220 }}>
@@ -277,16 +290,30 @@ export default function StampCardPreviewModal({
 
                                 {/* Right Side: QR CODE */}
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                    <QRCodeCanvas
-                                        value={card.qrImg || card.qr_token || 'firstloop'}
-                                        size={92}
-                                        style={{
-                                            width: 92,
-                                            height: 92,
-                                            objectFit: 'contain',
-                                            display: 'block'
-                                        }}
-                                    />
+                                    {hasCustomer && (card.qr_token || card.qrImg) ? (
+                                        <QRCodeCanvas
+                                            value={card.qr_token || card.qrImg}
+                                            size={92}
+                                            style={{
+                                                width: 92,
+                                                height: 92,
+                                                objectFit: 'contain',
+                                                display: 'block'
+                                            }}
+                                        />
+                                    ) : (
+                                        <img
+                                            src={qrImg}
+                                            alt="QR Code"
+                                            crossOrigin="anonymous"
+                                            style={{
+                                                width: 92,
+                                                height: 92,
+                                                objectFit: 'contain',
+                                                display: 'block'
+                                            }}
+                                        />
+                                    )}
                                     <small style={{ fontSize: '0.6rem', fontWeight: 700, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.5px', opacity: 0.9 }}>
                                         SCAN TO STAMP
                                     </small>

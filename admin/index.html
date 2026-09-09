@@ -9,10 +9,21 @@
     ============================================================ -->
 <script>
     (function () {
-        var isAdmin = window.location.pathname.startsWith('/admin');
-        var cardPreview = window.location.pathname.startsWith('/card-preview') || window.location.pathname.startsWith('/card-image') || window.location.pathname.startsWith('/card-only');
+        var p = window.location.pathname;
+        var isPanel = p.startsWith('/admin') || p.startsWith('/panel') || p.startsWith('/merchant') || p.startsWith('/receptionist') || p.startsWith('/saleperson');
+        var cardPreview = p.startsWith('/card-preview') || p.startsWith('/card-image') || p.startsWith('/card-only');
 
-        if (isAdmin) {
+        if (p.startsWith('/merchant') || p.startsWith('/panel/merchant')) {
+            document.write('<title>FirstLoop Merchant Portal</title>');
+            document.write('<meta name="description" content="FirstLoop Merchant Portal - Manage branches, memberships, stamp cards, receptionists and customer loyalty.">');
+            document.write('<meta name="robots" content="noindex, nofollow">');
+        }
+        else if (p.startsWith('/receptionist') || p.startsWith('/panel/receptionist')) {
+            document.write('<title>FirstLoop Receptionist Terminal</title>');
+            document.write('<meta name="description" content="FirstLoop Receptionist Terminal - Fast customer check-in, stamp issuance and pass scanning.">');
+            document.write('<meta name="robots" content="noindex, nofollow">');
+        }
+        else if (isPanel) {
             /* ---- ADMIN PANEL META ---- */
             document.write('<title>FirstPass Admin Panel</title>');
             document.write('<meta name="description" content="FirstPass Admin Panel – Securely manage merchants, customers, appointments, coupons, reports, notifications and all platform settings from one central dashboard.">');
@@ -78,11 +89,11 @@
     <!-- Bootstrap (shared – admin uses it for modals/tables; website uses it for grid) -->
     <link rel="stylesheet" href="/asset/css/bootstrap.min.css">
 
-    <!-- Website-only CSS (skipped on admin, firstloop, and card preview to avoid conflicts) -->
+    <!-- Website-only CSS (skipped on admin, merchant, receptionist, panel, firstloop, and card preview to avoid conflicts) -->
     <script>
         (function() {
             var p = window.location.pathname;
-            var isExcluded = p.startsWith('/admin') || p.startsWith('/firstloop') || p.startsWith('/card-');
+            var isExcluded = p.startsWith('/admin') || p.startsWith('/panel') || p.startsWith('/merchant') || p.startsWith('/receptionist') || p.startsWith('/saleperson') || p.startsWith('/firstloop') || p.startsWith('/card-');
             if (!isExcluded) {
                 document.write('<link rel="stylesheet" href="/asset/css/swiper-bundle.min.css">');
                 document.write('<link rel="stylesheet" href="/asset/css/animate.css">');
@@ -99,7 +110,7 @@
 <script>
     (function() {
         var p = window.location.pathname;
-        var isExcluded = p.startsWith('/admin') || p.startsWith('/firstloop') || p.startsWith('/card-');
+        var isExcluded = p.startsWith('/admin') || p.startsWith('/panel') || p.startsWith('/merchant') || p.startsWith('/receptionist') || p.startsWith('/saleperson') || p.startsWith('/firstloop') || p.startsWith('/card-');
         if (!isExcluded) {
             document.write('<canvas class="cursor-trail" id="trail" style="display: none;"></canvas>');
             document.write('<button id="goTop"><span class="border-progress"></span><span class="ic-wrap"><span class="icon icon-long-arrow-alt-up-solid"></span></span></button>');
@@ -113,11 +124,11 @@
     <script src="/asset/js/jquery.min.js"></script>
     <script src="/asset/js/bootstrap.min.js"></script>
 
-    <!-- Website-only JS (skipped on admin, firstloop, and card pages to avoid conflicts) -->
+    <!-- Website-only JS (skipped on admin, merchant, receptionist, panel, firstloop, and card pages to avoid conflicts) -->
     <script>
         (function() {
             var p = window.location.pathname;
-            var isExcluded = p.startsWith('/admin') || p.startsWith('/firstloop') || p.startsWith('/card-');
+            var isExcluded = p.startsWith('/admin') || p.startsWith('/panel') || p.startsWith('/merchant') || p.startsWith('/receptionist') || p.startsWith('/saleperson') || p.startsWith('/firstloop') || p.startsWith('/card-');
             if (!isExcluded) {
                 document.write('<script src="/asset/js/jquery.nice-select.min.js"><\/script>');
                 document.write('<script src="/asset/js/swiper-bundle.min.js"><\/script>');

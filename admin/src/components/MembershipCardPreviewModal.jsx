@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react'
 import html2canvas from 'html2canvas'
 import logo from '../assets/img/firstloop-favicon.png'
 import flLogo from '../assets/img/firstloop-favicon.png'
+import qrImg from '../assets/img/qr-img.png'
 import { QRCodeCanvas } from 'qrcode.react'
 
 import {
@@ -58,12 +59,21 @@ export default function MembershipCardPreviewModal({
         return `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`
     }
 
+    const hasCustomer = Boolean(
+        card.card_number ||
+        card.customer_id ||
+        card.cus_id ||
+        card.customer_name ||
+        card.customer ||
+        card.qr_token
+    )
+
     const brandName = card.brandName || card.brand_name || fallbackBrandName
     const brandLogo = card.brandLogo || card.brand_image ? formatImageUrl(card.brandLogo || card.brand_image) : logo
     const cardTitle = card.name || card.title || 'Membership Card'
-    const cardholder = card.cardholderName || card.cardholder_name || 'Member Pass'
-    const cardNo = card.card_number || "Card-123456"
-    const validityText = formatValidity(card.expires_at || card.month || card.totalMonth)
+    const cardholder = card.cardholderName || card.cardholder_name || card.customer_name || (hasCustomer ? 'Member Pass' : '')
+    const cardNo = card.card_number || null
+    const validityText = formatValidity(card.expires_at || card.validityMonths || card.month || card.totalMonth)
 
     return (
         <div
@@ -159,38 +169,54 @@ export default function MembershipCardPreviewModal({
                                     <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'inherit', wordBreak: 'break-word' }}>
                                         {cardTitle}
                                     </div>
-                                    <div style={{ fontSize: '0.95rem', opacity: 0.95, marginTop: 4, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, lineHeight: 1.35 }}>
-                                        <i className="fas fa-user" style={{ fontSize: '0.75rem', lineHeight: 1, verticalAlign: '0' }} />
-                                        <span>{cardholder}</span>
-                                    </div>
+                                    {cardholder && (
+                                        <div style={{ fontSize: '0.95rem', opacity: 0.95, marginTop: 4, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, lineHeight: 1.35 }}>
+                                            <i className="fas fa-user" style={{ fontSize: '0.75rem', lineHeight: 1, verticalAlign: '0' }} />
+                                            <span>{cardholder}</span>
+                                        </div>
+                                    )}
 
                                     <div style={{ marginTop: 12, borderTop: '1px solid rgba(255,255,255,0.25)', paddingTop: 8 }}>
                                         <small style={{ fontSize: '0.65rem', textTransform: 'uppercase', opacity: 0.85 }}>
-                                            Valid Thru
-                                        </small>
-                                        <div style={{ fontSize: '0.88rem', fontWeight: 800, color: 'inherit' }}>
-                                            {validityText}
-                                        </div>
-                                    </div>
-                                </div>
+                                             Valid Thru
+                                         </small>
+                                         <div style={{ fontSize: '0.88rem', fontWeight: 800, color: 'inherit' }}>
+                                             {validityText}
+                                         </div>
+                                     </div>
+                                 </div>
 
-                                {/* Large Centered Middle QR Code */}
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                    <QRCodeCanvas
-                                        value={card.qrImg || card.qr_token || 'firstloop'}
-                                        size={92}
-                                        style={{
-                                            width: 92,
-                                            height: 92,
-                                            objectFit: 'contain',
-                                            display: 'block'
-                                        }}
-                                    />
-                                    <small style={{ fontSize: '0.6rem', fontWeight: 700, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.5px', opacity: 0.9 }}>
-                                        SCAN PASS
-                                    </small>
-                                </div>
-                            </div>
+                                 {/* Large Centered Middle QR Code */}
+                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                     {hasCustomer && (card.qr_token || card.qrImg) ? (
+                                         <QRCodeCanvas
+                                             value={card.qr_token || card.qrImg}
+                                             size={92}
+                                             style={{
+                                                 width: 92,
+                                                 height: 92,
+                                                 objectFit: 'contain',
+                                                 display: 'block'
+                                             }}
+                                         />
+                                     ) : (
+                                         <img
+                                             src={qrImg}
+                                             alt="QR Code"
+                                             crossOrigin="anonymous"
+                                             style={{
+                                                 width: 92,
+                                                 height: 92,
+                                                 objectFit: 'contain',
+                                                 display: 'block'
+                                             }}
+                                         />
+                                     )}
+                                     <small style={{ fontSize: '0.6rem', fontWeight: 700, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.5px', opacity: 0.9 }}>
+                                         SCAN PASS
+                                     </small>
+                                 </div>
+                             </div>
 
                             {/* Bottom Right Logo Badge */}
                             <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 5, fontSize: '0.65rem', opacity: 0.9, fontWeight: 600, marginTop: 6, lineHeight: 1 }}>

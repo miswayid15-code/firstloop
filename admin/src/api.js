@@ -72,24 +72,34 @@ export const getAppType = (reqUrl = "") => {
         path.startsWith("/admin") ||
         path.startsWith("/panel")
     ) {
-        if (url.includes("firstloop/merchant/") || url.includes("/merchant/login") || path.includes("/merchant")) {
+        if (
+            url.includes("firstloop/merchant/") ||
+            url.includes("api/merchant/") ||
+            url.includes("/merchant/login") ||
+            path.includes("/merchant")
+        ) {
             const merToken = localStorage.getItem("mer_access_token");
             if (!merToken && (localStorage.getItem("access_token") || localStorage.getItem("admin_token"))) {
                 return "admin";
             }
             return "merchant";
         }
-        if (url.includes("firstloop/reception/") || url.includes("/receptionist/login") || path.includes("/receptionist")) {
+        if (
+            url.includes("firstloop/reception/") ||
+            url.includes("api/receptionist/") ||
+            url.includes("/receptionist/login") ||
+            path.includes("/receptionist")
+        ) {
             return "receptionist";
         }
         return "admin";
     }
 
     // 3. Fallback to explicit API endpoint checks
-    if (url.includes("firstloop/merchant/")) {
+    if (url.includes("firstloop/merchant/") || url.includes("api/merchant/")) {
         return "merchant";
     }
-    if (url.includes("firstloop/reception/")) {
+    if (url.includes("firstloop/reception/") || url.includes("api/receptionist/")) {
         return "receptionist";
     }
     if (url.includes("admin/saleperson/merchant_list")) {
@@ -190,6 +200,18 @@ export const getRefreshToken = (reqUrl = "") => {
     if (token && token !== "null" && token !== "undefined") {
         return token;
     }
+    if (keys.role === "receptionist") {
+        const recToken = localStorage.getItem("rec_refresh_token") || localStorage.getItem("receptionist_refresh_token");
+        if (recToken && recToken !== "null" && recToken !== "undefined") {
+            return recToken;
+        }
+    }
+    if (keys.role === "merchant") {
+        const merToken = localStorage.getItem("mer_refresh_token") || localStorage.getItem("merchant_refresh_token");
+        if (merToken && merToken !== "null" && merToken !== "undefined") {
+            return merToken;
+        }
+    }
     return null;
 };
 
@@ -201,10 +223,73 @@ export const saveTokens = (accessToken, refreshToken = null, reqUrl = "") => {
 
     if (accessToken) {
         localStorage.setItem(keys.access, accessToken);
+        if (keys.role === "receptionist") {
+            localStorage.setItem("receptionist_token", accessToken);
+        }
     }
-    if (refreshToken) {
+    if (refreshToken && refreshToken !== "null" && refreshToken !== "undefined") {
         localStorage.setItem(keys.refresh, refreshToken);
     }
+};
+
+/* ---------------------------------------------------
+   Get Refresh Token API Endpoint per Role
+--------------------------------------------------- */
+export const getRefreshEndpoint = (appType = "admin") => {
+    if (appType === "merchant") {
+        return "api/merchant/refreshAccessToken";
+    }
+    if (appType === "receptionist") {
+        return "api/receptionist/refreshAccessToken";
+    }
+    return "admin/refresh-token";
+};
+
+/* ---------------------------------------------------
+   Refresh Access Token Helper Function
+--------------------------------------------------- */
+export const refreshAccessToken = async (targetAppType = null, reqUrl = "") => {
+    const appType = targetAppType || getAppType(reqUrl);
+    const refreshToken = getRefreshToken(reqUrl);
+
+    if (!refreshToken || refreshToken === "null" || refreshToken === "undefined") {
+        throw new Error("No refresh token available");
+    }
+
+    const refreshEndpoint = getRefreshEndpoint(appType);
+    const baseUrl = (import.meta.env.VITE_API_URL || "").replace(/\/+$/, "");
+    const fullUrl = `${baseUrl}/${refreshEndpoint.replace(/^\/+/, "")}`;
+
+    const refreshResponse = await axios.post(
+        fullUrl,
+        {
+            refresh_token: refreshToken,
+        },
+        {
+            headers: {
+                Authorization: `Bearer ${refreshToken}`,
+                "Content-Type": "application/json",
+                "X-Role": appType,
+            },
+        }
+    );
+
+    const data = refreshResponse.data;
+    const isSuccess = data?.status === 1 || data?.status === "1" || data?.success === true;
+    const newAccessToken = data?.access_token || data?.token || data?.data?.access_token || data?.data?.token;
+    const newRefreshToken = data?.refresh_token || data?.data?.refresh_token || refreshToken;
+
+    if (isSuccess && newAccessToken) {
+        saveTokens(newAccessToken, newRefreshToken, reqUrl);
+        return {
+            status: 1,
+            access_token: newAccessToken,
+            refresh_token: newRefreshToken,
+            data,
+        };
+    }
+
+    throw new Error(data?.message || "Failed to refresh access token");
 };
 
 /* ---------------------------------------------------
@@ -361,7 +446,11 @@ API.interceptors.response.use(
             return Promise.reject(error);
         }
 
-        if (originalRequest.url?.includes("/refresh-token")) {
+        if (
+            originalRequest.url?.includes("/refresh-token") ||
+            originalRequest.url?.includes("refreshAccessToken") ||
+            originalRequest.url?.includes("/refresh")
+        ) {
             logoutAndRedirect("Session expired. Please login again.", appType);
             return Promise.reject(error);
         }
@@ -369,31 +458,11 @@ API.interceptors.response.use(
         originalRequest._retry = true;
 
         try {
-            const refreshToken = getRefreshToken(reqUrl);
+            const refreshResult = await refreshAccessToken(appType, reqUrl);
 
-            if (!refreshToken || refreshToken === "null" || refreshToken === "undefined") {
-                logoutAndRedirect("Session expired. Please login again.", appType);
-                return Promise.reject(error);
-            }
-
-            const refreshResponse = await axios.post(
-                `${import.meta.env.VITE_API_URL}/admin/refresh-token`,
-                {},
-                {
-                    headers: {
-                        Authorization: `Bearer ${refreshToken}`,
-                        "Content-Type": "application/json",
-                    },
-                }
-            );
-
-            const refreshData = refreshResponse.data;
-
-            if (refreshData?.status === 1 && refreshData?.access_token) {
-                saveTokens(refreshData.access_token, refreshData.refresh_token, reqUrl);
-
+            if (refreshResult?.access_token) {
                 originalRequest.headers = originalRequest.headers || {};
-                originalRequest.headers.Authorization = `Bearer ${refreshData.access_token}`;
+                originalRequest.headers.Authorization = `Bearer ${refreshResult.access_token}`;
 
                 return API(originalRequest);
             }

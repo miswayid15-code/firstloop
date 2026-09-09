@@ -366,7 +366,7 @@ export default function ViewMerchant() {
     }
 
     const handleSaveMembershipCard = (savedForm) => {
-        fetchmembershipCards(); 
+        fetchmembershipCards();
         if (savedForm.id) {
             setMembershipCards(prev => prev.map(item => item.id === savedForm.id ? {
                 ...item,
@@ -416,17 +416,17 @@ export default function ViewMerchant() {
         )
     }, [stampCards, stampSearch])
 
-const filteredMemberships = useMemo(() => {
-    const q = membershipSearch.toLowerCase().trim();
-    if (!q) return membershipCards;
+    const filteredMemberships = useMemo(() => {
+        const q = membershipSearch.toLowerCase().trim();
+        if (!q) return membershipCards;
 
-    return membershipCards.filter(mc => {
-        const name = (mc.name || mc.title || '').toLowerCase();
-        const brand = (mc.brandName || '').toLowerCase();
-        const validity = String(mc.validityMonths || mc.totalMonth || '').toLowerCase();
-        return name.includes(q) || brand.includes(q) || validity.includes(q);
-    });
-}, [membershipCards, membershipSearch]);
+        return membershipCards.filter(mc => {
+            const name = (mc.name || mc.title || '').toLowerCase();
+            const brand = (mc.brandName || '').toLowerCase();
+            const validity = String(mc.validityMonths || mc.totalMonth || '').toLowerCase();
+            return name.includes(q) || brand.includes(q) || validity.includes(q);
+        });
+    }, [membershipCards, membershipSearch]);
 
 
     const highlightFieldError = (selector) => {

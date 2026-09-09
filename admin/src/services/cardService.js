@@ -465,9 +465,29 @@ export const fetchCustomerStampLevelsApi = async (cardId, cardType, cusId) => {
                 qrImg:
                     item.qr_token,
 
+                customer:
+                    item.customer || item.Customer || null,
+
+                customer_id:
+                    item.customer_id || item.cus_id || item.customer?.id || item.Customer?.id || null,
+
                 customer_name:
                     item.customer_name ||
-                    item.customer?.name,
+                    item.customer?.name ||
+                    item.Customer?.name,
+
+                customer_phone:
+                    item.customer?.phone ||
+                    item.Customer?.phone ||
+                    item.phone ||
+                    item.mobile ||
+                    null,
+
+                customer_country_code:
+                    item.customer?.country_code ||
+                    item.Customer?.country_code ||
+                    item.country_code ||
+                    null,
 
                 branch_ids:
                     Array.isArray(item.branch_ids)
@@ -506,7 +526,12 @@ export const fetchCustomerStampLevelsApi = async (cardId, cardType, cusId) => {
                 title: item.title || item.name || 'Membership Pass',
                 brandName: item.brand_name || 'Merchant',
                 brandLogo: item.brand_image ? getRelativeImagePath(item.brand_image) : null,
-                cardholderName: item.customer?.name || item.customer_name || 'Member Pass',
+                cardholderName: item.customer?.name || item.Customer?.name || item.customer_name || 'Member Pass',
+                customer: item.customer || item.Customer || null,
+                customer_id: item.customer_id || item.cus_id || item.customer?.id || item.Customer?.id || null,
+                customer_name: item.customer?.name || item.Customer?.name || item.customer_name || 'Member Pass',
+                customer_phone: item.customer?.phone || item.Customer?.phone || item.phone || item.mobile || null,
+                customer_country_code: item.customer?.country_code || item.Customer?.country_code || item.country_code || null,
                 qrImg: item.qr_token,
                 validityMonths: item.month || item.validityMonths || item.totalMonth || 12,
                 expiry: item.expires_at,

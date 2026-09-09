@@ -342,9 +342,9 @@ export default function App() {
     }
 
     if (
-      pathname.startsWith('/panel') ||
-      pathname.startsWith('/merchant') ||
-      pathname.startsWith('/receptionist')
+      pathname.startsWith('/panel')
+      // ||pathname.startsWith('/merchant') ||
+      // pathname.startsWith('/receptionist')
     ) {
       window.location.replace(`https://firstloop.co.in${pathname}${window.location.search}`);
       return null;
@@ -419,8 +419,8 @@ export default function App() {
   const isAdminOrPanel =
     pathname.startsWith('/admin') ||
     pathname.startsWith('/panel') ||
-    pathname.startsWith('/merchant') ||
-    pathname.startsWith('/receptionist') ||
+    // pathname.startsWith('/merchant') ||
+    // pathname.startsWith('/receptionist') ||
     pathname.startsWith('/saleperson');
 
   return (

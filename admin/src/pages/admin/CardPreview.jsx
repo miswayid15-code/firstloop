@@ -3,6 +3,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import html2canvas from 'html2canvas'
 import CustomerCard from '../../components/CustomerCard.jsx'
 import { fetchCustomerStampLevelsApi } from '../../services/cardService.js'
+import API from '../../api.js'
 
 /*
 |--------------------------------------------------------------------------
@@ -19,8 +20,8 @@ export default function CardPreview() {
     const rawType = searchParams.get('type') || paramType || '1'
     const cardType = Number(rawType) === 2 ? 2 : 1
 
-    const rawCusId = searchParams.get('cus_id') || searchParams.get('customer_id') || '1'
-    const cusId = Number(rawCusId) || 1
+    const rawCusId = searchParams.get('cus_id') || searchParams.get('customer_id') || null
+    const cusId = rawCusId ? Number(rawCusId) : null
 
     const cardId = Number(paramId || searchParams.get('id')) || (paramId ? paramId : null)
 
@@ -28,6 +29,103 @@ export default function CardPreview() {
     const [downloading, setDownloading] = useState(false)
     const [cardData, setCardData] = useState(null)
     const [loading, setLoading] = useState(Boolean(cardId))
+    const [hasStaffToken, setHasStaffToken] = useState(false)
+    const [customText, setCustomText] = useState('')
+
+    // Recipient Customer states for direct WhatsApp messaging
+    const [customerPhone, setCustomerPhone] = useState(
+        searchParams.get('phone') || searchParams.get('customer_phone') || searchParams.get('mobile') || searchParams.get('cus_phone') || ''
+    )
+    const [customerCountryCode, setCustomerCountryCode] = useState(
+        searchParams.get('country_code') || searchParams.get('cc') || ''
+    )
+    const [customerName, setCustomerName] = useState(
+        searchParams.get('customer_name') || searchParams.get('cus_name') || ''
+    )
+
+    /*
+    |--------------------------------------------------------------------------
+    | CLEAN PHONE NUMBER FOR WHATSAPP API (DIGITS ONLY)
+    |--------------------------------------------------------------------------
+    */
+    const cleanPhone = (phone, countryCode = '') => {
+        if (!phone) return ''
+        const p = String(phone).trim()
+        const cc = String(countryCode || '').replace(/\D/g, '')
+        let digits = p.replace(/\D/g, '')
+        if (!digits) return ''
+        if (cc && !digits.startsWith(cc)) {
+            digits = `${cc}${digits}`
+        }
+        return digits
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | CHECK ADMIN / MERCHANT / RECEPTIONIST TOKEN
+    |--------------------------------------------------------------------------
+    */
+    useEffect(() => {
+        const keys = [
+            'access_token',
+            'admin_token',
+            'mer_access_token',
+            'merchant_token',
+            'rec_access_token',
+            'receptionist_token'
+        ]
+        const tokenExists = keys.some((k) => {
+            const val = localStorage.getItem(k)
+            return val && val !== 'null' && val !== 'undefined'
+        })
+        setHasStaffToken(tokenExists)
+    }, [])
+
+    /*
+    |--------------------------------------------------------------------------
+    | RESOLVE CUSTOMER PHONE IF CUSTOMER ID IS PRESENT
+    |--------------------------------------------------------------------------
+    */
+    const effectiveCusId = cusId || cardData?.customer_id || cardData?.customer?.id || null
+
+    useEffect(() => {
+        const qPhone = searchParams.get('phone') || searchParams.get('customer_phone') || searchParams.get('mobile') || searchParams.get('cus_phone')
+        const qCc = searchParams.get('country_code') || searchParams.get('cc')
+        const qName = searchParams.get('customer_name') || searchParams.get('cus_name')
+        if (qPhone) {
+            setCustomerPhone(qPhone)
+            if (qCc) setCustomerCountryCode(qCc)
+            if (qName) setCustomerName(qName)
+            return
+        }
+
+        if (cardData?.customer_phone) {
+            setCustomerPhone(cardData.customer_phone)
+            if (cardData.customer_country_code) setCustomerCountryCode(cardData.customer_country_code)
+            if (cardData.customer_name) setCustomerName(cardData.customer_name)
+            return
+        }
+
+        if (effectiveCusId && hasStaffToken) {
+            let isMounted = true
+            API.post('/firstloop/customer/get-customer-details', { customer_id: Number(effectiveCusId) || effectiveCusId })
+                .then((res) => {
+                    if (!isMounted) return
+                    if (res?.data?.status == 1 && res?.data?.data) {
+                        const cus = res.data.data.customer || {}
+                        if (cus.phone) setCustomerPhone(cus.phone)
+                        if (cus.country_code) setCustomerCountryCode(cus.country_code)
+                        if (cus.name) setCustomerName(cus.name)
+                    }
+                })
+                .catch((err) => {
+                    console.warn('Could not fetch customer details for WhatsApp:', err)
+                })
+            return () => {
+                isMounted = false
+            }
+        }
+    }, [cardData, effectiveCusId, hasStaffToken, searchParams])
 
     /*
     |--------------------------------------------------------------------------
@@ -277,33 +375,63 @@ export default function CardPreview() {
                     <p style={{ marginBottom: 20, color: '#64748B', fontSize: '0.88rem', lineHeight: 1.5 }}>
                         The requested card could not be loaded. Please check the URL or card ID.
                     </p>
-                    <button
-                        type="button"
-                        onClick={handleBack}
-                        style={{
-                            padding: '10px 24px',
-                            borderRadius: 12,
-                            background: '#0E88B8',
-                            color: '#FFFFFF',
-                            fontWeight: 700,
-                            fontSize: '0.88rem',
-                            border: 'none',
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 8,
-                            boxShadow: '0 4px 12px rgba(14, 136, 184, 0.25)'
-                        }}
-                    >
-                        <i className="fas fa-arrow-left" />
-                        <span>Go Back</span>
-                    </button>
+                    {hasStaffToken && (
+                        <button
+                            type="button"
+                            onClick={handleBack}
+                            style={{
+                                padding: '10px 24px',
+                                borderRadius: 12,
+                                background: '#0E88B8',
+                                color: '#FFFFFF',
+                                fontWeight: 700,
+                                fontSize: '0.88rem',
+                                border: 'none',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 8,
+                                boxShadow: '0 4px 12px rgba(14, 136, 184, 0.25)'
+                            }}
+                        >
+                            <i className="fas fa-arrow-left" />
+                            <span>Go Back</span>
+                        </button>
+                    )}
                 </div>
             </div>
         )
     }
 
     const card = cardData
+
+    const defaultDesc = card.description || card.descption || card.reward_text || card.reward || (cardType === 2 ? 'Enjoy exclusive perks and privileges with our digital membership pass!' : 'Collect stamps and unlock exciting rewards on every visit!')
+
+    const targetPhone = cleanPhone(customerPhone, customerCountryCode)
+
+    const handleSendToWhatsApp = () => {
+        const brand = card.brandName || card.brand_name || 'FirstLoop'
+        const title = card.title || card.name || (cardType === 2 ? 'Membership Pass' : 'Stamp Card')
+        const passUrl = window.location.href
+
+        const descToSend = customText.trim() ? customText.trim() : defaultDesc
+        const hasUrl = descToSend.includes('http://') || descToSend.includes('https://')
+
+        let message = ''
+        if (customText.trim()) {
+            message = `${descToSend}${hasUrl ? '' : `\n\n👉 *View Card:* ${passUrl}`}`
+        } else {
+            message = `🎉 *${brand}* - ${title}\n\n📝 *Description:*\n${descToSend}\n\n👉 *View Card:* ${passUrl}`
+        }
+
+        let whatsappUrl = ''
+        if (targetPhone) {
+            whatsappUrl = `https://api.whatsapp.com/send?phone=${targetPhone}&text=${encodeURIComponent(message)}`
+        } else {
+            whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`
+        }
+        window.open(whatsappUrl, '_blank')
+    }
 
     /*
     |--------------------------------------------------------------------------
@@ -324,39 +452,41 @@ export default function CardPreview() {
                 gap: 16
             }}
         >
-            {/* TOP BAR: BACK NAVIGATION BUTTON */}
-            <div style={{ width: '100%', maxWidth: 420, display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
-                <button
-                    type="button"
-                    onClick={handleBack}
-                    style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        padding: '8px 16px',
-                        borderRadius: 10,
-                        background: '#FFFFFF',
-                        border: '1px solid #E2E8F0',
-                        color: '#1E293B',
-                        fontWeight: 700,
-                        fontSize: '0.85rem',
-                        cursor: 'pointer',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                        transition: 'all 0.15s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                        e.currentTarget.style.background = '#F1F5F9'
-                        e.currentTarget.style.borderColor = '#CBD5E1'
-                    }}
-                    onMouseLeave={(e) => {
-                        e.currentTarget.style.background = '#FFFFFF'
-                        e.currentTarget.style.borderColor = '#E2E8F0'
-                    }}
-                >
-                    <i className="fas fa-arrow-left" style={{ color: '#0E88B8' }} />
-                    <span>Back</span>
-                </button>
-            </div>
+            {/* TOP BAR: BACK NAVIGATION BUTTON (ONLY IF STAFF TOKEN EXISTS) */}
+            {hasStaffToken && (
+                <div style={{ width: '100%', maxWidth: 420, display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
+                    <button
+                        type="button"
+                        onClick={handleBack}
+                        style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 8,
+                            padding: '8px 16px',
+                            borderRadius: 10,
+                            background: '#FFFFFF',
+                            border: '1px solid #E2E8F0',
+                            color: '#1E293B',
+                            fontWeight: 700,
+                            fontSize: '0.85rem',
+                            cursor: 'pointer',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                            transition: 'all 0.15s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.background = '#F1F5F9'
+                            e.currentTarget.style.borderColor = '#CBD5E1'
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.background = '#FFFFFF'
+                            e.currentTarget.style.borderColor = '#E2E8F0'
+                        }}
+                    >
+                        <i className="fas fa-arrow-left" style={{ color: '#0E88B8' }} />
+                        <span>Back</span>
+                    </button>
+                </div>
+            )}
 
             {/* REUSABLE CUSTOMER CARD COMPONENT */}
             <CustomerCard
@@ -365,8 +495,158 @@ export default function CardPreview() {
                 cardType={cardType}
             />
 
-            {/* ACTION BAR: DOWNLOAD BUTTON */}
-            <div style={{ width: '100%', maxWidth: 420, display: 'flex', justifyContent: 'center' }}>
+            {/* ACTION SECTION: WHATSAPP (FOR STAFF/ADMIN/MERCHANT/RECEPTIONIST) & DOWNLOAD */}
+            <div style={{ width: '100%', maxWidth: 420, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {hasStaffToken && (
+                    <div
+                        style={{
+                            background: '#FFFFFF',
+                            border: '1px solid #E2E8F0',
+                            borderRadius: 16,
+                            padding: '16px',
+                            boxShadow: '0 4px 14px rgba(0,0,0,0.03)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 12
+                        }}
+                    >
+                        {/* CUSTOMER PHONE / RECIPIENT HEADER */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <label
+                                    style={{
+                                        fontSize: '0.82rem',
+                                        fontWeight: 700,
+                                        color: '#1E293B',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 6,
+                                        margin: 0
+                                    }}
+                                >
+                                    <i className="fab fa-whatsapp" style={{ color: '#25D366', fontSize: '1.05rem' }} />
+                                    <span>Recipient WhatsApp Number</span>
+                                </label>
+                                {effectiveCusId && (
+                                    <span style={{ fontSize: '0.72rem', background: '#F1F5F9', color: '#0E88B8', padding: '2px 8px', borderRadius: 6, fontWeight: 700 }}>
+                                        Customer #{effectiveCusId}
+                                    </span>
+                                )}
+                            </div>
+                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                <i className="fas fa-phone-alt" style={{ position: 'absolute', left: 12, color: '#94A3B8', fontSize: '0.8rem' }} />
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    placeholder="Enter phone with country code (e.g. 919876543210)"
+                                    value={customerPhone}
+                                    onChange={(e) => setCustomerPhone(e.target.value)}
+                                    style={{
+                                        paddingLeft: 34,
+                                        fontSize: '0.84rem',
+                                        borderRadius: 10,
+                                        border: '1.5px solid #CBD5E1',
+                                        background: '#FFFFFF',
+                                        color: '#0F172A',
+                                        height: 38
+                                    }}
+                                />
+                            </div>
+                            {customerName && (
+                                <div style={{ fontSize: '0.74rem', color: '#64748B', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                    <i className="fas fa-user-check" style={{ color: '#0E88B8', fontSize: '0.75rem' }} />
+                                    <span>Customer: <strong style={{ color: '#1E293B' }}>{customerName}</strong></span>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* DESCRIPTION / MESSAGE BOX */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <label
+                                    style={{
+                                        fontSize: '0.8rem',
+                                        fontWeight: 700,
+                                        color: '#334155',
+                                        margin: 0
+                                    }}
+                                >
+                                    <span>WhatsApp Description / Message</span>
+                                </label>
+                                {customText && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setCustomText('')}
+                                        style={{
+                                            background: 'transparent',
+                                            border: 'none',
+                                            color: '#EF4444',
+                                            fontSize: '0.72rem',
+                                            fontWeight: 600,
+                                            cursor: 'pointer',
+                                            padding: 0
+                                        }}
+                                    >
+                                        Reset to Default
+                                    </button>
+                                )}
+                            </div>
+
+                            <textarea
+                                className="form-control"
+                                rows={3}
+                                placeholder={`Type custom text here or leave blank to send default description:\n"${defaultDesc}"`}
+                                value={customText}
+                                onChange={(e) => setCustomText(e.target.value)}
+                                style={{
+                                    width: '100%',
+                                    minHeight: 70,
+                                    fontSize: '0.84rem',
+                                    borderRadius: 10,
+                                    border: '1.5px solid #CBD5E1',
+                                    background: '#FFFFFF',
+                                    color: '#0F172A',
+                                    colorScheme: 'light',
+                                    padding: '8px 12px',
+                                    resize: 'vertical'
+                                }}
+                            />
+                        </div>
+
+                        {/* SEND BUTTON */}
+                        <button
+                            type="button"
+                            onClick={handleSendToWhatsApp}
+                            className="btn"
+                            style={{
+                                width: '100%',
+                                padding: '11px 18px',
+                                borderRadius: 12,
+                                background: '#25D366',
+                                color: '#FFFFFF',
+                                fontWeight: 700,
+                                fontSize: '0.88rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: 8,
+                                border: 'none',
+                                cursor: 'pointer',
+                                boxShadow: '0 4px 14px rgba(37, 211, 102, 0.28)',
+                                transition: 'all 0.15s ease'
+                            }}
+                        >
+                            <i className="fab fa-whatsapp" style={{ fontSize: '1.15rem' }} />
+                            <span>
+                                {targetPhone
+                                    ? `Send Direct to WhatsApp (+${targetPhone})`
+                                    : 'Send to WhatsApp'}
+                            </span>
+                        </button>
+                    </div>
+                )}
+
+                {/* DOWNLOAD BUTTON */}
                 <button
                     type="button"
                     onClick={handleDownload}

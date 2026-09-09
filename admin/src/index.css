@@ -1,7 +1,12 @@
+:root {
+  color-scheme: light;
+}
+
 html,
 body,
 #root {
   min-height: 100%;
+  color-scheme: light;
 }
 
 body {
@@ -9,10 +14,24 @@ body {
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background: var(--bg-primary);
   color: var(--text-primary);
+  color-scheme: light;
 }
 
 * {
   box-sizing: border-box;
+}
+
+select,
+option,
+input,
+textarea,
+button {
+  color-scheme: light !important;
+}
+
+select option {
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
 }
 
 .login-page {

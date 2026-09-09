@@ -536,13 +536,13 @@ exports.refreshAccessToken = async (req, res) => {
             });
         }
 
-        console.log("refresh token:", refresh_token);
+        // console.log("refresh token:", refresh_token);
 
         const stored = await RefreshToken.findOne({
             where: { token: refresh_token }
         });
 
-        console.log("stored:", stored);
+        // console.log("stored:", stored);
 
         if (!stored) {
             return res.status(401).json({

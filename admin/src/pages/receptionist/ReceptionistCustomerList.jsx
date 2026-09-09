@@ -196,7 +196,9 @@ export default function ReceptionistCustomerList() {
                                     padding: '0 12px',
                                     minWidth: 160,
                                     border: '1px solid #CBD5E1',
-                                    background: '#FFFFFF'
+                                    background: '#FFFFFF',
+                                    color: '#0F172A',
+                                    colorScheme: 'light'
                                 }}
                             >
                                 <option value="all">All Card Types</option>
@@ -224,7 +226,9 @@ export default function ReceptionistCustomerList() {
                                     padding: '0 8px',
                                     width: 75,
                                     border: '1px solid #CBD5E1',
-                                    background: '#FFFFFF'
+                                    background: '#FFFFFF',
+                                    color: '#0F172A',
+                                    colorScheme: 'light'
                                 }}
                             >
                                 <option value={5}>5</option>

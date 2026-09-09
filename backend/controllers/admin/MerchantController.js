@@ -3349,6 +3349,7 @@ exports.receptionist_list = async (req, res) => {
                 'ref_name',
                 'email',
                 'phone',
+                'country_code',
                 'branch_id',
                 [
                     Sequelize.literal(`
