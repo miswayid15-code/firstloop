@@ -6,7 +6,7 @@ const auth = require('../../middleware/auth');
 const controller = require('../../controllers/admin/dashboardController');
 
 const checkAdmin = require('../../middleware/checkAdmin');
-router.get('/dashboard', auth('admin'), checkAdmin, controller.dashboard);
+router.post('/dashboard', auth('admin'), checkAdmin, controller.dashboard);
 
 
 module.exports = router;

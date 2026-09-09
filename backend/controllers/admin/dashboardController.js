@@ -1,4 +1,5 @@
-const { Merchant, Coupon, RefreshToken, Branch, Receptionist, MerchantFp, Category, BranchImage, MenuImage, Appointment, CouponApplied, Customer } = require('../../models');
+const { Merchant, Coupon, RefreshToken, Branch, Receptionist, MerchantFp, Category, BranchImage, MenuImage, Appointment, CouponApplied, Customer, CustomerCard,
+    CustomerStampLevel, } = require('../../models');
 const bcrypt = require('bcryptjs');
 const { parsePhoneNumber } = require('libphonenumber-js');
 const jwt = require('jsonwebtoken');
@@ -27,8 +28,8 @@ const {
 } = require('sequelize');
 
 exports.dashboard = async (req, res) => {
-
     try {
+        const { role } = req.body;
 
         const startOfWeek = new Date();
         startOfWeek.setDate(startOfWeek.getDate() - 7);
@@ -36,224 +37,313 @@ exports.dashboard = async (req, res) => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        const [
-            activeMerchants,
-            activeCustomers,
-            totalCoupons,
-            redeemedCoupons,
-            pendingBookings,
-            newMerchantsThisWeek,
-            newCustomersThisWeek,
-            redeemedToday
-        ] = await Promise.all([
-
-            Merchant.count({
-                where: {
-                    status: 1,
-                    del_status: 0
-                }
-            }),
-
-            Customer.count({
-                where: {
-                    status: 1,
-                    del_status: 0
-                }
-            }),
-
-            Coupon.count({
-                where: {
-                    status: 1,
-                    del_status: 0
-                }
-            }),
-
-            CouponApplied.count({
-                where: {
-                    del_status: 0
-                }
-            }),
-
-            Appointment.count({
-                where: {
-                    status: 0
-                }
-            }),
-
-            Merchant.count({
-                where: {
-                    createdAt: {
-                        [Op.gte]: startOfWeek
+        if (role === "firstpass") {
+            const [
+                activeMerchants,
+                activeCustomers,
+                totalCoupons,
+                redeemedCoupons,
+                pendingBookings,
+                newMerchantsThisWeek,
+                newCustomersThisWeek,
+                redeemedToday
+            ] = await Promise.all([
+                Merchant.count({
+                    where: {
+                        status: 1,
+                        del_status: 0
                     }
-                }
-            }),
+                }),
 
-            Customer.count({
-                where: {
-                    createdAt: {
-                        [Op.gte]: startOfWeek
+                Customer.count({
+                    where: {
+                        status: 1,
+                        del_status: 0
                     }
-                }
-            }),
+                }),
 
-            CouponApplied.count({
+                Coupon.count({
+                    where: {
+                        status: 1,
+                        del_status: 0
+                    }
+                }),
+
+                CouponApplied.count({
+                    where: {
+                        del_status: 0
+                    }
+                }),
+
+                Appointment.count({
+                    where: {
+                        status: 0
+                    }
+                }),
+
+                Merchant.count({
+                    where: {
+                        createdAt: {
+                            [Op.gte]: startOfWeek
+                        }
+                    }
+                }),
+
+                Customer.count({
+                    where: {
+                        createdAt: {
+                            [Op.gte]: startOfWeek
+                        }
+                    }
+                }),
+
+                CouponApplied.count({
+                    where: {
+                        created_at: {
+                            [Op.gte]: today
+                        },
+                        del_status: 0
+                    }
+                })
+            ]);
+
+            // Weekly Coupon Redemptions
+            const weeklyRedemptions = await CouponApplied.findAll({
+                attributes: [
+                    [fn('DATE', col('created_at')), 'date'],
+                    [fn('COUNT', col('id')), 'count']
+                ],
+
                 where: {
                     created_at: {
-                        [Op.gte]: today
+                        [Op.gte]: startOfWeek
                     },
                     del_status: 0
-                }
-            })
-
-        ]);
-
-        // Weekly Coupon Redemptions
-
-        const weeklyRedemptions = await CouponApplied.findAll({
-
-            attributes: [
-                [fn('DATE', col('created_at')), 'date'],
-                [fn('COUNT', col('id')), 'count']
-            ],
-
-            where: {
-                created_at: {
-                    [Op.gte]: startOfWeek
                 },
-                del_status: 0
-            },
 
-            group: [
-                fn('DATE', col('created_at'))
-            ],
+                group: [
+                    fn('DATE', col('created_at'))
+                ],
 
-            order: [
-                [literal('date'), 'ASC']
-            ],
+                order: [
+                    [literal('date'), 'ASC']
+                ],
 
-            raw: true
+                raw: true
+            });
 
-        });
+            // Monthly Coupon Usage Trend
+            const monthlyTrend = await CouponApplied.findAll({
+                attributes: [
+                    [
+                        fn(
+                            'DATE_TRUNC',
+                            'month',
+                            col('created_at')
+                        ),
+                        'month'
+                    ],
+                    [
+                        fn('COUNT', col('id')),
+                        'count'
+                    ]
+                ],
 
-        // Monthly Coupon Usage Trend
+                where: {
+                    del_status: 0
+                },
 
-        const monthlyTrend = await CouponApplied.findAll({
-
-            attributes: [
-                [
+                group: [
                     fn(
                         'DATE_TRUNC',
                         'month',
                         col('created_at')
-                    ),
-                    'month'
+                    )
                 ],
-                [
-                    fn('COUNT', col('id')),
-                    'count'
-                ]
-            ],
 
-            where: {
-                del_status: 0
-            },
+                order: [
+                    [literal('month'), 'ASC']
+                ],
 
-            group: [
-                fn(
-                    'DATE_TRUNC',
-                    'month',
-                    col('created_at')
-                )
-            ],
+                raw: true
+            });
 
-            order: [
-                [literal('month'), 'ASC']
-            ],
-
-            raw: true
-
-        });
-
-        // Top Performing Merchants
-
-        const topMerchants = await CouponApplied.findAll({
-
-            attributes: [
-                'branch_id',
-                [
-                    fn('COUNT', col('CouponApplied.id')),
-                    'redeemed_count'
-                ]
-            ],
-
-            where: {
-                del_status: 0
-            },
-
-            include: [
-                {
-                    model: Branch,
-                    attributes: [
-                        'id',
-                        'name'
+            // Top Performing Merchants
+            const topMerchants = await CouponApplied.findAll({
+                attributes: [
+                    'branch_id',
+                    [
+                        fn('COUNT', col('CouponApplied.id')),
+                        'redeemed_count'
                     ]
-                }
-            ],
+                ],
 
-            group: [
-                'branch_id',
-                'Branch.id'
-            ],
-
-            order: [
-                [literal('redeemed_count'), 'DESC']
-            ],
-
-            limit: 5
-
-        });
-
-        return res.json({
-            status: 1,
-            message: 'Dashboard data fetched successfully',
-
-            data: {
-
-                cards: {
-
-                    active_merchants: activeMerchants,
-                    new_merchants_this_week: newMerchantsThisWeek,
-
-                    active_customers: activeCustomers,
-                    new_customers_this_week: newCustomersThisWeek,
-
-                    total_coupons: totalCoupons,
-
-                    redeemed_coupons: redeemedCoupons,
-                    redeemed_today: redeemedToday,
-
-                    pending_bookings: pendingBookings
-
+                where: {
+                    del_status: 0
                 },
 
-                coupon_redemptions_weekly: weeklyRedemptions,
+                include: [
+                    {
+                        model: Branch,
+                        attributes: [
+                            'id',
+                            'name'
+                        ]
+                    }
+                ],
 
-                coupon_usage_monthly: monthlyTrend,
+                group: [
+                    'branch_id',
+                    'Branch.id'
+                ],
 
-                top_performing_merchants: topMerchants
+                order: [
+                    [literal('redeemed_count'), 'DESC']
+                ],
 
-            }
-        });
+                limit: 5
+            });
+
+            return res.json({
+                status: 1,
+                message: 'Dashboard data fetched successfully',
+
+                data: {
+                    cards: {
+                        active_merchants: activeMerchants,
+                        new_merchants_this_week: newMerchantsThisWeek,
+
+                        active_customers: activeCustomers,
+                        new_customers_this_week: newCustomersThisWeek,
+
+                        total_coupons: totalCoupons,
+
+                        redeemed_coupons: redeemedCoupons,
+                        redeemed_today: redeemedToday,
+
+                        pending_bookings: pendingBookings
+                    },
+
+                    coupon_redemptions_weekly: weeklyRedemptions,
+
+                    coupon_usage_monthly: monthlyTrend,
+
+                    top_performing_merchants: topMerchants
+                }
+            });
+        }
+
+        else if (role === "firstloop") {
+            const [
+                activeMerchants,
+                activeCustomers,
+                newMerchantsThisWeek,
+                newCustomersThisWeek,
+                activeStampCard,
+                activeMembershipCard,
+                newStampCard,
+                newMembershipCard
+            ] = await Promise.all([
+                Merchant.count({
+                    where: {
+                        status: 1,
+                        del_status: 0
+                    }
+                }),
+
+                Customer.count({
+                    where: {
+                        status: 1,
+                        del_status: 0
+                    }
+                }),
+
+                Merchant.count({
+                    where: {
+                        createdAt: {
+                            [Op.gte]: startOfWeek
+                        }
+                    }
+                }),
+
+                Customer.count({
+                    where: {
+                        createdAt: {
+                            [Op.gte]: startOfWeek
+                        }
+                    }
+                }),
+
+                CustomerCard.count({
+                    where: {
+                        status: 1,
+                        card_type: 1,
+                        is_completed: 0
+                    }
+                }),
+
+                CustomerCard.count({
+                    where: {
+                        status: 1,
+                        card_type: 2,
+                        is_completed: 0
+                    }
+                }),
+
+                CustomerCard.count({
+                    where: {
+                        card_type: 1,
+                        issued_at: {
+                            [Op.gte]: startOfWeek
+                        }
+                    }
+                }),
+
+                CustomerCard.count({
+                    where: {
+                        card_type: 2,
+                        issued_at: {
+                            [Op.gte]: startOfWeek
+                        }
+                    }
+                })
+            ]);
+
+            return res.json({
+                status: 1,
+                message: 'Dashboard data fetched successfully',
+
+                data: {
+                    cards: {
+                        active_merchants: activeMerchants,
+                        new_merchants_this_week: newMerchantsThisWeek,
+
+                        active_customers: activeCustomers,
+                        new_customers_this_week: newCustomersThisWeek,
+
+                        active_stamp_cards: activeStampCard,
+                        active_membership_cards: activeMembershipCard,
+
+                        new_stamp_cards_this_week: newStampCard,
+                        new_membership_cards_this_week: newMembershipCard
+                    }
+                }
+            });
+        }
+
+        else {
+            return res.status(404).json({
+                status: 0,
+                message: 'The Role is not available'
+            });
+        }
 
     } catch (err) {
-
         console.log('Dashboard Error:', err);
 
         return res.status(500).json({
             status: 0,
             message: err.message
         });
-
     }
-
 };

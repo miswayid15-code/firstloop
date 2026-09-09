@@ -1,14 +1,14 @@
 import { useState, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { INITIAL_BRANCHES, INITIAL_RECEPTIONISTS } from './mockMerchantData'
+// import { INITIAL_BRANCHES, INITIAL_RECEPTIONISTS } from './mockMerchantData'
 
 export default function BranchReceptionists() {
     const { branchId } = useParams()
-    const [receptionists, setReceptionists] = useState(INITIAL_RECEPTIONISTS)
+    const [receptionists, setReceptionists] = useState('')
     const [search, setSearch] = useState('')
 
     // Identify target branch
-    const targetBranch = INITIAL_BRANCHES.find(b => b.id === branchId) || INITIAL_BRANCHES[0]
+    // const targetBranch = INITIAL_BRANCHES.find(b => b.id === branchId) || INITIAL_BRANCHES[0]
 
     // Modal State
     const [modalOpen, setModalOpen] = useState(false)

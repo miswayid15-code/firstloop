@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
-import { MOCK_MERCHANT_PROFILE } from './mockMerchantData'
 import flLogo from '../../assets/img/firstloop-favicon.png'
 import API from '../../api.js';
 // Helper to safely retrieve merchant data from localStorage
@@ -245,11 +244,13 @@ export default function MerchantLayout() {
                             <i className="fas fa-bars" />
                         </button>
 
-                        <NavLink to="/merchant/dashboard" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <img src={flLogo} alt="Logo" style={{ width: 26, height: 26, objectFit: 'contain' }} />
-                            {/* <span style={{ fontSize: '0.98rem', fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-heading)' }}>
-                                {MOCK_MERCHANT_PROFILE.name}
-                            </span> */}
+                        <NavLink to="/merchant/dashboard" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <div style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--firstloop-primary-light, #E6F2FA)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                <img src={flLogo} alt="FirstLoop" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+                            </div>
+                            <span style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-heading)', letterSpacing: '-0.3px', whiteSpace: 'nowrap' }}>
+                                First<span style={{ color: 'var(--firstloop-primary, #0E88B8)' }}>Loop</span>
+                            </span>
                         </NavLink>
                     </div>
 

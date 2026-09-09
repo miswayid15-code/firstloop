@@ -1,17 +1,6 @@
 import flLogo from '../../assets/img/firstloop-favicon.png'
 
-export const MOCK_MERCHANT_PROFILE = {
-    id: 'm-204',
-    name: 'Urban Brew & Glow Outlets',
-    email: 'contact@urbanbrewglow.com',
-    phone: '+1 (555) 987-6543',
-    logo: flLogo,
-    category: 'Cafe & Wellness Salon',
-    address: '100 Market Street, Suite 400, San Francisco, CA',
-    joinedDate: '2024-11-10',
-    status: 'Active',
-    plan: 'Enterprise VIP'
-}
+
 
 export const INITIAL_BRANCHES = [
     {
@@ -29,6 +18,11 @@ export const INITIAL_BRANCHES = [
         manager: 'Samantha Vance',
         managerRole: 'Senior Branch Manager',
         receptionistsCount: 3,
+        stampsIssued: 1420,
+        membershipCount: 285,
+        totalSpend: 9850,
+        rewardsClaimed: 165,
+        customerFootfall: 840,
         timings: [
             { day: 1, name: 'Mon - Fri', open_time: '08:00 AM', close_time: '08:00 PM', is_closed: false },
             { day: 6, name: 'Saturday', open_time: '09:00 AM', close_time: '10:00 PM', is_closed: false },
@@ -50,6 +44,11 @@ export const INITIAL_BRANCHES = [
         manager: 'Marcus Sterling',
         managerRole: 'Salon Director',
         receptionistsCount: 2,
+        stampsIssued: 680,
+        membershipCount: 135,
+        totalSpend: 5420,
+        rewardsClaimed: 85,
+        customerFootfall: 460,
         timings: [
             { day: 1, name: 'Mon - Sat', open_time: '09:00 AM', close_time: '09:00 PM', is_closed: false },
             { day: 7, name: 'Sunday', open_time: '10:00 AM', close_time: '05:00 PM', is_closed: true },
@@ -70,6 +69,11 @@ export const INITIAL_BRANCHES = [
         manager: 'Chloe Bennett',
         managerRole: 'Operations Lead',
         receptionistsCount: 2,
+        stampsIssued: 496,
+        membershipCount: 82,
+        totalSpend: 3180,
+        rewardsClaimed: 53,
+        customerFootfall: 290,
         timings: [
             { day: 1, name: 'Mon - Sun', open_time: '07:00 AM', close_time: '07:00 PM', is_closed: false }
         ]
@@ -89,7 +93,12 @@ export const INITIAL_RECEPTIONISTS = [
         shift: 'Morning (08:00 AM - 04:00 PM)',
         status: 'Active',
         joinedDate: '2025-01-10',
-        referenceName: 'Alex Thompson (Sales Representative)'
+        referenceName: 'Alex Thompson (Sales Representative)',
+        stampsCollected: 780,
+        rewardsProcessed: 92,
+        customersServed: 340,
+        totalSpendGenerated: 5240,
+        badge: 'Top Performer 🏆'
     },
     {
         id: 'rec-2',
@@ -103,7 +112,12 @@ export const INITIAL_RECEPTIONISTS = [
         shift: 'Evening (12:00 PM - 08:00 PM)',
         status: 'Active',
         joinedDate: '2025-01-18',
-        referenceName: 'Alex Thompson (Sales Representative)'
+        referenceName: 'Alex Thompson (Sales Representative)',
+        stampsCollected: 520,
+        rewardsProcessed: 68,
+        customersServed: 210,
+        totalSpendGenerated: 3610,
+        badge: 'Senior Staff 🌟'
     },
     {
         id: 'rec-3',
@@ -117,7 +131,12 @@ export const INITIAL_RECEPTIONISTS = [
         shift: 'Weekend Shift',
         status: 'Active',
         joinedDate: '2025-02-01',
-        referenceName: 'Alex Thompson (Sales Representative)'
+        referenceName: 'Alex Thompson (Sales Representative)',
+        stampsCollected: 240,
+        rewardsProcessed: 24,
+        customersServed: 95,
+        totalSpendGenerated: 1650,
+        badge: 'Weekend Star ⭐'
     },
     {
         id: 'rec-4',
@@ -131,7 +150,12 @@ export const INITIAL_RECEPTIONISTS = [
         shift: 'Full Day (09:00 AM - 06:00 PM)',
         status: 'Active',
         joinedDate: '2025-01-15',
-        referenceName: 'Sarah Jenkins (Regional Sales Manager)'
+        referenceName: 'Sarah Jenkins (Regional Sales Manager)',
+        stampsCollected: 490,
+        rewardsProcessed: 54,
+        customersServed: 195,
+        totalSpendGenerated: 3450,
+        badge: 'Salon Specialist ⚡'
     },
     {
         id: 'rec-5',
@@ -145,7 +169,12 @@ export const INITIAL_RECEPTIONISTS = [
         shift: 'Evening Shift',
         status: 'On Leave',
         joinedDate: '2025-02-12',
-        referenceName: 'Sarah Jenkins (Regional Sales Manager)'
+        referenceName: 'Sarah Jenkins (Regional Sales Manager)',
+        stampsCollected: 130,
+        rewardsProcessed: 12,
+        customersServed: 50,
+        totalSpendGenerated: 1150,
+        badge: 'Team Player 🤝'
     },
     {
         id: 'rec-6',
@@ -159,7 +188,12 @@ export const INITIAL_RECEPTIONISTS = [
         shift: 'Morning Shift',
         status: 'Active',
         joinedDate: '2025-02-05',
-        referenceName: 'Michael Vance (Senior Sales Executive)'
+        referenceName: 'Michael Vance (Senior Sales Executive)',
+        stampsCollected: 340,
+        rewardsProcessed: 45,
+        customersServed: 140,
+        totalSpendGenerated: 2280,
+        badge: 'Bakery Lead 🍩'
     },
     {
         id: 'rec-7',
@@ -172,7 +206,12 @@ export const INITIAL_RECEPTIONISTS = [
         staffId: 'STF-WS-02',
         shift: 'Afternoon Shift',
         status: 'Active',
-        joinedDate: '2025-02-20'
+        joinedDate: '2025-02-20',
+        stampsCollected: 96,
+        rewardsProcessed: 8,
+        customersServed: 42,
+        totalSpendGenerated: 1070,
+        badge: 'Rising Star 🚀'
     }
 ]
 
@@ -508,62 +547,258 @@ export const INITIAL_CUSTOMERS = [
 export const INITIAL_REPORTS_LOGS = [
     {
         id: 'tx-901',
-        date: '2026-08-14 10:24 AM',
+        date: '2026-09-08 11:30 AM',
         customer: 'Sophia Reynoldss',
+        customerEmail: 'sophia.reynolds@example.com',
+        customerPhone: '+1 (555) 234-5678',
         branch: 'FirstLoop Flagship Hub - Downtown',
+        branchId: 'br-101',
         cardType: 'Stamp Card',
         cardName: 'Artisanal Coffee 8-Stamp Pass',
         action: 'Stamp Added (+1)',
         staff: 'Elena Rostova',
+        staffId: 'rec-1',
         rewardUnlocked: 'None',
+        amount: '$14.50',
         status: 'Completed'
     },
     {
         id: 'tx-902',
-        date: '2026-08-14 09:45 AM',
+        date: '2026-09-07 04:15 PM',
         customer: 'Alexander Wright',
+        customerEmail: 'alex.wright@example.com',
+        customerPhone: '+1 (555) 876-5432',
         branch: 'Uptown Beauty & Salon Lounge',
+        branchId: 'br-102',
         cardType: 'Membership Tier',
         cardName: 'Platinum Black VIP Pass',
         action: '25% VIP Discount Applied',
         staff: 'Isabella Cruz',
+        staffId: 'rec-4',
         rewardUnlocked: '$45.00 Saved',
+        amount: '$180.00',
         status: 'Completed'
     },
     {
         id: 'tx-903',
-        date: '2026-08-13 04:12 PM',
+        date: '2026-09-06 01:20 PM',
         customer: 'Jessica Taylor',
+        customerEmail: 'jessica.t@example.com',
+        customerPhone: '+1 (555) 345-6789',
         branch: 'Westside Specialty Coffee Hub',
+        branchId: 'br-103',
         cardType: 'Stamp Card',
         cardName: 'Gourmet Bakery 10-Stamp Card',
         action: 'Reward Claimed',
         staff: 'Lucas Dupont',
+        staffId: 'rec-6',
         rewardUnlocked: 'Box of 6 Assorted Donuts',
+        amount: '$0.00',
         status: 'Redeemed'
     },
     {
         id: 'tx-904',
-        date: '2026-08-13 02:30 PM',
+        date: '2026-09-05 10:45 AM',
         customer: 'Michael Vance',
+        customerEmail: 'michael.vance@example.com',
+        customerPhone: '+1 (555) 901-2345',
         branch: 'FirstLoop Flagship Hub - Downtown',
+        branchId: 'br-101',
         cardType: 'Stamp Card',
         cardName: 'Artisanal Coffee 8-Stamp Pass',
         action: 'Stamp Added (+1)',
         staff: 'David Miller',
+        staffId: 'rec-2',
         rewardUnlocked: 'None',
+        amount: '$18.00',
         status: 'Completed'
     },
     {
         id: 'tx-905',
-        date: '2026-08-12 11:15 AM',
+        date: '2026-09-04 03:10 PM',
         customer: 'Sophia Reynoldss',
+        customerEmail: 'sophia.reynolds@example.com',
+        customerPhone: '+1 (555) 234-5678',
         branch: 'FirstLoop Flagship Hub - Downtown',
+        branchId: 'br-101',
         cardType: 'Membership Tier',
         cardName: 'Gold Elite Membership',
         action: '15% Member Discount',
         staff: 'Elena Rostova',
+        staffId: 'rec-1',
         rewardUnlocked: '$18.50 Saved',
+        amount: '$123.50',
+        status: 'Completed'
+    },
+    {
+        id: 'tx-906',
+        date: '2026-09-03 05:45 PM',
+        customer: 'Alexander Wright',
+        customerEmail: 'alex.wright@example.com',
+        customerPhone: '+1 (555) 876-5432',
+        branch: 'Uptown Beauty & Salon Lounge',
+        branchId: 'br-102',
+        cardType: 'Stamp Card',
+        cardName: 'Beauty Styling 6-Stamp Card',
+        action: 'Stamp Added (+1)',
+        staff: 'Jordan Hayes',
+        staffId: 'rec-5',
+        rewardUnlocked: '50% Off Styling (Unlocked)',
+        amount: '$65.00',
+        status: 'Completed'
+    },
+    {
+        id: 'tx-907',
+        date: '2026-09-02 09:15 AM',
+        customer: 'Jessica Taylor',
+        customerEmail: 'jessica.t@example.com',
+        customerPhone: '+1 (555) 345-6789',
+        branch: 'Westside Specialty Coffee Hub',
+        branchId: 'br-103',
+        cardType: 'Membership Tier',
+        cardName: 'Silver Select Tier',
+        action: '10% Member Discount',
+        staff: 'Mia Wong',
+        staffId: 'rec-7',
+        rewardUnlocked: '$3.50 Saved',
+        amount: '$35.00',
+        status: 'Completed'
+    },
+    {
+        id: 'tx-908',
+        date: '2026-08-30 02:40 PM',
+        customer: 'Sophia Reynoldss',
+        customerEmail: 'sophia.reynolds@example.com',
+        customerPhone: '+1 (555) 234-5678',
+        branch: 'FirstLoop Flagship Hub - Downtown',
+        branchId: 'br-101',
+        cardType: 'Stamp Card',
+        cardName: 'Beauty Styling 6-Stamp Card',
+        action: 'Stamp Added (+2)',
+        staff: 'Sophia Chen',
+        staffId: 'rec-3',
+        rewardUnlocked: 'None',
+        amount: '$90.00',
+        status: 'Completed'
+    },
+    {
+        id: 'tx-909',
+        date: '2026-08-28 11:10 AM',
+        customer: 'Michael Vance',
+        customerEmail: 'michael.vance@example.com',
+        customerPhone: '+1 (555) 901-2345',
+        branch: 'FirstLoop Flagship Hub - Downtown',
+        branchId: 'br-101',
+        cardType: 'Membership Tier',
+        cardName: 'Silver Select Tier',
+        action: 'Free Size Upgrade Applied',
+        staff: 'Elena Rostova',
+        staffId: 'rec-1',
+        rewardUnlocked: 'Drink Upgrade ($2.00)',
+        amount: '$8.50',
+        status: 'Verified'
+    },
+    {
+        id: 'tx-910',
+        date: '2026-08-25 04:50 PM',
+        customer: 'Alexander Wright',
+        customerEmail: 'alex.wright@example.com',
+        customerPhone: '+1 (555) 876-5432',
+        branch: 'Uptown Beauty & Salon Lounge',
+        branchId: 'br-102',
+        cardType: 'Stamp Card',
+        cardName: 'Beauty Styling 6-Stamp Card',
+        action: 'Reward Claimed',
+        staff: 'Isabella Cruz',
+        staffId: 'rec-4',
+        rewardUnlocked: '50% Discount on Styling Session',
+        amount: '$45.00',
+        status: 'Redeemed'
+    },
+    {
+        id: 'tx-911',
+        date: '2026-08-22 01:15 PM',
+        customer: 'Jessica Taylor',
+        customerEmail: 'jessica.t@example.com',
+        customerPhone: '+1 (555) 345-6789',
+        branch: 'Westside Specialty Coffee Hub',
+        branchId: 'br-103',
+        cardType: 'Stamp Card',
+        cardName: 'Gourmet Bakery 10-Stamp Card',
+        action: 'Stamp Added (+1)',
+        staff: 'Lucas Dupont',
+        staffId: 'rec-6',
+        rewardUnlocked: 'None',
+        amount: '$22.00',
+        status: 'Completed'
+    },
+    {
+        id: 'tx-912',
+        date: '2026-08-20 10:05 AM',
+        customer: 'Sophia Reynoldss',
+        customerEmail: 'sophia.reynolds@example.com',
+        customerPhone: '+1 (555) 234-5678',
+        branch: 'FirstLoop Flagship Hub - Downtown',
+        branchId: 'br-101',
+        cardType: 'Stamp Card',
+        cardName: 'Artisanal Coffee 8-Stamp Pass',
+        action: 'Reward Claimed',
+        staff: 'David Miller',
+        staffId: 'rec-2',
+        rewardUnlocked: 'Free Specialty Beverage & Muffin',
+        amount: '$0.00',
+        status: 'Redeemed'
+    },
+    {
+        id: 'tx-913',
+        date: '2026-08-18 03:20 PM',
+        customer: 'Alexander Wright',
+        customerEmail: 'alex.wright@example.com',
+        customerPhone: '+1 (555) 876-5432',
+        branch: 'Uptown Beauty & Salon Lounge',
+        branchId: 'br-102',
+        cardType: 'Membership Tier',
+        cardName: 'Platinum Black VIP Pass',
+        action: 'VIP Priority Check-in',
+        staff: 'Isabella Cruz',
+        staffId: 'rec-4',
+        rewardUnlocked: 'Priority Reserved Seating',
+        amount: '$95.00',
+        status: 'Verified'
+    },
+    {
+        id: 'tx-914',
+        date: '2026-08-15 12:40 PM',
+        customer: 'Michael Vance',
+        customerEmail: 'michael.vance@example.com',
+        customerPhone: '+1 (555) 901-2345',
+        branch: 'FirstLoop Flagship Hub - Downtown',
+        branchId: 'br-101',
+        cardType: 'Stamp Card',
+        cardName: 'Artisanal Coffee 8-Stamp Pass',
+        action: 'Stamp Added (+1)',
+        staff: 'Sophia Chen',
+        staffId: 'rec-3',
+        rewardUnlocked: 'None',
+        amount: '$16.50',
+        status: 'Completed'
+    },
+    {
+        id: 'tx-915',
+        date: '2026-08-12 05:15 PM',
+        customer: 'Jessica Taylor',
+        customerEmail: 'jessica.t@example.com',
+        customerPhone: '+1 (555) 345-6789',
+        branch: 'Westside Specialty Coffee Hub',
+        branchId: 'br-103',
+        cardType: 'Stamp Card',
+        cardName: 'Gourmet Bakery 10-Stamp Card',
+        action: 'Stamp Added (+2)',
+        staff: 'Mia Wong',
+        staffId: 'rec-7',
+        rewardUnlocked: '15% Off Pastries Level Reward',
+        amount: '$34.00',
         status: 'Completed'
     }
 ]
+

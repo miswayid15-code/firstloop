@@ -14,16 +14,20 @@ import API from '../../api.js';
 export default function Dashboard() {
     const navigate = useNavigate();
     const [dashboard, setDashboard] = useState(null);
+    const [role, setRole] = useState(
+        () => sessionStorage.getItem("role") || localStorage.getItem("role") || "firstpass"
+    );
 
-    const FetchDashboard = async () => {
-
+    const FetchDashboard = async (overrideRole) => {
         try {
+            const activeRole = overrideRole || sessionStorage.getItem("role") || localStorage.getItem("role") || "firstpass";
+            setRole(activeRole);
 
-            const response = await API.get('/admin/dashboard');
+            const response = await API.post('/admin/dashboard', {
+                role: activeRole
+            });
             setDashboard(response.data.data);
-
         } catch (error) {
-
             console.log(
                 'Dashboard Fetch Error:',
                 error.response?.data || error
@@ -37,36 +41,67 @@ export default function Dashboard() {
         FetchDashboard();
     }, []);
 
+    const isFirstLoop = role === "firstloop";
+
     if (!dashboard) {
+        const skeletonItems = isFirstLoop
+            ? [
+                {
+                    title: 'Active Merchants',
+                    icon: 'fa-store',
+                    gradient: 'bg-gradient-purple',
+                    trendLabel: 'new this week'
+                },
+                {
+                    title: 'Active Stamp Cards',
+                    icon: 'fa-stamp',
+                    gradient: 'bg-gradient-blue',
+                    trendLabel: 'new this week'
+                },
+                {
+                    title: 'Active Membership Cards',
+                    icon: 'fa-id-card',
+                    gradient: 'bg-gradient-orange',
+                    trendLabel: 'new this week'
+                },
+                {
+                    title: 'Active Customers',
+                    icon: 'fa-users',
+                    gradient: 'bg-gradient-teal',
+                    trendLabel: 'new signups'
+                }
+            ]
+            : [
+                {
+                    title: 'Active Merchants',
+                    icon: 'fa-store',
+                    gradient: 'bg-gradient-purple',
+                    trendLabel: 'new this week'
+                },
+                {
+                    title: 'Redeemed Coupons',
+                    icon: 'fa-ticket-alt',
+                    gradient: 'bg-gradient-blue',
+                    trendLabel: 'redeemed today'
+                },
+                {
+                    title: 'Pending Bookings',
+                    icon: 'fa-calendar-check',
+                    gradient: 'bg-gradient-orange',
+                    trendLabel: 'requires action'
+                },
+                {
+                    title: 'Active Customers',
+                    icon: 'fa-users',
+                    gradient: 'bg-gradient-teal',
+                    trendLabel: 'new signups'
+                }
+            ];
+
         return (
             <>
                 <div className="dashboard-stats-grid">
-                    {[
-                        {
-                            title: 'Active Merchants',
-                            icon: 'fa-store',
-                            gradient: 'bg-gradient-purple',
-                            trendLabel: 'new this week'
-                        },
-                        {
-                            title: 'Redeemed Coupons',
-                            icon: 'fa-ticket-alt',
-                            gradient: 'bg-gradient-blue',
-                            trendLabel: 'redeemed today'
-                        },
-                        {
-                            title: 'Pending Bookings',
-                            icon: 'fa-calendar-check',
-                            gradient: 'bg-gradient-orange',
-                            trendLabel: 'requires action'
-                        },
-                        {
-                            title: 'Active Customers',
-                            icon: 'fa-users',
-                            gradient: 'bg-gradient-teal',
-                            trendLabel: 'new signups'
-                        }
-                    ].map((item) => (
+                    {skeletonItems.map((item) => (
                         <div key={item.title} className={`card stat-card ${item.gradient}`} style={{ pointerEvents: 'none' }}>
                             <i className={`fas ${item.icon} stat-bg-icon`} />
                             <div className="stat-header">
@@ -198,66 +233,114 @@ export default function Dashboard() {
         );
     }
 
-    const { cards, coupon_redemptions_weekly, coupon_usage_monthly, top_performing_merchants } = dashboard;
+    const cards = dashboard?.cards || {};
+    const coupon_redemptions_weekly = dashboard?.coupon_redemptions_weekly || [];
+    const coupon_usage_monthly = dashboard?.coupon_usage_monthly || [];
+    const top_performing_merchants = dashboard?.top_performing_merchants || [];
 
-    // Build bar chart data from weekly redemptions
+    // Build bar chart data from weekly redemptions safely
     const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const weeklyMap = {};
-    coupon_redemptions_weekly.forEach(({ date, count }) => {
-        const dayIndex = new Date(date).getDay();
-        weeklyMap[dayIndex] = (weeklyMap[dayIndex] || 0) + parseInt(count);
-    });
+    if (Array.isArray(coupon_redemptions_weekly)) {
+        coupon_redemptions_weekly.forEach(({ date, count }) => {
+            const dayIndex = new Date(date).getDay();
+            weeklyMap[dayIndex] = (weeklyMap[dayIndex] || 0) + parseInt(count || 0);
+        });
+    }
 
     const maxWeeklyCount = Math.max(...Object.values(weeklyMap), 1);
 
-    // Build monthly chart points from coupon_usage_monthly
+    // Build monthly chart points from coupon_usage_monthly safely
     const monthlyMap = {};
-    coupon_usage_monthly.forEach(({ month, count }) => {
-        const label = new Date(month).toLocaleString('default', { month: 'short' });
-        monthlyMap[label] = parseInt(count);
-    });
+    if (Array.isArray(coupon_usage_monthly)) {
+        coupon_usage_monthly.forEach(({ month, count }) => {
+            const label = new Date(month).toLocaleString('default', { month: 'short' });
+            monthlyMap[label] = parseInt(count || 0);
+        });
+    }
+
+    const statItems = isFirstLoop
+        ? [
+            {
+                title: 'Active Merchants',
+                value: (cards.active_merchants ?? 0).toLocaleString(),
+                icon: 'fa-store',
+                gradient: 'bg-gradient-purple',
+                trend: `+${cards.new_merchants_this_week ?? 0}`,
+                trendLabel: 'new this week',
+                path: '/view-fl-merchant'
+            },
+            {
+                title: 'Active Stamp Cards',
+                value: (cards.active_stamp_cards ?? 0).toLocaleString(),
+                icon: 'fa-stamp',
+                gradient: 'bg-gradient-blue',
+                trend: `+${cards.new_stamp_cards_this_week ?? 0}`,
+                trendLabel: 'new this week',
+                path: '/view-fl-merchant'
+            },
+            {
+                title: 'Active Membership Cards',
+                value: (cards.active_membership_cards ?? 0).toLocaleString(),
+                icon: 'fa-id-card',
+                gradient: 'bg-gradient-orange',
+                trend: `+${cards.new_membership_cards_this_week ?? 0}`,
+                trendLabel: 'new this week',
+                path: '/view-fl-merchant'
+            },
+            {
+                title: 'Active Customers',
+                value: (cards.active_customers ?? 0).toLocaleString(),
+                icon: 'fa-users',
+                gradient: 'bg-gradient-teal',
+                trend: `+${cards.new_customers_this_week ?? 0}`,
+                trendLabel: 'new signups',
+                path: '/customers'
+            }
+        ]
+        : [
+            {
+                title: 'Active Merchants',
+                value: (cards.active_merchants ?? 0).toLocaleString(),
+                icon: 'fa-store',
+                gradient: 'bg-gradient-purple',
+                trend: `+${cards.new_merchants_this_week ?? 0}`,
+                trendLabel: 'new this week',
+                path: '/merchants'
+            },
+            {
+                title: 'Redeemed Coupons',
+                value: (cards.redeemed_coupons ?? 0).toLocaleString(),
+                icon: 'fa-ticket-alt',
+                gradient: 'bg-gradient-blue',
+                trend: `+${cards.redeemed_today ?? 0}`,
+                trendLabel: 'redeemed today',
+                path: '/coupon-claim'
+            },
+            {
+                title: 'Pending Bookings',
+                value: (cards.pending_bookings ?? 0).toLocaleString(),
+                icon: 'fa-calendar-check',
+                gradient: 'bg-gradient-orange',
+                trend: `${cards.pending_bookings ?? 0}`,
+                trendLabel: 'requires action',
+                path: '/appointments'
+            },
+            {
+                title: 'Active Customers',
+                value: (cards.active_customers ?? 0).toLocaleString(),
+                icon: 'fa-users',
+                gradient: 'bg-gradient-teal',
+                trend: `+${cards.new_customers_this_week ?? 0}`,
+                trendLabel: 'new signups',
+                path: '/customers'
+            }
+        ];
 
     return (
         <>
             <div className="dashboard-stats-grid">
-                {[
-                    {
-                        title: 'Active Merchants',
-                        value: cards.active_merchants,
-                        icon: 'fa-store',
-                        gradient: 'bg-gradient-purple',
-                        trend: `+${cards.new_merchants_this_week}`,
-                        trendLabel: 'new this week',
-                        path: '/merchants'
-                    },
-                    {
-                        title: 'Redeemed Coupons',
-                        value: cards.redeemed_coupons.toLocaleString(),
-                        icon: 'fa-ticket-alt',
-                        gradient: 'bg-gradient-blue',
-                        trend: `+${cards.redeemed_today}`,
-                        trendLabel: 'redeemed today',
-                        path: '/coupon-claim'
-                    },
-                    {
-                        title: 'Pending Bookings',
-                        value: cards.pending_bookings,
-                        icon: 'fa-calendar-check',
-                        gradient: 'bg-gradient-orange',
-                        trend: `${cards.pending_bookings}`,
-                        trendLabel: 'requires action',
-                        path: '/appointments'
-                    },
-                    {
-                        title: 'Active Customers',
-                        value: cards.active_customers.toLocaleString(),
-                        icon: 'fa-users',
-                        gradient: 'bg-gradient-teal',
-                        trend: `+${cards.new_customers_this_week}`,
-                        trendLabel: 'new signups',
-                        path: '/customers'
-                    }
-                ].map((item) => (
+                {statItems.map((item) => (
                     <div
                         key={item.title}
                         className={`card stat-card ${item.gradient}`}

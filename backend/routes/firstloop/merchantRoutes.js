@@ -93,4 +93,9 @@ router.post(
     '/fetch-membership-card-details',
     controller.fetch_membership_id
 );
+router.post(
+    '/report',
+    auth('merchant'),
+    controller.report
+);
 module.exports = router;

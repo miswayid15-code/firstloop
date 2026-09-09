@@ -1,4 +1,4 @@
-const { Merchant, Coupon, RefreshToken, Branch, Receptionist, MerchantFp, Category, BranchTiming, SalePerson, UserNotificationToken, CouponApplied, Notification, Stampcard, StampLevel, MembershipCards, CustomerCard,Customer,
+const { Merchant, Coupon, RefreshToken, Branch, Receptionist, MerchantFp, Category, BranchTiming, SalePerson, UserNotificationToken, CouponApplied, Notification, Stampcard, StampLevel, MembershipCards, CustomerCard, Customer,
     CustomerStampLevel, } = require('../../models');
 const bcrypt = require('bcryptjs');
 const { parsePhoneNumber } = require('libphonenumber-js');
@@ -13,7 +13,7 @@ const RegisterTemplate = require('../../helpers/RegisterTemplate');
 
 // const mapFiles = require('../../helpers/merchantFileMapper');
 const baseUrl = process.env.APP_URL;
-const { Op } = require('sequelize');
+const { Op, Sequelize } = require('sequelize');
 const fs = require('fs');
 const path = require('path');
 const { sendPushNotification } = require("../../helpers/notificationHelper");
@@ -329,7 +329,7 @@ exports.dashboard = async (req, res) => {
                     where: {
                         status: 1
                     },
-                     required: true
+                    required: true
                 }
             ],
 
@@ -2209,7 +2209,8 @@ exports.fetch_membership_id = async (req, res) => {
             data
         });
 
-    } catch (err) {
+    }
+    catch (err) {
 
         console.error(
             "fetch_stamp_card error:",
@@ -2223,4 +2224,364 @@ exports.fetch_membership_id = async (req, res) => {
         });
     }
 };
+exports.report = async (req, res) => {
+    try {
+        const merchant_id = req.user?.id;
 
+        if (!merchant_id) {
+            return res.status(400).json({
+                status: 0,
+                message: "Merchant id is required"
+            });
+        }
+
+        // ---------------------------------------
+        // GET MERCHANT
+        // ---------------------------------------
+
+        const merchant = await Merchant.findOne({
+            where: {
+                id: merchant_id,
+                del_status: 0
+            }
+        });
+
+        if (!merchant) {
+            return res.status(404).json({
+                status: 0,
+                message: "Merchant not found"
+            });
+        }
+
+        // ---------------------------------------
+        // GET MERCHANT BRANCHES
+        // ---------------------------------------
+
+        const branches = await Branch.findAll({
+            where: {
+                merchant_id: merchant_id,
+                del_status: 0
+            },
+            attributes: [
+                "id",
+                "name",
+                "address",
+                "email",
+                "phone",
+                "country_code",
+                "status"
+            ],
+            raw: true
+        });
+
+        const branchIds = branches.map((branch) => Number(branch.id));
+
+        console.log("Branch IDs:", branchIds);
+
+        // ---------------------------------------
+        // ACTIVE CARDS + RECEPTIONISTS
+        // ---------------------------------------
+
+        const [
+            active_stamp_cards,
+            active_membership_cards,
+            receptionist
+        ] = await Promise.all([
+
+            // ---------------------------------------
+            // ACTIVE STAMP CARDS
+            // ---------------------------------------
+
+            Stampcard.findAll({
+                where: {
+                    merchant_id: merchant_id,
+                    status: 1
+                },
+                raw: true
+            }),
+
+            // ---------------------------------------
+            // ACTIVE MEMBERSHIP CARDS
+            // ---------------------------------------
+
+            MembershipCards.findAll({
+                where: {
+                    merchant_id: merchant_id
+                },
+                raw: true
+            }),
+
+            // ---------------------------------------
+            // RECEPTIONISTS
+            // ---------------------------------------
+
+            Receptionist.findAll({
+                where: {
+                    merchant_id: merchant_id,
+                    del_status: 0,
+                    status: 1
+                },
+                order: [["id", "DESC"]],
+                attributes: [
+                    "id",
+                    "rep_id",
+                    "name",
+                    "email",
+                    "phone",
+                    "country_code",
+                    "branch_id",
+                    [
+                        Sequelize.literal(`
+                            CASE
+                                WHEN branch_id IS NULL THEN 0
+                                ELSE 1
+                            END
+                        `),
+                        "is_branch"
+                    ]
+                ],
+                raw: true
+            })
+        ]);
+
+        // ---------------------------------------
+        // CUSTOMER CARD REPORTS
+        // ---------------------------------------
+
+        let stamp_card_issues = [];
+        let stamp_log = [];
+        let membership_card_issues = [];
+        let customer_list = [];
+
+        if (branchIds.length > 0) {
+
+            // ---------------------------------------
+            // GET STAMP + MEMBERSHIP CARDS
+            // ---------------------------------------
+
+            const [
+                stampCards,
+                membershipCards
+            ] = await Promise.all([
+
+                // ---------------------------------------
+                // STAMP CARD ISSUES
+                // ---------------------------------------
+
+                CustomerCard.findAll({
+                    where: {
+                        branch_id: {
+                            [Op.in]: branchIds
+                        },
+                        card_type: 1
+                    },
+                    raw: true
+                }),
+
+                // ---------------------------------------
+                // MEMBERSHIP CARD ISSUES
+                // ---------------------------------------
+
+                CustomerCard.findAll({
+                    where: {
+                        branch_id: {
+                            [Op.in]: branchIds
+                        },
+                        card_type: 2
+                    },
+                    raw: true
+                })
+            ]);
+
+            stamp_card_issues = stampCards;
+            membership_card_issues = membershipCards;
+
+            // ---------------------------------------
+            // CUSTOMER LIST
+            // ---------------------------------------
+
+            const customerIds = [
+                ...new Set([
+                    ...stampCards
+                        .map((card) => card.customer_id)
+                        .filter(Boolean),
+
+                    ...membershipCards
+                        .map((card) => card.customer_id)
+                        .filter(Boolean)
+                ])
+            ];
+
+            if (customerIds.length > 0) {
+                customer_list = await Customer.findAll({
+                    where: {
+                        id: {
+                            [Op.in]: customerIds
+                        }
+                    },
+                    raw: true
+                });
+            }
+
+            // ---------------------------------------
+            // STAMP LOG
+            // ---------------------------------------
+
+            const stampCardIds = stampCards.map(
+                (card) => Number(card.id)
+            );
+
+            if (stampCardIds.length > 0) {
+
+                stamp_log = await CustomerStampLevel.findAll({
+                    where: {
+                        customer_card_id: {
+                            [Op.in]: stampCardIds
+                        },
+                        status: 1
+                    },
+                    attributes: [
+                        "id",
+                        "customer_card_id",
+                        "stamp_number",
+                        "amt",
+                        "paid_amt",
+                        "discount",
+                        "reward_type",
+                        "category_id",
+                        "status",
+                        "role",
+                        "role_id"
+                    ],
+                    order: [
+                        ["stamp_number", "ASC"]
+                    ],
+                    raw: true
+                });
+            }
+        }
+
+        // ---------------------------------------
+        // RECEPTIONIST STAMP REPORT
+        // ---------------------------------------
+
+        const receptionist_list = receptionist.map((rep) => {
+
+            const repStampLogs = stamp_log.filter((log) => {
+                return Number(log.role_id) === Number(rep.id);
+            });
+
+            const stamp_tot_amt = repStampLogs.reduce((total, log) => {
+                return total + Number(log.paid_amt || 0);
+            }, 0);
+
+            return {
+                ...rep,
+
+                stamp_count: repStampLogs.length,
+
+                stamp_tot_amt: stamp_tot_amt
+            };
+        });
+
+        // ---------------------------------------
+        // REPORT RESPONSE
+        // ---------------------------------------
+
+        return res.status(200).json({
+            status: 1,
+            message: "Successfully fetched",
+
+            data: {
+                id: merchant.id,
+
+                // ---------------------------------------
+                // BRANCHES
+                // ---------------------------------------
+
+                branch_count: branches.length,
+
+                branch_list: branches,
+
+                // ---------------------------------------
+                // ACTIVE STAMP CARDS
+                // ---------------------------------------
+
+                active_stamp_card_count:
+                    active_stamp_cards.length,
+
+                active_stamp_card_list:
+                    active_stamp_cards,
+
+                // ---------------------------------------
+                // ACTIVE MEMBERSHIP CARDS
+                // ---------------------------------------
+
+                active_membership_card_count:
+                    active_membership_cards.length,
+
+                active_membership_card_list:
+                    active_membership_cards,
+
+                // ---------------------------------------
+                // STAMP CARD ISSUES
+                // ---------------------------------------
+
+                stamp_card_issue_count:
+                    stamp_card_issues.length,
+
+                stamp_card_issues:
+                    stamp_card_issues,
+
+                // ---------------------------------------
+                // STAMP LOG
+                // ---------------------------------------
+
+                stamp_log_count:
+                    stamp_log.length,
+
+                stamp_log:
+                    stamp_log,
+
+                // ---------------------------------------
+                // MEMBERSHIP CARD ISSUES
+                // ---------------------------------------
+
+                membership_card_issue_count:
+                    membership_card_issues.length,
+
+                membership_card_issues:
+                    membership_card_issues,
+
+                // ---------------------------------------
+                // CUSTOMERS
+                // ---------------------------------------
+
+                customer_count:
+                    customer_list.length,
+
+                customer_list:
+                    customer_list,
+
+                // ---------------------------------------
+                // RECEPTIONISTS
+                // ---------------------------------------
+
+                receptionist_count:
+                    receptionist_list.length,
+
+                receptionist_list:
+                    receptionist_list
+            }
+        });
+
+    } catch (err) {
+        console.error("Report Error:", err);
+
+        return res.status(500).json({
+            status: 0,
+            message: "Error while processing!",
+            error: err.message
+        });
+    }
+};

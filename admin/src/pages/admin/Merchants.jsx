@@ -148,7 +148,7 @@ export default function Merchants() {
                 }
             }
 
-            console.log('Merchants Response:', response?.data)
+            // console.log('Merchants Response:', response?.data)
 
             if (response?.data && (response.data.status === 1 || response.data.status === "1" || response.data.success)) {
                 const list = response.data.data || response.data.merchants || response.data.merchant || []
@@ -160,6 +160,7 @@ export default function Merchants() {
                 toast.error(response?.data?.message || 'Failed to fetch merchants')
             }
         } catch (error) {
+            console.log("Merchant Data:", error.response.data)
             console.error('Fetch Merchants Error:', error)
             toast.error('Failed to fetch merchants')
         } finally {
@@ -345,16 +346,25 @@ export default function Merchants() {
                                         <span className="skeleton-text" style={{ width: '140px' }} />
                                     </td>
                                     <td>
-                                        <span className="skeleton-text" style={{ width: '110px' }} />
+                                        <span className="skeleton-text" style={{ width: '130px' }} />
                                     </td>
                                     <td>
-                                        <span className="skeleton-text" style={{ width: '80px' }} />
+                                        <span className="skeleton-text" style={{ width: '90px' }} />
                                     </td>
                                     <td>
-                                        <span className="skeleton-text" style={{ width: '70px' }} />
+                                        <span className="skeleton-text" style={{ width: '60px' }} />
                                     </td>
                                     <td>
-                                        <span className="skeleton-text" style={{ width: '100px' }} />
+                                        <span className="skeleton-text" style={{ width: '95px' }} />
+                                    </td>
+                                    <td>
+                                        <span className="skeleton-text" style={{ width: '75px', height: '24px', borderRadius: '12px', display: 'inline-block' }} />
+                                    </td>
+                                    <td style={{ textAlign: 'right' }}>
+                                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                            <span className="skeleton-text" style={{ width: '28px', height: '28px', borderRadius: '8px', display: 'inline-block' }} />
+                                            <span className="skeleton-text" style={{ width: '28px', height: '28px', borderRadius: '8px', display: 'inline-block' }} />
+                                        </div>
                                     </td>
                                 </tr>
                             ))

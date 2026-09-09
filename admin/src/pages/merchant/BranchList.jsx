@@ -2,6 +2,49 @@ import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import API from "../../api.js";
+import { formatImageUrl } from "../../services/cardService.js";
+
+// Helper Component for Branch Outlet Avatar with graceful image error fallback
+function BranchAvatar({ src, name }) {
+    const [hasError, setHasError] = useState(false);
+    const imageUrl = src && !hasError ? formatImageUrl(src) : null;
+
+    return (
+        <div
+            style={{
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                background: "var(--firstloop-primary-light, #E6F2FA)",
+                color: "var(--firstloop-primary, #0E88B8)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontWeight: 800,
+                fontSize: "1.1rem",
+                flexShrink: 0,
+                overflow: "hidden",
+                border: "1px solid rgba(14, 136, 184, 0.15)"
+            }}
+        >
+            {imageUrl ? (
+                <img
+                    src={imageUrl}
+                    alt={name || "Branch"}
+                    onError={() => setHasError(true)}
+                    style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        display: "block"
+                    }}
+                />
+            ) : (
+                <i className="fas fa-store" />
+            )}
+        </div>
+    );
+}
 
 export default function BranchList() {
     const navigate = useNavigate();
@@ -547,19 +590,19 @@ export default function BranchList() {
                             }}
                         >
                             <tr>
-                                <th style={{ padding: "14px 18px", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.5px", color: "#64748B" }}>
+                                <th style={{ padding: "14px 18px", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.5px", color: "#64748B", minWidth: 260 }}>
                                     Branch Location
                                 </th>
-                                <th style={{ padding: "14px 18px", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.5px", color: "#64748B" }}>
+                                <th style={{ padding: "14px 18px", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.5px", color: "#64748B", minWidth: 190 }}>
                                     Branch Details
                                 </th>
-                                <th style={{ padding: "14px 18px", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.5px", color: "#64748B" }}>
+                                <th style={{ padding: "14px 18px", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.5px", color: "#64748B", minWidth: 190 }}>
                                     Assigned Receptionist
                                 </th>
-                                <th style={{ padding: "14px 18px", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.5px", color: "#64748B" }}>
+                                <th style={{ padding: "14px 18px", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.5px", color: "#64748B", minWidth: 110 }}>
                                     Status
                                 </th>
-                                <th style={{ padding: "14px 18px", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.5px", color: "#64748B", textAlign: "right" }}>
+                                <th style={{ padding: "14px 18px", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.5px", color: "#64748B", textAlign: "right", minWidth: 240, whiteSpace: "nowrap" }}>
                                     Actions & Studio View
                                 </th>
                             </tr>
@@ -608,36 +651,10 @@ export default function BranchList() {
                                             {/* Branch Name & Address */}
                                             <td style={{ padding: "14px 18px" }}>
                                                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                                                    <div
-                                                        style={{
-                                                            width: 42,
-                                                            height: 42,
-                                                            borderRadius: 12,
-                                                            background: "var(--firstloop-primary-light, #E6F2FA)",
-                                                            color: "var(--firstloop-primary, #0E88B8)",
-                                                            display: "flex",
-                                                            alignItems: "center",
-                                                            justifyContent: "center",
-                                                            fontWeight: 800,
-                                                            fontSize: "1.1rem",
-                                                            flexShrink: 0
-                                                        }}
-                                                    >
-                                                    {branch?.profile_image ? (
-                                                        <img
-                                                            src={branch.profile_image}
-                                                            alt={branchName}
-                                                            style={{
-                                                                width: "100%",
-                                                                height: "100%",
-                                                                objectFit: "cover",
-                                                                borderRadius: "12px"
-                                                            }}
-                                                        />
-                                                    ) : (
-                                                        <i className="fas fa-store" />
-                                                    )}
-                                                    </div>
+                                                    <BranchAvatar
+                                                        src={branch?.profile_image}
+                                                        name={branchName}
+                                                    />
                                                     <div>
                                                         <strong style={{ color: "var(--text-primary)", fontSize: "0.92rem", display: "block" }}>
                                                             {branchName}
@@ -664,21 +681,25 @@ export default function BranchList() {
                                                 </div>
                                             </td>
 
-                                            {/* Manager Details */}
+                                            {/* Manager / Branch Details */}
                                             <td style={{ padding: "14px 18px" }}>
-                                               
-                                                {email && email !== "-" && (
-                                                    <div style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginTop: 2 }}>
-                                                        <i className="far fa-envelope" style={{ marginRight: 5, fontSize: "0.75rem" }} />
-                                                        {email}
-                                                    </div>
-                                                )}
-                                                {phone && phone !== "-" && (
-                                                    <div style={{ fontSize: "0.76rem", color: "var(--text-muted)", marginTop: 2 }}>
-                                                        <i className="fas fa-phone-alt" style={{ marginRight: 5, fontSize: "0.72rem" }} />
-                                                        {phone}
-                                                    </div>
-                                                )}
+                                                <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                                                    {email && email !== "-" && (
+                                                        <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 6 }}>
+                                                            <i className="far fa-envelope" style={{ color: "var(--firstloop-primary, #0E88B8)", width: 14, fontSize: "0.78rem", flexShrink: 0 }} />
+                                                            <span style={{ wordBreak: "break-all" }}>{email}</span>
+                                                        </div>
+                                                    )}
+                                                    {phone && phone !== "-" && (
+                                                        <div style={{ fontSize: "0.8rem", color: "var(--text-primary)", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+                                                            <i className="fas fa-phone-alt" style={{ color: "#059669", width: 14, fontSize: "0.75rem", flexShrink: 0 }} />
+                                                            <span>{phone}</span>
+                                                        </div>
+                                                    )}
+                                                    {(!email || email === "-") && (!phone || phone === "-") && (
+                                                        <span style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>-</span>
+                                                    )}
+                                                </div>
                                             </td>
 
                                             {/* Assigned Receptionist */}
@@ -790,15 +811,15 @@ export default function BranchList() {
                                             </td>
 
                                             {/* Actions */}
-                                            <td style={{ padding: "14px 18px", textAlign: "right" }}>
-                                                <div style={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
+                                            <td style={{ padding: "14px 18px", textAlign: "right", whiteSpace: "nowrap" }}>
+                                                <div style={{ display: "inline-flex", gap: 8, alignItems: "center", justifyContent: "flex-end" }}>
                                                     <button
                                                         type="button"
                                                         className="btn btn-sm"
                                                         onClick={() => navigate(`/merchant/branches/${branchId}/checkin`)}
                                                         style={{
                                                             borderRadius: 8,
-                                                            padding: "6px 12px",
+                                                            padding: "7px 14px",
                                                             fontSize: "0.82rem",
                                                             fontWeight: 700,
                                                             display: "inline-flex",
@@ -806,11 +827,12 @@ export default function BranchList() {
                                                             gap: 6,
                                                             background: "rgba(16, 185, 129, 0.12)",
                                                             color: "#059669",
-                                                            border: "1px solid rgba(16, 185, 129, 0.25)"
+                                                            border: "1px solid rgba(16, 185, 129, 0.25)",
+                                                            whiteSpace: "nowrap"
                                                         }}
                                                     >
                                                         <i className="fas fa-qrcode" />
-                                                        Check-In
+                                                        <span>Check-In</span>
                                                     </button>
                                                     <button
                                                         type="button"
@@ -818,16 +840,17 @@ export default function BranchList() {
                                                         onClick={() => navigate(`/merchant/branches/${branchId}`)}
                                                         style={{
                                                             borderRadius: 8,
-                                                            padding: "6px 14px",
+                                                            padding: "7px 14px",
                                                             fontSize: "0.82rem",
                                                             fontWeight: 600,
                                                             display: "inline-flex",
                                                             alignItems: "center",
-                                                            gap: 6
+                                                            gap: 6,
+                                                            whiteSpace: "nowrap"
                                                         }}
                                                     >
                                                         <i className="fas fa-eye" />
-                                                        View Branch
+                                                        <span>View Branch</span>
                                                     </button>
                                                 </div>
                                             </td>
