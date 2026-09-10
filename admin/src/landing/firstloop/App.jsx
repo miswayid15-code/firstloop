@@ -14,12 +14,14 @@ import { BackToTop } from './components/BackToTop';
 import { Footer } from './components/Footer';
 
 import { WalletToast } from './components/WalletToast';
+import AppToaster from '../../components/AppToaster.jsx';
 
 const MainContent = () => {
   const { activeTab } = useApp();
 
   return (
     <div className="firstloop">
+      <AppToaster />
       <div className="min-h-screen flex flex-col bg-slate-50 relative selection:bg-teal-500 selection:text-white">
         
         {/* Animated Preloader */}

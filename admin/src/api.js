@@ -16,13 +16,26 @@ const API = axios.create({
 export const getAppType = (reqUrl = "") => {
     const url = String(reqUrl || "").toLowerCase().trim();
     const cleanUrl = url.replace(/^\/+/, "");
+    const path = String(window.location.pathname || "").toLowerCase().trim();
+
+    // Check if user is currently inside the SalesPerson portal
+    const isSalesPersonPage = (
+        path === "/saleperson-login" ||
+        path.startsWith("/saleperson-") ||
+        path === "/panel/saleperson" ||
+        path.startsWith("/panel/saleperson/")
+    );
 
     // 1. Explicit API endpoint checks (HIGHEST PRIORITY - endpoint dictates required auth)
+
+    // SalesPerson specific endpoints
+    // Note: admin/saleperson/* (generate-code, list, details, create, update, status-update, etc.)
+    // are ADMIN management endpoints, EXCEPT merchant_list (and logout if inside salesperson portal)
     if (
         cleanUrl.includes("admin/saleperson/merchant_list") ||
         cleanUrl.startsWith("saleperson/") ||
-        cleanUrl.includes("/saleperson/") ||
-        cleanUrl.startsWith("api/saleperson/")
+        cleanUrl.startsWith("api/saleperson/") ||
+        (cleanUrl.includes("admin/saleperson/logout") && isSalesPersonPage)
     ) {
         return "saleperson";
     }
@@ -55,13 +68,17 @@ export const getAppType = (reqUrl = "") => {
         return "receptionist";
     }
 
-    // Any admin endpoint (admin/merchant-list, admin/new-incoming-list, admin/dashboard, admin/merchant-report, etc.)
+    // If currently on a salesperson portal page calling a shared endpoint (e.g. /admin/merchant/register), use salesperson role
+    if (isSalesPersonPage && !cleanUrl.includes("admin/saleperson/")) {
+        return "saleperson";
+    }
+
+    // Any admin endpoint (admin/saleperson/generate-code, admin/saleperson/list, admin/merchant-list, admin/dashboard, etc.)
     if (cleanUrl.startsWith("admin/") || cleanUrl.includes("/admin/")) {
         return "admin";
     }
 
     // 2. Active Browser URL Path checks (When reqUrl is empty or generic)
-    const path = String(window.location.pathname || "").toLowerCase().trim();
 
     // Specific merchant routes only (must NOT match /merchants, /merchant-reports, /view-merchant, etc.)
     if (
@@ -88,16 +105,11 @@ export const getAppType = (reqUrl = "") => {
     }
 
     // Specific salesperson routes
-    if (
-        path === "/saleperson-login" ||
-        path.startsWith("/saleperson-") ||
-        path === "/panel/saleperson" ||
-        path.startsWith("/panel/saleperson/")
-    ) {
+    if (isSalesPersonPage) {
         return "saleperson";
     }
 
-    // All remaining Dealora admin routes (/merchants, /merchant-reports, /dashboard, etc.)
+    // All remaining Dealora admin routes (/merchants, /salepersons, /merchant-reports, /dashboard, etc.)
     return "admin";
 };
 
@@ -154,7 +166,7 @@ export const getAccessToken = (reqUrl = "") => {
 
     // Secondary key fallbacks per role
     if (keys.role === "admin") {
-        const adminToken = localStorage.getItem("admin_token");
+        const adminToken = localStorage.getItem("admin_token") || localStorage.getItem("admin_access_token") || localStorage.getItem("access_token");
         if (adminToken && adminToken !== "null" && adminToken !== "undefined") {
             return adminToken;
         }
@@ -192,6 +204,13 @@ export const getRefreshToken = (reqUrl = "") => {
     const token = localStorage.getItem(keys.refresh);
     if (token && token !== "null" && token !== "undefined") {
         return token;
+    }
+
+    if (keys.role === "admin") {
+        const adminRefresh = localStorage.getItem("admin_refresh_token") || localStorage.getItem("refresh_token");
+        if (adminRefresh && adminRefresh !== "null" && adminRefresh !== "undefined") {
+            return adminRefresh;
+        }
     }
 
     if (keys.role === "receptionist") {

@@ -1,11 +1,17 @@
 import React, { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { 
-  Store, Mail, User, Phone, AlertCircle, ArrowRight, ArrowLeft,
-  CheckCircle2, ShieldCheck, Zap, Crown, Coffee, Check, HelpCircle, Edit3
+  Mail, User, AlertCircle, ArrowRight, ArrowLeft,
+  CheckCircle2, ShieldCheck, Zap, Crown, Coffee, Check,
+  Lock, Eye, EyeOff, Sparkles
 } from 'lucide-react';
+import PhoneNumberField from '../../../components/PhoneNumberField.jsx';
+import API from '../../../api';
+import { toast } from 'react-hot-toast';
 
 export const PricingRegistrationPage = () => {
+  const navigate = useNavigate();
   const { 
     selectedPlan = 'growth', 
     selectedBilling = 'yearly', 
@@ -23,11 +29,11 @@ export const PricingRegistrationPage = () => {
     fullName: '',
     email: '',
     phone: '',
-    storeName: '',
-    category: 'Cafes & Coffee Shops',
-    customCategory: ''
+    countryCode: '+91',
+    password: ''
   });
 
+  const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
@@ -135,45 +141,90 @@ export const PricingRegistrationPage = () => {
       errs.phone = 'Mobile Number is required';
     } else {
       const digits = formData.phone.replace(/\D/g, '');
-      if (digits.length < 10) {
-        errs.phone = 'Please enter a valid 10-digit mobile number';
+      if (digits.length < 7) {
+        errs.phone = 'Please enter a valid mobile number';
       }
     }
 
-    if (!formData.storeName.trim()) {
-      errs.storeName = 'Business or Store Name is required';
-    }
-
-    if (formData.category === 'Other' && (!formData.customCategory || !formData.customCategory.trim())) {
-      errs.customCategory = 'Please specify your industry category';
+    if (!formData.password) {
+      errs.password = 'Password is required';
+    } else if (formData.password.length < 6) {
+      errs.password = 'Password must be at least 6 characters';
     }
 
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
 
-    const finalCategory = formData.category === 'Other' 
-      ? (formData.customCategory.trim() || 'Other') 
-      : formData.category;
-
     setIsSubmitting(true);
-    setTimeout(() => {
-      if (registerMerchant) {
-        registerMerchant({
-          ...formData,
-          category: finalCategory,
-          plan: currentPlan.fullName,
-          billingInterval: billing,
-          price: billing === 'yearly' ? currentPlan.yearlyPrice : currentPlan.monthlyPrice
-        });
+
+    const payload = {
+    
+      name: formData.fullName.trim(),
+      email: formData.email.trim(),
+      phone: formData.phone.trim(),
+      country_code: formData.countryCode || '+91',
+      password: formData.password,
+      // plan: currentPlan.fullName,
+      // planId: currentPlan.id,
+      // plan_id: currentPlan.id,
+      // billing: billing,
+      // billingInterval: billing,
+      // price: billing === 'yearly' ? currentPlan.yearlyPrice : currentPlan.monthlyPrice
+    };
+
+    try {
+      const response = await API.post('api/merchant/register-step1', payload);
+      const data = response?.data || {};
+
+      if (data.status === 1) {
+        // Store merchant auth session
+        if (data.access_token || data.token) {
+          localStorage.setItem("mer_access_token", data.access_token || data.token);
+        }
+        if (data.refresh_token) {
+          localStorage.setItem("mer_refresh_token", data.refresh_token);
+        }
+        localStorage.setItem("merchant_data", JSON.stringify(data));
+        localStorage.setItem("role", "merchant");
+        sessionStorage.setItem("role", "merchant");
+
+        // Set theme attributes for FirstLoop merchant dashboard
+        document.documentElement.setAttribute('data-role', 'firstloop');
+        document.body.setAttribute('data-role', 'firstloop');
+        document.documentElement.setAttribute('data-theme', 'firstloop');
+        document.body.setAttribute('data-theme', 'firstloop');
+
+        toast.success(data.message || 'Registration successful!');
+
+        if (registerMerchant) {
+          registerMerchant({
+            ...payload,
+            apiResponse: data
+          });
+        }
+        setRegistrationSuccess(true);
+
+        // Immediate redirect to merchant dashboard
+        navigate('/merchant/dashboard');
+      } else {
+        const errMsg = data.message || 'Registration failed';
+        toast.error(errMsg);
       }
+    } catch (error) {
+      console.error('Merchant Registration Step 1 Error:', error);
+      const apiMsg = error?.response?.data?.message || error?.message || 'Registration failed. Please try again.';
+      toast.error(apiMsg);
+      if (error?.response?.data?.errors) {
+        setErrors(prev => ({ ...prev, ...error.response.data.errors }));
+      }
+    } finally {
       setIsSubmitting(false);
-      setRegistrationSuccess(true);
-    }, 600);
+    }
   };
 
   return (
@@ -407,15 +458,15 @@ export const PricingRegistrationPage = () => {
                   </div>
                   <h3 className="text-2xl font-black text-slate-900">Registration Successful!</h3>
                   <p className="text-sm text-slate-600 max-w-md mx-auto">
-                    Welcome to First Loop! Your <strong className="text-teal-700 font-bold">{currentPlan.fullName}</strong> account has been configured. You can now preview your sample card designs with live watermarks below.
+                    Welcome to First Loop! Redirecting to your merchant dashboard...
                   </p>
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
                     <button
-                      onClick={() => setActiveTab('dashboard')}
+                      onClick={() => navigate('/merchant/dashboard')}
                       className="px-8 py-3.5 rounded-full bg-gradient-to-r from-teal-600 to-sky-600 hover:from-teal-700 hover:to-sky-700 text-white font-extrabold text-xs uppercase tracking-wider transition-all shadow-lg shadow-teal-600/30 cursor-pointer flex items-center gap-2"
                     >
                       <Sparkles className="w-4 h-4" />
-                      <span>View Sample Card Designs</span>
+                      <span>Go to Merchant Dashboard</span>
                     </button>
                     <button
                       onClick={() => setActiveTab('home')}
@@ -496,26 +547,21 @@ export const PricingRegistrationPage = () => {
                     
                     {/* Mandatory Mobile Phone Number */}
                     <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                        Mobile Phone Number <span className="text-rose-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                        <input
-                          type="tel"
-                          placeholder="e.g. +91 98765 43210"
-                          value={formData.phone}
-                          onChange={(e) => {
-                            setFormData({ ...formData, phone: e.target.value });
-                            if (errors.phone) setErrors({ ...errors, phone: null });
-                          }}
-                          className={`w-full pl-11 pr-4 py-3.5 rounded-2xl border text-sm font-medium focus:outline-none focus:ring-2 transition-all ${
-                            errors.phone
-                              ? 'border-rose-300 bg-rose-50/30 focus:ring-rose-500'
-                              : 'border-slate-200 focus:border-teal-600 focus:ring-teal-500/20'
-                          }`}
-                        />
-                      </div>
+                      <PhoneNumberField
+                        value={formData.phone}
+                        countryCode={formData.countryCode || '+91'}
+                        required={true}
+                        label="Mobile Phone Number"
+                        placeholder="e.g. 98765 43210"
+                        onChange={(value, countryCode) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            phone: value || '',
+                            countryCode: countryCode || '+91'
+                          }));
+                          if (errors.phone) setErrors(prev => ({ ...prev, phone: null }));
+                        }}
+                      />
                       {errors.phone && (
                         <p className="text-xs text-rose-600 font-semibold mt-1 flex items-center gap-1">
                           <AlertCircle className="w-3.5 h-3.5 text-rose-500" />
@@ -524,92 +570,46 @@ export const PricingRegistrationPage = () => {
                       )}
                     </div>
 
-                    {/* Business / Store Name */}
+                    {/* Account Password */}
                     <div>
                       <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                        Business / Store Name <span className="text-rose-500">*</span>
+                        Password <span className="text-rose-500">*</span>
                       </label>
                       <div className="relative">
-                        <Store className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                        <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                         <input
-                          type="text"
-                          placeholder="e.g. Artisan Roast Coffee"
-                          value={formData.storeName}
+                          type={showPassword ? 'text' : 'password'}
+                          placeholder="Create password (min. 6 characters)"
+                          value={formData.password}
                           onChange={(e) => {
-                            setFormData({ ...formData, storeName: e.target.value });
-                            if (errors.storeName) setErrors({ ...errors, storeName: null });
+                            setFormData({ ...formData, password: e.target.value });
+                            if (errors.password) setErrors({ ...errors, password: null });
                           }}
-                          className={`w-full pl-11 pr-4 py-3.5 rounded-2xl border text-sm font-medium focus:outline-none focus:ring-2 transition-all ${
-                            errors.storeName
+                          className={`w-full pl-11 pr-11 py-3.5 rounded-2xl border text-sm font-medium focus:outline-none focus:ring-2 transition-all ${
+                            errors.password
                               ? 'border-rose-300 bg-rose-50/30 focus:ring-rose-500'
                               : 'border-slate-200 focus:border-teal-600 focus:ring-teal-500/20'
                           }`}
                         />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer p-1"
+                          aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        >
+                          {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        </button>
                       </div>
-                      {errors.storeName && (
+                      {errors.password && (
                         <p className="text-xs text-rose-600 font-semibold mt-1 flex items-center gap-1">
                           <AlertCircle className="w-3.5 h-3.5 text-rose-500" />
-                          <span>{errors.storeName}</span>
+                          <span>{errors.password}</span>
                         </p>
                       )}
                     </div>
 
                   </div>
 
-                  {/* Industry Category with Other (Manual Input) */}
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                      Industry Category
-                    </label>
-                    <select
-                      value={formData.category}
-                      onChange={(e) => {
-                        setFormData({ ...formData, category: e.target.value });
-                        if (errors.customCategory) setErrors({ ...errors, customCategory: null });
-                      }}
-                      className="w-full px-4 py-3.5 rounded-2xl border border-slate-200 text-sm font-medium text-slate-800 bg-white focus:outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-500/20"
-                    >
-                      <option value="Cafes & Coffee Shops">Cafes & Coffee Shops</option>
-                      <option value="Restaurants & Food Service">Restaurants & Food Service</option>
-                      <option value="Fitness & Classes">Fitness & Classes</option>
-                      <option value="Hair, Beauty & Personal Care">Hair, Beauty & Personal Care</option>
-                      <option value="Fashion & Retail">Fashion & Retail</option>
-                      <option value="Pet Care & Local Services">Pet Care & Local Services</option>
-                      <option value="Other">Other (Enter Manually)</option>
-                    </select>
-
-                    {/* Manual Category Input when 'Other' is chosen */}
-                    {formData.category === 'Other' && (
-                      <div className="mt-3 relative animate-in fade-in slide-in-from-top-1 duration-200">
-                        <label className="block text-xs font-bold uppercase tracking-wider text-teal-700 mb-1">
-                          Specify Your Category <span className="text-rose-500">*</span>
-                        </label>
-                        <div className="relative">
-                          <Edit3 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-teal-600" />
-                          <input
-                            type="text"
-                            placeholder="e.g. Dental Clinic, Yoga Studio, Bookshop..."
-                            value={formData.customCategory}
-                            onChange={(e) => {
-                              setFormData({ ...formData, customCategory: e.target.value });
-                              if (errors.customCategory) setErrors({ ...errors, customCategory: null });
-                            }}
-                            className={`w-full pl-10 pr-4 py-3 rounded-2xl border text-sm font-medium focus:outline-none focus:ring-2 transition-all ${
-                              errors.customCategory
-                                ? 'border-rose-300 bg-rose-50/30 focus:ring-rose-500'
-                                : 'border-teal-300 bg-teal-50/20 focus:border-teal-600 focus:ring-teal-500/20'
-                            }`}
-                          />
-                        </div>
-                        {errors.customCategory && (
-                          <p className="text-xs text-rose-600 font-semibold mt-1 flex items-center gap-1">
-                            <AlertCircle className="w-3.5 h-3.5 text-rose-500" />
-                            <span>{errors.customCategory}</span>
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
 
                   {/* Guarantee Banner */}
                   <div className="p-4 bg-teal-50/80 rounded-2xl border border-teal-200/80 flex items-center gap-3 text-xs text-teal-900">

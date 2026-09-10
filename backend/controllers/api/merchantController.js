@@ -27,6 +27,7 @@ exports.registerStep1 = async (req, res) => {
             password,
             country_code
         } = req.body;
+        console.log(req.body)
 
         let phoneNumber;
         let nationalNumber;
@@ -37,7 +38,7 @@ exports.registerStep1 = async (req, res) => {
         // =========================
 
         try {
-
+            
             const cleanPhone = phone.replace(/\s+/g, '');
 
 
