@@ -337,9 +337,14 @@ export default function App() {
   // 1. FIRSTPASSAPP.CO DOMAIN RULES
   if (isFirstPassDomain) {
     if (pathname === '/') {
-      window.location.replace('https://firstloop.co.in/');
-      return null;
+      return (
+        <>
+          <ScrollToTopAndAnimate />
+          <WebsiteLayout />
+        </>
+      );
     }
+
 
     if (
       pathname.startsWith('/panel')
