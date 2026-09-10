@@ -59,27 +59,61 @@
             document.write('<meta name="twitter:image" content="' + ogImageUrl + '">');
         }
         else {
-            /* ---- WEBSITE META ---- */
-            document.write('<title>First Pass – Shop Smart, Save More</title>');
-            document.write('<meta name="description" content="First Pass is the all-in-one business management platform that helps you shop smart and save more. Discover local deals, redeem coupons and grow your success with merchants near you.">');
-            document.write('<meta name="author" content="Minsway Solutions Pvt Ltd">');
-            document.write('<meta name="robots" content="index, follow">');
-            document.write('<meta name="keywords" content="FirstPass, shop smart, save more, coupons, local deals, merchant app, business management platform">');
+            var host = window.location.hostname.toLowerCase();
+            var isFirstLoopDomain = host === 'firstloop.co.in' || host === 'www.firstloop.co.in' || host.endsWith('.firstloop.co.in') || host.indexOf('firstloop') !== -1;
 
-            /* ---- Open Graph for website pages ---- */
-            document.write('<meta property="og:type" content="website">');
-            document.write('<meta property="og:title" content="First Pass – Shop Smart, Save More">');
-            document.write('<meta property="og:description" content="The all-in-one business management platform. Discover deals, redeem coupons and grow your success.">');
-            document.write('<meta property="og:image" content="/asset/images/img/new-logo.png">');
+            if (isFirstLoopDomain) {
+                /* ---- FIRST LOOP WEBSITE META ---- */
+                document.write('<title>First Loop – Digital Stamp Cards & Customer Loyalty Platform</title>');
+                document.write('<meta name="description" content="First Loop is the next-gen customer retention platform with digital stamp cards for Apple & Google Wallet. Turn one-time visitors into loyal regulars.">');
+                document.write('<meta name="author" content="First Loop">');
+                document.write('<meta name="robots" content="index, follow">');
+                document.write('<meta name="keywords" content="First Loop, FirstLoop, digital stamp cards, loyalty platform, Apple Wallet, Google Wallet, customer retention">');
 
-            document.write('<meta name="twitter:card" content="summary_large_image">');
+                /* ---- Open Graph for First Loop ---- */
+                document.write('<meta property="og:type" content="website">');
+                document.write('<meta property="og:title" content="First Loop – Digital Stamp Cards & Customer Loyalty Platform">');
+                document.write('<meta property="og:description" content="First Loop is the next-gen customer retention platform with digital stamp cards for Apple & Google Wallet. Turn one-time visitors into loyal regulars.">');
+                document.write('<meta property="og:image" content="/asset/images/img/firstloop-logo.png">');
+
+                document.write('<meta name="twitter:card" content="summary_large_image">');
+                document.write('<meta name="twitter:title" content="First Loop – Digital Stamp Cards & Customer Loyalty Platform">');
+                document.write('<meta name="twitter:description" content="First Loop is the next-gen customer retention platform with digital stamp cards for Apple & Google Wallet. Turn one-time visitors into loyal regulars.">');
+                document.write('<meta name="twitter:image" content="/asset/images/img/firstloop-logo.png">');
+            } else {
+                /* ---- FIRST PASS WEBSITE META ---- */
+                document.write('<title>First Pass – Shop Smart, Save More</title>');
+                document.write('<meta name="description" content="First Pass is the all-in-one business management platform that helps you shop smart and save more. Discover local deals, redeem coupons and grow your success with merchants near you.">');
+                document.write('<meta name="author" content="Minsway Solutions Pvt Ltd">');
+                document.write('<meta name="robots" content="index, follow">');
+                document.write('<meta name="keywords" content="FirstPass, shop smart, save more, coupons, local deals, merchant app, business management platform">');
+
+                /* ---- Open Graph for website pages ---- */
+                document.write('<meta property="og:type" content="website">');
+                document.write('<meta property="og:title" content="First Pass – Shop Smart, Save More">');
+                document.write('<meta property="og:description" content="The all-in-one business management platform. Discover deals, redeem coupons and grow your success.">');
+                document.write('<meta property="og:image" content="/asset/images/img/new-logo.png">');
+
+                document.write('<meta name="twitter:card" content="summary_large_image">');
+                document.write('<meta name="twitter:title" content="First Pass – Shop Smart, Save More">');
+                document.write('<meta name="twitter:description" content="The all-in-one business management platform. Discover deals, redeem coupons and grow your success.">');
+                document.write('<meta name="twitter:image" content="/asset/images/img/new-logo.png">');
+            }
         }
     })();
 </script>
 
     <!-- Favicon -->
-    <link rel="shortcut icon" href="/asset/images/img/fs.png">
-    <link rel="apple-touch-icon-precomposed" href="/asset/images/img/fs.png">
+    <script>
+        (function() {
+            var host = window.location.hostname.toLowerCase();
+            var p = window.location.pathname;
+            var isFirstLoop = host === 'firstloop.co.in' || host === 'www.firstloop.co.in' || host.endsWith('.firstloop.co.in') || host.indexOf('firstloop') !== -1 || p.startsWith('/merchant') || p.startsWith('/receptionist') || p.startsWith('/firstloop');
+            var icon = isFirstLoop ? '/asset/images/img/firstloop-logo.png' : '/asset/images/img/fs.png';
+            document.write('<link rel="shortcut icon" href="' + icon + '">');
+            document.write('<link rel="apple-touch-icon-precomposed" href="' + icon + '">');
+        })();
+    </script>
 
     <!-- Fonts & Icons (shared) -->
     <link rel="stylesheet" href="/asset/fonts/fonts.css">
