@@ -3,14 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import API from '../../api.js'
 import flLogo from '../../assets/img/firstloop-favicon.png'
-import {
-    INITIAL_BRANCHES,
-    INITIAL_RECEPTIONISTS,
-    INITIAL_STAMP_CARDS,
-    INITIAL_MEMBERSHIP_CARDS,
-    INITIAL_CUSTOMERS,
-    INITIAL_REPORTS_LOGS
-} from './mockMerchantData'
 
 export default function MerchantReports() {
     const navigate = useNavigate()
@@ -43,6 +35,7 @@ export default function MerchantReports() {
     // Modals
     const [selectedLog, setSelectedLog] = useState(null)
     const [selectedStaffLog, setSelectedStaffLog] = useState(null)
+    const [selectedCustomerCards, setSelectedCustomerCards] = useState(null)
 
     // Fetch report data from API: firstloop/merchant/report (method POST)
     const fetchReportData = async (showToast = false) => {
@@ -99,6 +92,8 @@ export default function MerchantReports() {
                 const branchMembershipTemplates = (reportData.active_membership_card_list || []).filter(mc => (mc.branch_ids || []).map(String).includes(bIdStr)).length
                 const branchStampCards = (reportData.active_stamp_card_list || []).filter(sc => (sc.branch_ids || []).map(String).includes(bIdStr)).length
 
+
+
                 return {
                     id: bIdStr,
                     name: b.name,
@@ -106,11 +101,11 @@ export default function MerchantReports() {
                     address: b.address || 'Chennai, Tamil Nadu, India',
                     phone: `${b.country_code || '+91'} ${b.phone || ''}`,
                     email: b.email || '',
-                    manager: branchReps[0]?.name || b.name,
+                    Receptionists: branchReps[0]?.name || b.name,
                     status: b.status === 1 || b.status === '1' ? 'Active' : 'Inactive',
                     receptionistsCount: branchReps.length,
                     stampsIssued: stampsIssued,
-                    membershipCount: branchMembershipIssues || branchMembershipTemplates,
+                    membershipCount: branchMembershipIssues || 0,
                     stampProgramsCount: branchStampCards || 1,
                     totalSpend: totalSpend,
                     rewardsClaimed: rewardsClaimed,
@@ -120,7 +115,7 @@ export default function MerchantReports() {
                 }
             })
         }
-        return INITIAL_BRANCHES
+        return []
     }, [reportData])
 
     // Dynamic Receptionists Mapping
@@ -145,13 +140,13 @@ export default function MerchantReports() {
                     rewardsProcessed: repLogs.filter(l => String(l.reward_type) === '1').length,
                     customersServed: repLogs.length || stampsCollected,
                     avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(rep.name)}`,
-                    shift: 'General Day Shift (09:00 - 18:00)',
+
                     status: 'Active',
                     badge: stampsCollected > 0 ? (idx === 0 ? 'Top Receptionist' : 'Verified Receptionist') : 'Front Desk Staff'
                 }
             })
         }
-        return INITIAL_RECEPTIONISTS
+        return []
     }, [reportData])
 
     // Dynamic Logs Mapping
@@ -163,7 +158,7 @@ export default function MerchantReports() {
                 const branch = cardIssue ? (reportData.branch_list || []).find(b => String(b.id) === String(cardIssue.branch_id)) : null
                 const receptionist = (reportData.receptionist_list || []).find(r => String(r.id) === String(l.role_id) && l.role === 'receptionist')
 
-                const isRedemption = String(l.reward_type) === '1'
+                const isRedemption = String(l.status) === '1'
 
                 return {
                     id: `tx-${l.id}`,
@@ -178,13 +173,15 @@ export default function MerchantReports() {
                     action: isRedemption ? 'Reward Claimed' : `Stamp Added (+${l.stamp_number || 1})`,
                     staff: l.role === 'receptionist' ? (receptionist?.name || `Receptionist #${l.role_id}`) : 'Merchant Admin',
                     staffId: receptionist?.rep_id || (l.role === 'receptionist' ? `REP-${l.role_id}` : 'MERCHANT'),
-                    rewardUnlocked: isRedemption ? 'Reward Redeemed (Free)' : 'None',
-                    amount: `$${parseFloat(l.paid_amt || l.amt || 0).toFixed(2)}`,
+                    rewardUnlocked: isRedemption
+                        ? (l.reward_text ?? 'Paid')
+                        : 'None',
+                    amount: `${parseFloat(l.paid_amt || l.amt || 0).toFixed(2)}`,
                     status: l.status === 1 || l.status === '1' ? 'Completed' : 'Pending'
                 }
             })
         }
-        return INITIAL_REPORTS_LOGS
+        return []
     }, [reportData])
 
     // Dynamic Stamp Cards Mapping (from active_stamp_card_list or issues)
@@ -215,7 +212,7 @@ export default function MerchantReports() {
                     stamps_given: stampsGiven,
                     rewards_claimed: rewardsClaimed,
                     tagline: c.brand_name ? `${c.brand_name} Exclusive Pass` : 'Collect stamps on every purchase',
-                    reward: 'Specialty Reward on Completion',
+                    // reward: 'Specialty Reward on Completion',
                     status: c.status === 1 || c.status === '1' ? 'Active' : 'Inactive',
                     backgroundColor: c.background_color || '#0E88B8',
                     borderColor: c.border_color || '#ed0202',
@@ -252,7 +249,7 @@ export default function MerchantReports() {
                         stamps_given: stampsGiven,
                         rewards_claimed: rewardsClaimed,
                         tagline: issue.brand_name ? `${issue.brand_name} Exclusive Pass` : 'Collect stamps on every purchase',
-                        reward: 'Specialty Reward on Completion',
+                        // reward: 'Specialty Reward on Completion',
                         status: issue.status === 1 || issue.status === '1' ? 'Active' : 'Inactive',
                         backgroundColor: issue.background_color || '#0E88B8',
                         borderColor: issue.border_color || '#ed0202',
@@ -266,7 +263,7 @@ export default function MerchantReports() {
             })
             return Array.from(cardsMap.values())
         }
-        return INITIAL_STAMP_CARDS.map(c => ({ ...c, type: 'Stamp Card', active_members: c.activeMembers || 0 }))
+        return []
     }, [reportData])
 
     // Dynamic Membership Cards Mapping (from active_membership_card_list or initial)
@@ -291,7 +288,7 @@ export default function MerchantReports() {
                     validityMonths: c.month ? `${c.month} Months` : '24 Months',
                     activeMembers: matchingIssues.length,
                     active_members: matchingIssues.length,
-                    minSpend: '$0 (Member Pass)',
+                    minSpend: '0 (Member Pass)',
                     discount: `${c.month || 24} Mo Pass`,
                     status: 'Active',
                     backgroundColor: c.background_color || '#D97706',
@@ -307,7 +304,7 @@ export default function MerchantReports() {
                 }
             })
         }
-        return INITIAL_MEMBERSHIP_CARDS.map(c => ({ ...c, type: 'Membership Tier', active_members: c.activeMembers || 0 }))
+        return []
     }, [reportData])
 
     // Dynamic Combined Cards Mapping
@@ -321,13 +318,44 @@ export default function MerchantReports() {
             return reportData.customer_list.map((cus) => {
                 const cusIdStr = String(cus.id)
                 const cusIssues = (reportData.stamp_card_issues || []).filter(ci => String(ci.customer_id) === cusIdStr)
+                const cusMemberIssues = (reportData.membership_card_issues || []).filter(mi => String(mi.customer_id) === cusIdStr)
                 const cusLogs = (reportData.stamp_log || []).filter(l => {
                     const ci = (reportData.stamp_card_issues || []).find(i => String(i.id) === String(l.customer_card_id))
                     return ci && String(ci.customer_id) === cusIdStr
                 })
                 const stampsCollected = cusIssues.reduce((s, ci) => s + (Number(ci.current_stamp) || 0), 0)
                 const totalSpend = cusLogs.reduce((s, l) => s + (Number(l.paid_amt || l.amt) || 0), 0)
-                const branch = cusIssues[0] ? (reportData.branch_list || []).find(b => String(b.id) === String(cusIssues[0].branch_id)) : null
+
+                // List of stamp cards with individual stamps & branch
+                const stampCardsList = cusIssues.map((ci) => {
+                    const branch = (reportData.branch_list || []).find(b => String(b.id) === String(ci.branch_id))
+                    const branchName = branch ? branch.name : `Branch #${ci.branch_id}`
+                    const stamps = Number(ci.current_stamp) || 0
+                    const totalStamps = Number(ci.number_of_stamps) || 10
+                    return {
+                        id: String(ci.id),
+                        merchantCardId: String(ci.merchant_card_id),
+                        title: ci.title || 'Stamp Card',
+                        cardNumber: ci.card_number || '',
+                        branchId: String(ci.branch_id),
+                        branchName: branchName,
+                        stamps: stamps,
+                        totalStamps: totalStamps,
+                        status: ci.status === 1 || ci.status === '1' ? 'Active' : 'Inactive'
+                    }
+                })
+
+                // Sort cards so active cards with stamps appear first
+                stampCardsList.sort((a, b) => b.stamps - a.stamps)
+
+                // Branches list
+                const branchNames = [...new Set(stampCardsList.map(sc => sc.branchName).filter(Boolean))]
+                const branchIds = [...new Set(stampCardsList.map(sc => sc.branchId).filter(Boolean))]
+                const primaryBranch = branchNames.length > 0 ? branchNames.join(', ') : (reportData.branch_list?.[0]?.name || 'Chennai Branch')
+
+                // Membership Tiers
+                const membershipTiers = cusMemberIssues.map(mi => mi.title).filter(Boolean)
+                const membershipTier = membershipTiers.length > 0 ? membershipTiers.join(', ') : 'None'
 
                 const joined = cus.createdAt ? new Date(cus.createdAt).toLocaleDateString() : (cusIssues[0]?.created_at ? new Date(cusIssues[0].created_at).toLocaleDateString() : 'Active Member')
 
@@ -338,13 +366,17 @@ export default function MerchantReports() {
                     phone: `+${cus.country_code || '91'} ${cus.phone || ''}`,
                     avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(cus.name || 'User')}`,
                     joinedDate: joined,
-                    branchVisited: branch ? branch.name : (reportData.branch_list?.[0]?.name || 'Chennai Branch'),
+                    branchVisited: primaryBranch,
+                    branchNames: branchNames,
+                    branchIds: branchIds,
                     stampsCollected: stampsCollected,
+                    stampCardsList: stampCardsList,
                     stampsTotal: cusIssues[0]?.number_of_stamps || (reportData.active_stamp_card_list?.[0]?.number_of_stamps) || 10,
-                    stampCard: cusIssues[0]?.title || (reportData.active_stamp_card_list?.[0]?.title) || 'Stamp Card',
-                    membershipTier: (reportData.active_membership_card_list?.[0]?.title) || 'Standard Member',
-                    totalVisits: cusLogs.length || cusIssues.length || 1,
-                    lifetimeSpend: `$${totalSpend.toFixed(2)}`,
+                    stampCard: stampCardsList.map(sc => `${sc.title} (${sc.branchName}: ${sc.stamps}/${sc.totalStamps})`).join(', ') || 'No Stamp Pass',
+                    membershipTier: membershipTier,
+                    hasMembership: cusMemberIssues.length > 0,
+                    totalVisits: cusLogs.length,
+                    lifetimeSpend: `${totalSpend.toFixed(2)}`,
                     city: cus.city || 'Chennai',
                     address: cus.address || 'Chennai, Tamil Nadu, India',
                     dob: cus.dob || '',
@@ -352,7 +384,7 @@ export default function MerchantReports() {
                 }
             })
         }
-        return INITIAL_CUSTOMERS
+        return []
     }, [reportData])
 
     // Dynamic Executive Stats
@@ -396,7 +428,7 @@ export default function MerchantReports() {
             totalStamps,
             totalCustomers,
             totalRedemptions,
-            totalGrossSpend: `$${Number(totalGrossSpend).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+            totalGrossSpend: `${Number(totalGrossSpend).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
         }
     }, [reportData, allBranches, allReceptionists, allLogs, allCustomers, stampCards, membershipCards])
 
@@ -421,7 +453,7 @@ export default function MerchantReports() {
             if (selectedBranch !== 'all' && b.name !== selectedBranch && b.id !== selectedBranch) return false
             if (!search) return true
             const q = search.toLowerCase()
-            return b.name.toLowerCase().includes(q) || b.city.toLowerCase().includes(q) || b.manager.toLowerCase().includes(q)
+            return b.name.toLowerCase().includes(q) || b.city.toLowerCase().includes(q) || b.Receptionists.toLowerCase().includes(q)
         })
 
         if (branchSortFilter === 'large_stamp') {
@@ -481,7 +513,7 @@ export default function MerchantReports() {
     // Filtered Customers
     const filteredCustomers = useMemo(() => {
         return allCustomers.filter((cus) => {
-            if (selectedBranch !== 'all' && cus.branchVisited !== selectedBranch) return false
+            if (selectedBranch !== 'all' && !(cus.branchNames || []).includes(selectedBranch) && !(cus.branchIds || []).includes(selectedBranch) && cus.branchVisited !== selectedBranch) return false
             if (!search) return true
             const q = search.toLowerCase()
             return (
@@ -489,7 +521,8 @@ export default function MerchantReports() {
                 cus.email.toLowerCase().includes(q) ||
                 cus.phone.toLowerCase().includes(q) ||
                 (cus.stampCard || '').toLowerCase().includes(q) ||
-                (cus.membershipTier || '').toLowerCase().includes(q)
+                (cus.membershipTier || '').toLowerCase().includes(q) ||
+                (cus.branchNames || []).some(bn => bn.toLowerCase().includes(q))
             )
         })
     }, [allCustomers, selectedBranch, search])
@@ -530,13 +563,13 @@ export default function MerchantReports() {
             exportData = sortedAndFilteredBranches.map((b) => ({
                 'Branch ID': b.id,
                 'Branch Name': b.name,
-                'Manager': b.manager,
+                'Receptionists': b.Receptionists,
                 'Phone': b.phone,
                 'City': b.city,
                 'Active Receptionists': b.receptionistsCount,
                 'Stamps Issued': b.stampsIssued || 0,
                 'Membership Cards Enrolled': b.membershipCount || 0,
-                'Total Spend ($)': b.totalSpend || 0,
+                'Total Spend': b.totalSpend || 0,
                 'Customer Footfall': b.customerFootfall || 0,
                 'Rewards Claimed': b.rewardsClaimed || 0,
                 'Status': b.status
@@ -553,7 +586,7 @@ export default function MerchantReports() {
                 'Card Name': log.cardName,
                 'Action': log.action,
                 'Reward / Savings': log.rewardUnlocked,
-                'Order Value': log.amount || '$0.00',
+                'Order Value': log.amount || '0.00',
                 'Staff Member': log.staff,
                 'Status': log.status
             }))
@@ -593,7 +626,7 @@ export default function MerchantReports() {
                 'Stamps Collected': s.stampsCollected || 0,
                 'Rewards Processed': s.rewardsProcessed || 0,
                 'Customers Served': s.customersServed || 0,
-                'Est. Revenue': `$${s.totalSpendGenerated || 0}`,
+                'Est. Revenue': `${s.totalSpendGenerated || 0}`,
                 'Badge': s.badge || 'Staff',
                 'Status': s.status
             }))
@@ -638,6 +671,16 @@ export default function MerchantReports() {
                     0% { background-position: -200% 0; }
                     100% { background-position: 200% 0; }
                 }
+                @keyframes pulseLiveDot {
+                    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.7); }
+                    70% { transform: scale(1.05); box-shadow: 0 0 0 8px rgba(56, 189, 248, 0); }
+                    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); }
+                }
+                @keyframes fadeInUp {
+                    from { opacity: 0; transform: translateY(12px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+
                 .skeleton-text, .skeleton-avatar, .skeleton-shimmer {
                     background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%) !important;
                     background-size: 200% 100% !important;
@@ -646,126 +689,352 @@ export default function MerchantReports() {
                 .skeleton-row td {
                     border-bottom: 1px solid #f1f5f9;
                 }
+
+                /* Executive KPI Cards */
+                .fl-report-kpi-card {
+                    background: #FFFFFF;
+                    border-radius: 20px;
+                    padding: 22px 24px;
+                    border: 1px solid #E2E8F0;
+                    box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04), 0 2px 6px -1px rgba(15, 23, 42, 0.02);
+                    position: relative;
+                    overflow: hidden;
+                    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+                }
+                .fl-report-kpi-card:hover {
+                    transform: translateY(-4px);
+                    box-shadow: 0 16px 36px -4px rgba(14, 136, 184, 0.14), 0 4px 12px rgba(15, 23, 42, 0.04);
+                    border-color: rgba(14, 136, 184, 0.35);
+                }
+
+                /* Executive Luxury Card Container */
+                .fl-luxury-card {
+                    background: #FFFFFF;
+                    border-radius: 22px;
+                    border: 1px solid #E2E8F0;
+                    box-shadow: 0 4px 22px -2px rgba(15, 23, 42, 0.04), 0 2px 8px -1px rgba(15, 23, 42, 0.02);
+                    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+                    position: relative;
+                    overflow: hidden;
+                }
+                .fl-luxury-card:hover {
+                    transform: translateY(-4px);
+                    box-shadow: 0 18px 40px -4px rgba(14, 136, 184, 0.12), 0 6px 14px -2px rgba(15, 23, 42, 0.05);
+                    border-color: rgba(14, 136, 184, 0.3);
+                }
+
+                /* Executive Data Table Container */
+                .fl-table-card {
+                    background: #FFFFFF;
+                    border-radius: 22px;
+                    overflow: hidden;
+                    border: 1px solid #E2E8F0;
+                    box-shadow: 0 8px 30px -4px rgba(15, 23, 42, 0.05);
+                }
+                .fl-table-header {
+                    background: linear-gradient(180deg, #FAFAFB 0%, #F1F5F9 100%) !important;
+                    border-bottom: 2px solid #E2E8F0;
+                }
+                .fl-table-header th {
+                    padding: 15px 22px !important;
+                    font-size: 0.74rem !important;
+                    font-weight: 800 !important;
+                    color: #64748B !important;
+                    text-transform: uppercase !important;
+                    letter-spacing: 0.6px !important;
+                }
+                .fl-table-row {
+                    transition: background-color 0.15s ease;
+                }
+                .fl-table-row:hover {
+                    background-color: #F8FAFC !important;
+                }
+
+                /* Pill Navigation & Quick Filters */
+                .fl-nav-tab-btn {
+                    padding: 11px 20px;
+                    border-radius: 14px;
+                    font-size: 0.88rem;
+                    font-weight: 800;
+                    border: none;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    gap: 9px;
+                    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+                    white-space: nowrap;
+                }
+                .fl-nav-tab-btn:hover {
+                    transform: translateY(-1px);
+                }
+
+                .fl-pill-filter {
+                    border-radius: 12px;
+                    font-size: 0.82rem;
+                    font-weight: 800;
+                    padding: 8px 18px;
+                    border: 1.5px solid #E2E8F0;
+                    cursor: pointer;
+                    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 7px;
+                    background: #FFFFFF;
+                    color: #475569;
+                }
+                .fl-pill-filter:hover {
+                    background: #F8FAFC;
+                    border-color: #CBD5E1;
+                    color: #0F172A;
+                    transform: translateY(-1.5px);
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+                }
+                .fl-pill-filter.active {
+                    background: linear-gradient(135deg, #091E2F 0%, #0F3249 100%) !important;
+                    color: #FFFFFF !important;
+                    border-color: transparent !important;
+                    box-shadow: 0 4px 16px rgba(9, 30, 47, 0.28) !important;
+                }
+
+                /* Button System */
+                .fl-btn-glass {
+                    background: #FFFFFF;
+                    border: 1.5px solid #CBD5E1;
+                    color: #1E293B;
+                    border-radius: 12px;
+                    font-size: 0.82rem;
+                    font-weight: 800;
+                    padding: 8px 16px;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 7px;
+                }
+                .fl-btn-glass:hover {
+                    background: #F8FAFC;
+                    border-color: var(--firstloop-primary);
+                    color: var(--firstloop-primary);
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 12px rgba(14, 136, 184, 0.12);
+                }
+                .fl-btn-gradient {
+                    background: linear-gradient(135deg, #0E88B8 0%, #0284C7 100%);
+                    color: #FFFFFF;
+                    border: none;
+                    border-radius: 12px;
+                    font-size: 0.82rem;
+                    font-weight: 800;
+                    padding: 8px 18px;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 7px;
+                    box-shadow: 0 4px 14px rgba(14, 136, 184, 0.28);
+                }
+                .fl-btn-gradient:hover {
+                    transform: translateY(-1.5px);
+                    box-shadow: 0 8px 22px rgba(14, 136, 184, 0.38);
+                    filter: brightness(1.05);
+                }
+
+                /* Amber Gradient Button for VIP & Podium 1st */
+                .fl-btn-amber {
+                    background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+                    color: #FFFFFF;
+                    border: none;
+                    border-radius: 12px;
+                    font-size: 0.82rem;
+                    font-weight: 800;
+                    padding: 8px 18px;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 7px;
+                    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.28);
+                }
+                .fl-btn-amber:hover {
+                    transform: translateY(-1.5px);
+                    box-shadow: 0 8px 22px rgba(245, 158, 11, 0.38);
+                    filter: brightness(1.05);
+                }
+
+                /* Executive Modal Box */
+                .fl-modal-box {
+                    background: #FFFFFF;
+                    border-radius: 24px;
+                    overflow: hidden;
+                    box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.1);
+                    animation: fadeInUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+                    border: 1px solid #E2E8F0;
+                }
+
+                /* Live telemetry indicators */
+                .pulse-live-indicator {
+                    animation: pulseLiveDot 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+                }
+                .fl-form-control:focus {
+                    border-color: #0E88B8 !important;
+                    box-shadow: 0 0 0 3.5px rgba(14, 136, 184, 0.16) !important;
+                    outline: none !important;
+                }
+
+                /* Metric Sub-Cards */
+                .fl-inner-metric-grid {
+                    background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%);
+                    border-radius: 16px;
+                    padding: 16px 14px;
+                    margin: 16px 0;
+                    border: 1px solid #E2E8F0;
+                }
             `}</style>
-            {/* HERO BANNER */}
+            {/* EXECUTIVE HERO COMMAND BANNER */}
             <div
                 style={{
-                    background: 'linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%)',
-                    borderRadius: 22,
-                    padding: '24px 28px',
-                    border: '1px solid #E2E8F0',
-                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)',
+                    background: 'linear-gradient(135deg, #091E2F 0%, #0F3249 55%, #083D63 100%)',
+                    borderRadius: 24,
+                    padding: '28px 32px',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    boxShadow: '0 12px 35px rgba(9, 30, 47, 0.3)',
                     marginBottom: 26,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     flexWrap: 'wrap',
-                    gap: 16
+                    gap: 20,
+                    position: 'relative',
+                    overflow: 'hidden'
                 }}
             >
-                <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                        <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.55rem', fontWeight: 900, margin: 0, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>
+                {/* Cyber accent glow */}
+                <div
+                    style={{
+                        position: 'absolute',
+                        top: -60,
+                        right: -40,
+                        width: 240,
+                        height: 240,
+                        borderRadius: '50%',
+                        background: 'radial-gradient(circle, rgba(14, 136, 184, 0.35) 0%, rgba(14, 136, 184, 0) 70%)',
+                        pointerEvents: 'none'
+                    }}
+                />
+
+                <div style={{ position: 'relative', zIndex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
+                        <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.75rem', fontWeight: 900, margin: 0, color: '#FFFFFF', letterSpacing: '-0.5px' }}>
                             Merchant Performance & Analytics Hub
                         </h2>
                         <span
                             style={{
-                                fontSize: '0.72rem',
+                                fontSize: '0.74rem',
                                 fontWeight: 800,
-                                background: 'linear-gradient(135deg, #0E88B8 0%, #065B7D 100%)',
-                                color: '#FFFFFF',
-                                padding: '3px 12px',
+                                background: 'rgba(14, 136, 184, 0.25)',
+                                border: '1px solid rgba(56, 189, 248, 0.4)',
+                                color: '#38BDF8',
+                                padding: '4px 14px',
                                 borderRadius: 20,
                                 letterSpacing: '0.5px',
                                 textTransform: 'uppercase',
-                                boxShadow: '0 2px 8px rgba(14, 136, 184, 0.3)'
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 7,
+                                backdropFilter: 'blur(6px)'
                             }}
                         >
-                            FirstLoop Intelligence
+                            <span className="pulse-live-indicator" style={{ width: 8, height: 8, borderRadius: '50%', background: '#38BDF8', display: 'inline-block' }} />
+                            Live FirstLoop Intelligence
                         </span>
                     </div>
-                    <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', margin: 0, maxWidth: 720, lineHeight: 1.5 }}>
+                    <p style={{ fontSize: '0.92rem', color: '#94A3B8', margin: 0, maxWidth: 740, lineHeight: 1.6 }}>
                         Holistic reporting across branch outlets, loyalty stamp passes, VIP memberships, customer footfall & receptionist operational audit trail.
                     </p>
+
+                    {/* Quick Metric Telemetry Pills */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 14, flexWrap: 'wrap' }}>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(255, 255, 255, 0.08)', padding: '5px 12px', borderRadius: 10, fontSize: '0.78rem', color: '#E2E8F0', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                            <i className="fas fa-store" style={{ color: '#38BDF8' }} />
+                            <strong>{allBranches.length}</strong> Branch Hubs
+                        </div>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(255, 255, 255, 0.08)', padding: '5px 12px', borderRadius: 10, fontSize: '0.78rem', color: '#E2E8F0', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                            <i className="fas fa-users" style={{ color: '#FBBF24' }} />
+                            <strong>{allCustomers.length}</strong> Enrolled Members
+                        </div>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(255, 255, 255, 0.08)', padding: '5px 12px', borderRadius: 10, fontSize: '0.78rem', color: '#E2E8F0', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                            <i className="fas fa-stamp" style={{ color: '#34D399' }} />
+                            <strong>{executiveStats.totalStamps}</strong> Stamps Tracked
+                        </div>
+                    </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', position: 'relative', zIndex: 1 }}>
                     <button
                         type="button"
                         onClick={handleRefresh}
                         style={{
-                            padding: '10px 16px',
-                            borderRadius: 12,
-                            fontSize: '0.85rem',
-                            fontWeight: 700,
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 8,
-                            background: '#FFFFFF',
-                            border: '1.5px solid #CBD5E1',
-                            color: 'var(--text-primary)',
-                            cursor: 'pointer'
-                        }}
-                        title="Reload Live Analytics"
-                    >
-                        <i className={`fas fa-sync-alt ${loading ? 'fa-spin' : ''}`} style={{ color: 'var(--firstloop-primary)' }} />
-                        <span>Refresh</span>
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={() => window.print()}
-                        style={{
-                            padding: '10px 16px',
-                            borderRadius: 12,
-                            fontSize: '0.85rem',
-                            fontWeight: 700,
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 8,
-                            background: '#FFFFFF',
-                            border: '1.5px solid #CBD5E1',
-                            color: 'var(--text-primary)',
-                            cursor: 'pointer'
-                        }}
-                    >
-                        <i className="fas fa-print" style={{ color: 'var(--text-muted)' }} />
-                        <span>Print</span>
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={handleExportCSV}
-                        style={{
-                            padding: '10px 20px',
-                            borderRadius: 12,
-                            fontSize: '0.85rem',
+                            padding: '11px 20px',
+                            borderRadius: 14,
+                            fontSize: '0.88rem',
                             fontWeight: 800,
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: 8,
-                            background: 'linear-gradient(135deg, #0E88B8 0%, #065B7D 100%)',
+                            gap: 9,
+                            background: 'rgba(255, 255, 255, 0.12)',
+                            border: '1px solid rgba(255, 255, 255, 0.22)',
                             color: '#FFFFFF',
-                            border: 'none',
                             cursor: 'pointer',
-                            boxShadow: '0 4px 14px rgba(14, 136, 184, 0.35)'
+                            backdropFilter: 'blur(8px)',
+                            transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'
+                        }}
+                        title="Reload Live Analytics"
+                    >
+                        <i className={`fas fa-sync-alt ${loading ? 'fa-spin' : ''}`} style={{ color: '#38BDF8' }} />
+                        <span>Refresh Telemetry</span>
+                    </button>
+
+                    {/* <button
+                        type="button"
+                        onClick={handleExportCSV}
+                        style={{
+                            padding: '11px 22px',
+                            borderRadius: 14,
+                            fontSize: '0.88rem',
+                            fontWeight: 800,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 9,
+                            background: 'linear-gradient(135deg, #0E88B8 0%, #0284C7 100%)',
+                            color: '#FFFFFF',
+                            border: '1px solid rgba(56, 189, 248, 0.4)',
+                            cursor: 'pointer',
+                            boxShadow: '0 6px 20px rgba(14, 136, 184, 0.4)',
+                            transition: 'all 0.2s ease'
                         }}
                     >
                         <i className="fas fa-file-download" />
                         <span>Export CSV</span>
-                    </button>
+                    </button> */}
                 </div>
             </div>
 
             {/* EXECUTIVE STATS KPI STRIP (WITH SKELETON SHIMMER SUPPORT) */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 18, marginBottom: 26 }}>
                 {/* Outlets & Staff */}
-                <div className="card" style={{ padding: '20px 22px', borderRadius: 18, border: '1px solid rgba(14, 136, 184, 0.18)', background: '#FFFFFF', boxShadow: '0 2px 12px rgba(0,0,0,0.03)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                        <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                <div className="fl-report-kpi-card">
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3.5, background: 'linear-gradient(90deg, #0E88B8 0%, #38BDF8 100%)' }} />
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                        <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
                             Outlets & Staff
                         </span>
-                        <div style={{ width: 36, height: 36, borderRadius: 12, background: 'rgba(14, 136, 184, 0.1)', color: 'var(--firstloop-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>
+                        <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(14, 136, 184, 0.12)', color: 'var(--firstloop-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.05rem', boxShadow: '0 2px 8px rgba(14, 136, 184, 0.15)' }}>
                             <i className="fas fa-store" />
                         </div>
                     </div>
@@ -776,10 +1045,10 @@ export default function MerchantReports() {
                         </>
                     ) : (
                         <>
-                            <div style={{ fontSize: '1.65rem', fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>
+                            <div style={{ fontSize: '1.75rem', fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>
                                 {executiveStats.totalOutlets} Hubs • {executiveStats.totalStaff} Staff
                             </div>
-                            <div style={{ fontSize: '0.75rem', color: '#059669', fontWeight: 700, marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                            <div style={{ fontSize: '0.75rem', color: '#059669', fontWeight: 700, marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 5, background: 'rgba(16, 185, 129, 0.08)', padding: '3px 8px', borderRadius: 8 }}>
                                 <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#059669', display: 'inline-block' }} />
                                 100% Operational Status
                             </div>
@@ -788,12 +1057,13 @@ export default function MerchantReports() {
                 </div>
 
                 {/* Stamps Distributed */}
-                <div className="card" style={{ padding: '20px 22px', borderRadius: 18, border: '1px solid rgba(2, 132, 199, 0.18)', background: '#FFFFFF', boxShadow: '0 2px 12px rgba(0,0,0,0.03)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                        <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                <div className="fl-report-kpi-card">
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3.5, background: 'linear-gradient(90deg, #0284C7 0%, #38BDF8 100%)' }} />
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                        <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
                             Stamps Distributed
                         </span>
-                        <div style={{ width: 36, height: 36, borderRadius: 12, background: 'rgba(2, 132, 199, 0.1)', color: '#0284C7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>
+                        <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(2, 132, 199, 0.12)', color: '#0284C7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.05rem', boxShadow: '0 2px 8px rgba(2, 132, 199, 0.15)' }}>
                             <i className="fas fa-stamp" />
                         </div>
                     </div>
@@ -804,10 +1074,10 @@ export default function MerchantReports() {
                         </>
                     ) : (
                         <>
-                            <div style={{ fontSize: '1.65rem', fontWeight: 900, color: '#0284C7', letterSpacing: '-0.5px' }}>
-                                {executiveStats.totalStamps.toLocaleString()} Stamps
+                            <div style={{ fontSize: '1.75rem', fontWeight: 900, color: '#0284C7', letterSpacing: '-0.5px' }}>
+                                {executiveStats.totalStamps} Stamps
                             </div>
-                            <div style={{ fontSize: '0.75rem', color: '#059669', fontWeight: 700, marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                            <div style={{ fontSize: '0.75rem', color: '#0284C7', fontWeight: 700, marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 5, background: 'rgba(2, 132, 199, 0.08)', padding: '3px 8px', borderRadius: 8 }}>
                                 <i className="fas fa-arrow-up" /> Active Cards Tracked
                             </div>
                         </>
@@ -815,12 +1085,13 @@ export default function MerchantReports() {
                 </div>
 
                 {/* Rewards & Claims */}
-                <div className="card" style={{ padding: '20px 22px', borderRadius: 18, border: '1px solid rgba(239, 0, 3, 0.18)', background: '#FFFFFF', boxShadow: '0 2px 12px rgba(0,0,0,0.03)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                        <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                <div className="fl-report-kpi-card">
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3.5, background: 'linear-gradient(90deg, #EF0003 0%, #F87171 100%)' }} />
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                        <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
                             Rewards & Discounts
                         </span>
-                        <div style={{ width: 36, height: 36, borderRadius: 12, background: 'rgba(239, 0, 3, 0.1)', color: '#EF0003', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>
+                        <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(239, 0, 3, 0.12)', color: '#EF0003', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.05rem', boxShadow: '0 2px 8px rgba(239, 0, 3, 0.15)' }}>
                             <i className="fas fa-gift" />
                         </div>
                     </div>
@@ -831,10 +1102,10 @@ export default function MerchantReports() {
                         </>
                     ) : (
                         <>
-                            <div style={{ fontSize: '1.65rem', fontWeight: 900, color: '#EF0003', letterSpacing: '-0.5px' }}>
+                            <div style={{ fontSize: '1.75rem', fontWeight: 900, color: '#EF0003', letterSpacing: '-0.5px' }}>
                                 {executiveStats.totalRedemptions} Claimed
                             </div>
-                            <div style={{ fontSize: '0.75rem', color: '#059669', fontWeight: 700, marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                            <div style={{ fontSize: '0.75rem', color: '#059669', fontWeight: 700, marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 5, background: 'rgba(16, 185, 129, 0.08)', padding: '3px 8px', borderRadius: 8 }}>
                                 <i className="fas fa-check-circle" /> Verified Redemptions
                             </div>
                         </>
@@ -842,13 +1113,14 @@ export default function MerchantReports() {
                 </div>
 
                 {/* Member Revenue */}
-                <div className="card" style={{ padding: '20px 22px', borderRadius: 18, border: '1px solid rgba(16, 185, 129, 0.18)', background: '#FFFFFF', boxShadow: '0 2px 12px rgba(0,0,0,0.03)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                        <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                <div className="fl-report-kpi-card">
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3.5, background: 'linear-gradient(90deg, #10B981 0%, #34D399 100%)' }} />
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                        <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
                             Member Gross Spend
                         </span>
-                        <div style={{ width: 36, height: 36, borderRadius: 12, background: 'rgba(16, 185, 129, 0.1)', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>
-                            <i className="fas fa-dollar-sign" />
+                        <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(16, 185, 129, 0.12)', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.05rem', boxShadow: '0 2px 8px rgba(16, 185, 129, 0.15)' }}>
+                            <i className="fas fa-wallet" />
                         </div>
                     </div>
                     {loading ? (
@@ -858,7 +1130,7 @@ export default function MerchantReports() {
                         </>
                     ) : (
                         <>
-                            <div style={{ fontSize: '1.65rem', fontWeight: 900, color: '#059669', letterSpacing: '-0.5px' }}>
+                            <div style={{ fontSize: '1.75rem', fontWeight: 900, color: '#059669', letterSpacing: '-0.5px' }}>
                                 {executiveStats.totalGrossSpend}
                             </div>
                             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 6 }}>
@@ -869,12 +1141,13 @@ export default function MerchantReports() {
                 </div>
 
                 {/* Customer Retention */}
-                <div className="card" style={{ padding: '20px 22px', borderRadius: 18, border: '1px solid rgba(217, 119, 6, 0.18)', background: '#FFFFFF', boxShadow: '0 2px 12px rgba(0,0,0,0.03)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                        <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                <div className="fl-report-kpi-card">
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3.5, background: 'linear-gradient(90deg, #F59E0B 0%, #FBBF24 100%)' }} />
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                        <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
                             Customer Retention
                         </span>
-                        <div style={{ width: 36, height: 36, borderRadius: 12, background: 'rgba(217, 119, 6, 0.1)', color: '#D97706', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>
+                        <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(245, 158, 11, 0.12)', color: '#D97706', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.05rem', boxShadow: '0 2px 8px rgba(245, 158, 11, 0.15)' }}>
                             <i className="fas fa-users" />
                         </div>
                     </div>
@@ -885,10 +1158,10 @@ export default function MerchantReports() {
                         </>
                     ) : (
                         <>
-                            <div style={{ fontSize: '1.65rem', fontWeight: 900, color: '#D97706', letterSpacing: '-0.5px' }}>
+                            <div style={{ fontSize: '1.75rem', fontWeight: 900, color: '#D97706', letterSpacing: '-0.5px' }}>
                                 {executiveStats.totalCustomers} Enrolled
                             </div>
-                            <div style={{ fontSize: '0.75rem', color: '#059669', fontWeight: 700, marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                            <div style={{ fontSize: '0.75rem', color: '#059669', fontWeight: 700, marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 5, background: 'rgba(16, 185, 129, 0.08)', padding: '3px 8px', borderRadius: 8 }}>
                                 <i className="fas fa-redo-alt" /> Active Loyalty Base
                             </div>
                         </>
@@ -900,39 +1173,29 @@ export default function MerchantReports() {
             <div
                 style={{
                     background: '#FFFFFF',
-                    borderRadius: 16,
-                    padding: 6,
+                    borderRadius: 20,
+                    padding: 8,
                     border: '1px solid #E2E8F0',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 6,
+                    gap: 8,
                     overflowX: 'auto',
                     marginBottom: 24,
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
+                    boxShadow: '0 4px 18px rgba(0, 0, 0, 0.03)'
                 }}
             >
                 {/* 1. Branch Outlets Performance (FIRST TAB) */}
                 <button
                     type="button"
+                    className="fl-nav-tab-btn"
                     onClick={() => {
                         setActiveTab('branches')
                         setCurrentPage(1)
                     }}
                     style={{
-                        padding: '10px 18px',
-                        borderRadius: 12,
-                        fontSize: '0.86rem',
-                        fontWeight: 800,
-                        border: 'none',
-                        background: activeTab === 'branches' ? 'linear-gradient(135deg, #0E88B8 0%, #065B7D 100%)' : 'transparent',
-                        color: activeTab === 'branches' ? '#FFFFFF' : 'var(--text-secondary)',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        transition: 'all 0.2s ease',
-                        whiteSpace: 'nowrap',
-                        boxShadow: activeTab === 'branches' ? '0 4px 12px rgba(14, 136, 184, 0.25)' : 'none'
+                        background: activeTab === 'branches' ? 'linear-gradient(135deg, #0E88B8 0%, #0284C7 100%)' : 'transparent',
+                        color: activeTab === 'branches' ? '#FFFFFF' : '#475569',
+                        boxShadow: activeTab === 'branches' ? '0 6px 18px rgba(14, 136, 184, 0.3)' : 'none'
                     }}
                 >
                     <i className="fas fa-store" />
@@ -940,10 +1203,11 @@ export default function MerchantReports() {
                     <span
                         style={{
                             fontSize: '0.72rem',
-                            padding: '2px 8px',
-                            borderRadius: 10,
+                            padding: '3px 9px',
+                            borderRadius: 12,
+                            fontWeight: 800,
                             background: activeTab === 'branches' ? 'rgba(255, 255, 255, 0.25)' : '#F1F5F9',
-                            color: activeTab === 'branches' ? '#FFFFFF' : 'var(--text-muted)'
+                            color: activeTab === 'branches' ? '#FFFFFF' : '#64748B'
                         }}
                     >
                         {allBranches.length}
@@ -953,25 +1217,15 @@ export default function MerchantReports() {
                 {/* 2. Redemption & Audit Logs (SECOND TAB) */}
                 <button
                     type="button"
+                    className="fl-nav-tab-btn"
                     onClick={() => {
                         setActiveTab('logs')
                         setCurrentPage(1)
                     }}
                     style={{
-                        padding: '10px 18px',
-                        borderRadius: 12,
-                        fontSize: '0.86rem',
-                        fontWeight: 800,
-                        border: 'none',
-                        background: activeTab === 'logs' ? 'linear-gradient(135deg, #0E88B8 0%, #065B7D 100%)' : 'transparent',
-                        color: activeTab === 'logs' ? '#FFFFFF' : 'var(--text-secondary)',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        transition: 'all 0.2s ease',
-                        whiteSpace: 'nowrap',
-                        boxShadow: activeTab === 'logs' ? '0 4px 12px rgba(14, 136, 184, 0.25)' : 'none'
+                        background: activeTab === 'logs' ? 'linear-gradient(135deg, #0E88B8 0%, #0284C7 100%)' : 'transparent',
+                        color: activeTab === 'logs' ? '#FFFFFF' : '#475569',
+                        boxShadow: activeTab === 'logs' ? '0 6px 18px rgba(14, 136, 184, 0.3)' : 'none'
                     }}
                 >
                     <i className="fas fa-clipboard-list" />
@@ -979,10 +1233,11 @@ export default function MerchantReports() {
                     <span
                         style={{
                             fontSize: '0.72rem',
-                            padding: '2px 8px',
-                            borderRadius: 10,
+                            padding: '3px 9px',
+                            borderRadius: 12,
+                            fontWeight: 800,
                             background: activeTab === 'logs' ? 'rgba(255, 255, 255, 0.25)' : '#F1F5F9',
-                            color: activeTab === 'logs' ? '#FFFFFF' : 'var(--text-muted)'
+                            color: activeTab === 'logs' ? '#FFFFFF' : '#64748B'
                         }}
                     >
                         {filteredLogs.length}
@@ -992,25 +1247,15 @@ export default function MerchantReports() {
                 {/* 3. Loyalty Cards & Tiers */}
                 <button
                     type="button"
+                    className="fl-nav-tab-btn"
                     onClick={() => {
                         setActiveTab('cards')
                         setCurrentPage(1)
                     }}
                     style={{
-                        padding: '10px 18px',
-                        borderRadius: 12,
-                        fontSize: '0.86rem',
-                        fontWeight: 800,
-                        border: 'none',
-                        background: activeTab === 'cards' ? 'linear-gradient(135deg, #0E88B8 0%, #065B7D 100%)' : 'transparent',
-                        color: activeTab === 'cards' ? '#FFFFFF' : 'var(--text-secondary)',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        transition: 'all 0.2s ease',
-                        whiteSpace: 'nowrap',
-                        boxShadow: activeTab === 'cards' ? '0 4px 12px rgba(14, 136, 184, 0.25)' : 'none'
+                        background: activeTab === 'cards' ? 'linear-gradient(135deg, #0E88B8 0%, #0284C7 100%)' : 'transparent',
+                        color: activeTab === 'cards' ? '#FFFFFF' : '#475569',
+                        boxShadow: activeTab === 'cards' ? '0 6px 18px rgba(14, 136, 184, 0.3)' : 'none'
                     }}
                 >
                     <i className="fas fa-id-card" />
@@ -1018,10 +1263,11 @@ export default function MerchantReports() {
                     <span
                         style={{
                             fontSize: '0.72rem',
-                            padding: '2px 8px',
-                            borderRadius: 10,
+                            padding: '3px 9px',
+                            borderRadius: 12,
+                            fontWeight: 800,
                             background: activeTab === 'cards' ? 'rgba(255, 255, 255, 0.25)' : '#F1F5F9',
-                            color: activeTab === 'cards' ? '#FFFFFF' : 'var(--text-muted)'
+                            color: activeTab === 'cards' ? '#FFFFFF' : '#64748B'
                         }}
                     >
                         {allCards.length}
@@ -1031,25 +1277,15 @@ export default function MerchantReports() {
                 {/* 4. Customer Engagement */}
                 <button
                     type="button"
+                    className="fl-nav-tab-btn"
                     onClick={() => {
                         setActiveTab('customers')
                         setCurrentPage(1)
                     }}
                     style={{
-                        padding: '10px 18px',
-                        borderRadius: 12,
-                        fontSize: '0.86rem',
-                        fontWeight: 800,
-                        border: 'none',
-                        background: activeTab === 'customers' ? 'linear-gradient(135deg, #0E88B8 0%, #065B7D 100%)' : 'transparent',
-                        color: activeTab === 'customers' ? '#FFFFFF' : 'var(--text-secondary)',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        transition: 'all 0.2s ease',
-                        whiteSpace: 'nowrap',
-                        boxShadow: activeTab === 'customers' ? '0 4px 12px rgba(14, 136, 184, 0.25)' : 'none'
+                        background: activeTab === 'customers' ? 'linear-gradient(135deg, #0E88B8 0%, #0284C7 100%)' : 'transparent',
+                        color: activeTab === 'customers' ? '#FFFFFF' : '#475569',
+                        boxShadow: activeTab === 'customers' ? '0 6px 18px rgba(14, 136, 184, 0.3)' : 'none'
                     }}
                 >
                     <i className="fas fa-users" />
@@ -1057,10 +1293,11 @@ export default function MerchantReports() {
                     <span
                         style={{
                             fontSize: '0.72rem',
-                            padding: '2px 8px',
-                            borderRadius: 10,
+                            padding: '3px 9px',
+                            borderRadius: 12,
+                            fontWeight: 800,
                             background: activeTab === 'customers' ? 'rgba(255, 255, 255, 0.25)' : '#F1F5F9',
-                            color: activeTab === 'customers' ? '#FFFFFF' : 'var(--text-muted)'
+                            color: activeTab === 'customers' ? '#FFFFFF' : '#64748B'
                         }}
                     >
                         {allCustomers.length}
@@ -1070,25 +1307,15 @@ export default function MerchantReports() {
                 {/* 5. Receptionist Activity & Stamps Leaderboard */}
                 <button
                     type="button"
+                    className="fl-nav-tab-btn"
                     onClick={() => {
                         setActiveTab('staff')
                         setCurrentPage(1)
                     }}
                     style={{
-                        padding: '10px 18px',
-                        borderRadius: 12,
-                        fontSize: '0.86rem',
-                        fontWeight: 800,
-                        border: 'none',
-                        background: activeTab === 'staff' ? 'linear-gradient(135deg, #0E88B8 0%, #065B7D 100%)' : 'transparent',
-                        color: activeTab === 'staff' ? '#FFFFFF' : 'var(--text-secondary)',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        transition: 'all 0.2s ease',
-                        whiteSpace: 'nowrap',
-                        boxShadow: activeTab === 'staff' ? '0 4px 12px rgba(14, 136, 184, 0.25)' : 'none'
+                        background: activeTab === 'staff' ? 'linear-gradient(135deg, #0E88B8 0%, #0284C7 100%)' : 'transparent',
+                        color: activeTab === 'staff' ? '#FFFFFF' : '#475569',
+                        boxShadow: activeTab === 'staff' ? '0 6px 18px rgba(14, 136, 184, 0.3)' : 'none'
                     }}
                 >
                     <i className="fas fa-user-tie" />
@@ -1096,10 +1323,11 @@ export default function MerchantReports() {
                     <span
                         style={{
                             fontSize: '0.72rem',
-                            padding: '2px 8px',
-                            borderRadius: 10,
+                            padding: '3px 9px',
+                            borderRadius: 12,
+                            fontWeight: 800,
                             background: activeTab === 'staff' ? 'rgba(255, 255, 255, 0.25)' : '#F1F5F9',
-                            color: activeTab === 'staff' ? '#FFFFFF' : 'var(--text-muted)'
+                            color: activeTab === 'staff' ? '#FFFFFF' : '#64748B'
                         }}
                     >
                         {allReceptionists.length}
@@ -1108,22 +1336,23 @@ export default function MerchantReports() {
             </div>
 
             {/* FILTER TOOLBAR */}
-            <div className="card mb-4" style={{ padding: '16px 20px', borderRadius: 16, border: '1px solid #E2E8F0', background: '#FFFFFF' }}>
+            <div className="card mb-4" style={{ padding: '18px 24px', borderRadius: 20, border: '1px solid #E2E8F0', background: '#FFFFFF', boxShadow: '0 4px 18px rgba(0,0,0,0.02)' }}>
                 <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
                         {/* Branch Outlet Selector */}
                         <div>
-                            <label style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-secondary)', marginBottom: 4, display: 'block', textTransform: 'uppercase' }}>
+                            <label style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-secondary)', marginBottom: 5, display: 'flex', alignItems: 'center', gap: 5, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                <i className="fas fa-store-alt" style={{ color: 'var(--firstloop-primary)' }} />
                                 Filter Branch
                             </label>
                             <select
-                                className="form-select"
+                                className="form-select fl-form-control"
                                 value={selectedBranch}
                                 onChange={(e) => {
                                     setSelectedBranch(e.target.value)
                                     setCurrentPage(1)
                                 }}
-                                style={{ height: 38, borderRadius: 10, fontSize: '0.85rem', minWidth: 200, fontWeight: 600 }}
+                                style={{ height: 40, borderRadius: 12, fontSize: '0.86rem', minWidth: 200, fontWeight: 600, border: '1.5px solid #E2E8F0' }}
                             >
                                 <option value="all">All Merchant Branches</option>
                                 {allBranches.map((b) => (
@@ -1137,17 +1366,17 @@ export default function MerchantReports() {
                         {/* BRANCH RANKING DROPDOWN (BRANCHES TAB ONLY) */}
                         {activeTab === 'branches' && (
                             <div>
-                                <label style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--firstloop-primary)', marginBottom: 4, display: 'block', textTransform: 'uppercase' }}>
-                                    <i className="fas fa-sort-amount-down" style={{ marginRight: 4 }} /> Rank / Filter Outlets
+                                <label style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--firstloop-primary)', marginBottom: 5, display: 'flex', alignItems: 'center', gap: 5, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                    <i className="fas fa-sort-amount-down" /> Rank / Filter Outlets
                                 </label>
                                 <select
-                                    className="form-select"
+                                    className="form-select fl-form-control"
                                     value={branchSortFilter}
                                     onChange={(e) => setBranchSortFilter(e.target.value)}
                                     style={{
-                                        height: 38,
-                                        borderRadius: 10,
-                                        fontSize: '0.85rem',
+                                        height: 40,
+                                        borderRadius: 12,
+                                        fontSize: '0.86rem',
                                         minWidth: 230,
                                         fontWeight: 800,
                                         border: '1.5px solid var(--firstloop-primary)',
@@ -1158,7 +1387,7 @@ export default function MerchantReports() {
                                     <option value="all">All Outlets (Default)</option>
                                     <option value="large_stamp">Largest Stamp Card Volume (Stamps)</option>
                                     <option value="large_membership">Most Membership Cards (VIP Members)</option>
-                                    <option value="highest_spend">Highest Customer Spend / Revenue ($)</option>
+                                    <option value="highest_spend">Highest Customer Spend / Revenue</option>
                                     <option value="highest_footfall">Highest Customer Footfall (Visits)</option>
                                 </select>
                             </div>
@@ -1167,17 +1396,17 @@ export default function MerchantReports() {
                         {/* STAFF SORT DROPDOWN (STAFF TAB ONLY) */}
                         {activeTab === 'staff' && (
                             <div>
-                                <label style={{ fontSize: '0.74rem', fontWeight: 800, color: '#D97706', marginBottom: 4, display: 'block', textTransform: 'uppercase' }}>
-                                    <i className="fas fa-trophy" style={{ marginRight: 4 }} /> Staff Ranking Metric
+                                <label style={{ fontSize: '0.74rem', fontWeight: 800, color: '#D97706', marginBottom: 5, display: 'flex', alignItems: 'center', gap: 5, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                    <i className="fas fa-trophy" /> Staff Ranking Metric
                                 </label>
                                 <select
-                                    className="form-select"
+                                    className="form-select fl-form-control"
                                     value={staffSortFilter}
                                     onChange={(e) => setStaffSortFilter(e.target.value)}
                                     style={{
-                                        height: 38,
-                                        borderRadius: 10,
-                                        fontSize: '0.85rem',
+                                        height: 40,
+                                        borderRadius: 12,
+                                        fontSize: '0.86rem',
                                         minWidth: 220,
                                         fontWeight: 800,
                                         border: '1.5px solid #D97706',
@@ -1195,17 +1424,18 @@ export default function MerchantReports() {
 
                         {/* Date Range Selector */}
                         <div>
-                            <label style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-secondary)', marginBottom: 4, display: 'block', textTransform: 'uppercase' }}>
+                            <label style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-secondary)', marginBottom: 5, display: 'flex', alignItems: 'center', gap: 5, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                <i className="fas fa-calendar-alt" style={{ color: '#0284C7' }} />
                                 Date Period
                             </label>
                             <select
-                                className="form-select"
+                                className="form-select fl-form-control"
                                 value={dateRange}
                                 onChange={(e) => {
                                     setDateRange(e.target.value)
                                     setCurrentPage(1)
                                 }}
-                                style={{ height: 38, borderRadius: 10, fontSize: '0.85rem', minWidth: 150, fontWeight: 600 }}
+                                style={{ height: 40, borderRadius: 12, fontSize: '0.86rem', minWidth: 150, fontWeight: 600, border: '1.5px solid #E2E8F0' }}
                             >
                                 <option value="7">Last 7 Days</option>
                                 <option value="30">Last 30 Days</option>
@@ -1217,17 +1447,18 @@ export default function MerchantReports() {
 
                         {/* Card Category Selector */}
                         <div>
-                            <label style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-secondary)', marginBottom: 4, display: 'block', textTransform: 'uppercase' }}>
+                            <label style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-secondary)', marginBottom: 5, display: 'flex', alignItems: 'center', gap: 5, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                <i className="fas fa-id-card" style={{ color: '#8B5CF6' }} />
                                 Card Category
                             </label>
                             <select
-                                className="form-select"
+                                className="form-select fl-form-control"
                                 value={selectedCardType}
                                 onChange={(e) => {
                                     setSelectedCardType(e.target.value)
                                     setCurrentPage(1)
                                 }}
-                                style={{ height: 38, borderRadius: 10, fontSize: '0.85rem', minWidth: 160, fontWeight: 600 }}
+                                style={{ height: 40, borderRadius: 12, fontSize: '0.86rem', minWidth: 160, fontWeight: 600, border: '1.5px solid #E2E8F0' }}
                             >
                                 <option value="all">All Card Types</option>
                                 <option value="stamp">Stamp Cards Only</option>
@@ -1238,17 +1469,17 @@ export default function MerchantReports() {
                         {/* Rows per page for logs table */}
                         {activeTab === 'logs' && (
                             <div>
-                                <label style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-secondary)', marginBottom: 4, display: 'block', textTransform: 'uppercase' }}>
+                                <label style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-secondary)', marginBottom: 5, display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                                     Per Page
                                 </label>
                                 <select
-                                    className="form-select"
+                                    className="form-select fl-form-control"
                                     value={rowsPerPage}
                                     onChange={(e) => {
                                         setRowsPerPage(Number(e.target.value))
                                         setCurrentPage(1)
                                     }}
-                                    style={{ height: 38, borderRadius: 10, fontSize: '0.85rem', width: 85, fontWeight: 600 }}
+                                    style={{ height: 40, borderRadius: 12, fontSize: '0.86rem', width: 85, fontWeight: 600, border: '1.5px solid #E2E8F0' }}
                                 >
                                     <option value={5}>5</option>
                                     <option value={10}>10</option>
@@ -1273,25 +1504,45 @@ export default function MerchantReports() {
                         />
                         <input
                             type="text"
-                            className="form-control"
+                            className="form-control fl-form-control"
                             placeholder={
                                 activeTab === 'branches'
-                                    ? 'Search branch, city, manager...'
+                                    ? 'Search branch, city, receptionist...'
                                     : activeTab === 'logs'
-                                    ? 'Search customer, action, staff, card...'
-                                    : activeTab === 'cards'
-                                    ? 'Search loyalty card name, perk...'
-                                    : activeTab === 'customers'
-                                    ? 'Search customer, email, tier...'
-                                    : 'Search receptionist name, shift, ID...'
+                                        ? 'Search customer, action, staff, card...'
+                                        : activeTab === 'cards'
+                                            ? 'Search loyalty card name, perk...'
+                                            : activeTab === 'customers'
+                                                ? 'Search customer, email, tier...'
+                                                : 'Search receptionist name, shift, ID...'
                             }
                             value={search}
                             onChange={(e) => {
                                 setSearch(e.target.value)
                                 setCurrentPage(1)
                             }}
-                            style={{ paddingLeft: 38, height: 38, borderRadius: 10, fontSize: '0.85rem' }}
+                            style={{ paddingLeft: 38, paddingRight: search ? 36 : 14, height: 40, borderRadius: 12, fontSize: '0.86rem', border: '1.5px solid #E2E8F0' }}
                         />
+                        {search && (
+                            <button
+                                type="button"
+                                onClick={() => setSearch('')}
+                                style={{
+                                    position: 'absolute',
+                                    right: 12,
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    background: 'none',
+                                    border: 'none',
+                                    color: 'var(--text-muted)',
+                                    cursor: 'pointer',
+                                    padding: 0,
+                                    fontSize: '0.85rem'
+                                }}
+                            >
+                                <i className="fas fa-times-circle" />
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
@@ -1306,107 +1557,46 @@ export default function MerchantReports() {
                         <button
                             type="button"
                             onClick={() => setBranchSortFilter('all')}
-                            style={{
-                                borderRadius: 10,
-                                fontSize: '0.8rem',
-                                fontWeight: 800,
-                                background: branchSortFilter === 'all' ? '#0F172A' : '#F1F5F9',
-                                color: branchSortFilter === 'all' ? '#FFFFFF' : 'var(--text-secondary)',
-                                border: 'none',
-                                padding: '7px 16px',
-                                cursor: 'pointer',
-                                transition: 'all 0.15s ease'
-                            }}
+                            className={`fl-pill-filter ${branchSortFilter === 'all' ? 'active' : ''}`}
                         >
-                            All Outlets ({allBranches.length})
+                            <i className="fas fa-th-large" />
+                            <span>All Outlets ({allBranches.length})</span>
                         </button>
 
                         <button
                             type="button"
                             onClick={() => setBranchSortFilter('large_stamp')}
-                            style={{
-                                borderRadius: 10,
-                                fontSize: '0.8rem',
-                                fontWeight: 800,
-                                background: branchSortFilter === 'large_stamp' ? '#0284C7' : 'rgba(2, 132, 199, 0.1)',
-                                color: branchSortFilter === 'large_stamp' ? '#FFFFFF' : '#0284C7',
-                                border: 'none',
-                                padding: '7px 16px',
-                                cursor: 'pointer',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 6,
-                                transition: 'all 0.15s ease'
-                            }}
+                            className={`fl-pill-filter ${branchSortFilter === 'large_stamp' ? 'active' : ''}`}
                         >
-                            <i className="fas fa-stamp" />
-                            <span>Largest Stamp Card Volume</span>
+                            <i className="fas fa-stamp" style={{ color: branchSortFilter === 'large_stamp' ? '#38BDF8' : '#0284C7' }} />
+                            <span>Largest Stamp Volume</span>
                         </button>
 
                         <button
                             type="button"
                             onClick={() => setBranchSortFilter('large_membership')}
-                            style={{
-                                borderRadius: 10,
-                                fontSize: '0.8rem',
-                                fontWeight: 800,
-                                background: branchSortFilter === 'large_membership' ? '#D97706' : 'rgba(245, 158, 11, 0.1)',
-                                color: branchSortFilter === 'large_membership' ? '#FFFFFF' : '#D97706',
-                                border: 'none',
-                                padding: '7px 16px',
-                                cursor: 'pointer',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 6,
-                                transition: 'all 0.15s ease'
-                            }}
+                            className={`fl-pill-filter ${branchSortFilter === 'large_membership' ? 'active' : ''}`}
                         >
-                            <i className="fas fa-crown" />
-                            <span>Most VIP Memberships</span>
+                            <i className="fas fa-crown" style={{ color: branchSortFilter === 'large_membership' ? '#FBBF24' : '#D97706' }} />
+                            <span>Most VIP Members</span>
                         </button>
 
                         <button
                             type="button"
                             onClick={() => setBranchSortFilter('highest_spend')}
-                            style={{
-                                borderRadius: 10,
-                                fontSize: '0.8rem',
-                                fontWeight: 800,
-                                background: branchSortFilter === 'highest_spend' ? '#059669' : 'rgba(16, 185, 129, 0.1)',
-                                color: branchSortFilter === 'highest_spend' ? '#FFFFFF' : '#059669',
-                                border: 'none',
-                                padding: '7px 16px',
-                                cursor: 'pointer',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 6,
-                                transition: 'all 0.15s ease'
-                            }}
+                            className={`fl-pill-filter ${branchSortFilter === 'highest_spend' ? 'active' : ''}`}
                         >
-                            <i className="fas fa-dollar-sign" />
-                            <span>Highest Customer Spend</span>
+                            <i className="fas fa-wallet" style={{ color: branchSortFilter === 'highest_spend' ? '#34D399' : '#059669' }} />
+                            <span>Highest Spend</span>
                         </button>
 
                         <button
                             type="button"
                             onClick={() => setBranchSortFilter('highest_footfall')}
-                            style={{
-                                borderRadius: 10,
-                                fontSize: '0.8rem',
-                                fontWeight: 800,
-                                background: branchSortFilter === 'highest_footfall' ? '#6366F1' : 'rgba(99, 102, 241, 0.1)',
-                                color: branchSortFilter === 'highest_footfall' ? '#FFFFFF' : '#6366F1',
-                                border: 'none',
-                                padding: '7px 16px',
-                                cursor: 'pointer',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 6,
-                                transition: 'all 0.15s ease'
-                            }}
+                            className={`fl-pill-filter ${branchSortFilter === 'highest_footfall' ? 'active' : ''}`}
                         >
-                            <i className="fas fa-shoe-prints" />
-                            <span>Highest Footfall (Visits)</span>
+                            <i className="fas fa-shoe-prints" style={{ color: branchSortFilter === 'highest_footfall' ? '#A5B4FC' : '#6366F1' }} />
+                            <span>Highest Footfall</span>
                         </button>
                     </div>
 
@@ -1414,7 +1604,7 @@ export default function MerchantReports() {
                     {loading ? (
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 22 }}>
                             {Array.from({ length: 3 }).map((_, i) => (
-                                <div key={i} className="card" style={{ padding: 24, borderRadius: 22, border: '1px solid #E2E8F0', background: '#FFFFFF' }}>
+                                <div key={i} className="fl-luxury-card" style={{ padding: 24 }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
                                         <div className="skeleton-avatar" style={{ width: 50, height: 50, borderRadius: 16 }} />
                                         <div style={{ flex: 1 }}>
@@ -1448,53 +1638,49 @@ export default function MerchantReports() {
                                 return (
                                     <div
                                         key={branch.id}
-                                        className="card"
+                                        className="fl-luxury-card"
                                         style={{
                                             padding: 24,
-                                            borderRadius: 22,
-                                            border: '1px solid #E2E8F0',
-                                            boxShadow: '0 4px 20px rgba(0,0,0,0.04)',
                                             display: 'flex',
                                             flexDirection: 'column',
-                                            justifyContent: 'space-between',
-                                            background: '#FFFFFF',
-                                            transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+                                            justifyContent: 'space-between'
                                         }}
                                     >
+                                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3.5, background: 'linear-gradient(90deg, #0E88B8 0%, #0284C7 100%)' }} />
                                         <div>
                                             {/* Card Top */}
                                             <div className="flex-between mb-3" style={{ alignItems: 'flex-start' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                                                     <div
                                                         style={{
-                                                            width: 50,
-                                                            height: 50,
+                                                            width: 52,
+                                                            height: 52,
                                                             borderRadius: 16,
-                                                            background: 'linear-gradient(135deg, rgba(14, 136, 184, 0.12) 0%, rgba(2, 132, 199, 0.08) 100%)',
+                                                            background: 'linear-gradient(135deg, rgba(14, 136, 184, 0.14) 0%, rgba(2, 132, 199, 0.08) 100%)',
                                                             color: 'var(--firstloop-primary, #0E88B8)',
                                                             display: 'flex',
                                                             alignItems: 'center',
                                                             justifyContent: 'center',
-                                                            fontSize: '1.35rem',
+                                                            fontSize: '1.4rem',
                                                             fontWeight: 900,
-                                                            boxShadow: '0 2px 8px rgba(14, 136, 184, 0.15)'
+                                                            boxShadow: '0 3px 10px rgba(14, 136, 184, 0.18)'
                                                         }}
                                                     >
                                                         <i className="fas fa-store" />
                                                     </div>
                                                     <div>
-                                                        <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                                                        <h4 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-0.3px' }}>
                                                             {branch.name}
                                                         </h4>
-                                                        <small style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-                                                            <i className="fas fa-map-marker-alt" style={{ marginRight: 4, color: 'var(--firstloop-primary)' }} />
+                                                        <small style={{ color: 'var(--text-muted)', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                                                            <i className="fas fa-map-marker-alt" style={{ color: 'var(--firstloop-primary)' }} />
                                                             {branch.city}, {branch.state}
                                                         </small>
                                                     </div>
                                                 </div>
 
-                                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-                                                    <span className="badge" style={{ background: 'var(--status-success-bg, #DCFCE7)', color: 'var(--status-success, #16A34A)', fontWeight: 800, padding: '4px 10px', borderRadius: 8 }}>
+                                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5 }}>
+                                                    <span className="badge" style={{ background: 'var(--status-success-bg, #DCFCE7)', color: 'var(--status-success, #16A34A)', fontWeight: 800, padding: '4px 10px', borderRadius: 8, fontSize: '0.74rem' }}>
                                                         {branch.status}
                                                     </span>
                                                     {isTopStamps && (
@@ -1511,23 +1697,12 @@ export default function MerchantReports() {
                                             </div>
 
                                             {/* Multi-Metric Performance Grid */}
-                                            <div
-                                                style={{
-                                                    display: 'grid',
-                                                    gridTemplateColumns: 'repeat(3, 1fr)',
-                                                    gap: 8,
-                                                    background: '#F8FAFC',
-                                                    padding: '16px 14px',
-                                                    borderRadius: 16,
-                                                    margin: '16px 0',
-                                                    border: '1px solid #E2E8F0'
-                                                }}
-                                            >
+                                            <div className="fl-inner-metric-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
                                                 <div style={{ textAlign: 'center' }}>
                                                     <small style={{ color: 'var(--text-muted)', fontSize: '0.72rem', display: 'block', fontWeight: 800, letterSpacing: '0.4px' }}>
                                                         STAMPS ISSUED
                                                     </small>
-                                                    <strong style={{ fontSize: '1.25rem', color: '#0284C7', fontWeight: 900 }}>
+                                                    <strong style={{ fontSize: '1.3rem', color: '#0284C7', fontWeight: 900 }}>
                                                         {(branch.stampsIssued || 0).toLocaleString()}
                                                     </strong>
                                                 </div>
@@ -1536,7 +1711,7 @@ export default function MerchantReports() {
                                                     <small style={{ color: 'var(--text-muted)', fontSize: '0.72rem', display: 'block', fontWeight: 800, letterSpacing: '0.4px' }}>
                                                         VIP MEMBERS
                                                     </small>
-                                                    <strong style={{ fontSize: '1.25rem', color: '#D97706', fontWeight: 900 }}>
+                                                    <strong style={{ fontSize: '1.3rem', color: '#D97706', fontWeight: 900 }}>
                                                         {branch.membershipCount || 0}
                                                     </strong>
                                                 </div>
@@ -1545,8 +1720,8 @@ export default function MerchantReports() {
                                                     <small style={{ color: 'var(--text-muted)', fontSize: '0.72rem', display: 'block', fontWeight: 800, letterSpacing: '0.4px' }}>
                                                         TOTAL SPEND
                                                     </small>
-                                                    <strong style={{ fontSize: '1.25rem', color: '#059669', fontWeight: 900 }}>
-                                                        ${(branch.totalSpend || 0).toLocaleString()}
+                                                    <strong style={{ fontSize: '1.3rem', color: '#059669', fontWeight: 900 }}>
+                                                        {(branch.totalSpend || 0).toLocaleString()}
                                                     </strong>
                                                 </div>
                                             </div>
@@ -1554,12 +1729,12 @@ export default function MerchantReports() {
                                             {/* Progress Bar for Volume Share */}
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, margin: '14px 0' }}>
                                                 <div>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', fontWeight: 700, marginBottom: 4 }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', fontWeight: 700, marginBottom: 5 }}>
                                                         <span style={{ color: 'var(--text-secondary)' }}>Stamp Volume Share:</span>
-                                                        <span style={{ color: '#0284C7' }}>{Math.round(((branch.stampsIssued || 0) / 2596) * 100)}% of Network</span>
+                                                        <span style={{ color: '#0284C7', fontWeight: 800 }}>{Math.round(((branch.stampsIssued || 0) / (maxStamps || 1)) * 100)}% of Top Hub</span>
                                                     </div>
-                                                    <div style={{ height: 7, background: '#F1F5F9', borderRadius: 6, overflow: 'hidden' }}>
-                                                        <div style={{ height: '100%', width: `${Math.round(((branch.stampsIssued || 0) / 2596) * 100)}%`, background: 'linear-gradient(90deg, #0284C7 0%, #0E88B8 100%)', borderRadius: 6 }} />
+                                                    <div style={{ height: 8, background: '#F1F5F9', borderRadius: 6, overflow: 'hidden' }}>
+                                                        <div style={{ height: '100%', width: `${Math.min(Math.round(((branch.stampsIssued || 0) / (maxStamps || 1)) * 100), 100)}%`, background: 'linear-gradient(90deg, #0284C7 0%, #0E88B8 100%)', borderRadius: 6 }} />
                                                     </div>
                                                 </div>
 
@@ -1569,10 +1744,10 @@ export default function MerchantReports() {
                                                 </div>
                                             </div>
 
-                                            {/* Manager & Staff Details */}
+                                            {/* Reception Details */}
                                             <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between', paddingTop: 6 }}>
-                                                <span>Manager: <strong>{branch.manager}</strong></span>
-                                                <span>Staff: <strong style={{ color: 'var(--firstloop-primary)' }}>{receptionistsInBranch.length} Receptionists</strong></span>
+                                                <span>Receptionist: <strong>{branch.Receptionists}</strong></span>
+                                                <span>Active Staff: <strong style={{ color: 'var(--firstloop-primary)' }}>{branch.receptionistsCount || 1} Staff</strong></span>
                                             </div>
                                         </div>
 
@@ -1581,18 +1756,10 @@ export default function MerchantReports() {
                                             <button
                                                 type="button"
                                                 onClick={() => navigate(`/merchant/branches`)}
-                                                style={{
-                                                    borderRadius: 10,
-                                                    fontSize: '0.8rem',
-                                                    fontWeight: 800,
-                                                    padding: '7px 14px',
-                                                    background: '#FFFFFF',
-                                                    border: '1.5px solid #CBD5E1',
-                                                    color: 'var(--text-primary)',
-                                                    cursor: 'pointer'
-                                                }}
+                                                className="fl-btn-glass"
                                             >
-                                                <i className="fas fa-external-link-alt" style={{ marginRight: 6 }} /> Manage Outlet
+                                                <i className="fas fa-external-link-alt" />
+                                                <span>Manage Outlet</span>
                                             </button>
 
                                             <button
@@ -1602,19 +1769,10 @@ export default function MerchantReports() {
                                                     setActiveTab('logs')
                                                     setCurrentPage(1)
                                                 }}
-                                                style={{
-                                                    borderRadius: 10,
-                                                    fontSize: '0.8rem',
-                                                    fontWeight: 800,
-                                                    background: 'linear-gradient(135deg, #0E88B8 0%, #065B7D 100%)',
-                                                    color: '#FFFFFF',
-                                                    border: 'none',
-                                                    padding: '7px 16px',
-                                                    cursor: 'pointer',
-                                                    boxShadow: '0 2px 8px rgba(14, 136, 184, 0.25)'
-                                                }}
+                                                className="fl-btn-gradient"
                                             >
-                                                <i className="fas fa-filter" style={{ marginRight: 6 }} /> View Branch Logs ({logsInBranch.length})
+                                                <i className="fas fa-filter" />
+                                                <span>View Logs ({logsInBranch.length})</span>
                                             </button>
                                         </div>
                                     </div>
@@ -1624,13 +1782,13 @@ export default function MerchantReports() {
                     )}
 
                     {/* Detailed Branch Comparison Table */}
-                    <div className="card" style={{ padding: 0, borderRadius: 18, overflow: 'hidden', border: '1px solid #E2E8F0', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
-                        <div style={{ padding: '18px 24px', background: '#FFFFFF', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div className="fl-table-card">
+                        <div style={{ padding: '20px 24px', background: '#FFFFFF', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
                             <div>
-                                <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
+                                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
                                     Comprehensive Outlet Performance Breakdown
                                 </h3>
-                                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
+                                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '3px 0 0 0' }}>
                                     Comparative analysis of stamps collected, VIP cards, customer spend & visits per branch
                                 </p>
                             </div>
@@ -1638,33 +1796,25 @@ export default function MerchantReports() {
                             <button
                                 type="button"
                                 onClick={handleExportCSV}
-                                style={{
-                                    borderRadius: 10,
-                                    fontSize: '0.8rem',
-                                    fontWeight: 800,
-                                    padding: '6px 14px',
-                                    background: '#FFFFFF',
-                                    border: '1px solid #CBD5E1',
-                                    color: 'var(--text-primary)',
-                                    cursor: 'pointer'
-                                }}
+                                className="fl-btn-glass"
                             >
-                                <i className="fas fa-download" style={{ marginRight: 6 }} /> Export Branch CSV
+                                <i className="fas fa-download" style={{ color: 'var(--firstloop-primary)' }} />
+                                <span>Export Branch CSV</span>
                             </button>
                         </div>
 
                         <div className="table-responsive">
                             <table className="table table-hover align-middle mb-0" style={{ fontSize: '0.86rem' }}>
-                                <thead style={{ background: '#F8FAFC', borderBottom: '2px solid #E2E8F0' }}>
+                                <thead className="fl-table-header">
                                     <tr>
-                                        <th style={{ padding: '14px 20px', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Branch Location</th>
-                                        <th style={{ padding: '14px 20px', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Manager & Contact</th>
-                                        <th style={{ padding: '14px 20px', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', textAlign: 'center' }}>Stamps Issued</th>
-                                        <th style={{ padding: '14px 20px', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', textAlign: 'center' }}>VIP Members</th>
-                                        <th style={{ padding: '14px 20px', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', textAlign: 'center' }}>Customer Spend</th>
-                                        <th style={{ padding: '14px 20px', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', textAlign: 'center' }}>Footfall</th>
-                                        <th style={{ padding: '14px 20px', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', textAlign: 'center' }}>Active Staff</th>
-                                        <th style={{ padding: '14px 20px', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', textAlign: 'right' }}>Status</th>
+                                        <th style={{ padding: '14px 20px', fontSize: '0.74rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Branch Location</th>
+                                        <th style={{ padding: '14px 20px', fontSize: '0.74rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Reception & Contact</th>
+                                        <th style={{ padding: '14px 20px', fontSize: '0.74rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'center' }}>Stamps Issued</th>
+                                        <th style={{ padding: '14px 20px', fontSize: '0.74rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'center' }}>VIP Members</th>
+                                        <th style={{ padding: '14px 20px', fontSize: '0.74rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'center' }}>Customer Spend</th>
+                                        <th style={{ padding: '14px 20px', fontSize: '0.74rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'center' }}>Footfall</th>
+                                        <th style={{ padding: '14px 20px', fontSize: '0.74rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'center' }}>Active Staff</th>
+                                        <th style={{ padding: '14px 20px', fontSize: '0.74rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right' }}>Status</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -1683,13 +1833,13 @@ export default function MerchantReports() {
                                         ))
                                     ) : (
                                         sortedAndFilteredBranches.map((b) => (
-                                            <tr key={b.id}>
+                                            <tr key={b.id} className="fl-table-row">
                                                 <td style={{ padding: '14px 20px' }}>
                                                     <strong style={{ fontSize: '0.92rem', color: 'var(--text-primary)', display: 'block' }}>{b.name}</strong>
                                                     <small style={{ color: 'var(--text-muted)', fontSize: '0.76rem' }}>{b.address}</small>
                                                 </td>
                                                 <td style={{ padding: '14px 20px' }}>
-                                                    <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{b.manager}</div>
+                                                    <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{b.Receptionists}</div>
                                                     <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{b.phone}</small>
                                                 </td>
                                                 <td style={{ padding: '14px 20px', textAlign: 'center' }}>
@@ -1704,7 +1854,7 @@ export default function MerchantReports() {
                                                 </td>
                                                 <td style={{ padding: '14px 20px', textAlign: 'center' }}>
                                                     <strong style={{ color: '#059669', fontSize: '0.95rem' }}>
-                                                        ${(b.totalSpend || 0).toLocaleString()}
+                                                        {(b.totalSpend || 0).toLocaleString()}
                                                     </strong>
                                                 </td>
                                                 <td style={{ padding: '14px 20px', textAlign: 'center', fontWeight: 700 }}>
@@ -1736,7 +1886,8 @@ export default function MerchantReports() {
                     {/* VISUAL BREAKDOWN CHARTS */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 22, marginBottom: 24 }}>
                         {/* Stamp Pass Utilization Breakdown */}
-                        <div className="card" style={{ padding: 22, borderRadius: 20, border: '1px solid rgba(14, 136, 184, 0.15)', background: '#FFFFFF' }}>
+                        <div className="fl-luxury-card" style={{ padding: 24 }}>
+                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3.5, background: 'linear-gradient(90deg, #0E88B8 0%, #38BDF8 100%)' }} />
                             <div className="flex-between mb-3">
                                 <div>
                                     {loading ? (
@@ -1802,7 +1953,8 @@ export default function MerchantReports() {
                         </div>
 
                         {/* Membership Tier Distribution */}
-                        <div className="card" style={{ padding: 22, borderRadius: 20, border: '1px solid rgba(14, 136, 184, 0.15)', background: '#FFFFFF' }}>
+                        <div className="fl-luxury-card" style={{ padding: 24 }}>
+                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3.5, background: 'linear-gradient(90deg, #F59E0B 0%, #FBBF24 100%)' }} />
                             <div className="flex-between mb-3">
                                 <div>
                                     {loading ? (
@@ -1894,34 +2046,34 @@ export default function MerchantReports() {
                     </div>
 
                     {/* DETAILED TRANSACTION LOG TABLE */}
-                    <div className="card" style={{ padding: 0, borderRadius: 18, overflow: 'hidden', border: '1px solid #E2E8F0', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
-                        <div style={{ padding: '18px 24px', background: '#FFFFFF', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+                    <div className="fl-table-card">
+                        <div style={{ padding: '20px 24px', background: '#FFFFFF', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
                             <div>
-                                <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
+                                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
                                     Activity, Stamp & Redemption Audit Trail
                                 </h3>
-                                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
+                                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '3px 0 0 0' }}>
                                     Showing {paginatedLogs.length} of {filteredLogs.length} transaction entries
                                 </p>
                             </div>
 
-                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, background: '#F8FAFC', padding: '6px 14px', borderRadius: 10, border: '1px solid #E2E8F0' }}>
                                 Page {currentPage} of {totalPages}
                             </span>
                         </div>
 
                         <div className="table-responsive">
                             <table className="table table-hover align-middle mb-0" style={{ fontSize: '0.86rem' }}>
-                                <thead style={{ background: '#F8FAFC', borderBottom: '2px solid #E2E8F0' }}>
+                                <thead className="fl-table-header">
                                     <tr>
-                                        <th style={{ padding: '14px 20px', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Timestamp & ID</th>
-                                        <th style={{ padding: '14px 20px', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Customer</th>
-                                        <th style={{ padding: '14px 20px', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Branch Location</th>
-                                        <th style={{ padding: '14px 20px', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Card & Type</th>
-                                        <th style={{ padding: '14px 20px', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Action & Staff</th>
-                                        <th style={{ padding: '14px 20px', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Reward / Savings</th>
-                                        <th style={{ padding: '14px 20px', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Status</th>
-                                        <th style={{ padding: '14px 20px', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', textAlign: 'right' }}>Actions</th>
+                                        <th style={{ padding: '14px 20px', fontSize: '0.74rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Timestamp & ID</th>
+                                        <th style={{ padding: '14px 20px', fontSize: '0.74rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Customer</th>
+                                        <th style={{ padding: '14px 20px', fontSize: '0.74rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Branch Location</th>
+                                        <th style={{ padding: '14px 20px', fontSize: '0.74rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Card & Type</th>
+                                        <th style={{ padding: '14px 20px', fontSize: '0.74rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Action & Staff</th>
+                                        <th style={{ padding: '14px 20px', fontSize: '0.74rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Reward / Savings</th>
+                                        <th style={{ padding: '14px 20px', fontSize: '0.74rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Status</th>
+                                        <th style={{ padding: '14px 20px', fontSize: '0.74rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right' }}>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -1953,7 +2105,7 @@ export default function MerchantReports() {
                                         paginatedLogs.map((tx) => {
                                             const isStamp = tx.cardType === 'Stamp Card'
                                             return (
-                                                <tr key={tx.id}>
+                                                <tr key={tx.id} className="fl-table-row">
                                                     <td style={{ padding: '14px 20px' }}>
                                                         <span style={{ fontWeight: 700, color: 'var(--text-primary)', display: 'block' }}>{tx.date}</span>
                                                         <code style={{ fontSize: '0.74rem', color: 'var(--text-muted)', background: '#F1F5F9', padding: '2px 6px', borderRadius: 4 }}>
@@ -2017,9 +2169,9 @@ export default function MerchantReports() {
                                                         >
                                                             {tx.rewardUnlocked}
                                                         </span>
-                                                        {tx.amount && tx.amount !== '$0.00' && (
+                                                        {tx.amount && tx.amount !== '$0.00' && tx.amount !== '0.00' && tx.amount !== '0' && (
                                                             <div style={{ fontSize: '0.74rem', color: '#059669', fontWeight: 700 }}>
-                                                                Order: {tx.amount}
+                                                                Order: {String(tx.amount).replace('$', '')}
                                                             </div>
                                                         )}
                                                     </td>
@@ -2031,14 +2183,14 @@ export default function MerchantReports() {
                                                                     tx.status === 'Redeemed'
                                                                         ? 'rgba(239, 0, 3, 0.1)'
                                                                         : tx.status === 'Verified'
-                                                                        ? 'rgba(14, 136, 184, 0.1)'
-                                                                        : 'var(--status-success-bg, #DCFCE7)',
+                                                                            ? 'rgba(14, 136, 184, 0.1)'
+                                                                            : 'var(--status-success-bg, #DCFCE7)',
                                                                 color:
                                                                     tx.status === 'Redeemed'
                                                                         ? '#EF0003'
                                                                         : tx.status === 'Verified'
-                                                                        ? 'var(--firstloop-primary)'
-                                                                        : 'var(--status-success, #16A34A)',
+                                                                            ? 'var(--firstloop-primary)'
+                                                                            : 'var(--status-success, #16A34A)',
                                                                 fontWeight: 800,
                                                                 padding: '4px 10px',
                                                                 borderRadius: 8
@@ -2173,57 +2325,66 @@ export default function MerchantReports() {
             {activeTab === 'cards' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                     {/* Program Metrics Summary Strip */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 18 }}>
                         {loading ? (
                             Array.from({ length: 3 }).map((_, i) => (
-                                <div key={i} className="card" style={{ padding: '18px 20px', borderRadius: 16, border: '1px solid #E2E8F0', background: '#FFFFFF' }}>
-                                    <div className="skeleton-text" style={{ width: '100px', height: '14px', marginBottom: 10 }} />
-                                    <div className="skeleton-text" style={{ width: '80px', height: '24px', marginBottom: 6 }} />
+                                <div key={i} className="fl-report-kpi-card">
+                                    <div className="skeleton-text" style={{ width: '100px', height: '14px', marginBottom: 12 }} />
+                                    <div className="skeleton-text" style={{ width: '80px', height: '26px', marginBottom: 8 }} />
                                     <div className="skeleton-text" style={{ width: '130px', height: '12px' }} />
                                 </div>
                             ))
                         ) : (
                             <>
-                                <div className="card" style={{ padding: '18px 20px', borderRadius: 16, border: '1px solid rgba(239, 0, 3, 0.2)', background: '#FFFFFF' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                                        <span style={{ fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Stamp Programs</span>
-                                        <i className="fas fa-stamp" style={{ color: '#EF0003' }} />
+                                <div className="fl-report-kpi-card">
+                                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3.5, background: 'linear-gradient(90deg, #EF0003 0%, #F87171 100%)' }} />
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                                        <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Stamp Programs</span>
+                                        <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(239, 0, 3, 0.1)', color: '#EF0003', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.95rem' }}>
+                                            <i className="fas fa-stamp" />
+                                        </div>
                                     </div>
-                                    <div style={{ fontSize: '1.45rem', fontWeight: 900, color: 'var(--text-primary)' }}>
+                                    <div style={{ fontSize: '1.65rem', fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>
                                         {stampCards.length} Active Passes
                                     </div>
-                                    <small style={{ color: '#059669', fontWeight: 700, fontSize: '0.74rem' }}>
-                                        <i className="fas fa-check-circle" style={{ marginRight: 4 }} />
-                                        98% Customer redemption rate
-                                    </small>
+                                    <div style={{ color: '#059669', fontWeight: 700, fontSize: '0.74rem', marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(16, 185, 129, 0.08)', padding: '2px 7px', borderRadius: 6 }}>
+                                        <i className="fas fa-check-circle" />
+                                        98% Redemption rate
+                                    </div>
                                 </div>
 
-                                <div className="card" style={{ padding: '18px 20px', borderRadius: 16, border: '1px solid rgba(245, 158, 11, 0.25)', background: '#FFFFFF' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                                        <span style={{ fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>VIP Member Tiers</span>
-                                        <i className="fas fa-crown" style={{ color: '#D97706' }} />
+                                <div className="fl-report-kpi-card">
+                                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3.5, background: 'linear-gradient(90deg, #F59E0B 0%, #FBBF24 100%)' }} />
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                                        <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>VIP Member Tiers</span>
+                                        <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(245, 158, 11, 0.1)', color: '#D97706', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.95rem' }}>
+                                            <i className="fas fa-crown" />
+                                        </div>
                                     </div>
-                                    <div style={{ fontSize: '1.45rem', fontWeight: 900, color: 'var(--text-primary)' }}>
+                                    <div style={{ fontSize: '1.65rem', fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>
                                         {membershipCards.length} Premium Tiers
                                     </div>
-                                    <small style={{ color: '#D97706', fontWeight: 700, fontSize: '0.74rem' }}>
-                                        <i className="fas fa-users" style={{ marginRight: 4 }} />
+                                    <div style={{ color: '#D97706', fontWeight: 700, fontSize: '0.74rem', marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(245, 158, 11, 0.08)', padding: '2px 7px', borderRadius: 6 }}>
+                                        <i className="fas fa-users" />
                                         {membershipCards.reduce((s, c) => s + (c.activeMembers || 0), 0)} Enrolled VIP Customers
-                                    </small>
+                                    </div>
                                 </div>
 
-                                <div className="card" style={{ padding: '18px 20px', borderRadius: 16, border: '1px solid rgba(14, 136, 184, 0.2)', background: '#FFFFFF' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                                        <span style={{ fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Rewards Claimed</span>
-                                        <i className="fas fa-gift" style={{ color: 'var(--firstloop-primary)' }} />
+                                <div className="fl-report-kpi-card">
+                                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3.5, background: 'linear-gradient(90deg, #0E88B8 0%, #38BDF8 100%)' }} />
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                                        <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Rewards Claimed</span>
+                                        <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(14, 136, 184, 0.1)', color: '#0E88B8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.95rem' }}>
+                                            <i className="fas fa-gift" />
+                                        </div>
                                     </div>
-                                    <div style={{ fontSize: '1.45rem', fontWeight: 900, color: 'var(--text-primary)' }}>
+                                    <div style={{ fontSize: '1.65rem', fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>
                                         {executiveStats.totalRedemptions} Rewards
                                     </div>
-                                    <small style={{ color: 'var(--firstloop-primary)', fontWeight: 700, fontSize: '0.74rem' }}>
-                                        <i className="fas fa-chart-line" style={{ marginRight: 4 }} />
+                                    <div style={{ color: 'var(--firstloop-primary)', fontWeight: 700, fontSize: '0.74rem', marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(14, 136, 184, 0.08)', padding: '2px 7px', borderRadius: 6 }}>
+                                        <i className="fas fa-chart-line" />
                                         Verified in audit trail
-                                    </small>
+                                    </div>
                                 </div>
                             </>
                         )}
@@ -2238,24 +2399,16 @@ export default function MerchantReports() {
                             <button
                                 type="button"
                                 onClick={() => navigate('/merchant/cards')}
-                                style={{
-                                    borderRadius: 10,
-                                    fontSize: '0.8rem',
-                                    fontWeight: 700,
-                                    padding: '6px 14px',
-                                    background: '#FFFFFF',
-                                    border: '1px solid #CBD5E1',
-                                    cursor: 'pointer'
-                                }}
+                                className="fl-btn-glass"
                             >
-                                <i className="fas fa-arrow-right" style={{ marginRight: 6 }} /> Manage in Cards Page
+                                <i className="fas fa-arrow-right" /> Manage in Cards Page
                             </button>
                         </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
                             {loading ? (
                                 Array.from({ length: 3 }).map((_, i) => (
-                                    <div key={i} className="card" style={{ padding: 22, borderRadius: 18, border: '1px solid #E2E8F0', background: '#FFFFFF' }}>
+                                    <div key={i} className="fl-luxury-card" style={{ padding: 24 }}>
                                         <div className="skeleton-text" style={{ width: '80px', height: '16px', marginBottom: 10 }} />
                                         <div className="skeleton-text" style={{ width: '160px', height: '20px', marginBottom: 8 }} />
                                         <div className="skeleton-text" style={{ width: '120px', height: '12px', marginBottom: 16 }} />
@@ -2267,16 +2420,16 @@ export default function MerchantReports() {
                                     return (
                                         <div
                                             key={card.id}
-                                            className="card"
+                                            className="fl-luxury-card"
                                             style={{
-                                                padding: 22,
-                                                borderRadius: 18,
-                                                border: `1px solid ${card.borderColor || '#E2E8F0'}`,
-                                                background: '#FFFFFF',
-                                                boxShadow: '0 4px 15px rgba(0,0,0,0.03)'
+                                                padding: 24,
+                                                position: 'relative'
                                             }}
                                         >
-                                            <div className="flex-between mb-2">
+                                            {/* Red/Rose Accent Stripe for Stamp Cards */}
+                                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: 'linear-gradient(90deg, #EF0003 0%, #F87171 100%)' }} />
+
+                                            <div className="flex-between mb-2" style={{ marginTop: 2 }}>
                                                 <span
                                                     className="badge"
                                                     style={{
@@ -2284,43 +2437,38 @@ export default function MerchantReports() {
                                                         color: '#EF0003',
                                                         fontWeight: 800,
                                                         fontSize: '0.75rem',
-                                                        padding: '4px 10px'
+                                                        padding: '5px 12px',
+                                                        borderRadius: 8
                                                     }}
                                                 >
+                                                    <i className="fas fa-stamp" style={{ marginRight: 5 }} />
                                                     {card.total_stamps}-Stamp Pass
                                                 </span>
-                                                <span className="badge" style={{ background: 'var(--status-success-bg)', color: 'var(--status-success)', fontWeight: 800 }}>
+                                                <span className="badge" style={{ background: 'var(--status-success-bg)', color: 'var(--status-success)', fontWeight: 800, padding: '5px 10px', borderRadius: 8 }}>
                                                     {card.status}
                                                 </span>
                                             </div>
 
-                                            <h4 style={{ fontSize: '1.1rem', fontWeight: 800, margin: '6px 0 2px 0', color: 'var(--text-primary)' }}>
+                                            <h4 style={{ fontSize: '1.15rem', fontWeight: 900, margin: '8px 0 3px 0', color: 'var(--text-primary)', letterSpacing: '-0.3px' }}>
                                                 {card.title}
                                             </h4>
-                                            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '0 0 14px 0' }}>
+                                            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '0 0 16px 0', lineHeight: 1.4 }}>
                                                 {card.tagline}
                                             </p>
 
-                                            <div style={{ background: '#F8FAFC', borderRadius: 14, padding: 14, marginBottom: 14, border: '1px solid #E2E8F0' }}>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', marginBottom: 8 }}>
-                                                    <span style={{ color: 'var(--text-muted)' }}>Stamps Given:</span>
-                                                    <strong style={{ color: 'var(--firstloop-primary)' }}>{card.stamps_given || 0}</strong>
+                                            <div className="fl-inner-metric-grid" style={{ margin: '0 0 4px 0' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', marginBottom: 10, paddingBottom: 8, borderBottom: '1px solid rgba(226, 232, 240, 0.8)' }}>
+                                                    <span style={{ color: 'var(--text-muted)', fontWeight: 700 }}>Stamps Given:</span>
+                                                    <strong style={{ color: 'var(--firstloop-primary)', fontWeight: 900, fontSize: '0.92rem' }}>{card.stamps_given || 0}</strong>
                                                 </div>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', marginBottom: 8 }}>
-                                                    <span style={{ color: 'var(--text-muted)' }}>Rewards Claimed:</span>
-                                                    <strong style={{ color: '#EF0003' }}>{card.rewards_claimed || 0}</strong>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', marginBottom: 10, paddingBottom: 8, borderBottom: '1px solid rgba(226, 232, 240, 0.8)' }}>
+                                                    <span style={{ color: 'var(--text-muted)', fontWeight: 700 }}>Rewards Claimed:</span>
+                                                    <strong style={{ color: '#EF0003', fontWeight: 900, fontSize: '0.92rem' }}>{card.rewards_claimed || 0}</strong>
                                                 </div>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
-                                                    <span style={{ color: 'var(--text-muted)' }}>Active Pass Holders:</span>
-                                                    <strong style={{ color: '#D97706' }}>{card.active_members || card.activeMembers || 0} Customers</strong>
+                                                    <span style={{ color: 'var(--text-muted)', fontWeight: 700 }}>Active Pass Holders:</span>
+                                                    <strong style={{ color: '#D97706', fontWeight: 900, fontSize: '0.92rem' }}>{card.active_members || card.activeMembers || 0} Customers</strong>
                                                 </div>
-                                            </div>
-
-                                            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', background: 'rgba(14, 136, 184, 0.05)', padding: '10px 12px', borderRadius: 10 }}>
-                                                <strong style={{ color: 'var(--firstloop-primary)', display: 'block', marginBottom: 2 }}>
-                                                    <i className="fas fa-gift" style={{ marginRight: 4 }} /> Main Reward:
-                                                </strong>
-                                                {card.reward}
                                             </div>
                                         </div>
                                     )
@@ -2340,7 +2488,7 @@ export default function MerchantReports() {
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
                             {loading ? (
                                 Array.from({ length: 3 }).map((_, i) => (
-                                    <div key={i} className="card" style={{ padding: 22, borderRadius: 18, border: '1px solid #E2E8F0', background: '#FFFFFF' }}>
+                                    <div key={i} className="fl-luxury-card" style={{ padding: 24 }}>
                                         <div className="skeleton-text" style={{ width: '90px', height: '16px', marginBottom: 10 }} />
                                         <div className="skeleton-text" style={{ width: '150px', height: '20px', marginBottom: 8 }} />
                                         <div className="skeleton-text" style={{ width: '100%', height: '60px', borderRadius: 12 }} />
@@ -2354,16 +2502,16 @@ export default function MerchantReports() {
                                     return (
                                         <div
                                             key={tier.id}
-                                            className="card"
+                                            className="fl-luxury-card"
                                             style={{
-                                                padding: 22,
-                                                borderRadius: 18,
-                                                border: `1px solid ${tier.borderColor || '#E2E8F0'}`,
-                                                background: '#FFFFFF',
-                                                boxShadow: '0 4px 15px rgba(0,0,0,0.03)'
+                                                padding: 24,
+                                                position: 'relative'
                                             }}
                                         >
-                                            <div className="flex-between mb-2">
+                                            {/* Top Accent Stripe */}
+                                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: isGold ? 'linear-gradient(90deg, #F59E0B 0%, #FBBF24 100%)' : 'linear-gradient(90deg, #0E88B8 0%, #38BDF8 100%)' }} />
+
+                                            <div className="flex-between mb-2" style={{ marginTop: 2 }}>
                                                 <span
                                                     className="badge"
                                                     style={{
@@ -2371,28 +2519,32 @@ export default function MerchantReports() {
                                                         color: color,
                                                         fontWeight: 800,
                                                         fontSize: '0.76rem',
-                                                        padding: '4px 10px'
+                                                        padding: '5px 12px',
+                                                        borderRadius: 8
                                                     }}
                                                 >
+                                                    <i className="fas fa-crown" style={{ marginRight: 5 }} />
                                                     {tier.tier || tier.title || 'VIP'} Tier
                                                 </span>
-                                                <span style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--text-muted)' }}>
+                                                <span style={{ fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', background: '#F1F5F9', padding: '4px 10px', borderRadius: 8 }}>
                                                     {tier.validityMonths || tier.month || 'VIP Member'}
                                                 </span>
                                             </div>
 
-                                            <h4 style={{ fontSize: '1.1rem', fontWeight: 800, margin: '6px 0 4px 0', color: 'var(--text-primary)' }}>
+                                            <h4 style={{ fontSize: '1.15rem', fontWeight: 900, margin: '8px 0 4px 0', color: 'var(--text-primary)', letterSpacing: '-0.3px' }}>
                                                 {tier.name || tier.title}
                                             </h4>
-                                            <div style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginBottom: 12 }}>
-                                                Validity: <strong>{tier.validityMonths || tier.month || '24 Months'}</strong> • Enrolled: <strong>{tier.activeMembers || tier.active_members || 0} Members</strong>
+                                            <div style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginBottom: 14 }}>
+                                                Validity: <strong style={{ color: 'var(--text-primary)' }}>{tier.validityMonths || tier.month || '24 Months'}</strong> • Enrolled: <strong style={{ color: color }}>{tier.activeMembers || tier.active_members || 0} Members</strong>
                                             </div>
 
-                                            <div style={{ background: '#F8FAFC', borderRadius: 12, padding: 12, display: 'flex', flexDirection: 'column', gap: 6, border: '1px solid #E2E8F0' }}>
+                                            <div className="fl-inner-metric-grid" style={{ margin: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
                                                 {(tier.perks || ['VIP Store Privileges', 'Priority Customer Assistance', 'Exclusive Discounts']).slice(0, 3).map((perk, i) => (
-                                                    <div key={i} style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                                                        <i className="fas fa-check" style={{ color: '#059669', fontSize: '0.72rem' }} />
-                                                        <span>{perk}</span>
+                                                    <div key={i} style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                        <div style={{ width: 18, height: 18, borderRadius: '50%', background: 'rgba(16, 185, 129, 0.15)', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem' }}>
+                                                            <i className="fas fa-check" />
+                                                        </div>
+                                                        <span style={{ fontWeight: 600 }}>{perk}</span>
                                                     </div>
                                                 ))}
                                             </div>
@@ -2409,191 +2561,320 @@ export default function MerchantReports() {
             {activeTab === 'customers' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                     {/* Customer Overview Summary KPI Strip */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 18 }}>
                         {loading ? (
                             Array.from({ length: 4 }).map((_, i) => (
-                                <div key={i} className="card" style={{ padding: '18px 20px', borderRadius: 16, border: '1px solid #E2E8F0', background: '#FFFFFF' }}>
-                                    <div className="skeleton-text" style={{ width: '100px', height: '14px', marginBottom: 10 }} />
-                                    <div className="skeleton-text" style={{ width: '90px', height: '24px', marginBottom: 6 }} />
+                                <div key={i} className="fl-report-kpi-card">
+                                    <div className="skeleton-text" style={{ width: '100px', height: '14px', marginBottom: 12 }} />
+                                    <div className="skeleton-text" style={{ width: '90px', height: '26px', marginBottom: 8 }} />
                                     <div className="skeleton-text" style={{ width: '120px', height: '12px' }} />
                                 </div>
                             ))
                         ) : (
                             <>
-                                <div className="card" style={{ padding: '18px 20px', borderRadius: 16, border: '1px solid rgba(14, 136, 184, 0.2)', background: '#FFFFFF' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                                        <span style={{ fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Total Enrolled</span>
-                                        <i className="fas fa-user-friends" style={{ color: 'var(--firstloop-primary)' }} />
+                                <div className="fl-report-kpi-card">
+                                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3.5, background: 'linear-gradient(90deg, #0E88B8 0%, #38BDF8 100%)' }} />
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                                        <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Total Enrolled</span>
+                                        <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(14, 136, 184, 0.1)', color: '#0E88B8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.95rem' }}>
+                                            <i className="fas fa-user-friends" />
+                                        </div>
                                     </div>
-                                    <div style={{ fontSize: '1.45rem', fontWeight: 900, color: 'var(--text-primary)' }}>
+                                    <div style={{ fontSize: '1.65rem', fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>
                                         {allCustomers.length} Active Users
                                     </div>
-                                    <small style={{ color: '#059669', fontWeight: 700, fontSize: '0.74rem' }}>
-                                        <i className="fas fa-arrow-up" style={{ marginRight: 4 }} />
+                                    <div style={{ color: '#059669', fontWeight: 700, fontSize: '0.74rem', marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(16, 185, 129, 0.08)', padding: '2px 7px', borderRadius: 6 }}>
+                                        <i className="fas fa-check-circle" />
                                         100% Verified records
-                                    </small>
+                                    </div>
                                 </div>
 
-                                <div className="card" style={{ padding: '18px 20px', borderRadius: 16, border: '1px solid rgba(245, 158, 11, 0.25)', background: '#FFFFFF' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                                        <span style={{ fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>VIP Loyalty Penetration</span>
-                                        <i className="fas fa-medal" style={{ color: '#D97706' }} />
+                                <div className="fl-report-kpi-card">
+                                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3.5, background: 'linear-gradient(90deg, #F59E0B 0%, #FBBF24 100%)' }} />
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                                        <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>VIP Penetration</span>
+                                        <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(245, 158, 11, 0.1)', color: '#D97706', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.95rem' }}>
+                                            <i className="fas fa-crown" />
+                                        </div>
                                     </div>
-                                    <div style={{ fontSize: '1.45rem', fontWeight: 900, color: 'var(--text-primary)' }}>
-                                        {allCustomers.length > 0 ? Math.round((membershipCards.reduce((s, c) => s + (c.activeMembers || 0), 0) / allCustomers.length) * 100) : 0}% VIP Rate
+                                    <div style={{ fontSize: '1.65rem', fontWeight: 900, color: '#D97706', letterSpacing: '-0.5px' }}>
+                                        {allCustomers.length > 0 ? Math.round((allCustomers.filter(c => c.hasMembership).length / allCustomers.length) * 100) : 0}% VIP Rate
                                     </div>
-                                    <small style={{ color: '#D97706', fontWeight: 700, fontSize: '0.74rem' }}>
-                                        {membershipCards.reduce((s, c) => s + (c.activeMembers || 0), 0)} Enrolled VIP members
-                                    </small>
+                                    <div style={{ color: '#D97706', fontWeight: 700, fontSize: '0.74rem', marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(245, 158, 11, 0.08)', padding: '2px 7px', borderRadius: 6 }}>
+                                        {allCustomers.filter(c => c.hasMembership).length} Enrolled VIP members
+                                    </div>
                                 </div>
 
-                                <div className="card" style={{ padding: '18px 20px', borderRadius: 16, border: '1px solid rgba(239, 0, 3, 0.2)', background: '#FFFFFF' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                                        <span style={{ fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Avg Stamps / User</span>
-                                        <i className="fas fa-stamp" style={{ color: '#EF0003' }} />
+                                <div className="fl-report-kpi-card">
+                                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3.5, background: 'linear-gradient(90deg, #EF0003 0%, #F87171 100%)' }} />
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                                        <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Avg Stamps / User</span>
+                                        <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(239, 0, 3, 0.1)', color: '#EF0003', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.95rem' }}>
+                                            <i className="fas fa-stamp" />
+                                        </div>
                                     </div>
-                                    <div style={{ fontSize: '1.45rem', fontWeight: 900, color: 'var(--text-primary)' }}>
+                                    <div style={{ fontSize: '1.65rem', fontWeight: 900, color: '#EF0003', letterSpacing: '-0.5px' }}>
                                         {allCustomers.length > 0 ? (executiveStats.totalStamps / allCustomers.length).toFixed(1) : '0.0'} Stamps
                                     </div>
-                                    <small style={{ color: 'var(--firstloop-primary)', fontWeight: 700, fontSize: '0.74rem' }}>
+                                    <div style={{ color: 'var(--firstloop-primary)', fontWeight: 700, fontSize: '0.74rem', marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(14, 136, 184, 0.08)', padding: '2px 7px', borderRadius: 6 }}>
                                         Across {allBranches.length} hub locations
-                                    </small>
+                                    </div>
                                 </div>
 
-                                <div className="card" style={{ padding: '18px 20px', borderRadius: 16, border: '1px solid rgba(16, 185, 129, 0.2)', background: '#FFFFFF' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                                        <span style={{ fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Avg Customer Spend</span>
-                                        <i className="fas fa-wallet" style={{ color: '#059669' }} />
+                                <div className="fl-report-kpi-card">
+                                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3.5, background: 'linear-gradient(90deg, #10B981 0%, #34D399 100%)' }} />
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                                        <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Avg Customer Spend</span>
+                                        <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(16, 185, 129, 0.1)', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.95rem' }}>
+                                            <i className="fas fa-wallet" />
+                                        </div>
                                     </div>
-                                    <div style={{ fontSize: '1.45rem', fontWeight: 900, color: '#059669' }}>
-                                        {allCustomers.length > 0 ? '$' + (allCustomers.reduce((s, c) => s + parseFloat(c.lifetimeSpend.replace('$', '') || 0), 0) / allCustomers.length).toFixed(2) : '$0.00'} LTV
+                                    <div style={{ fontSize: '1.65rem', fontWeight: 900, color: '#059669', letterSpacing: '-0.5px' }}>
+                                        {allCustomers.length > 0 ? (allCustomers.reduce((s, c) => s + parseFloat(String(c.lifetimeSpend).replace('$', '') || 0), 0) / allCustomers.length).toFixed(2) : '0.00'} LTV
                                     </div>
-                                    <small style={{ color: '#059669', fontWeight: 700, fontSize: '0.74rem' }}>
-                                        High retention loyalty base
-                                    </small>
+                                    <div style={{ color: '#059669', fontWeight: 700, fontSize: '0.74rem', marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(16, 185, 129, 0.08)', padding: '2px 7px', borderRadius: 6 }}>
+                                        High retention base
+                                    </div>
                                 </div>
                             </>
                         )}
                     </div>
 
-                    <div className="card" style={{ padding: 0, borderRadius: 18, overflow: 'hidden', border: '1px solid #E2E8F0' }}>
-                    <div style={{ padding: '18px 24px', background: '#FFFFFF', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
-                                Registered Merchant Customers Engagement
-                            </h3>
-                            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
-                                Showing {filteredCustomers.length} enrolled customers and their loyalty status
-                            </p>
+                    <div className="fl-table-card">
+                        <div style={{ padding: '20px 24px', background: '#FFFFFF', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+                            <div>
+                                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
+                                    Registered Merchant Customers Engagement
+                                </h3>
+                                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '3px 0 0 0' }}>
+                                    Showing {filteredCustomers.length} enrolled customers and their loyalty status
+                                </p>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={() => navigate('/merchant/customers')}
+                                className="fl-btn-glass"
+                            >
+                                <i className="fas fa-external-link-alt" /> Open Customers Page
+                            </button>
                         </div>
 
-                        <button
-                            type="button"
-                            onClick={() => navigate('/merchant/customers')}
-                            style={{
-                                borderRadius: 10,
-                                fontSize: '0.8rem',
-                                fontWeight: 800,
-                                padding: '6px 14px',
-                                background: '#FFFFFF',
-                                border: '1px solid #CBD5E1',
-                                cursor: 'pointer'
-                            }}
-                        >
-                            <i className="fas fa-external-link-alt" style={{ marginRight: 6 }} /> Open Customers Page
-                        </button>
-                    </div>
+                        <div className="table-responsive">
+                            <table className="table table-hover align-middle mb-0" style={{ fontSize: '0.86rem' }}>
+                                <thead className="fl-table-header">
+                                    <tr>
+                                        <th>Customer</th>
+                                        <th>Contact</th>
+                                        <th>Primary Hub</th>
+                                        <th>Stamp Passes</th>
+                                        <th>Membership Tier</th>
+                                        <th>Total Visits</th>
+                                        <th>Spend</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {loading ? (
+                                        Array.from({ length: 4 }).map((_, i) => (
+                                            <tr key={i} className="skeleton-row">
+                                                <td style={{ padding: '16px 20px' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                        <div className="skeleton-avatar" style={{ width: 38, height: 38 }} />
+                                                        <div>
+                                                            <div className="skeleton-text" style={{ width: '110px', height: '14px', marginBottom: 4 }} />
+                                                            <div className="skeleton-text" style={{ width: '70px', height: '11px' }} />
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td style={{ padding: '16px 20px' }}><div className="skeleton-text" style={{ width: '130px', height: '14px' }} /></td>
+                                                <td style={{ padding: '16px 20px' }}><div className="skeleton-text" style={{ width: '100px', height: '14px' }} /></td>
+                                                <td style={{ padding: '16px 20px' }}><div className="skeleton-text" style={{ width: '80px', height: '16px' }} /></td>
+                                                <td style={{ padding: '16px 20px' }}><div className="skeleton-text" style={{ width: '80px', height: '16px' }} /></td>
+                                                <td style={{ padding: '16px 20px' }}><div className="skeleton-text" style={{ width: '60px', height: '14px' }} /></td>
+                                                <td style={{ padding: '16px 20px' }}><div className="skeleton-text" style={{ width: '70px', height: '14px' }} /></td>
+                                                <td style={{ padding: '16px 20px' }}><div className="skeleton-text" style={{ width: '50px', height: '18px' }} /></td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        filteredCustomers.map((cus) => (
+                                            <tr key={cus.id} className="fl-table-row">
+                                                <td style={{ padding: '14px 20px' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                        <img
+                                                            src={cus.avatar}
+                                                            alt={cus.name}
+                                                            style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--firstloop-primary)' }}
+                                                        />
+                                                        <div>
+                                                            <span style={{ fontWeight: 800, color: 'var(--text-primary)', display: 'block' }}>{cus.name}</span>
+                                                            <small style={{ color: 'var(--text-muted)', fontSize: '0.74rem' }}>Joined {cus.joinedDate}</small>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td style={{ padding: '14px 20px' }}>
+                                                    <div style={{ fontSize: '0.84rem', color: 'var(--text-primary)' }}>{cus.email}</div>
+                                                    <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{cus.phone}</small>
+                                                </td>
+                                                <td style={{ padding: '14px 20px', whiteSpace: 'nowrap' }}>
+                                                    {cus.branchNames && cus.branchNames.length > 0 ? (
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                            <span style={{
+                                                                fontWeight: 700,
+                                                                color: 'var(--text-primary)',
+                                                                fontSize: '0.84rem',
+                                                                display: 'inline-flex',
+                                                                alignItems: 'center',
+                                                                gap: '5px'
+                                                            }}>
+                                                                <i className="fas fa-store-alt" style={{ fontSize: '0.74rem', color: 'var(--firstloop-primary)' }} />
+                                                                {cus.branchNames[0]}
+                                                            </span>
+                                                            {cus.branchNames.length > 1 && (
+                                                                <span
+                                                                    className="badge"
+                                                                    title={`All Hubs: ${cus.branchNames.join(', ')}`}
+                                                                    onClick={() => setSelectedCustomerCards(cus)}
+                                                                    style={{
+                                                                        background: 'rgba(14, 136, 184, 0.1)',
+                                                                        color: 'var(--firstloop-primary)',
+                                                                        fontSize: '0.72rem',
+                                                                        fontWeight: 800,
+                                                                        padding: '2px 7px',
+                                                                        borderRadius: '6px',
+                                                                        cursor: 'pointer',
+                                                                        border: '1px solid rgba(14, 136, 184, 0.2)'
+                                                                    }}
+                                                                >
+                                                                    +{cus.branchNames.length - 1} more
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <span style={{ fontWeight: 600, color: 'var(--text-secondary)', fontSize: '0.84rem' }}>{cus.branchVisited}</span>
+                                                    )}
+                                                </td>
+                                                <td style={{ padding: '14px 20px', minWidth: 220 }}>
+                                                    {cus.stampCardsList && cus.stampCardsList.length > 0 ? (
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                                                            {/* Summary Header */}
+                                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                                                                <span className="badge" style={{
+                                                                    background: cus.stampsCollected > 0 ? 'rgba(239, 0, 3, 0.1)' : '#F1F5F9',
+                                                                    color: cus.stampsCollected > 0 ? '#EF0003' : '#64748B',
+                                                                    fontWeight: 800,
+                                                                    fontSize: '0.76rem',
+                                                                    padding: '3px 8px',
+                                                                    borderRadius: 6
+                                                                }}>
+                                                                    <i className="fas fa-stamp" style={{ marginRight: 4 }} />
+                                                                    {cus.stampsCollected} {cus.stampsCollected === 1 ? 'Stamp' : 'Stamps'}
+                                                                </span>
 
-                    <div className="table-responsive">
-                        <table className="table table-hover align-middle mb-0" style={{ fontSize: '0.86rem' }}>
-                            <thead style={{ background: '#F8FAFC', borderBottom: '2px solid #E2E8F0' }}>
-                                <tr>
-                                    <th style={{ padding: '14px 20px', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Customer</th>
-                                    <th style={{ padding: '14px 20px', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Contact</th>
-                                    <th style={{ padding: '14px 20px', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Primary Hub</th>
-                                    <th style={{ padding: '14px 20px', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Stamp Passes</th>
-                                    <th style={{ padding: '14px 20px', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Membership Tier</th>
-                                    <th style={{ padding: '14px 20px', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Total Visits</th>
-                                    <th style={{ padding: '14px 20px', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Spend</th>
-                                    <th style={{ padding: '14px 20px', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {loading ? (
-                                    Array.from({ length: 4 }).map((_, i) => (
-                                        <tr key={i} className="skeleton-row">
-                                            <td style={{ padding: '16px 20px' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                    <div className="skeleton-avatar" style={{ width: 38, height: 38 }} />
-                                                    <div>
-                                                        <div className="skeleton-text" style={{ width: '110px', height: '14px', marginBottom: 4 }} />
-                                                        <div className="skeleton-text" style={{ width: '70px', height: '11px' }} />
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td style={{ padding: '16px 20px' }}><div className="skeleton-text" style={{ width: '130px', height: '14px' }} /></td>
-                                            <td style={{ padding: '16px 20px' }}><div className="skeleton-text" style={{ width: '100px', height: '14px' }} /></td>
-                                            <td style={{ padding: '16px 20px' }}><div className="skeleton-text" style={{ width: '80px', height: '16px' }} /></td>
-                                            <td style={{ padding: '16px 20px' }}><div className="skeleton-text" style={{ width: '80px', height: '16px' }} /></td>
-                                            <td style={{ padding: '16px 20px' }}><div className="skeleton-text" style={{ width: '60px', height: '14px' }} /></td>
-                                            <td style={{ padding: '16px 20px' }}><div className="skeleton-text" style={{ width: '70px', height: '14px' }} /></td>
-                                            <td style={{ padding: '16px 20px' }}><div className="skeleton-text" style={{ width: '50px', height: '18px' }} /></td>
-                                        </tr>
-                                    ))
-                                ) : (
-                                    filteredCustomers.map((cus) => (
-                                        <tr key={cus.id}>
-                                            <td style={{ padding: '14px 20px' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                    <img
-                                                        src={cus.avatar}
-                                                        alt={cus.name}
-                                                        style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--firstloop-primary)' }}
-                                                    />
-                                                    <div>
-                                                        <span style={{ fontWeight: 800, color: 'var(--text-primary)', display: 'block' }}>{cus.name}</span>
-                                                        <small style={{ color: 'var(--text-muted)', fontSize: '0.74rem' }}>Joined {cus.joinedDate}</small>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td style={{ padding: '14px 20px' }}>
-                                                <div style={{ fontSize: '0.84rem', color: 'var(--text-primary)' }}>{cus.email}</div>
-                                                <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{cus.phone}</small>
-                                            </td>
-                                            <td style={{ padding: '14px 20px' }}>
-                                                <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>{cus.branchVisited}</span>
-                                            </td>
-                                            <td style={{ padding: '14px 20px' }}>
-                                                <span className="badge" style={{ background: 'rgba(239, 0, 3, 0.1)', color: '#EF0003', fontWeight: 800 }}>
-                                                    {cus.stampsCollected} / {cus.stampsTotal} Stamps
-                                                </span>
-                                                <small style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: 2 }}>
-                                                    {cus.stampCard}
-                                                </small>
-                                            </td>
-                                            <td style={{ padding: '14px 20px' }}>
-                                                <span className="badge" style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#D97706', fontWeight: 800 }}>
-                                                    {cus.membershipTier}
-                                                </span>
-                                            </td>
-                                            <td style={{ padding: '14px 20px', fontWeight: 800 }}>
-                                                {cus.totalVisits} Visits
-                                            </td>
-                                            <td style={{ padding: '14px 20px', fontWeight: 800, color: '#059669' }}>
-                                                {cus.lifetimeSpend}
-                                            </td>
-                                            <td style={{ padding: '14px 20px' }}>
-                                                <span className="badge" style={{ background: 'var(--firstloop-primary-light)', color: 'var(--firstloop-primary)', fontWeight: 800 }}>
-                                                    {cus.status}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
+                                                                {cus.stampCardsList.length > 1 && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setSelectedCustomerCards(cus)}
+                                                                        style={{
+                                                                            background: 'rgba(14, 136, 184, 0.08)',
+                                                                            border: '1px solid rgba(14, 136, 184, 0.22)',
+                                                                            color: 'var(--firstloop-primary)',
+                                                                            borderRadius: 6,
+                                                                            padding: '2px 7px',
+                                                                            fontSize: '0.72rem',
+                                                                            fontWeight: 800,
+                                                                            cursor: 'pointer',
+                                                                            display: 'inline-flex',
+                                                                            alignItems: 'center',
+                                                                            gap: '4px'
+                                                                        }}
+                                                                        title="Click to view all cards and stamp details"
+                                                                    >
+                                                                        <i className="fas fa-id-card" style={{ fontSize: '0.68rem' }} />
+                                                                        {cus.stampCardsList.length} Cards
+                                                                        <i className="fas fa-chevron-right" style={{ fontSize: '0.62rem', opacity: 0.7 }} />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+
+                                                            {/* Compact Card Chips */}
+                                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', alignItems: 'center' }}>
+                                                                {cus.stampCardsList.slice(0, 2).map((sc, scIdx) => (
+                                                                    <span
+                                                                        key={scIdx}
+                                                                        onClick={() => setSelectedCustomerCards(cus)}
+                                                                        title={`${sc.title} (${sc.branchName}): ${sc.stamps}/${sc.totalStamps} stamps. Click to view.`}
+                                                                        style={{
+                                                                            display: 'inline-flex',
+                                                                            alignItems: 'center',
+                                                                            gap: '4px',
+                                                                            fontSize: '0.72rem',
+                                                                            background: sc.stamps > 0 ? 'rgba(239, 0, 3, 0.06)' : '#F8FAFC',
+                                                                            color: sc.stamps > 0 ? '#B91C1C' : '#64748B',
+                                                                            border: sc.stamps > 0 ? '1px solid rgba(239, 0, 3, 0.18)' : '1px solid #E2E8F0',
+                                                                            padding: '2px 6px',
+                                                                            borderRadius: 5,
+                                                                            fontWeight: 700,
+                                                                            cursor: 'pointer'
+                                                                        }}
+                                                                    >
+                                                                        <span style={{ maxWidth: 90, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                                            {sc.branchName}:
+                                                                        </span>
+                                                                        <strong style={{ color: sc.stamps > 0 ? '#EF0003' : 'inherit' }}>
+                                                                            {sc.stamps}/{sc.totalStamps}
+                                                                        </strong>
+                                                                    </span>
+                                                                ))}
+                                                                {cus.stampCardsList.length > 2 && (
+                                                                    <span
+                                                                        onClick={() => setSelectedCustomerCards(cus)}
+                                                                        style={{
+                                                                            fontSize: '0.71rem',
+                                                                            color: 'var(--firstloop-primary)',
+                                                                            fontWeight: 800,
+                                                                            cursor: 'pointer',
+                                                                            textDecoration: 'underline'
+                                                                        }}
+                                                                    >
+                                                                        +{cus.stampCardsList.length - 2} more
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>No Stamp Pass</span>
+                                                    )}
+                                                </td>
+                                                <td style={{ padding: '14px 20px' }}>
+                                                    {cus.hasMembership ? (
+                                                        <span className="badge" style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#D97706', fontWeight: 800 }}>
+                                                            {cus.membershipTier}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="badge" style={{ background: '#F1F5F9', color: '#94A3B8', fontWeight: 700 }}>
+                                                            No Tier
+                                                        </span>
+                                                    )}
+                                                </td>
+                                                <td style={{ padding: '14px 20px', fontWeight: 800 }}>
+                                                    {cus.totalVisits} {cus.totalVisits === 1 ? 'Visit' : 'Visits'}
+                                                </td>
+                                                <td style={{ padding: '14px 20px', fontWeight: 800, color: '#059669' }}>
+                                                    {cus.lifetimeSpend}
+                                                </td>
+                                                <td style={{ padding: '14px 20px' }}>
+                                                    <span className="badge" style={{ background: 'var(--firstloop-primary-light)', color: 'var(--firstloop-primary)', fontWeight: 800 }}>
+                                                        {cus.status}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                </div>
                 </div>
             )}
 
@@ -2601,75 +2882,87 @@ export default function MerchantReports() {
             {activeTab === 'staff' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                     {/* Staff Operational KPI Strip */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 18 }}>
                         {loading ? (
                             Array.from({ length: 4 }).map((_, i) => (
-                                <div key={i} className="card" style={{ padding: '18px 20px', borderRadius: 16, border: '1px solid #E2E8F0', background: '#FFFFFF' }}>
-                                    <div className="skeleton-text" style={{ width: '100px', height: '14px', marginBottom: 10 }} />
-                                    <div className="skeleton-text" style={{ width: '90px', height: '24px', marginBottom: 6 }} />
+                                <div key={i} className="fl-report-kpi-card">
+                                    <div className="skeleton-text" style={{ width: '100px', height: '14px', marginBottom: 12 }} />
+                                    <div className="skeleton-text" style={{ width: '90px', height: '26px', marginBottom: 8 }} />
                                     <div className="skeleton-text" style={{ width: '120px', height: '12px' }} />
                                 </div>
                             ))
                         ) : (
                             <>
-                                <div className="card" style={{ padding: '18px 20px', borderRadius: 16, border: '1px solid rgba(14, 136, 184, 0.2)', background: '#FFFFFF' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                                        <span style={{ fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Stamps Issued by Staff</span>
-                                        <i className="fas fa-stamp" style={{ color: 'var(--firstloop-primary)' }} />
+                                <div className="fl-report-kpi-card">
+                                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3.5, background: 'linear-gradient(90deg, #0E88B8 0%, #38BDF8 100%)' }} />
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                                        <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Stamps Issued by Staff</span>
+                                        <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(14, 136, 184, 0.1)', color: '#0E88B8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.95rem' }}>
+                                            <i className="fas fa-stamp" />
+                                        </div>
                                     </div>
-                                    <div style={{ fontSize: '1.45rem', fontWeight: 900, color: 'var(--firstloop-primary)' }}>
+                                    <div style={{ fontSize: '1.65rem', fontWeight: 900, color: '#0E88B8', letterSpacing: '-0.5px' }}>
                                         {allReceptionists.reduce((s, r) => s + (r.stampsCollected || 0), 0).toLocaleString()} Stamps
                                     </div>
-                                    <small style={{ color: '#059669', fontWeight: 700, fontSize: '0.74rem' }}>
-                                        <i className="fas fa-shield-alt" style={{ marginRight: 4 }} />
+                                    <div style={{ color: '#059669', fontWeight: 700, fontSize: '0.74rem', marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(16, 185, 129, 0.08)', padding: '2px 7px', borderRadius: 6 }}>
+                                        <i className="fas fa-shield-alt" />
                                         100% Receptionist verified
-                                    </small>
+                                    </div>
                                 </div>
 
-                                <div className="card" style={{ padding: '18px 20px', borderRadius: 16, border: '1px solid rgba(245, 158, 11, 0.25)', background: '#FFFFFF' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                                        <span style={{ fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Top Performer</span>
-                                        <i className="fas fa-trophy" style={{ color: '#D97706' }} />
+                                <div className="fl-report-kpi-card">
+                                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3.5, background: 'linear-gradient(90deg, #F59E0B 0%, #FBBF24 100%)' }} />
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                                        <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Top Performer</span>
+                                        <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(245, 158, 11, 0.1)', color: '#D97706', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.95rem' }}>
+                                            <i className="fas fa-trophy" />
+                                        </div>
                                     </div>
                                     {(() => {
                                         const topStaff = allReceptionists.slice().sort((a, b) => (b.stampsCollected || 0) - (a.stampsCollected || 0))[0]
                                         return (
                                             <>
-                                                <div style={{ fontSize: '1.35rem', fontWeight: 900, color: 'var(--text-primary)' }}>
+                                                <div style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-0.4px' }}>
                                                     {topStaff ? topStaff.name : 'N/A'}
                                                 </div>
-                                                <small style={{ color: '#D97706', fontWeight: 700, fontSize: '0.74rem' }}>
+                                                <div style={{ color: '#D97706', fontWeight: 700, fontSize: '0.74rem', marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(245, 158, 11, 0.08)', padding: '2px 7px', borderRadius: 6 }}>
                                                     🥇 {topStaff ? (topStaff.stampsCollected || 0).toLocaleString() : 0} Stamps Collected
-                                                </small>
+                                                </div>
                                             </>
                                         )
                                     })()}
                                 </div>
 
-                                <div className="card" style={{ padding: '18px 20px', borderRadius: 16, border: '1px solid rgba(239, 0, 3, 0.2)', background: '#FFFFFF' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                                        <span style={{ fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Rewards Validated</span>
-                                        <i className="fas fa-gift" style={{ color: '#EF0003' }} />
+                                <div className="fl-report-kpi-card">
+                                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3.5, background: 'linear-gradient(90deg, #EF0003 0%, #F87171 100%)' }} />
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                                        <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Rewards Validated</span>
+                                        <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(239, 0, 3, 0.1)', color: '#EF0003', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.95rem' }}>
+                                            <i className="fas fa-gift" />
+                                        </div>
                                     </div>
-                                    <div style={{ fontSize: '1.45rem', fontWeight: 900, color: 'var(--text-primary)' }}>
+                                    <div style={{ fontSize: '1.65rem', fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>
                                         {allReceptionists.reduce((s, r) => s + (r.rewardsProcessed || 0), 0)} Rewards
                                     </div>
-                                    <small style={{ color: '#EF0003', fontWeight: 700, fontSize: '0.74rem' }}>
+                                    <div style={{ color: '#EF0003', fontWeight: 700, fontSize: '0.74rem', marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(239, 0, 3, 0.08)', padding: '2px 7px', borderRadius: 6 }}>
                                         Verified in audit trail
-                                    </small>
+                                    </div>
                                 </div>
 
-                                <div className="card" style={{ padding: '18px 20px', borderRadius: 16, border: '1px solid rgba(16, 185, 129, 0.2)', background: '#FFFFFF' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                                        <span style={{ fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Customers Handled</span>
-                                        <i className="fas fa-user-check" style={{ color: '#059669' }} />
+                                <div className="fl-report-kpi-card">
+                                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3.5, background: 'linear-gradient(90deg, #10B981 0%, #34D399 100%)' }} />
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                                        <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Customers Handled</span>
+                                        <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(16, 185, 129, 0.1)', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.95rem' }}>
+                                            <i className="fas fa-user-check" />
+                                        </div>
                                     </div>
-                                    <div style={{ fontSize: '1.45rem', fontWeight: 900, color: '#059669' }}>
+                                    <div style={{ fontSize: '1.65rem', fontWeight: 900, color: '#059669', letterSpacing: '-0.5px' }}>
                                         {allReceptionists.reduce((s, r) => s + (r.customersServed || 0), 0)} Visits
                                     </div>
-                                    <small style={{ color: '#059669', fontWeight: 700, fontSize: '0.74rem' }}>
-                                        Across {allBranches.length} front desk stations
-                                    </small>
+                                    <div style={{ color: '#059669', fontWeight: 700, fontSize: '0.74rem', marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(16, 185, 129, 0.08)', padding: '2px 7px', borderRadius: 6 }}>
+                                        Across {allBranches.length} stations
+                                    </div>
                                 </div>
                             </>
                         )}
@@ -2679,7 +2972,7 @@ export default function MerchantReports() {
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
                         {loading ? (
                             Array.from({ length: 3 }).map((_, i) => (
-                                <div key={i} className="card" style={{ padding: 22, borderRadius: 20, border: '1px solid #E2E8F0', background: '#FFFFFF' }}>
+                                <div key={i} className="fl-luxury-card" style={{ padding: 24 }}>
                                     <div className="skeleton-text" style={{ width: '80px', height: '16px', marginBottom: 14 }} />
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
                                         <div className="skeleton-avatar" style={{ width: 54, height: 54 }} />
@@ -2698,28 +2991,30 @@ export default function MerchantReports() {
                                 const isSecond = index === 1
                                 const medal = isFirst ? '🥇 1st Place' : isSecond ? '🥈 2nd Place' : '🥉 3rd Place'
                                 const medalBg = isFirst ? 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)' : isSecond ? 'linear-gradient(135deg, #94A3B8 0%, #64748B 100%)' : 'linear-gradient(135deg, #B45309 0%, #78350F 100%)'
+                                const stripeBg = isFirst ? 'linear-gradient(90deg, #F59E0B 0%, #D97706 100%)' : isSecond ? 'linear-gradient(90deg, #94A3B8 0%, #64748B 100%)' : 'linear-gradient(90deg, #B45309 0%, #78350F 100%)'
 
                                 return (
                                     <div
                                         key={stf.id}
-                                        className="card"
+                                        className="fl-luxury-card"
                                         style={{
-                                            padding: 22,
-                                            borderRadius: 20,
-                                            border: isFirst ? '2px solid #F59E0B' : '1px solid #E2E8F0',
-                                            background: isFirst ? '#FFFBEB' : '#FFFFFF',
-                                            boxShadow: isFirst ? '0 8px 24px rgba(245, 158, 11, 0.15)' : '0 4px 15px rgba(0,0,0,0.03)',
-                                            position: 'relative'
+                                            padding: 24,
+                                            position: 'relative',
+                                            border: isFirst ? '2px solid rgba(245, 158, 11, 0.4)' : undefined,
+                                            background: isFirst ? 'linear-gradient(180deg, #FFFDF5 0%, #FFFFFF 100%)' : '#FFFFFF',
                                         }}
                                     >
-                                        <div className="flex-between mb-3">
+                                        {/* Rank Stripe */}
+                                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: stripeBg }} />
+
+                                        <div className="flex-between mb-3" style={{ marginTop: 2 }}>
                                             <span
                                                 style={{
                                                     background: medalBg,
                                                     color: '#FFFFFF',
                                                     fontSize: '0.76rem',
                                                     fontWeight: 800,
-                                                    padding: '4px 12px',
+                                                    padding: '5px 14px',
                                                     borderRadius: 20,
                                                     letterSpacing: '0.5px'
                                                 }}
@@ -2757,24 +3052,24 @@ export default function MerchantReports() {
                                         </div>
 
                                         {/* Stamps Collected Volume Meter */}
-                                        <div style={{ background: '#FFFFFF', padding: 14, borderRadius: 14, border: '1px solid #E2E8F0', marginBottom: 14 }}>
+                                        <div className="fl-inner-metric-grid" style={{ margin: '0 0 16px 0', padding: 14 }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 6 }}>
                                                 <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)', fontWeight: 800, letterSpacing: '0.4px' }}>STAMPS COLLECTED</span>
-                                                <strong style={{ fontSize: '1.4rem', color: '#0284C7', fontWeight: 900 }}>
+                                                <strong style={{ fontSize: '1.35rem', color: '#0284C7', fontWeight: 900 }}>
                                                     {stf.stampsCollected || 0} Stamps
                                                 </strong>
                                             </div>
-                                            <div style={{ height: 8, background: '#F1F5F9', borderRadius: 6, overflow: 'hidden' }}>
+                                            <div style={{ height: 8, background: '#E2E8F0', borderRadius: 6, overflow: 'hidden' }}>
                                                 <div
                                                     style={{
                                                         height: '100%',
                                                         width: `${Math.round(((stf.stampsCollected || 0) / maxStampsCollected) * 100)}%`,
-                                                        background: isFirst ? 'linear-gradient(90deg, #0284C7 0%, #059669 100%)' : '#0284C7',
+                                                        background: isFirst ? 'linear-gradient(90deg, #F59E0B 0%, #D97706 100%)' : 'linear-gradient(90deg, #0284C7 0%, #0E88B8 100%)',
                                                         borderRadius: 6
                                                     }}
                                                 />
                                             </div>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: 6 }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: 8, fontWeight: 700 }}>
                                                 <span>{stf.rewardsProcessed || 0} Rewards Claimed</span>
                                                 <span>{stf.customersServed || 0} Served</span>
                                             </div>
@@ -2783,20 +3078,11 @@ export default function MerchantReports() {
                                         <button
                                             type="button"
                                             onClick={() => setSelectedStaffLog(stf)}
+                                            className={isFirst ? "fl-btn-amber" : "fl-btn-glass"}
                                             style={{
                                                 width: '100%',
-                                                borderRadius: 12,
-                                                fontWeight: 800,
-                                                fontSize: '0.82rem',
-                                                padding: '9px 14px',
-                                                background: isFirst ? '#F59E0B' : 'var(--firstloop-primary)',
-                                                color: '#FFFFFF',
-                                                border: 'none',
-                                                cursor: 'pointer',
-                                                display: 'flex',
-                                                alignItems: 'center',
                                                 justifyContent: 'center',
-                                                gap: 6
+                                                padding: '9px 14px'
                                             }}
                                         >
                                             <i className="fas fa-list-alt" />
@@ -2809,13 +3095,13 @@ export default function MerchantReports() {
                     </div>
 
                     {/* Full Receptionist Roster Table */}
-                    <div className="card" style={{ padding: 0, borderRadius: 18, overflow: 'hidden', border: '1px solid #E2E8F0', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
-                        <div style={{ padding: '18px 24px', background: '#FFFFFF', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+                    <div className="fl-table-card">
+                        <div style={{ padding: '20px 24px', background: '#FFFFFF', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
                             <div>
-                                <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
+                                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
                                     Receptionist Staff Stamps Performance & Operational Log
                                 </h3>
-                                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
+                                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '3px 0 0 0' }}>
                                     Track which receptionists collected the most stamps, served customers, and verified rewards
                                 </p>
                             </div>
@@ -2823,35 +3109,23 @@ export default function MerchantReports() {
                             <button
                                 type="button"
                                 onClick={handleExportCSV}
-                                style={{
-                                    borderRadius: 10,
-                                    fontSize: '0.8rem',
-                                    fontWeight: 800,
-                                    padding: '6px 14px',
-                                    background: '#FFFFFF',
-                                    border: '1px solid #CBD5E1',
-                                    color: 'var(--text-primary)',
-                                    cursor: 'pointer'
-                                }}
+                                className="fl-btn-glass"
                             >
-                                <i className="fas fa-download" style={{ marginRight: 6 }} /> Export Staff CSV
+                                <i className="fas fa-download" /> Export Staff CSV
                             </button>
                         </div>
 
                         <div className="table-responsive">
                             <table className="table table-hover align-middle mb-0" style={{ fontSize: '0.86rem' }}>
-                                <thead style={{ background: '#F8FAFC', borderBottom: '2px solid #E2E8F0' }}>
+                                <thead className="fl-table-header">
                                     <tr>
-                                        <th style={{ padding: '14px 20px', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Rank & Staff</th>
-                                        <th style={{ padding: '14px 20px', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Assigned Branch</th>
-                                        <th style={{ padding: '14px 20px', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', minWidth: 180 }}>
-                                            Stamps Collected (Volume)
-                                        </th>
-                                        <th style={{ padding: '14px 20px', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', textAlign: 'center' }}>Rewards Claimed</th>
-                                        <th style={{ padding: '14px 20px', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', textAlign: 'center' }}>Served</th>
-                                        <th style={{ padding: '14px 20px', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Shift Details</th>
-                                        <th style={{ padding: '14px 20px', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Status</th>
-                                        <th style={{ padding: '14px 20px', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', textAlign: 'right' }}>Audit Log</th>
+                                        <th>Rank & Staff</th>
+                                        <th>Assigned Branch</th>
+                                        <th style={{ minWidth: 180 }}>Stamps Collected (Volume)</th>
+                                        <th style={{ textAlign: 'center' }}>Rewards Claimed</th>
+                                        <th style={{ textAlign: 'center' }}>Served</th>
+                                        <th>Status</th>
+                                        <th style={{ textAlign: 'right' }}>Audit Log</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -2873,7 +3147,6 @@ export default function MerchantReports() {
                                                 <td style={{ padding: '16px 20px', textAlign: 'center' }}><div className="skeleton-text" style={{ width: '40px', height: '16px' }} /></td>
                                                 <td style={{ padding: '16px 20px', textAlign: 'center' }}><div className="skeleton-text" style={{ width: '40px', height: '14px' }} /></td>
                                                 <td style={{ padding: '16px 20px' }}><div className="skeleton-text" style={{ width: '80px', height: '16px' }} /></td>
-                                                <td style={{ padding: '16px 20px' }}><div className="skeleton-text" style={{ width: '55px', height: '18px' }} /></td>
                                                 <td style={{ padding: '16px 20px', textAlign: 'right' }}><div className="skeleton-text" style={{ width: '70px', height: '24px', borderRadius: 8 }} /></td>
                                             </tr>
                                         ))
@@ -2883,7 +3156,7 @@ export default function MerchantReports() {
                                             const pct = Math.round(((stf.stampsCollected || 0) / maxStampsCollected) * 100)
 
                                             return (
-                                                <tr key={stf.id}>
+                                                <tr key={stf.id} className="fl-table-row">
                                                     <td style={{ padding: '14px 20px' }}>
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                                                             <span
@@ -2942,11 +3215,11 @@ export default function MerchantReports() {
                                                         {stf.customersServed || 0}
                                                     </td>
 
-                                                    <td style={{ padding: '14px 20px' }}>
+                                                    {/* <td style={{ padding: '14px 20px' }}>
                                                         <span className="badge" style={{ background: 'rgba(14, 136, 184, 0.1)', color: 'var(--firstloop-primary)', fontWeight: 700 }}>
                                                             {stf.shift}
                                                         </span>
-                                                    </td>
+                                                    </td> */}
 
                                                     <td style={{ padding: '14px 20px' }}>
                                                         <span
@@ -3008,25 +3281,20 @@ export default function MerchantReports() {
                     }}
                 >
                     <div
-                        className="card"
+                        className="fl-modal-box"
                         style={{
                             maxWidth: 720,
                             width: '100%',
                             maxHeight: '85vh',
                             display: 'flex',
-                            flexDirection: 'column',
-                            borderRadius: 22,
-                            overflow: 'hidden',
-                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.3)',
-                            animation: 'fadeIn 0.2s ease-out',
-                            border: 'none'
+                            flexDirection: 'column'
                         }}
                     >
                         {/* Modal Header */}
                         <div
                             style={{
                                 padding: '20px 26px',
-                                background: 'linear-gradient(135deg, #0E88B8 0%, #065B7D 100%)',
+                                background: 'linear-gradient(135deg, #091E2F 0%, #0F3249 100%)',
                                 color: '#FFFFFF',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -3111,7 +3379,7 @@ export default function MerchantReports() {
                                     EST. VOLUME
                                 </small>
                                 <strong style={{ fontSize: '1.3rem', color: '#059669', fontWeight: 900 }}>
-                                    ${selectedStaffLog.totalSpendGenerated || 0}
+                                    {(selectedStaffLog.totalSpendGenerated || 0).toLocaleString()}
                                 </strong>
                             </div>
                         </div>
@@ -3199,16 +3467,7 @@ export default function MerchantReports() {
                             <button
                                 type="button"
                                 onClick={() => setSelectedStaffLog(null)}
-                                style={{
-                                    borderRadius: 10,
-                                    padding: '9px 20px',
-                                    fontSize: '0.85rem',
-                                    fontWeight: 800,
-                                    background: '#0F172A',
-                                    color: '#FFFFFF',
-                                    border: 'none',
-                                    cursor: 'pointer'
-                                }}
+                                className="fl-btn-glass"
                             >
                                 Close Log
                             </button>
@@ -3233,21 +3492,16 @@ export default function MerchantReports() {
                     }}
                 >
                     <div
-                        className="card"
+                        className="fl-modal-box"
                         style={{
                             maxWidth: 540,
-                            width: '100%',
-                            borderRadius: 22,
-                            overflow: 'hidden',
-                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.3)',
-                            animation: 'fadeIn 0.2s ease-out',
-                            border: 'none'
+                            width: '100%'
                         }}
                     >
                         <div
                             style={{
                                 padding: '20px 24px',
-                                background: 'linear-gradient(135deg, #0E88B8 0%, #065B7D 100%)',
+                                background: 'linear-gradient(135deg, #091E2F 0%, #0F3249 100%)',
                                 color: '#FFFFFF',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -3348,20 +3602,218 @@ export default function MerchantReports() {
                                 <button
                                     type="button"
                                     onClick={() => setSelectedLog(null)}
-                                    style={{
-                                        borderRadius: 10,
-                                        padding: '9px 20px',
-                                        fontSize: '0.85rem',
-                                        fontWeight: 800,
-                                        background: '#0F172A',
-                                        color: '#FFFFFF',
-                                        border: 'none',
-                                        cursor: 'pointer'
-                                    }}
+                                    className="fl-btn-glass"
                                 >
                                     Close Details
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* DETAIL MODAL FOR CUSTOMER CARD BREAKDOWN */}
+            {selectedCustomerCards && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        zIndex: 1075,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: 'rgba(15, 23, 42, 0.65)',
+                        backdropFilter: 'blur(5px)',
+                        padding: 16
+                    }}
+                    onClick={() => setSelectedCustomerCards(null)}
+                >
+                    <div
+                        className="fl-modal-box"
+                        style={{
+                            maxWidth: 580,
+                            width: '100%',
+                            maxHeight: '90vh',
+                            display: 'flex',
+                            flexDirection: 'column'
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Modal Header */}
+                        <div
+                            style={{
+                                padding: '20px 24px',
+                                background: 'linear-gradient(135deg, #091E2F 0%, #0F3249 100%)',
+                                color: '#FFFFFF',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center'
+                            }}
+                        >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <img
+                                    src={selectedCustomerCards.avatar}
+                                    alt={selectedCustomerCards.name}
+                                    style={{ width: 44, height: 44, borderRadius: '50%', border: '2px solid rgba(255, 255, 255, 0.4)', background: '#fff' }}
+                                />
+                                <div>
+                                    <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#FFFFFF' }}>
+                                        {selectedCustomerCards.name}
+                                    </h4>
+                                    <div style={{ fontSize: '0.78rem', color: 'rgba(255, 255, 255, 0.85)', marginTop: 2 }}>
+                                        {selectedCustomerCards.email} • {selectedCustomerCards.phone}
+                                    </div>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setSelectedCustomerCards(null)}
+                                style={{
+                                    background: 'rgba(255, 255, 255, 0.15)',
+                                    border: 'none',
+                                    color: '#FFFFFF',
+                                    borderRadius: '50%',
+                                    width: 32,
+                                    height: 32,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                <i className="fas fa-times" />
+                            </button>
+                        </div>
+
+                        {/* Quick KPI Strip inside modal */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, padding: '14px 24px', background: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
+                            <div style={{ textAlign: 'center' }}>
+                                <small style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Total Stamps</small>
+                                <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#EF0003' }}>
+                                    {selectedCustomerCards.stampsCollected}
+                                </div>
+                            </div>
+                            <div style={{ textAlign: 'center', borderLeft: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0' }}>
+                                <small style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Stamp Passes</small>
+                                <div style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--firstloop-primary)' }}>
+                                    {selectedCustomerCards.stampCardsList?.length || 0}
+                                </div>
+                            </div>
+                            <div style={{ textAlign: 'center' }}>
+                                <small style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Membership Tier</small>
+                                <div style={{ fontSize: '0.9rem', fontWeight: 900, color: selectedCustomerCards.hasMembership ? '#D97706' : 'var(--text-muted)', marginTop: 4 }}>
+                                    {selectedCustomerCards.membershipTier}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Modal Body: Cards List */}
+                        <div style={{ padding: '20px 24px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: 14 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <h5 style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                    <i className="fas fa-stamp" style={{ marginRight: 6, color: 'var(--firstloop-primary)' }} />
+                                    Issued Stamp Cards ({selectedCustomerCards.stampCardsList?.length || 0})
+                                </h5>
+                                <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                                    Individual hub stamp allocations
+                                </span>
+                            </div>
+
+                            {selectedCustomerCards.stampCardsList && selectedCustomerCards.stampCardsList.length > 0 ? (
+                                selectedCustomerCards.stampCardsList.map((card, cIdx) => (
+                                    <div
+                                        key={cIdx}
+                                        style={{
+                                            border: card.stamps > 0 ? '1.5px solid rgba(239, 0, 3, 0.25)' : '1px solid #E2E8F0',
+                                            borderRadius: 14,
+                                            padding: '14px 16px',
+                                            background: card.stamps > 0 ? 'rgba(239, 0, 3, 0.02)' : '#FFFFFF',
+                                            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.03)'
+                                        }}
+                                    >
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                                            <div>
+                                                <div style={{ fontWeight: 800, fontSize: '0.92rem', color: 'var(--text-primary)' }}>
+                                                    {card.title}
+                                                </div>
+                                                <div style={{ fontSize: '0.76rem', color: 'var(--firstloop-primary)', fontWeight: 700, marginTop: 2 }}>
+                                                    <i className="fas fa-map-marker-alt" style={{ marginRight: 4 }} />
+                                                    {card.branchName}
+                                                </div>
+                                                {card.cardNumber && (
+                                                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'monospace', marginTop: 3 }}>
+                                                        {card.cardNumber}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <span
+                                                className="badge"
+                                                style={{
+                                                    background: card.stamps > 0 ? 'rgba(239, 0, 3, 0.12)' : '#F1F5F9',
+                                                    color: card.stamps > 0 ? '#EF0003' : '#64748B',
+                                                    fontWeight: 900,
+                                                    fontSize: '0.82rem',
+                                                    padding: '5px 12px',
+                                                    borderRadius: 8
+                                                }}
+                                            >
+                                                {card.stamps} / {card.totalStamps} Stamps
+                                            </span>
+                                        </div>
+
+                                        {/* Visual Stamp Progress Bubbles */}
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
+                                            {Array.from({ length: Math.min(card.totalStamps, 20) }).map((_, sIdx) => {
+                                                const isCollected = sIdx < card.stamps
+                                                return (
+                                                    <div
+                                                        key={sIdx}
+                                                        style={{
+                                                            width: 26,
+                                                            height: 26,
+                                                            borderRadius: '50%',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            fontSize: '0.7rem',
+                                                            fontWeight: 800,
+                                                            background: isCollected ? '#EF0003' : '#F1F5F9',
+                                                            color: isCollected ? '#FFFFFF' : '#94A3B8',
+                                                            border: isCollected ? '1.5px solid #DC2626' : '1px dashed #CBD5E1'
+                                                        }}
+                                                        title={`Stamp #${sIdx + 1}: ${isCollected ? 'Collected' : 'Pending'}`}
+                                                    >
+                                                        {isCollected ? <i className="fas fa-check" style={{ fontSize: '0.62rem' }} /> : (sIdx + 1)}
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px 0' }}>
+                                    No stamp cards registered for this customer.
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div
+                            style={{
+                                padding: '14px 24px',
+                                background: '#F8FAFC',
+                                borderTop: '1px solid #E2E8F0',
+                                display: 'flex',
+                                justifyContent: 'flex-end'
+                            }}
+                        >
+                            <button
+                                type="button"
+                                onClick={() => setSelectedCustomerCards(null)}
+                                className="fl-btn-glass"
+                            >
+                                Close
+                            </button>
                         </div>
                     </div>
                 </div>

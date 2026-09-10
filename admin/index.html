@@ -60,7 +60,7 @@
         }
         else {
             var host = window.location.hostname.toLowerCase();
-            var isFirstLoopDomain = host === 'firstloop.co.in' || host === 'www.firstloop.co.in' || host.endsWith('.firstloop.co.in') || host.indexOf('firstloop') !== -1;
+            var isFirstLoopDomain = host === 'firstloop.co.in' || host === 'www.firstloop.co.in' || host.endsWith('.firstloop.co.in') || host.indexOf('firstloop') !== -1 || p.startsWith('/firstloop');
 
             if (isFirstLoopDomain) {
                 /* ---- FIRST LOOP WEBSITE META ---- */
@@ -123,11 +123,13 @@
     <!-- Bootstrap (shared – admin uses it for modals/tables; website uses it for grid) -->
     <link rel="stylesheet" href="/asset/css/bootstrap.min.css">
 
-    <!-- Website-only CSS (skipped on admin, merchant, receptionist, panel, firstloop, and card preview to avoid conflicts) -->
+    <!-- Website-only CSS (skipped on admin, merchant, receptionist, panel, firstloop domain/path, and card preview to avoid conflicts) -->
     <script>
         (function() {
+            var host = window.location.hostname.toLowerCase();
             var p = window.location.pathname;
-            var isExcluded = p.startsWith('/admin') || p.startsWith('/panel') || p.startsWith('/merchant') || p.startsWith('/receptionist') || p.startsWith('/saleperson') || p.startsWith('/firstloop') || p.startsWith('/card-');
+            var isFirstLoopDomain = host === 'firstloop.co.in' || host === 'www.firstloop.co.in' || host.endsWith('.firstloop.co.in') || host.indexOf('firstloop') !== -1;
+            var isExcluded = isFirstLoopDomain || p.startsWith('/admin') || p.startsWith('/panel') || p.startsWith('/merchant') || p.startsWith('/receptionist') || p.startsWith('/saleperson') || p.startsWith('/firstloop') || p.startsWith('/card-');
             if (!isExcluded) {
                 document.write('<link rel="stylesheet" href="/asset/css/swiper-bundle.min.css">');
                 document.write('<link rel="stylesheet" href="/asset/css/animate.css">');
@@ -143,8 +145,10 @@
 
 <script>
     (function() {
+        var host = window.location.hostname.toLowerCase();
         var p = window.location.pathname;
-        var isExcluded = p.startsWith('/admin') || p.startsWith('/panel') || p.startsWith('/merchant') || p.startsWith('/receptionist') || p.startsWith('/saleperson') || p.startsWith('/firstloop') || p.startsWith('/card-');
+        var isFirstLoopDomain = host === 'firstloop.co.in' || host === 'www.firstloop.co.in' || host.endsWith('.firstloop.co.in') || host.indexOf('firstloop') !== -1;
+        var isExcluded = isFirstLoopDomain || p.startsWith('/admin') || p.startsWith('/panel') || p.startsWith('/merchant') || p.startsWith('/receptionist') || p.startsWith('/saleperson') || p.startsWith('/firstloop') || p.startsWith('/card-');
         if (!isExcluded) {
             document.write('<canvas class="cursor-trail" id="trail" style="display: none;"></canvas>');
             document.write('<button id="goTop"><span class="border-progress"></span><span class="ic-wrap"><span class="icon icon-long-arrow-alt-up-solid"></span></span></button>');
@@ -158,11 +162,13 @@
     <script src="/asset/js/jquery.min.js"></script>
     <script src="/asset/js/bootstrap.min.js"></script>
 
-    <!-- Website-only JS (skipped on admin, merchant, receptionist, panel, firstloop, and card pages to avoid conflicts) -->
+    <!-- Website-only JS (skipped on admin, merchant, receptionist, panel, firstloop domain/path, and card pages to avoid conflicts) -->
     <script>
         (function() {
+            var host = window.location.hostname.toLowerCase();
             var p = window.location.pathname;
-            var isExcluded = p.startsWith('/admin') || p.startsWith('/panel') || p.startsWith('/merchant') || p.startsWith('/receptionist') || p.startsWith('/saleperson') || p.startsWith('/firstloop') || p.startsWith('/card-');
+            var isFirstLoopDomain = host === 'firstloop.co.in' || host === 'www.firstloop.co.in' || host.endsWith('.firstloop.co.in') || host.indexOf('firstloop') !== -1;
+            var isExcluded = isFirstLoopDomain || p.startsWith('/admin') || p.startsWith('/panel') || p.startsWith('/merchant') || p.startsWith('/receptionist') || p.startsWith('/saleperson') || p.startsWith('/firstloop') || p.startsWith('/card-');
             if (!isExcluded) {
                 document.write('<script src="/asset/js/jquery.nice-select.min.js"><\/script>');
                 document.write('<script src="/asset/js/swiper-bundle.min.js"><\/script>');

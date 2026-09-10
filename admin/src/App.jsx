@@ -99,6 +99,10 @@ function ScrollToTopAndAnimate() {
     // Scroll window to top
     window.scrollTo(0, 0);
 
+    const host = window.location.hostname.toLowerCase();
+    const isFirstLoop = host.indexOf('firstloop') !== -1 || pathname.startsWith('/firstloop');
+    if (isFirstLoop) return;
+
     // Close mobile menu drawer if active
     document.querySelector(".offcanvas-menu")?.classList.remove("show");
     document.body.classList.remove("overflow-hidden");
@@ -186,6 +190,7 @@ function WebsiteLayout() {
           <Route path="/card-image/:id/:type" element={<CardImage />} />
           <Route path="/card-only/:id" element={<CardImage />} />
           <Route path="/card-only/:id/:type" element={<CardImage />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
 
@@ -336,22 +341,17 @@ export default function App() {
 
   // 1. FIRSTPASSAPP.CO DOMAIN RULES
   if (isFirstPassDomain) {
-    if (pathname === '/') {
-      return (
-        <>
-          <ScrollToTopAndAnimate />
-          <WebsiteLayout />
-        </>
-      );
-    }
-
-
     if (
-      pathname.startsWith('/panel')
-      // ||pathname.startsWith('/merchant') ||
-      // pathname.startsWith('/receptionist')
+      pathname.startsWith('/panel') ||
+      pathname.startsWith('/merchant') ||
+      pathname.startsWith('/receptionist')
     ) {
       window.location.replace(`https://firstloop.co.in${pathname}${window.location.search}`);
+      return null;
+    }
+
+    if (pathname.startsWith('/firstloop')) {
+      window.location.replace(`https://firstloop.co.in/`);
       return null;
     }
 
@@ -370,11 +370,11 @@ export default function App() {
       );
     }
 
-    // Anything else on firstpassapp.co -> NotFound
+    // Website pages (/, /how-it-works, /reach-us, /data-policy, /conditions, etc.)
     return (
       <>
         <ScrollToTopAndAnimate />
-        <NotFound />
+        <WebsiteLayout />
       </>
     );
   }

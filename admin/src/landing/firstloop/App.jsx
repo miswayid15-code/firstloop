@@ -13,42 +13,47 @@ import { SocialMenu } from './components/SocialMenu';
 import { BackToTop } from './components/BackToTop';
 import { Footer } from './components/Footer';
 
+import { WalletToast } from './components/WalletToast';
+
 const MainContent = () => {
   const { activeTab } = useApp();
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 relative selection:bg-teal-500 selection:text-white">
-      
-      {/* Animated Preloader */}
-      <Preloader />
+    <div className="firstloop">
+      <div className="min-h-screen flex flex-col bg-slate-50 relative selection:bg-teal-500 selection:text-white">
+        
+        {/* Animated Preloader */}
+        <Preloader />
 
-      {/* Sticky Top Header */}
-      <Header />
+        {/* Sticky Top Header */}
+        <Header />
 
-      {/* Main Dynamic View */}
-      <main className="flex-1">
-        {activeTab === 'home' ? (
-          <>
-            <Hero />
-            <LandingSections />
-          </>
-        ) : activeTab === 'dashboard' ? (
-          <MerchantList />
-        ) : activeTab === 'terms' || activeTab === 'privacy' ? (
-          <LegalPage initialTab={activeTab} />
-        ) : (
-          <PricingRegistrationPage />
-        )}
-      </main>
+        {/* Main Dynamic View */}
+        <main className="flex-1">
+          {activeTab === 'home' ? (
+            <>
+              <Hero />
+              <LandingSections />
+            </>
+          ) : activeTab === 'dashboard' ? (
+            <MerchantList />
+          ) : activeTab === 'terms' || activeTab === 'privacy' ? (
+            <LegalPage initialTab={activeTab} />
+          ) : (
+            <PricingRegistrationPage />
+          )}
+        </main>
 
-      {/* Footer */}
-      <Footer />
+        {/* Footer */}
+        <Footer />
 
-      {/* Floating Modals & Overlays */}
-      <MerchantModal />
-      <SocialMenu />
-      <BackToTop />
+        {/* Floating Modals & Overlays */}
+        <MerchantModal />
+        <SocialMenu />
+        <BackToTop />
+        <WalletToast />
 
+      </div>
     </div>
   );
 };

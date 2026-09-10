@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
-// import { INITIAL_BRANCHES, INITIAL_RECEPTIONISTS } from './mockMerchantData'
+
 
 export default function BranchReceptionists() {
     const { branchId } = useParams()

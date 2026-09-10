@@ -360,84 +360,48 @@ export default function CustomerList() {
                                                 </div>
                                             </td>
 
-                                            {/* Assigned Stamp Cards (card_type: 1) */}
+                                            {/* Assigned Stamp Cards Count */}
                                             <td style={{ padding: '14px 18px' }}>
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                                    {stampCards.length > 0 ? (
-                                                        stampCards.map((sc, idx) => (
-                                                            <div
-                                                                key={sc.id || idx}
-                                                                style={{
-                                                                    display: 'inline-flex',
-                                                                    alignItems: 'center',
-                                                                    gap: 8,
-                                                                    padding: '5px 10px',
-                                                                    borderRadius: 8,
-                                                                    background: 'var(--firstloop-primary-light, #E6F2FA)',
-                                                                    border: '1px solid rgba(14, 136, 184, 0.25)',
-                                                                    color: 'var(--firstloop-primary, #0E88B8)',
-                                                                    maxWidth: 260
-                                                                }}
-                                                            >
-                                                                <i className="fas fa-stamp" style={{ fontSize: '0.8rem', flexShrink: 0 }} />
-                                                                <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-                                                                    <span style={{ fontWeight: 700, fontSize: '0.78rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                                                        {sc.title || 'Stamp Card'}
-                                                                    </span>
-                                                                    {sc.card_number && (
-                                                                        <small style={{ fontSize: '0.66rem', color: 'var(--text-muted)', fontFamily: 'monospace', fontWeight: 600 }}>
-                                                                            {sc.card_number}
-                                                                        </small>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        ))
-                                                    ) : (
-                                                        <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem', fontStyle: 'italic' }}>
-                                                            No stamp cards
-                                                        </span>
-                                                    )}
-                                                </div>
+                                                <span
+                                                    style={{
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        gap: 6,
+                                                        padding: '5px 14px',
+                                                        borderRadius: 20,
+                                                        background: stampCards.length > 0 ? 'rgba(14, 136, 184, 0.1)' : '#F1F5F9',
+                                                        border: `1px solid ${stampCards.length > 0 ? 'rgba(14, 136, 184, 0.25)' : '#E2E8F0'}`,
+                                                        color: stampCards.length > 0 ? 'var(--firstloop-primary, #0E88B8)' : '#94A3B8',
+                                                        fontWeight: 800,
+                                                        fontSize: '0.84rem'
+                                                    }}
+                                                    title={`${stampCards.length} Stamp Cards assigned`}
+                                                >
+                                                    <i className="fas fa-stamp" style={{ fontSize: '0.78rem' }} />
+                                                    {stampCards.length}
+                                                </span>
                                             </td>
 
-                                            {/* Membership Tiers (card_type: 2) */}
+                                            {/* Membership Tiers Count */}
                                             <td style={{ padding: '14px 18px' }}>
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                                    {membershipCards.length > 0 ? (
-                                                        membershipCards.map((mc, idx) => (
-                                                            <div
-                                                                key={mc.id || idx}
-                                                                style={{
-                                                                    display: 'inline-flex',
-                                                                    alignItems: 'center',
-                                                                    gap: 8,
-                                                                    padding: '5px 10px',
-                                                                    borderRadius: 8,
-                                                                    background: 'rgba(245, 158, 11, 0.12)',
-                                                                    border: '1px solid rgba(245, 158, 11, 0.3)',
-                                                                    color: '#D97706',
-                                                                    maxWidth: 260
-                                                                }}
-                                                            >
-                                                                <i className="fas fa-crown" style={{ fontSize: '0.8rem', flexShrink: 0 }} />
-                                                                <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-                                                                    <span style={{ fontWeight: 700, fontSize: '0.78rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                                                        {mc.title || mc.name || 'Membership Card'}
-                                                                    </span>
-                                                                    {mc.card_number && (
-                                                                        <small style={{ fontSize: '0.66rem', color: '#B45309', fontFamily: 'monospace', fontWeight: 600 }}>
-                                                                            {mc.card_number}
-                                                                        </small>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        ))
-                                                    ) : (
-                                                        <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem', fontStyle: 'italic' }}>
-                                                            No membership passes
-                                                        </span>
-                                                    )}
-                                                </div>
+                                                <span
+                                                    style={{
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        gap: 6,
+                                                        padding: '5px 14px',
+                                                        borderRadius: 20,
+                                                        background: membershipCards.length > 0 ? 'rgba(245, 158, 11, 0.12)' : '#F1F5F9',
+                                                        border: `1px solid ${membershipCards.length > 0 ? 'rgba(245, 158, 11, 0.3)' : '#E2E8F0'}`,
+                                                        color: membershipCards.length > 0 ? '#D97706' : '#94A3B8',
+                                                        fontWeight: 800,
+                                                        fontSize: '0.84rem'
+                                                    }}
+                                                    title={`${membershipCards.length} Membership Passes assigned`}
+                                                >
+                                                    <i className="fas fa-crown" style={{ fontSize: '0.78rem' }} />
+                                                    {membershipCards.length}
+                                                </span>
                                             </td>
 
                                             <td style={{ padding: '14px 18px', textAlign: 'right' }}>
