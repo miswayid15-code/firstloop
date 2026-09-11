@@ -284,69 +284,77 @@ exports.dashboard = async (req, res) => {
                 merchant_id: merchant_id
             }
         });
-        const today_report_data = await CustomerCard.findAll({
-            where: {
-                branch_id: {
-                    [Op.in]: branchIds
-                }
-            },
+const today_report_data = await CustomerCard.findAll({
+    where: {
+        branch_id: {
+            [Op.in]: branchIds
+        }
+    },
 
+    attributes: [
+        "id",
+        "card_type",
+        "title",
+        "branch_id"
+    ],
+
+    include: [
+        {
+            model: Customer,
+            as: "Customer",
             attributes: [
-                "id",
-                "card_type",
-                "title",
-                "branch_id"
+                "name",
+                "email",
+                "phone",
+                "country_code"
+            ]
+        },
+
+        {
+            model: Branch,
+            as: "Branch",
+            attributes: [
+                "name"
+            ]
+        },
+
+        {
+            model: CustomerStampLevel,
+            as: "CustomerStampLevels",
+            attributes: [
+                "payment_type",
+                "paid_amt",
+                "paid_date"
             ],
+            where: {
+                status: 1
+            },
+            required: true
+        }
+    ],
 
-            include: [
-                {
-                    model: Customer,
-                    as: "Customer",
-                    attributes: [
-                        "name",
-                        "email",
-                        "phone",
-                        "country_code"
-                    ]
-                },
+    order: [
+        [
+            { model: CustomerStampLevel, as: "CustomerStampLevels" },
+            "paid_date",
+            "DESC"
+        ]
+    ]
+});
 
-                {
-                    model: Branch,
-                    as: "Branch",
-                    attributes: [
-                        "name"
-                    ]
-                },
 
-                {
-                    model: CustomerStampLevel,
-                    as: "CustomerStampLevels",
-                    attributes: [
-                        "payment_type",
-                        "paid_amt",
-                        "paid_date"
-                    ],
-                    where: {
-                        status: 1
-                    },
-                    required: true
-                }
-            ],
+// =====================================================
+// FLATTEN ALL STAMP ENTRIES
+// THEN SORT BY PAID DATE
+// THEN TAKE ONLY LATEST 10
+// =====================================================
 
-            order: [
-                [
-                    { model: CustomerStampLevel, as: "CustomerStampLevels" },
-                    "paid_date",
-                    "DESC"
-                ]
-            ],
+const today_report = today_report_data
+    .flatMap(card => {
 
-            limit: 10
-        });
+        const stampLevels = card.CustomerStampLevels || [];
 
-        const today_report = today_report_data.map(card => {
-
-            const stampLevel = card.CustomerStampLevels?.[0];
+        return stampLevels.map(stampLevel => {
 
             return {
                 branch_id: card.branch_id,
@@ -357,14 +365,21 @@ exports.dashboard = async (req, res) => {
                 phone: card.Customer?.phone || null,
                 country_code: card.Customer?.country_code || null,
 
-                payment_type: stampLevel?.payment_type || null,
-                time: stampLevel?.paid_date || null,
-                amount: stampLevel?.paid_amt || 0,
+                payment_type: stampLevel.payment_type || null,
+                time: stampLevel.paid_date || null,
+                amount: stampLevel.paid_amt || 0,
 
                 card_type: card.card_type,
                 card_name: card.title
             };
+
         });
+
+    })
+    .sort((a, b) => {
+        return new Date(b.time) - new Date(a.time);
+    })
+    .slice(0, 10);
         // ---------------------------------------
         // RESPONSE
         // ---------------------------------------
@@ -592,7 +607,7 @@ exports.branch_id = async (req, res) => {
 exports.stamp_card = async (req, res) => {
     try {
 
-        // console.log("req body", req.body)
+        console.log("req body", req.body)
         let {
             id,
             title,
@@ -1042,6 +1057,7 @@ exports.fetch_stamp_card = async (req, res) => {
                         "reward_type",
                         "reward_text",
                         "icon",
+                        "amt",
                         "discount",
                         "category_id",
                         "status"
@@ -1277,6 +1293,7 @@ exports.fetch_stamp_id = async (req, res) => {
                         "reward_type",
                         "reward_text",
                         "icon",
+                        "amt",
                         "category_id",
                         "status"
                     ]

@@ -307,9 +307,7 @@ exports.dashboard = async (req, res) => {
             ]
         });
 
-        // ---------------------------------
-        // FLAT TODAY REPORT
-        // ---------------------------------
+
 
         const today_report = today_report_data
             .flatMap(card => {
