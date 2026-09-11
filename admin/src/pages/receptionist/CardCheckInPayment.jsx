@@ -23,6 +23,17 @@ export default function CardCheckInPayment() {
     } catch (e) {
         console.error("Error parsing receptionist_data:", e)
     }
+
+    let merchant = {}
+    try {
+        const rawMerchant = localStorage.getItem("merchant_data")
+        if (rawMerchant && rawMerchant !== "null" && rawMerchant !== "undefined") {
+            merchant = JSON.parse(rawMerchant) || {}
+        }
+    } catch (e) {
+        console.error("Error parsing merchant_data:", e)
+    }
+
     const [searchParams] = useSearchParams()
     const effectiveBranchId = paramBranchId || searchParams.get('branchId') || receptionist?.user_branch_id || receptionist?.branch_id || ''
 
@@ -62,9 +73,17 @@ export default function CardCheckInPayment() {
     const fetchCustomers = async () => {
         setLoading(true)
         try {
-            const res = await API.post('firstloop/customer/fetch-branch-customers', {
-                br_id: effectiveBranchId || undefined
-            })
+            let res
+            if (isMerchant && !effectiveBranchId) {
+                const merId = merchant?.user_id || merchant?.id
+                res = await API.post('firstloop/customer/fetch-merchant-customers', {
+                    mer_id: merId
+                })
+            } else {
+                res = await API.post('firstloop/customer/fetch-branch-customers', {
+                    br_id: effectiveBranchId || undefined
+                })
+            }
 
             if (res?.data?.status == 1 && res.data.data) {
                 setCustomerList(res.data.data)
@@ -155,19 +174,57 @@ export default function CardCheckInPayment() {
         setSearchResults(matches)
     }, [searchInput, customerList])
 
-    // Pre-load customer if phone is passed in URL query
+    const selectCustomer = (customer) => {
+        setMatchedCustomer(customer)
+        setSearchInput(customer.name || customer.phone || '')
+        setSearchResults([])
+        setSelectedCustomerBranch('all')
+        const cards = Array.isArray(customer.cards) ? customer.cards : []
+        if (cards.length > 0) {
+            setSelectedCard(cards[0])
+        } else {
+            setSelectedCard(null)
+        }
+    }
+
+    const clearSelectedCustomer = () => {
+        setMatchedCustomer(null)
+        setSelectedCard(null)
+        setSelectedCardDetails(null)
+        setSearchInput('')
+        setSearchResults([])
+        setSelectedCustomerBranch('all')
+    }
+
+    // Pre-load customer if passed via navigation state or URL query
     useEffect(() => {
+        if (location.state?.customer) {
+            const passed = location.state.customer
+            selectCustomer(passed)
+            setCustomerList(prev => {
+                if (!prev.some(c => String(c.id) === String(passed.id))) {
+                    return [passed, ...prev]
+                }
+                return prev
+            })
+            return
+        }
+
         const initialPhone = searchParams.get('phone')
-        if (initialPhone && customerList.length > 0) {
+        const initialEmail = searchParams.get('email')
+        const initialCustomerId = searchParams.get('customerId')
+
+        if ((initialPhone || initialEmail || initialCustomerId) && customerList.length > 0 && !matchedCustomer) {
             const found = customerList.find(c =>
-                String(c.phone).includes(initialPhone) ||
-                (c.name && c.name.toLowerCase().includes(initialPhone.toLowerCase()))
+                (initialCustomerId && String(c.id) === String(initialCustomerId)) ||
+                (initialPhone && String(c.phone).includes(initialPhone)) ||
+                (initialEmail && c.email && c.email.toLowerCase() === initialEmail.toLowerCase())
             )
             if (found) {
                 selectCustomer(found)
             }
         }
-    }, [searchParams, customerList])
+    }, [searchParams, customerList, location.state])
 
     // Fetch full card design details whenever selected card changes
     useEffect(() => {
@@ -214,28 +271,6 @@ export default function CardCheckInPayment() {
             isMounted = false
         }
     }, [selectedCard?.id, selectedCard?.card_type, matchedCustomer?.id])
-
-    const selectCustomer = (customer) => {
-        setMatchedCustomer(customer)
-        setSearchInput(customer.name || customer.phone || '')
-        setSearchResults([])
-        setSelectedCustomerBranch('all')
-        const cards = Array.isArray(customer.cards) ? customer.cards : []
-        if (cards.length > 0) {
-            setSelectedCard(cards[0])
-        } else {
-            setSelectedCard(null)
-        }
-    }
-
-    const clearSelectedCustomer = () => {
-        setMatchedCustomer(null)
-        setSelectedCard(null)
-        setSelectedCardDetails(null)
-        setSearchInput('')
-        setSearchResults([])
-        setSelectedCustomerBranch('all')
-    }
 
     // Navigate to Add Card to Customer page
     const handleNavigateToAddCustomer = () => {
@@ -558,14 +593,24 @@ export default function CardCheckInPayment() {
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                     {isMerchant && (
-                        <button
-                            type="button"
-                            className="btn btn-secondary"
-                            onClick={() => navigate(effectiveBranchId ? `/merchant/branches/${effectiveBranchId}` : '/merchant/branches')}
-                            style={{ borderRadius: 10, padding: '8px 14px', fontSize: '0.84rem', fontWeight: 700 }}
-                        >
-                            <i className="fas fa-arrow-left" /> Back to Branch
-                        </button>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                            <button
+                                type="button"
+                                className="btn btn-outline-secondary"
+                                onClick={() => navigate('/merchant/customers')}
+                                style={{ borderRadius: 10, padding: '8px 14px', fontSize: '0.84rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                            >
+                                <i className="fas fa-users" /> Customers
+                            </button>
+                            <button
+                                type="button"
+                                className="btn btn-secondary"
+                                onClick={() => navigate(effectiveBranchId ? `/merchant/branches/${effectiveBranchId}` : '/merchant/branches')}
+                                style={{ borderRadius: 10, padding: '8px 14px', fontSize: '0.84rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                            >
+                                <i className="fas fa-arrow-left" /> Back to Branch
+                            </button>
+                        </div>
                     )}
 
                     {/* Mode Selector Tabs */}

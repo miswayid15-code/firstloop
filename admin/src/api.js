@@ -32,7 +32,8 @@ export const getAppType = (reqUrl = "") => {
         path === "/merchant-login" ||
         path === "/panel/merchant" ||
         path.startsWith("/panel/merchant/") ||
-        path === "/panel/merchant-login"
+        path === "/panel/merchant-login" ||
+        (Boolean(localStorage.getItem("mer_access_token") || localStorage.getItem("merchant_token")) && path.includes("card-preview"))
     );
 
     const isReceptionistPage = (
@@ -41,7 +42,8 @@ export const getAppType = (reqUrl = "") => {
         path === "/receptionist-login" ||
         path === "/panel/receptionist" ||
         path.startsWith("/panel/receptionist/") ||
-        path === "/panel/receptionist-login"
+        path === "/panel/receptionist-login" ||
+        (Boolean(localStorage.getItem("rec_access_token") || localStorage.getItem("receptionist_token")) && path.includes("card-preview") && !localStorage.getItem("mer_access_token"))
     );
 
     // Active Admin Portal context (e.g. /view-merchant, /view-fl-branch, /merchants, /dashboard, etc.)
@@ -49,9 +51,9 @@ export const getAppType = (reqUrl = "") => {
         !isMerchantPage &&
         !isReceptionistPage &&
         !isSalesPersonPage &&
-        !path.startsWith("/card-preview") &&
-        !path.startsWith("/card-image") &&
-        !path.startsWith("/card-only")
+        !path.includes("card-preview") &&
+        !path.includes("card-image") &&
+        !path.includes("card-only")
     );
 
     // 1. Explicit API endpoint checks
@@ -432,7 +434,18 @@ export const logoutAndRedirect = (message, targetAppType = null) => {
 const addAuthHeaders = (config) => {
     const reqUrl = config.url || "";
     const appType = getAppType(reqUrl);
-    const accessToken = getAccessToken(reqUrl);
+    let accessToken = getAccessToken(reqUrl);
+
+    // Fallback: on card preview or shared endpoints, check if user has merchant/receptionist/admin token
+    if (!accessToken) {
+        accessToken = localStorage.getItem("mer_access_token") ||
+            localStorage.getItem("merchant_token") ||
+            localStorage.getItem("rec_access_token") ||
+            localStorage.getItem("receptionist_token") ||
+            localStorage.getItem("access_token") ||
+            localStorage.getItem("admin_token") ||
+            null;
+    }
 
     config.headers = config.headers || {};
 
@@ -500,9 +513,9 @@ API.interceptors.response.use(
         // Check for skipAuthRedirect flag or public preview route
         const currentPath = String(window.location.pathname || "").toLowerCase();
         if (
-            currentPath.startsWith("/card-preview") ||
-            currentPath.startsWith("/card-image") ||
-            currentPath.startsWith("/card-only") ||
+            currentPath.includes("card-preview") ||
+            currentPath.includes("card-image") ||
+            currentPath.includes("card-only") ||
             originalRequest.skipAuthRedirect ||
             originalRequest.headers?.["X-Skip-Auth-Redirect"]
         ) {

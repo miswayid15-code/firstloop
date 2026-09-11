@@ -37,18 +37,45 @@ export default function MerchantReports() {
     const [selectedStaffLog, setSelectedStaffLog] = useState(null)
     const [selectedCustomerCards, setSelectedCustomerCards] = useState(null)
 
-    // Fetch report data from API: firstloop/merchant/report (method POST)
+    // Fetch report data from API: firstloop/merchant/report and firstloop/merchant/dashboard
     const fetchReportData = async (showToast = false) => {
         setLoading(true)
         try {
-            const response = await API.post('firstloop/merchant/report', {})
-            if (response?.data && (response.data.status === 1 || response.data.status === '1')) {
-                setReportData(response.data.data)
+            const [reportRes, dashRes] = await Promise.allSettled([
+                API.post('firstloop/merchant/report', {}),
+                API.post('firstloop/merchant/dashboard', {})
+            ])
+
+            let combinedData = {}
+            if (reportRes.status === 'fulfilled' && reportRes.value?.data) {
+                const rData = reportRes.value.data.data || reportRes.value.data
+                if (rData && typeof rData === 'object') {
+                    combinedData = { ...rData }
+                }
+            }
+
+            if (dashRes.status === 'fulfilled' && dashRes.value?.data) {
+                const dData = dashRes.value.data.data || dashRes.value.data
+                if (dData && typeof dData === 'object') {
+                    if (Array.isArray(dData.today_report) && dData.today_report.length > 0) {
+                        combinedData.today_report = dData.today_report
+                    }
+                    if (!combinedData.branch_list && dData.branch_list) {
+                        combinedData.branch_list = dData.branch_list
+                    }
+                    if (!combinedData.name && dData.name) {
+                        combinedData.name = dData.name
+                    }
+                }
+            }
+
+            if (Object.keys(combinedData).length > 0) {
+                setReportData(combinedData)
                 if (showToast) {
                     toast.success('Live merchant report updated! 🔄')
                 }
-            } else if (response?.data?.message) {
-                if (showToast) toast.error(response.data.message)
+            } else if (showToast) {
+                toast.error('Could not fetch report data')
             }
         } catch (error) {
             console.error('Fetch Merchant Report Error:', error)
@@ -70,15 +97,61 @@ export default function MerchantReports() {
         fetchReportData(true)
     }
 
+    // Consolidated Stamp Card Issues (aggregates root stamp_card_issues and customer_list[].cards)
+    const allStampIssues = useMemo(() => {
+        if (!reportData) return []
+        const list = []
+        const seen = new Set()
+
+        // 1. Root level stamp_card_issues
+        if (Array.isArray(reportData.stamp_card_issues)) {
+            reportData.stamp_card_issues.forEach((ci) => {
+                const key = ci.id ? `ci-${ci.id}` : (ci.card_number || `${ci.customer_id}-${ci.merchant_card_id || ci.title}`)
+                if (!seen.has(key)) {
+                    seen.add(key)
+                    list.push(ci)
+                }
+            })
+        }
+
+        // 2. Customer-embedded cards from customer_list
+        if (Array.isArray(reportData.customer_list)) {
+            reportData.customer_list.forEach((cus) => {
+                if (Array.isArray(cus.cards)) {
+                    cus.cards.forEach((card) => {
+                        const isStamp = card.card_type == null || Number(card.card_type) === 1 || String(card.card_type).toLowerCase().includes('stamp')
+                        if (!isStamp) return
+                        const key = card.id ? `ci-${card.id}` : (card.card_number || `${cus.id}-${card.merchant_card_id || card.title}`)
+                        if (!seen.has(key)) {
+                            seen.add(key)
+                            list.push({
+                                ...card,
+                                customer_id: card.customer_id || cus.id,
+                                customer_name: cus.name,
+                                customer_email: cus.email,
+                                customer_phone: cus.phone
+                            })
+                        }
+                    })
+                }
+            })
+        }
+
+        return list
+    }, [reportData])
+
     // Dynamic Branches Mapping
     const allBranches = useMemo(() => {
         if (reportData?.branch_list && Array.isArray(reportData.branch_list) && reportData.branch_list.length > 0) {
             return reportData.branch_list.map((b) => {
                 const bIdStr = String(b.id)
-                const branchIssues = (reportData.stamp_card_issues || []).filter(ci => String(ci.branch_id) === bIdStr)
+                const branchIssues = allStampIssues.filter(ci =>
+                    String(ci.branch_id) === bIdStr ||
+                    (b.name && ci.branch_name && String(ci.branch_name).toLowerCase().trim() === String(b.name).toLowerCase().trim())
+                )
                 const branchReps = (reportData.receptionist_list || []).filter(r => String(r.branch_id) === bIdStr)
                 const branchLogs = (reportData.stamp_log || []).filter(l => {
-                    const ci = (reportData.stamp_card_issues || []).find(i => String(i.id) === String(l.customer_card_id))
+                    const ci = allStampIssues.find(i => String(i.id) === String(l.customer_card_id))
                     return ci && String(ci.branch_id) === bIdStr
                 })
 
@@ -91,8 +164,6 @@ export default function MerchantReports() {
                 const branchMembershipIssues = (reportData.membership_card_issues || []).filter(mi => String(mi.branch_id) === bIdStr).length
                 const branchMembershipTemplates = (reportData.active_membership_card_list || []).filter(mc => (mc.branch_ids || []).map(String).includes(bIdStr)).length
                 const branchStampCards = (reportData.active_stamp_card_list || []).filter(sc => (sc.branch_ids || []).map(String).includes(bIdStr)).length
-
-
 
                 return {
                     id: bIdStr,
@@ -116,7 +187,7 @@ export default function MerchantReports() {
             })
         }
         return []
-    }, [reportData])
+    }, [reportData, allStampIssues])
 
     // Dynamic Receptionists Mapping
     const allReceptionists = useMemo(() => {
@@ -151,55 +222,246 @@ export default function MerchantReports() {
 
     // Dynamic Logs Mapping
     const allLogs = useMemo(() => {
-        if (reportData?.stamp_log && Array.isArray(reportData.stamp_log) && reportData.stamp_log.length > 0) {
-            return reportData.stamp_log.map((l) => {
-                const cardIssue = (reportData.stamp_card_issues || []).find(ci => String(ci.id) === String(l.customer_card_id))
-                const customer = cardIssue ? (reportData.customer_list || []).find(c => String(c.id) === String(cardIssue.customer_id)) : null
-                const branch = cardIssue ? (reportData.branch_list || []).find(b => String(b.id) === String(cardIssue.branch_id)) : null
-                const receptionist = (reportData.receptionist_list || []).find(r => String(r.id) === String(l.role_id) && l.role === 'receptionist')
+        if (!reportData) return []
 
-                const isRedemption = String(l.status) === '1'
+        // Gather all candidate transaction log arrays from both report & dashboard APIs
+        const candidateLogs = [
+            ...(Array.isArray(reportData.stamp_log) ? reportData.stamp_log : []),
+            ...(Array.isArray(reportData.today_report) ? reportData.today_report : []),
+            ...(Array.isArray(reportData.stamp_logs) ? reportData.stamp_logs : []),
+            ...(Array.isArray(reportData.activity_logs) ? reportData.activity_logs : []),
+            ...(Array.isArray(reportData.logs) ? reportData.logs : []),
+            ...(Array.isArray(reportData.transactions) ? reportData.transactions : [])
+        ]
+
+        // De-duplicate if identical records exist
+        const seenKeys = new Set()
+        const uniqueRawLogs = []
+        for (const l of candidateLogs) {
+            const key = l.id ? `id-${l.id}` : `${l.time || l.created_at || ''}-${l.email || l.phone || l.name || ''}-${l.amount || ''}`
+            if (!seenKeys.has(key)) {
+                seenKeys.add(key)
+                uniqueRawLogs.push(l)
+            }
+        }
+
+        if (uniqueRawLogs.length > 0) {
+            return uniqueRawLogs.map((l, idx) => {
+                const cardIssue = (reportData.stamp_card_issues || []).find(ci =>
+                    String(ci.id) === String(l.customer_card_id || l.card_id || l.id) ||
+                    (l.card_name && ci.title && String(ci.title).toLowerCase() === String(l.card_name).toLowerCase())
+                )
+                const customer = (reportData.customer_list || []).find(c =>
+                    (cardIssue && String(c.id) === String(cardIssue.customer_id)) ||
+                    (l.customer_id && String(c.id) === String(l.customer_id)) ||
+                    (l.email && c.email && c.email.toLowerCase() === l.email.toLowerCase()) ||
+                    (l.phone && c.phone && String(c.phone) === String(l.phone))
+                )
+                const receptionist = (reportData.receptionist_list || []).find(r =>
+                    (l.role_id && String(r.id) === String(l.role_id)) ||
+                    (l.staff_id && String(r.id) === String(l.staff_id))
+                )
+
+                // Match Branch by ID or Name
+                const rawBranchId = String(l.branch_id || cardIssue?.branch_id || receptionist?.branch_id || '')
+                const rawBranchName = l.branch_name || ''
+                const branchObj = (reportData.branch_list || []).find(b =>
+                    (rawBranchId && String(b.id) === rawBranchId) ||
+                    (rawBranchName && String(b.name).toLowerCase() === rawBranchName.toLowerCase())
+                )
+
+                const branchName = branchObj?.name || rawBranchName || (reportData.branch_list?.[0]?.name) || 'Velachery'
+                const branchId = branchObj ? String(branchObj.id) : (rawBranchId || 'all')
+
+                const isRedemption = String(l.status) === '1' || String(l.reward_type) === '1' || l.action === 'Reward Claimed'
+                const rawTime = l.time || l.created_at || l.createdAt || l.date || l.timestamp || cardIssue?.created_at || new Date().toISOString()
+                let displayDate = rawTime
+                try {
+                    const parsed = new Date(rawTime)
+                    if (!isNaN(parsed.getTime())) {
+                        displayDate = parsed.toLocaleString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        })
+                    }
+                } catch {}
+
+                const custName = l.name || l.customer_name || customer?.name || (cardIssue ? `Customer #${cardIssue.customer_id}` : 'Store Customer')
+                const custEmail = l.email || l.customer_email || customer?.email || '-'
+                const custPhone = l.phone
+                    ? `${l.country_code ? `+${String(l.country_code).replace('+', '')} ` : ''}${l.phone}`
+                    : (customer?.phone ? `+${customer.country_code || '91'} ${customer.phone}` : '-')
+
+                const isStamp = l.card_type == null || Number(l.card_type) === 1 || String(l.card_type).toLowerCase().includes('stamp')
+                const cardName = l.card_name || cardIssue?.title || 'Stamp Card'
+                const cardType = isStamp ? 'Stamp Card' : 'Membership Tier'
+
+                const staffName = l.staff || (receptionist?.name || (l.role === 'receptionist' ? `Receptionist #${l.role_id}` : 'Reception Staff'))
+
+                const amtVal = l.amount != null ? l.amount : (l.paid_amt != null ? l.paid_amt : (l.amt || 0))
+                const amountFormatted = parseFloat(amtVal || 0).toFixed(2)
+
+                const actionText = l.action || (
+                    String(l.payment_type) === '1'
+                        ? 'Paid Check-In'
+                        : (isRedemption ? 'Reward Claimed' : (l.stamp_number ? `Stamp Added (+${l.stamp_number})` : 'Check-In & Stamp'))
+                )
+
+                const rewardText = l.rewardUnlocked || (
+                    isRedemption
+                        ? (l.reward_text || 'Reward Unlocked')
+                        : (l.reward_text || (String(l.payment_type) === '1' ? 'Paid Pass' : 'None'))
+                )
 
                 return {
-                    id: `tx-${l.id}`,
-                    date: cardIssue?.created_at ? new Date(cardIssue.created_at).toLocaleString() : '2026-09-09 12:36 PM',
-                    customer: customer?.name || (cardIssue ? `Customer #${cardIssue.customer_id}` : 'Store Customer'),
-                    customerEmail: customer?.email || 'N/A',
-                    customerPhone: customer ? `+${customer.country_code || '91'} ${customer.phone || ''}` : '+91 9888888888',
-                    branch: branch?.name || 'All Outlets',
-                    branchId: branch ? String(branch.id) : (cardIssue ? String(cardIssue.branch_id) : 'all'),
-                    cardType: 'Stamp Card',
-                    cardName: cardIssue?.title || 'Stamp Card',
-                    action: isRedemption ? 'Reward Claimed' : `Stamp Added (+${l.stamp_number || 1})`,
-                    staff: l.role === 'receptionist' ? (receptionist?.name || `Receptionist #${l.role_id}`) : 'Merchant Admin',
-                    staffId: receptionist?.rep_id || (l.role === 'receptionist' ? `REP-${l.role_id}` : 'MERCHANT'),
-                    rewardUnlocked: isRedemption
-                        ? (l.reward_text ?? 'Paid')
-                        : 'None',
-                    amount: `${parseFloat(l.paid_amt || l.amt || 0).toFixed(2)}`,
-                    status: l.status === 1 || l.status === '1' ? 'Completed' : 'Pending'
+                    id: l.id ? `tx-${l.id}` : `tx-${idx + 1}`,
+                    rawDate: rawTime,
+                    date: displayDate,
+                    customer: custName,
+                    customerEmail: custEmail,
+                    customerPhone: custPhone,
+                    branch: branchName,
+                    branchId: branchId,
+                    cardType: cardType,
+                    cardName: cardName,
+                    action: actionText,
+                    staff: staffName,
+                    staffId: receptionist?.rep_id || (l.role_id ? `REP-${l.role_id}` : 'STAFF'),
+                    rewardUnlocked: rewardText,
+                    amount: `₹${amountFormatted}`,
+                    status: l.status === 0 || l.status === '0' ? 'Pending' : 'Completed'
                 }
             })
         }
+
+        // Fallback: If no logs exist at all, generate audit logs from stamp_card_issues
+        if (reportData?.stamp_card_issues && Array.isArray(reportData.stamp_card_issues) && reportData.stamp_card_issues.length > 0) {
+            return reportData.stamp_card_issues.map((ci, idx) => {
+                const customer = (reportData.customer_list || []).find(c => String(c.id) === String(ci.customer_id))
+                const branch = (reportData.branch_list || []).find(b => String(b.id) === String(ci.branch_id))
+                const stamps = Number(ci.current_stamp) || 0
+                const rawTime = ci.updated_at || ci.created_at || new Date().toISOString()
+                let displayDate = rawTime
+                try {
+                    displayDate = new Date(rawTime).toLocaleString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    })
+                } catch {}
+
+                return {
+                    id: `tx-issue-${ci.id || idx + 1}`,
+                    rawDate: rawTime,
+                    date: displayDate,
+                    customer: customer?.name || `Customer #${ci.customer_id || idx + 1}`,
+                    customerEmail: customer?.email || '-',
+                    customerPhone: customer?.phone ? `+${customer.country_code || '91'} ${customer.phone}` : '-',
+                    branch: branch?.name || 'Velachery',
+                    branchId: branch ? String(branch.id) : String(ci.branch_id || 'all'),
+                    cardType: 'Stamp Card',
+                    cardName: ci.title || 'Stamp Card',
+                    action: stamps > 0 ? `Stamp Added (+${stamps})` : 'Card Pass Issued',
+                    staff: 'Front Desk Receptionist',
+                    staffId: 'RECEPTION',
+                    rewardUnlocked: stamps >= Number(ci.number_of_stamps || 8) ? 'Reward Eligible' : 'In Progress',
+                    amount: '₹0.00',
+                    status: 'Completed'
+                }
+            })
+        }
+
         return []
     }, [reportData])
 
-    // Dynamic Stamp Cards Mapping (from active_stamp_card_list or issues)
+    // Dynamic Stamp Cards Mapping (from active_stamp_card_list or issues, dynamically calculated per filtered branch)
     const stampCards = useMemo(() => {
-        if (reportData?.active_stamp_card_list && Array.isArray(reportData.active_stamp_card_list) && reportData.active_stamp_card_list.length > 0) {
-            return reportData.active_stamp_card_list.map((c) => {
-                const cIdStr = String(c.id)
-                const matchingIssues = (reportData.stamp_card_issues || []).filter(ci => String(ci.merchant_card_id) === cIdStr)
-                const stampsGiven = matchingIssues.reduce((s, ci) => s + (Number(ci.current_stamp) || 0), 0)
-                const rewardsClaimed = (reportData.stamp_log || []).filter(l => {
-                    const ci = (reportData.stamp_card_issues || []).find(i => String(i.id) === String(l.customer_card_id))
-                    return ci && String(ci.merchant_card_id) === cIdStr && String(l.reward_type) === '1'
-                }).length
+        const selLower = String(selectedBranch || '').toLowerCase().trim()
+        const selectedBranchObj = (reportData?.branch_list || []).find(b =>
+            String(b.name).toLowerCase().trim() === selLower || String(b.id) === String(selectedBranch)
+        )
+        const selectedBranchId = selectedBranchObj ? String(selectedBranchObj.id) : String(selectedBranch)
 
-                const branchNames = (c.branch_ids || []).map(bId => {
-                    const b = (reportData.branch_list || []).find(br => String(br.id) === String(bId))
+        const isBranchMatch = (bId, bName) => {
+            if (selectedBranch === 'all') return true
+            if (bName && String(bName).toLowerCase().trim() === selLower) return true
+            if (bId && String(bId) === selectedBranchId) return true
+            return false
+        }
+
+        const candidateTemplates = Array.isArray(reportData?.active_stamp_card_list) && reportData.active_stamp_card_list.length > 0
+            ? reportData.active_stamp_card_list
+            : []
+
+        if (candidateTemplates.length > 0) {
+            return candidateTemplates.map((c) => {
+                const cIdStr = String(c.id)
+                // Normalize branch_ids from card
+                let rawBranchIds = []
+                if (Array.isArray(c.branch_ids)) {
+                    rawBranchIds = c.branch_ids
+                } else if (typeof c.branch_ids === 'string') {
+                    try {
+                        const parsed = JSON.parse(c.branch_ids)
+                        if (Array.isArray(parsed)) rawBranchIds = parsed
+                        else rawBranchIds = [parsed]
+                    } catch {
+                        rawBranchIds = c.branch_ids.split(',').map(s => s.trim())
+                    }
+                } else if (c.branch_ids != null) {
+                    rawBranchIds = [c.branch_ids]
+                }
+                if (c.branch_id != null) {
+                    rawBranchIds.push(c.branch_id)
+                }
+                rawBranchIds = rawBranchIds.map(String).filter(Boolean)
+
+                const branchNames = rawBranchIds.map(bId => {
+                    const b = (reportData?.branch_list || []).find(br => String(br.id) === String(bId))
                     return b ? b.name : `Branch #${bId}`
                 })
+                if (c.branch_name) {
+                    branchNames.push(c.branch_name)
+                }
+
+                // Match issues for this card in the selected branch (or all branches)
+                const matchingIssues = allStampIssues.filter(ci => {
+                    const isCardMatch = String(ci.merchant_card_id) === cIdStr ||
+                        (c.title && ci.title && String(ci.title).toLowerCase().trim() === String(c.title).toLowerCase().trim())
+                    if (!isCardMatch) return false
+                    if (selectedBranch === 'all') return true
+                    return isBranchMatch(ci.branch_id, ci.branch_name)
+                })
+
+                let stampsGiven = matchingIssues.reduce((s, ci) => s + (Number(ci.current_stamp) || 0), 0)
+
+                // Match logs for this card in the selected branch (or all branches)
+                const matchingLogs = (allLogs || []).filter(l => {
+                    const isCardMatch = (c.title && l.cardName && String(l.cardName).toLowerCase().trim() === String(c.title).toLowerCase().trim())
+                    if (!isCardMatch) return false
+                    if (selectedBranch === 'all') return true
+                    return isBranchMatch(l.branchId, l.branch)
+                })
+
+                // If stampsGiven is 0 from issues, fall back to logs
+                if (stampsGiven === 0 && matchingLogs.length > 0) {
+                    stampsGiven = matchingLogs.reduce((s, l) => s + (Number(l.stamp_number || l.stamps) || 1), 0)
+                }
+
+                const rewardsClaimed = matchingLogs.filter(l => l.action === 'Reward Claimed' || l.action === 'Reward Processed').length
+
+                // Check if card belongs to selected branch
+                const isExplicitBranch = rawBranchIds.includes(selectedBranchId) ||
+                    branchNames.some(bn => bn.toLowerCase().trim() === selLower)
+
+                const hasActivityInBranch = matchingIssues.length > 0 || matchingLogs.length > 0
+
+                const belongsToSelectedBranch = selectedBranch === 'all' || isExplicitBranch || hasActivityInBranch
 
                 return {
                     id: `sc-${c.id}`,
@@ -207,12 +469,11 @@ export default function MerchantReports() {
                     title: c.title || 'Stamp Card',
                     type: 'Stamp Card',
                     total_stamps: Number(c.number_of_stamps) || 10,
-                    active_members: matchingIssues.length,
-                    activeMembers: matchingIssues.length,
+                    active_members: matchingIssues.length || matchingLogs.length,
+                    activeMembers: matchingIssues.length || matchingLogs.length,
                     stamps_given: stampsGiven,
                     rewards_claimed: rewardsClaimed,
                     tagline: c.brand_name ? `${c.brand_name} Exclusive Pass` : 'Collect stamps on every purchase',
-                    // reward: 'Specialty Reward on Completion',
                     status: c.status === 1 || c.status === '1' ? 'Active' : 'Inactive',
                     backgroundColor: c.background_color || '#0E88B8',
                     borderColor: c.border_color || '#ed0202',
@@ -225,18 +486,39 @@ export default function MerchantReports() {
                     background_image: c.background_image,
                     brand_name: c.brand_name || 'Time shop',
                     branchNames: branchNames,
+                    belongsToSelectedBranch: belongsToSelectedBranch,
                     icon: 'fa-stamp'
                 }
             })
         }
-        if (reportData?.stamp_card_issues && Array.isArray(reportData.stamp_card_issues) && reportData.stamp_card_issues.length > 0) {
+
+        // Fallback when active_stamp_card_list is empty: map directly from allStampIssues
+        if (allStampIssues.length > 0) {
             const cardsMap = new Map()
-            reportData.stamp_card_issues.forEach(issue => {
+            allStampIssues.forEach(issue => {
                 const key = issue.merchant_card_id || issue.title
                 if (!cardsMap.has(key)) {
-                    const matchingIssues = reportData.stamp_card_issues.filter(ci => (ci.merchant_card_id || ci.title) === key)
+                    const matchingIssues = allStampIssues.filter(ci => {
+                        const isCardMatch = (ci.merchant_card_id || ci.title) === key
+                        if (!isCardMatch) return false
+                        if (selectedBranch === 'all') return true
+                        return isBranchMatch(ci.branch_id, ci.branch_name)
+                    })
                     const stampsGiven = matchingIssues.reduce((s, ci) => s + (Number(ci.current_stamp) || 0), 0)
-                    const rewardsClaimed = (reportData.stamp_log || []).filter(l => String(l.reward_type) === '1').length
+
+                    const matchingLogs = (allLogs || []).filter(l => {
+                        const isCardMatch = (issue.title && l.cardName && String(l.cardName).toLowerCase().trim() === String(issue.title).toLowerCase().trim())
+                        if (!isCardMatch) return false
+                        if (selectedBranch === 'all') return true
+                        return isBranchMatch(l.branchId, l.branch)
+                    })
+
+                    const finalStamps = stampsGiven > 0 ? stampsGiven : matchingLogs.length
+
+                    const belongsToSelectedBranch = selectedBranch === 'all' ||
+                        matchingIssues.length > 0 ||
+                        matchingLogs.length > 0 ||
+                        isBranchMatch(issue.branch_id, issue.branch_name)
 
                     cardsMap.set(key, {
                         id: `sc-${issue.merchant_card_id || issue.id}`,
@@ -244,12 +526,11 @@ export default function MerchantReports() {
                         title: issue.title || 'Stamp Card',
                         type: 'Stamp Card',
                         total_stamps: Number(issue.number_of_stamps) || 10,
-                        active_members: matchingIssues.length,
-                        activeMembers: matchingIssues.length,
-                        stamps_given: stampsGiven,
-                        rewards_claimed: rewardsClaimed,
+                        active_members: matchingIssues.length || matchingLogs.length,
+                        activeMembers: matchingIssues.length || matchingLogs.length,
+                        stamps_given: finalStamps,
+                        rewards_claimed: matchingLogs.filter(l => l.action === 'Reward Claimed').length,
                         tagline: issue.brand_name ? `${issue.brand_name} Exclusive Pass` : 'Collect stamps on every purchase',
-                        // reward: 'Specialty Reward on Completion',
                         status: issue.status === 1 || issue.status === '1' ? 'Active' : 'Inactive',
                         backgroundColor: issue.background_color || '#0E88B8',
                         borderColor: issue.border_color || '#ed0202',
@@ -257,14 +538,16 @@ export default function MerchantReports() {
                         brand_image: issue.brand_image,
                         background_image: issue.background_image,
                         brand_name: issue.brand_name || 'Time shop',
+                        belongsToSelectedBranch: belongsToSelectedBranch,
                         icon: 'fa-stamp'
                     })
                 }
             })
             return Array.from(cardsMap.values())
         }
+
         return []
-    }, [reportData])
+    }, [reportData, selectedBranch, allStampIssues, allLogs])
 
     // Dynamic Membership Cards Mapping (from active_membership_card_list or initial)
     const membershipCards = useMemo(() => {
@@ -317,10 +600,10 @@ export default function MerchantReports() {
         if (reportData?.customer_list && Array.isArray(reportData.customer_list) && reportData.customer_list.length > 0) {
             return reportData.customer_list.map((cus) => {
                 const cusIdStr = String(cus.id)
-                const cusIssues = (reportData.stamp_card_issues || []).filter(ci => String(ci.customer_id) === cusIdStr)
+                const cusIssues = allStampIssues.filter(ci => String(ci.customer_id) === cusIdStr)
                 const cusMemberIssues = (reportData.membership_card_issues || []).filter(mi => String(mi.customer_id) === cusIdStr)
                 const cusLogs = (reportData.stamp_log || []).filter(l => {
-                    const ci = (reportData.stamp_card_issues || []).find(i => String(i.id) === String(l.customer_card_id))
+                    const ci = allStampIssues.find(i => String(i.id) === String(l.customer_card_id))
                     return ci && String(ci.customer_id) === cusIdStr
                 })
                 const stampsCollected = cusIssues.reduce((s, ci) => s + (Number(ci.current_stamp) || 0), 0)
@@ -432,16 +715,19 @@ export default function MerchantReports() {
         }
     }, [reportData, allBranches, allReceptionists, allLogs, allCustomers, stampCards, membershipCards])
 
-    // Date Range Helper
+    // Date Range Helper (Dynamic against current date, fixing the hardcoded 2026-09-09 date)
     const matchesDateRange = (dateStr, range) => {
         if (range === 'all') return true
+        if (!dateStr) return true
         try {
             const itemDate = new Date(dateStr)
             if (isNaN(itemDate.getTime())) return true
-            const refDate = new Date('2026-09-09T15:00:00')
-            const diffDays = (refDate - itemDate) / (1000 * 60 * 60 * 24)
+            const now = new Date()
+            const diffMs = now.getTime() - itemDate.getTime()
+            const diffDays = diffMs / (1000 * 60 * 60 * 24)
             const daysLimit = Number(range)
-            return diffDays >= -1 && diffDays <= daysLimit
+            // Allow records up to daysLimit in the past, plus small timezone buffer
+            return diffDays >= -2 && diffDays <= daysLimit
         } catch {
             return true
         }
@@ -472,9 +758,22 @@ export default function MerchantReports() {
     // Filtered Logs
     const filteredLogs = useMemo(() => {
         return allLogs.filter((item) => {
-            const matchesBranch = selectedBranch === 'all' || item.branch === selectedBranch || item.branchId === selectedBranch
-            const matchesType = selectedCardType === 'all' || item.cardType.toLowerCase().includes(selectedCardType.toLowerCase())
-            const matchesDate = matchesDateRange(item.date, dateRange)
+            const selBrLower = String(selectedBranch || '').toLowerCase().trim()
+            const itemBrLower = String(item.branch || '').toLowerCase().trim()
+            const itemBrId = String(item.branchId || '').trim()
+
+            const matchesBranch =
+                selectedBranch === 'all' ||
+                itemBrLower === selBrLower ||
+                itemBrId === selectedBranch ||
+                itemBrLower.includes(selBrLower) ||
+                selBrLower.includes(itemBrLower)
+
+            const matchesType =
+                selectedCardType === 'all' ||
+                item.cardType.toLowerCase().includes(selectedCardType.toLowerCase())
+
+            const matchesDate = matchesDateRange(item.rawDate || item.date, dateRange)
 
             const q = search.trim().toLowerCase()
             const matchesSearch =
@@ -501,6 +800,7 @@ export default function MerchantReports() {
     // Filtered Cards
     const filteredCards = useMemo(() => {
         return allCards.filter((c) => {
+            if (selectedBranch !== 'all' && !c.belongsToSelectedBranch) return false
             if (selectedCardType === 'stamp' && c.type !== 'Stamp Card') return false
             if (selectedCardType === 'membership' && c.type !== 'Membership Tier') return false
             if (!search) return true
@@ -508,7 +808,7 @@ export default function MerchantReports() {
             const name = c.title || c.name || ''
             return name.toLowerCase().includes(q) || (c.reward || '').toLowerCase().includes(q) || (c.tier || '').toLowerCase().includes(q)
         })
-    }, [allCards, selectedCardType, search])
+    }, [allCards, selectedCardType, search, selectedBranch])
 
     // Filtered Customers
     const filteredCustomers = useMemo(() => {
@@ -1901,7 +2201,9 @@ export default function MerchantReports() {
                                                 Stamp Card Utilization Share
                                             </h3>
                                             <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
-                                                Stamps issued and active pass distribution
+                                                {selectedBranch === 'all'
+                                                    ? 'Stamps issued and active pass distribution across all branches'
+                                                    : `Stamps issued and active pass distribution for ${selectedBranch}`}
                                             </p>
                                         </>
                                     )}
@@ -1910,7 +2212,8 @@ export default function MerchantReports() {
                                     <div className="skeleton-text" style={{ width: '90px', height: '24px', borderRadius: 20 }} />
                                 ) : (
                                     <span className="badge" style={{ background: 'rgba(14, 136, 184, 0.1)', color: 'var(--firstloop-primary)', fontWeight: 800 }}>
-                                        Active Loyalty
+                                        <i className="fas fa-store" style={{ marginRight: 4 }} />
+                                        {selectedBranch === 'all' ? 'All Branches' : selectedBranch}
                                     </span>
                                 )}
                             </div>
@@ -1927,33 +2230,50 @@ export default function MerchantReports() {
                                         </div>
                                     ))
                                 ) : (
-                                    stampCards.slice(0, 5).map((card, idx) => {
-                                        const totalStampsAll = stampCards.reduce((s, c) => s + (c.stamps_given || 0), 0) || 1
-                                        const pct = Math.max(Math.round(((card.stamps_given || 0) / totalStampsAll) * 100), 5)
-                                        const accent = idx === 0 ? '#EF0003' : idx === 1 ? '#0284C7' : '#D97706'
-                                        return (
-                                            <div key={card.id}>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.84rem', fontWeight: 700, marginBottom: 6 }}>
-                                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                                                        <i className={`fas ${card.icon || 'fa-stamp'}`} style={{ color: accent }} />
-                                                        {card.title}
-                                                    </span>
-                                                    <span style={{ color: accent }}>
-                                                        {card.stamps_given || 0} stamps ({pct}%)
-                                                    </span>
+                                    (() => {
+                                        const branchFilteredCards = stampCards.filter(c => selectedBranch === 'all' || c.belongsToSelectedBranch)
+                                        if (branchFilteredCards.length === 0) {
+                                            return (
+                                                <div style={{ textAlign: 'center', padding: '24px 12px', color: 'var(--text-muted)', fontSize: '0.84rem' }}>
+                                                    <i className="fas fa-stamp" style={{ fontSize: '1.4rem', opacity: 0.3, marginBottom: 8, display: 'block' }} />
+                                                    No stamp cards found for <strong>{selectedBranch}</strong>
                                                 </div>
-                                                <div style={{ height: 10, background: '#F1F5F9', borderRadius: 6, overflow: 'hidden' }}>
-                                                    <div style={{ height: '100%', width: `${pct}%`, background: accent, borderRadius: 6 }} />
+                                            )
+                                        }
+                                        const totalStampsAll = branchFilteredCards.reduce((s, c) => s + (c.stamps_given || 0), 0)
+                                        const sortedCards = [...branchFilteredCards].sort((a, b) => (b.stamps_given || 0) - (a.stamps_given || 0))
+                                        return sortedCards.slice(0, 5).map((card, idx) => {
+                                            const pct = totalStampsAll > 0 ? Math.round(((card.stamps_given || 0) / totalStampsAll) * 100) : 0
+                                            const accent = idx === 0 ? '#EF0003' : idx === 1 ? '#0284C7' : idx === 2 ? '#D97706' : '#10B981'
+                                            return (
+                                                <div key={card.id}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.84rem', fontWeight: 700, marginBottom: 6 }}>
+                                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                                            <i className={`fas ${card.icon || 'fa-stamp'}`} style={{ color: accent }} />
+                                                            <span>{card.title}</span>
+                                                            {card.active_members > 0 && (
+                                                                <span style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600 }}>
+                                                                    ({card.active_members} {card.active_members === 1 ? 'member' : 'members'})
+                                                                </span>
+                                                            )}
+                                                        </span>
+                                                        <span style={{ color: accent, fontWeight: 800 }}>
+                                                            {card.stamps_given || 0} stamps {totalStampsAll > 0 ? `(${pct}%)` : ''}
+                                                        </span>
+                                                    </div>
+                                                    <div style={{ height: 10, background: '#F1F5F9', borderRadius: 6, overflow: 'hidden' }}>
+                                                        <div style={{ height: '100%', width: totalStampsAll > 0 ? `${Math.max(pct, card.stamps_given > 0 ? 4 : 0)}%` : '0%', background: accent, borderRadius: 6, transition: 'width 0.4s ease' }} />
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        )
-                                    })
+                                            )
+                                        })
+                                    })()
                                 )}
                             </div>
                         </div>
 
                         {/* Membership Tier Distribution */}
-                        <div className="fl-luxury-card" style={{ padding: 24 }}>
+                        {/* <div className="fl-luxury-card" style={{ padding: 24 }}>
                             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3.5, background: 'linear-gradient(90deg, #F59E0B 0%, #FBBF24 100%)' }} />
                             <div className="flex-between mb-3">
                                 <div>
@@ -2042,7 +2362,7 @@ export default function MerchantReports() {
                                     })
                                 )}
                             </div>
-                        </div>
+                        </div> */}
                     </div>
 
                     {/* DETAILED TRANSACTION LOG TABLE */}
@@ -3513,10 +3833,10 @@ export default function MerchantReports() {
                                     <i className="fas fa-receipt" style={{ color: '#FFFFFF' }} />
                                 </div>
                                 <div>
-                                    <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800 }}>
+                                    <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800,color: '#FFFFFF' }}>
                                         Transaction Audit Record
                                     </h4>
-                                    <span style={{ fontSize: '0.76rem', opacity: 0.9 }}>ID: {selectedLog.id.toUpperCase()}</span>
+                                    {/* <span style={{ fontSize: '0.76rem', opacity: 0.9 }}>ID: {selectedLog.id.toUpperCase()}</span> */}
                                 </div>
                             </div>
 
@@ -3686,7 +4006,7 @@ export default function MerchantReports() {
                         </div>
 
                         {/* Quick KPI Strip inside modal */}
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, padding: '14px 24px', background: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, padding: '14px 24px', background: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
                             <div style={{ textAlign: 'center' }}>
                                 <small style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Total Stamps</small>
                                 <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#EF0003' }}>
@@ -3699,12 +4019,12 @@ export default function MerchantReports() {
                                     {selectedCustomerCards.stampCardsList?.length || 0}
                                 </div>
                             </div>
-                            <div style={{ textAlign: 'center' }}>
+                            {/* <div style={{ textAlign: 'center' }}>
                                 <small style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Membership Tier</small>
                                 <div style={{ fontSize: '0.9rem', fontWeight: 900, color: selectedCustomerCards.hasMembership ? '#D97706' : 'var(--text-muted)', marginTop: 4 }}>
                                     {selectedCustomerCards.membershipTier}
                                 </div>
-                            </div>
+                            </div> */}
                         </div>
 
                         {/* Modal Body: Cards List */}

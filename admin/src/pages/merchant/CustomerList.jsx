@@ -12,6 +12,7 @@ export default function CustomerList() {
     const [customers, setCustomers] = useState([])
     const [search, setSearch] = useState('')
     const [filterCard, setFilterCard] = useState('all')
+    const [selectedBranch, setSelectedBranch] = useState('all')
 
     // Pagination State
     const [currentPage, setCurrentPage] = useState(1)
@@ -23,6 +24,14 @@ export default function CustomerList() {
     const [branchModalOpen, setBranchModalOpen] = useState(false)
     const [selectedBranchId, setSelectedBranchId] = useState('')
     const [targetCustomerEmail, setTargetCustomerEmail] = useState('')
+    const [expandedRows, setExpandedRows] = useState({})
+
+    const toggleExpandRow = (cusId) => {
+        setExpandedRows(prev => ({
+            ...prev,
+            [cusId]: !prev[cusId]
+        }))
+    }
 
     let merchant = {};
     try {
@@ -98,6 +107,73 @@ export default function CustomerList() {
         navigate(`/merchant/add-card-customer/${selectedBranchId}${emailQuery}`)
     }
 
+    const handleCheckInCustomer = (customer) => {
+        // Find if customer already has a card with a branch_id matching selectedBranch or any branch_id
+        let targetBranchId = ''
+        if (selectedBranch !== 'all') {
+            const matchCard = customer?.cards?.find(c =>
+                String(c.branch_id) === String(selectedBranch) ||
+                String(c.branch_name || '').toLowerCase() === String(selectedBranch).toLowerCase()
+            )
+            targetBranchId = matchCard?.branch_id || selectedBranch
+        } else {
+            const cardBranchId = customer?.cards?.find(c => c.branch_id)?.branch_id
+            targetBranchId = cardBranchId || selectedBranchId || branches?.[0]?.id || branches?.[0]?._id || ''
+        }
+
+        const params = new URLSearchParams()
+        if (customer?.phone) params.set('phone', customer.phone)
+        if (customer?.email) params.set('email', customer.email)
+        if (customer?.id) params.set('customerId', customer.id)
+
+        const queryString = params.toString() ? `?${params.toString()}` : ''
+        const url = targetBranchId ? `/merchant/checkin/${targetBranchId}${queryString}` : `/merchant/checkin${queryString}`
+
+        navigate(url, {
+            state: { customer }
+        })
+    }
+
+    // Dynamic available branches list combining merchant branch list and customer card branches
+    const availableBranches = useMemo(() => {
+        const branchMap = new Map()
+
+        if (Array.isArray(branches)) {
+            branches.forEach(b => {
+                const bId = String(b.id || b._id || '').trim()
+                const bName = b.branch_name || b.name || b.location
+                if (bId && bName) {
+                    branchMap.set(bId, bName)
+                }
+            })
+        }
+
+        if (Array.isArray(customers)) {
+            customers.forEach(cus => {
+                if (cus.branch_name) {
+                    const key = String(cus.branch_id || cus.branch_name).trim()
+                    if (key && !branchMap.has(key)) {
+                        branchMap.set(key, cus.branch_name)
+                    }
+                }
+                if (Array.isArray(cus.cards)) {
+                    cus.cards.forEach(card => {
+                        if (card.branch_name) {
+                            const key = String(card.branch_id || card.branch_name).trim()
+                            if (key && !branchMap.has(key)) {
+                                branchMap.set(key, card.branch_name)
+                            }
+                        }
+                    })
+                }
+            })
+        }
+
+        return Array.from(branchMap.entries())
+            .map(([id, name]) => ({ id, name }))
+            .sort((a, b) => a.name.localeCompare(b.name))
+    }, [branches, customers])
+
     const filteredCustomers = useMemo(() => {
         return (customers || []).filter(c => {
             const name = (c.name || '').toLowerCase()
@@ -112,11 +188,26 @@ export default function CustomerList() {
                 (Array.isArray(c.cards) && c.cards.some(card =>
                     (card.title && card.title.toLowerCase().includes(searchLower)) ||
                     (card.card_number && card.card_number.toLowerCase().includes(searchLower)) ||
+                    (card.branch_name && card.branch_name.toLowerCase().includes(searchLower)) ||
                     (Number(card.card_type) === 1 && 'stamp card'.includes(searchLower)) ||
                     (Number(card.card_type) === 2 && 'membership card'.includes(searchLower))
                 ))
 
             if (!matchesSearch) return false
+
+            // Branch filter
+            if (selectedBranch !== 'all') {
+                const selId = String(selectedBranch).toLowerCase().trim()
+                const matchesBranch =
+                    String(c.branch_id || '').toLowerCase() === selId ||
+                    String(c.branch_name || '').toLowerCase() === selId ||
+                    (Array.isArray(c.cards) && c.cards.some(card =>
+                        String(card.branch_id || '').toLowerCase() === selId ||
+                        String(card.branch_name || '').toLowerCase() === selId
+                    ))
+
+                if (!matchesBranch) return false
+            }
 
             const stampCards = (c.cards || []).filter(card => Number(card.card_type) === 1)
             const membershipCards = (c.cards || []).filter(card => Number(card.card_type) === 2)
@@ -130,7 +221,7 @@ export default function CustomerList() {
 
             return true
         })
-    }, [customers, search, filterCard])
+    }, [customers, search, filterCard, selectedBranch])
 
     const totalPages = useMemo(() => {
         return Math.max(1, Math.ceil(filteredCustomers.length / rowsPerPage))
@@ -207,15 +298,17 @@ export default function CustomerList() {
                     </div>
 
                     <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-                        {/* <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-                                Filter Card:
+                        {/* Branch Filter */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                                <i className="fas fa-store-alt" style={{ color: 'var(--firstloop-primary, #0E88B8)' }} />
+                                Branch:
                             </span>
                             <select
                                 className="form-control"
-                                value={filterCard}
+                                value={selectedBranch}
                                 onChange={(e) => {
-                                    setFilterCard(e.target.value)
+                                    setSelectedBranch(e.target.value)
                                     setCurrentPage(1)
                                 }}
                                 style={{
@@ -223,18 +316,47 @@ export default function CustomerList() {
                                     borderRadius: 10,
                                     fontSize: '0.85rem',
                                     padding: '0 12px',
-                                    minWidth: 160,
+                                    minWidth: 170,
                                     border: '1px solid #CBD5E1',
                                     background: '#FFFFFF',
                                     color: '#0F172A',
-                                    colorScheme: 'light'
+                                    colorScheme: 'light',
+                                    cursor: 'pointer'
                                 }}
                             >
-                                <option value="all">All Card Types</option>
-                                <option value="stamps">Stamp Cards</option>
-                                <option value="membership">Membership Tiers</option>
+                                <option value="all">All Branches ({availableBranches.length})</option>
+                                {availableBranches.map((br) => (
+                                    <option key={br.id} value={br.id}>
+                                        {br.name}
+                                    </option>
+                                ))}
                             </select>
-                        </div> */}
+                        </div>
+
+                        {/* Reset Filter Button if active */}
+                        {(search || selectedBranch !== 'all') && (
+                            <button
+                                type="button"
+                                className="btn btn-sm btn-outline-secondary"
+                                onClick={() => {
+                                    setSearch('')
+                                    setSelectedBranch('all')
+                                    setCurrentPage(1)
+                                }}
+                                style={{
+                                    height: 40,
+                                    borderRadius: 10,
+                                    fontSize: '0.8rem',
+                                    fontWeight: 600,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 6,
+                                    padding: '0 12px'
+                                }}
+                            >
+                                <i className="fas fa-undo" /> Reset
+                            </button>
+                        )}
 
                         {/* Page Size Selector */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -260,10 +382,10 @@ export default function CustomerList() {
                                     colorScheme: 'light'
                                 }}
                             >
-                                <option value={5}>5</option>
                                 <option value={10}>10</option>
-                                <option value={25}>25</option>
+                                <option value={20}>20</option>
                                 <option value={50}>50</option>
+                                <option value={100}>100</option>
                             </select>
                         </div>
                     </div>
@@ -295,21 +417,29 @@ export default function CustomerList() {
                             ) : paginatedCustomers.length > 0 ? (
                                 paginatedCustomers.map((cus) => {
                                     const stampCards = Array.isArray(cus.cards)
-                                        ? cus.cards.filter(c => Number(c.card_type) === 1)
+                                        ? cus.cards.filter(c => c.card_type == null || Number(c.card_type) === 1 || String(c.card_type).toLowerCase().includes('stamp'))
                                         : (cus.heldStampCards || (cus.stampCard ? [{ title: cus.stampCard }] : []))
 
-                                    const membershipCards = Array.isArray(cus.cards)
-                                        ? cus.cards.filter(c => Number(c.card_type) === 2)
-                                        : (cus.heldMemberships || (cus.membershipTier ? [{ title: cus.membershipTier }] : []))
-
                                     const profileImg = cus.profile_image ? formatImageUrl(cus.profile_image) : (cus.avatar || null)
-                                    const joinedText = cus.created_at
-                                        ? new Date(cus.created_at).toLocaleDateString()
-                                        : (cus.joinedDate || '-')
+                                    const isExpanded = !!expandedRows[cus.id]
+
+                                    // Sort cards so that matching branch or is_branch: 1 cards appear first
+                                    const sortedStampCards = [...stampCards].sort((a, b) => {
+                                        const aMatches = selectedBranch !== 'all'
+                                            ? (String(a.branch_id) === String(selectedBranch) || String(a.branch_name || '').toLowerCase() === String(selectedBranch).toLowerCase() ? 1 : 0)
+                                            : (Number(a.is_branch) === 1 ? 1 : 0)
+                                        const bMatches = selectedBranch !== 'all'
+                                            ? (String(b.branch_id) === String(selectedBranch) || String(b.branch_name || '').toLowerCase() === String(selectedBranch).toLowerCase() ? 1 : 0)
+                                            : (Number(b.is_branch) === 1 ? 1 : 0)
+                                        return bMatches - aMatches
+                                    })
+
+                                    // If not expanded, show only top 1 card; if expanded, show all
+                                    const cardsToDisplay = isExpanded ? sortedStampCards : sortedStampCards.slice(0, 1)
 
                                     return (
                                         <tr key={cus.id}>
-                                            <td style={{ padding: '14px 18px' }}>
+                                            <td style={{ padding: '14px 18px', verticalAlign: 'top' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                                                     {profileImg ? (
                                                         <img
@@ -341,13 +471,10 @@ export default function CustomerList() {
                                                         <strong style={{ fontSize: '0.9rem', color: 'var(--text-primary)', display: 'block' }}>
                                                             {cus.name || 'Customer'}
                                                         </strong>
-                                                        {/* <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                                                            Joined: {joinedText}
-                                                        </span> */}
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td style={{ padding: '14px 18px' }}>
+                                            <td style={{ padding: '14px 18px', verticalAlign: 'top' }}>
                                                 <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
                                                     <div>
                                                         <i className="fas fa-envelope" style={{ marginRight: 6, color: 'var(--firstloop-primary)' }} />
@@ -360,52 +487,286 @@ export default function CustomerList() {
                                                 </div>
                                             </td>
 
-                                            {/* Assigned Stamp Cards Count */}
-                                            <td style={{ padding: '14px 18px' }}>
-                                                <span
-                                                    style={{
+                                            {/* Assigned Stamp Cards - Matching ReceptionistCustomerList UI */}
+                                            <td style={{ padding: '14px 18px', verticalAlign: 'top' }}>
+                                                {stampCards.length === 0 ? (
+                                                    <div style={{
                                                         display: 'inline-flex',
                                                         alignItems: 'center',
                                                         gap: 6,
-                                                        padding: '5px 14px',
-                                                        borderRadius: 20,
-                                                        background: stampCards.length > 0 ? 'rgba(14, 136, 184, 0.1)' : '#F1F5F9',
-                                                        border: `1px solid ${stampCards.length > 0 ? 'rgba(14, 136, 184, 0.25)' : '#E2E8F0'}`,
-                                                        color: stampCards.length > 0 ? 'var(--firstloop-primary, #0E88B8)' : '#94A3B8',
-                                                        fontWeight: 800,
-                                                        fontSize: '0.84rem'
-                                                    }}
-                                                    title={`${stampCards.length} Stamp Cards assigned`}
-                                                >
-                                                    <i className="fas fa-stamp" style={{ fontSize: '0.78rem' }} />
-                                                    {stampCards.length}
-                                                </span>
+                                                        padding: '6px 12px',
+                                                        borderRadius: 8,
+                                                        background: '#F8FAFC',
+                                                        border: '1px dashed #CBD5E1',
+                                                        color: 'var(--text-muted, #94A3B8)',
+                                                        fontSize: '0.78rem'
+                                                    }}>
+                                                        <i className="fas fa-stamp" style={{ opacity: 0.5 }} />
+                                                        <span>No stamp cards</span>
+                                                    </div>
+                                                ) : (
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 260, maxWidth: 420 }}>
+                                                        {/* Header summary when multiple cards */}
+                                                        {stampCards.length > 1 && (
+                                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+                                                                <span style={{
+                                                                    fontSize: '0.72rem',
+                                                                    fontWeight: 700,
+                                                                    color: 'var(--firstloop-primary, #0E88B8)',
+                                                                    background: 'var(--firstloop-primary-light, #E6F2FA)',
+                                                                    padding: '2px 8px',
+                                                                    borderRadius: 12,
+                                                                    display: 'inline-flex',
+                                                                    alignItems: 'center',
+                                                                    gap: 4
+                                                                }}>
+                                                                    <i className="fas fa-layer-group" style={{ fontSize: '0.65rem' }} />
+                                                                    {stampCards.length} Stamp Cards
+                                                                </span>
+
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => toggleExpandRow(cus.id)}
+                                                                    style={{
+                                                                        background: 'transparent',
+                                                                        border: 'none',
+                                                                        padding: '2px 6px',
+                                                                        fontSize: '0.73rem',
+                                                                        fontWeight: 700,
+                                                                        color: 'var(--firstloop-primary, #0E88B8)',
+                                                                        cursor: 'pointer',
+                                                                        display: 'inline-flex',
+                                                                        alignItems: 'center',
+                                                                        gap: 4
+                                                                    }}
+                                                                >
+                                                                    {isExpanded ? (
+                                                                        <>
+                                                                            <i className="fas fa-chevron-up" style={{ fontSize: '0.65rem' }} />
+                                                                            Show less
+                                                                        </>
+                                                                    ) : (
+                                                                        <>
+                                                                            <i className="fas fa-chevron-down" style={{ fontSize: '0.65rem' }} />
+                                                                            View all ({stampCards.length})
+                                                                        </>
+                                                                    )}
+                                                                </button>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Scrollable Container if expanded with many cards */}
+                                                        <div
+                                                            style={{
+                                                                display: 'flex',
+                                                                flexDirection: 'column',
+                                                                gap: 6,
+                                                                maxHeight: isExpanded ? 240 : 'none',
+                                                                overflowY: isExpanded ? 'auto' : 'visible',
+                                                                paddingRight: isExpanded ? 4 : 0
+                                                            }}
+                                                        >
+                                                            {cardsToDisplay.map((sc, idx) => {
+                                                                // If is_branch is 1 or matches selectedBranch use Color 1 (Cyan/Primary); otherwise use Color 2 (Purple/Violet)
+                                                                const isCurrentBranch = selectedBranch !== 'all'
+                                                                    ? (String(sc.branch_id) === String(selectedBranch) || String(sc.branch_name || '').toLowerCase() === String(selectedBranch).toLowerCase())
+                                                                    : Number(sc.is_branch) === 1
+                                                                const collected = sc.current_stamp ?? sc.collected_stamps ?? sc.stamps ?? 0
+                                                                const total = sc.number_of_stamps ?? sc.total_stamps ?? 8
+
+                                                                const cardBg = isCurrentBranch ? '#F0F9FF' : '#FAF5FF'
+                                                                const cardBorder = isCurrentBranch ? '1.5px solid var(--firstloop-primary, #0E88B8)' : '1.5px solid #8B5CF6'
+                                                                const badgeBg = isCurrentBranch ? 'var(--firstloop-primary, #0E88B8)' : '#7C3AED'
+                                                                const stampIconColor = isCurrentBranch ? 'var(--firstloop-primary, #0E88B8)' : '#7C3AED'
+
+                                                                return (
+                                                                    <div
+                                                                        key={sc.id || idx}
+                                                                        style={{
+                                                                            padding: '8px 10px',
+                                                                            borderRadius: 8,
+                                                                            background: cardBg,
+                                                                            border: cardBorder,
+                                                                            transition: 'all 0.15s ease',
+                                                                            display: 'flex',
+                                                                            flexDirection: 'column',
+                                                                            gap: 4,
+                                                                            boxShadow: isCurrentBranch
+                                                                                ? '0 2px 6px rgba(14, 136, 184, 0.08)'
+                                                                                : '0 2px 6px rgba(139, 92, 246, 0.08)'
+                                                                        }}
+                                                                    >
+                                                                        {/* Card Title & Branch Badge Row */}
+                                                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                                                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, flex: 1 }}>
+                                                                                <i className="fas fa-stamp" style={{ fontSize: '0.75rem', color: stampIconColor, flexShrink: 0 }} />
+                                                                                <span
+                                                                                    title={sc.title || 'Stamp Card'}
+                                                                                    style={{
+                                                                                        fontWeight: 700,
+                                                                                        fontSize: '0.8rem',
+                                                                                        color: 'var(--text-primary, #0F172A)',
+                                                                                        whiteSpace: 'nowrap',
+                                                                                        overflow: 'hidden',
+                                                                                        textOverflow: 'ellipsis'
+                                                                                    }}
+                                                                                >
+                                                                                    {sc.title || 'Stamp Card'}
+                                                                                </span>
+                                                                            </div>
+
+                                                                            {sc.branch_name && (
+                                                                                <span
+                                                                                    title={`Branch: ${sc.branch_name} (${isCurrentBranch ? 'This Branch' : 'Other Branch'})`}
+                                                                                    style={{
+                                                                                        display: 'inline-flex',
+                                                                                        alignItems: 'center',
+                                                                                        gap: 4,
+                                                                                        padding: '2px 7px',
+                                                                                        borderRadius: 6,
+                                                                                        background: badgeBg,
+                                                                                        color: '#FFFFFF',
+                                                                                        border: `1px solid ${badgeBg}`,
+                                                                                        fontSize: '0.68rem',
+                                                                                        fontWeight: 700,
+                                                                                        whiteSpace: 'nowrap',
+                                                                                        flexShrink: 0
+                                                                                    }}
+                                                                                >
+                                                                                    <i className={isCurrentBranch ? "fas fa-store" : "fas fa-map-marker-alt"} style={{ fontSize: '0.62rem' }} />
+                                                                                    {sc.branch_name}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+
+                                                                        {/* Card Number & Stamps Meta Row */}
+                                                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, marginTop: 1 }}>
+                                                                            {sc.card_number ? (
+                                                                                <div
+                                                                                    onClick={() => {
+                                                                                        navigator.clipboard.writeText(sc.card_number)
+                                                                                        toast.success(`Copied: ${sc.card_number}`)
+                                                                                    }}
+                                                                                    title="Click to copy Card Number"
+                                                                                    style={{
+                                                                                        display: 'inline-flex',
+                                                                                        alignItems: 'center',
+                                                                                        gap: 4,
+                                                                                        cursor: 'pointer',
+                                                                                        fontSize: '0.68rem',
+                                                                                        fontFamily: 'monospace',
+                                                                                        fontWeight: 600,
+                                                                                        color: 'var(--text-muted, #64748B)',
+                                                                                        background: '#FFFFFF',
+                                                                                        border: '1px solid #E2E8F0',
+                                                                                        borderRadius: 4,
+                                                                                        padding: '1px 5px'
+                                                                                    }}
+                                                                                >
+                                                                                    <span>#{sc.card_number}</span>
+                                                                                    <i className="far fa-copy" style={{ fontSize: '0.6rem', opacity: 0.7 }} />
+                                                                                </div>
+                                                                            ) : <span />}
+
+                                                                            <span
+                                                                                style={{
+                                                                                    fontSize: '0.68rem',
+                                                                                    fontWeight: 700,
+                                                                                    color: '#047857',
+                                                                                    background: '#ECFDF5',
+                                                                                    border: '1px solid #A7F3D0',
+                                                                                    padding: '1px 6px',
+                                                                                    borderRadius: 4,
+                                                                                    display: 'inline-flex',
+                                                                                    alignItems: 'center',
+                                                                                    gap: 3
+                                                                                }}
+                                                                            >
+                                                                                <i className="fas fa-check-circle" style={{ fontSize: '0.6rem' }} />
+                                                                                {collected} / {total} stamps
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                )
+                                                            })}
+                                                        </div>
+
+                                                        {/* Toggle button below cards when multiple and not expanded */}
+                                                        {stampCards.length > 1 && !isExpanded && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => toggleExpandRow(cus.id)}
+                                                                style={{
+                                                                    background: 'rgba(14, 136, 184, 0.08)',
+                                                                    border: '1px dashed rgba(14, 136, 184, 0.3)',
+                                                                    borderRadius: 6,
+                                                                    padding: '4px 8px',
+                                                                    color: 'var(--firstloop-primary, #0E88B8)',
+                                                                    fontSize: '0.73rem',
+                                                                    fontWeight: 700,
+                                                                    cursor: 'pointer',
+                                                                    display: 'inline-flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center',
+                                                                    gap: 5,
+                                                                    width: '100%'
+                                                                }}
+                                                            >
+                                                                <i className="fas fa-layer-group" style={{ fontSize: '0.68rem' }} />
+                                                                <span>+{stampCards.length - 1} more card{stampCards.length - 1 > 1 ? 's' : ''} (click to view)</span>
+                                                            </button>
+                                                        )}
+
+                                                        {/* Collapse button below cards when expanded */}
+                                                        {stampCards.length > 1 && isExpanded && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => toggleExpandRow(cus.id)}
+                                                                style={{
+                                                                    background: '#F1F5F9',
+                                                                    border: '1px solid #CBD5E1',
+                                                                    borderRadius: 6,
+                                                                    padding: '3px 8px',
+                                                                    color: '#64748B',
+                                                                    fontSize: '0.72rem',
+                                                                    fontWeight: 700,
+                                                                    cursor: 'pointer',
+                                                                    display: 'inline-flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center',
+                                                                    gap: 4,
+                                                                    width: '100%'
+                                                                }}
+                                                            >
+                                                                <i className="fas fa-chevron-up" style={{ fontSize: '0.65rem' }} />
+                                                                <span>Show less</span>
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </td>
 
-                                            {/* Membership Tiers Count */}
-                                            {/* <td style={{ padding: '14px 18px' }}>
-                                                <span
-                                                    style={{
-                                                        display: 'inline-flex',
-                                                        alignItems: 'center',
-                                                        gap: 6,
-                                                        padding: '5px 14px',
-                                                        borderRadius: 20,
-                                                        background: membershipCards.length > 0 ? 'rgba(245, 158, 11, 0.12)' : '#F1F5F9',
-                                                        border: `1px solid ${membershipCards.length > 0 ? 'rgba(245, 158, 11, 0.3)' : '#E2E8F0'}`,
-                                                        color: membershipCards.length > 0 ? '#D97706' : '#94A3B8',
-                                                        fontWeight: 800,
-                                                        fontSize: '0.84rem'
-                                                    }}
-                                                    title={`${membershipCards.length} Membership Passes assigned`}
-                                                >
-                                                    <i className="fas fa-crown" style={{ fontSize: '0.78rem' }} />
-                                                    {membershipCards.length}
-                                                </span>
-                                            </td> */}
-
-                                            <td style={{ padding: '14px 18px', textAlign: 'right' }}>
+                                            {/* Actions */}
+                                            <td style={{ padding: '14px 18px', textAlign: 'right', verticalAlign: 'top' }}>
                                                 <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                                                    <button
+                                                        type="button"
+                                                        className="btn firstloop-btn-primary btn-sm"
+                                                        onClick={() => handleCheckInCustomer(cus)}
+                                                        style={{
+                                                            padding: '6px 12px',
+                                                            borderRadius: 8,
+                                                            fontWeight: 700,
+                                                            fontSize: '0.76rem',
+                                                            display: 'inline-flex',
+                                                            alignItems: 'center',
+                                                            gap: 4
+                                                        }}
+                                                        title="Check-In Customer"
+                                                    >
+                                                        <i className="fas fa-check-circle" />
+                                                        <span>Check-In</span>
+                                                    </button>
                                                     <button
                                                         type="button"
                                                         className="btn btn-sm"

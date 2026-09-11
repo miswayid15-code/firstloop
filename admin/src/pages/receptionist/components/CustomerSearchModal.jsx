@@ -1142,7 +1142,7 @@ export default function CustomerSearchModal({
                                                     ) : (
                                                         <>
                                                             <i className="fas fa-check-circle" />
-                                                            <span>Save Card Entry &amp; Generate Payment Receipt</span>
+                                                            <span>Save Today's Check-In Entry</span>
                                                         </>
                                                     )}
                                                 </button>

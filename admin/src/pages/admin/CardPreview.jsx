@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import html2canvas from 'html2canvas'
+import { toBlob } from 'html-to-image'
+import { toast } from 'react-hot-toast'
 import CustomerCard from '../../components/CustomerCard.jsx'
 import { fetchCustomerStampLevelsApi } from '../../services/cardService.js'
 import API from '../../api.js'
@@ -22,6 +24,10 @@ export default function CardPreview() {
 
     const cardRef = useRef(null)
     const [downloading, setDownloading] = useState(false)
+    const [sharing, setSharing] = useState(false)
+    const [canNativeShare, setCanNativeShare] = useState(false)
+    const [copiedModalOpen, setCopiedModalOpen] = useState(false)
+    const [capturedImageUrl, setCapturedImageUrl] = useState('')
     const [cardData, setCardData] = useState(null)
     const [loading, setLoading] = useState(Boolean(cardId))
     const [hasStaffToken, setHasStaffToken] = useState(false)
@@ -79,6 +85,24 @@ export default function CardPreview() {
 
     /*
     |--------------------------------------------------------------------------
+    | CHECK WEB SHARE API FILE SHARING AVAILABILITY
+    |--------------------------------------------------------------------------
+    */
+    useEffect(() => {
+        try {
+            if (typeof navigator !== 'undefined' && typeof navigator.share === 'function' && typeof navigator.canShare === 'function') {
+                const testFile = new File([''], 'card.png', { type: 'image/png' })
+                setCanNativeShare(Boolean(navigator.canShare({ files: [testFile] })))
+            } else {
+                setCanNativeShare(false)
+            }
+        } catch (e) {
+            setCanNativeShare(false)
+        }
+    }, [])
+
+    /*
+    |--------------------------------------------------------------------------
     | RESOLVE CUSTOMER PHONE IF CUSTOMER ID IS PRESENT
     |--------------------------------------------------------------------------
     */
@@ -104,7 +128,14 @@ export default function CardPreview() {
 
         if (effectiveCusId && hasStaffToken) {
             let isMounted = true
-            API.post('/firstloop/customer/get-customer-details', { customer_id: Number(effectiveCusId) || effectiveCusId })
+            API.post(
+                '/firstloop/customer/get-customer-details',
+                { customer_id: Number(effectiveCusId) || effectiveCusId },
+                {
+                    skipAuthRedirect: true,
+                    headers: { 'X-Skip-Auth-Redirect': 'true' }
+                }
+            )
                 .then((res) => {
                     if (!isMounted) return
                     if (res?.data?.status == 1 && res?.data?.data) {
@@ -444,8 +475,17 @@ export default function CardPreview() {
 
     const targetPhone = cleanPhone(customerPhone, customerCountryCode)
 
-    const handleSendToWhatsApp = () => {
-        const passUrl = window.location.href
+    /*
+    |--------------------------------------------------------------------------
+    | CAPTURE CARD DOM AS IMAGE & SHARE DIRECTLY VIA WEB SHARE API / WHATSAPP
+    |--------------------------------------------------------------------------
+    */
+    const handleSendToWhatsApp = async () => {
+        const cardEl = document.getElementById('loyalty-card') || cardRef.current
+        if (!cardEl) {
+            toast.error('Loyalty card element not found')
+            return
+        }
 
         let descToSend = customText.trim()
         if (!descToSend) {
@@ -453,22 +493,115 @@ export default function CardPreview() {
             descToSend = tmpl && tmpl.id !== 'custom' ? tmpl.getText() : defaultDesc
         }
 
-        const hasUrl = descToSend.includes('http://') || descToSend.includes('https://')
+        const rawName = card?.title || card?.name || (cardType === 2 ? 'membership-pass' : 'stamp-card')
+        const safeName = rawName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'loyalty-card'
+        const fileName = `${safeName}.png`
 
-        let message = ''
-        if (customText.trim() || selectedTemplate !== 'default') {
-            message = `${descToSend}${hasUrl ? '' : `\n\n👉 *View Card:* ${passUrl}`}`
-        } else {
-            message = `🎉 *${brand}* - ${title}\n\n📝 *Description:*\n${descToSend}\n\n👉 *View Card:* ${passUrl}`
-        }
+        setSharing(true)
+        const toastId = toast.loading('Capturing loyalty card image...')
 
-        let whatsappUrl = ''
-        if (targetPhone) {
-            whatsappUrl = `https://api.whatsapp.com/send?phone=${targetPhone}&text=${encodeURIComponent(message)}`
-        } else {
-            whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`
+        try {
+            // 1. Capture DOM element to Blob using html-to-image, with html2canvas fallback
+            let blob = null
+            try {
+                blob = await toBlob(cardEl, {
+                    quality: 0.95,
+                    pixelRatio: 2,
+                    cacheBust: true,
+                    backgroundColor: null
+                })
+            } catch (err) {
+                console.warn('html-to-image error, trying html2canvas fallback:', err)
+            }
+
+            if (!blob) {
+                const canvas = await html2canvas(cardEl, {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: null,
+                    logging: false
+                })
+                blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'))
+            }
+
+            if (!blob) {
+                throw new Error('Failed to generate image blob from loyalty card')
+            }
+
+            // 2. Create File object & Blob URL
+            const file = new File([blob], fileName, { type: 'image/png' })
+            const blobUrl = URL.createObjectURL(blob)
+            setCapturedImageUrl(blobUrl)
+
+            // 3. If NO target phone was specified, check if generic Web Share is available
+            if (!targetPhone) {
+                const isWebShareAvailable = typeof navigator !== 'undefined' &&
+                    typeof navigator.share === 'function' &&
+                    typeof navigator.canShare === 'function' &&
+                    navigator.canShare({ files: [file] })
+
+                if (isWebShareAvailable) {
+                    toast.dismiss(toastId)
+                    try {
+                        await navigator.share({
+                            files: [file],
+                            title: `${brand} - ${title}`,
+                            text: descToSend
+                        })
+                        toast.success('Loyalty card image shared successfully! 🎉')
+                        return
+                    } catch (shareErr) {
+                        if (shareErr.name === 'AbortError') return
+                        console.warn('Web Share API error, falling back:', shareErr)
+                    }
+                }
+            }
+
+            // 4. OPTION 1: Specific customer delivery flow
+            toast.dismiss(toastId)
+            let copiedToClipboard = false
+            try {
+                if (navigator.clipboard && window.ClipboardItem) {
+                    await navigator.clipboard.write([
+                        new ClipboardItem({ 'image/png': blob })
+                    ])
+                    copiedToClipboard = true
+                }
+            } catch (clipErr) {
+                console.warn('Clipboard write image not supported:', clipErr)
+            }
+
+            // Automatically download card image file for easy drag-and-drop or attaching
+            const dlLink = document.createElement('a')
+            dlLink.href = blobUrl
+            dlLink.download = fileName
+            document.body.appendChild(dlLink)
+            dlLink.click()
+            document.body.removeChild(dlLink)
+
+            // Open WhatsApp directly for the specified customer phone
+            const waUrl = targetPhone
+                ? `https://api.whatsapp.com/send?phone=${targetPhone}&text=${encodeURIComponent(descToSend)}`
+                : `https://api.whatsapp.com/send?text=${encodeURIComponent(descToSend)}`
+
+            window.open(waUrl, '_blank')
+
+            // Open the instructional modal so the user sees exactly what to do
+            setCopiedModalOpen(true)
+
+            if (copiedToClipboard) {
+                toast.success('Card image copied to clipboard! In WhatsApp, press Ctrl+V to paste and send.', { duration: 6000 })
+            } else {
+                toast.success('Card image downloaded! Attach it directly in WhatsApp.', { duration: 6000 })
+            }
+        } catch (error) {
+            console.error('Error capturing or sharing card image:', error)
+            toast.dismiss(toastId)
+            toast.error('Failed to capture card image: ' + (error.message || 'Unknown error'))
+        } finally {
+            setSharing(false)
         }
-        window.open(whatsappUrl, '_blank')
     }
 
     /*
@@ -529,6 +662,7 @@ export default function CardPreview() {
             {/* REUSABLE CUSTOMER CARD COMPONENT */}
             <CustomerCard
                 ref={cardRef}
+                canvasId="loyalty-card"
                 card={card}
                 cardType={cardType}
             />
@@ -693,7 +827,7 @@ export default function CardPreview() {
                                     }}
                                 />
                                 <small style={{ fontSize: '0.71rem', color: '#94A3B8', marginTop: 2, display: 'block' }}>
-                                    💡 If you don't select from the dropdown, your text above will be sent. Card link is attached automatically.
+                                    💡 Captures the rendered loyalty-card design as an image and shares it directly to WhatsApp.
                                 </small>
                             </div>
                         </div>
@@ -702,6 +836,7 @@ export default function CardPreview() {
                         <button
                             type="button"
                             onClick={handleSendToWhatsApp}
+                            disabled={sharing}
                             className="btn"
                             style={{
                                 width: '100%',
@@ -716,18 +851,37 @@ export default function CardPreview() {
                                 justifyContent: 'center',
                                 gap: 8,
                                 border: 'none',
-                                cursor: 'pointer',
+                                cursor: sharing ? 'not-allowed' : 'pointer',
+                                opacity: sharing ? 0.75 : 1,
                                 boxShadow: '0 4px 14px rgba(37, 211, 102, 0.28)',
                                 transition: 'all 0.15s ease'
                             }}
                         >
-                            <i className="fab fa-whatsapp" style={{ fontSize: '1.15rem' }} />
-                            <span>
-                                {targetPhone
-                                    ? `Send Direct to WhatsApp (+${targetPhone})`
-                                    : 'Send to WhatsApp'}
-                            </span>
+                            {sharing ? (
+                                <>
+                                    <i className="fas fa-spinner fa-spin" />
+                                    <span>Capturing Card Image &amp; Sharing...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <i className="fab fa-whatsapp" style={{ fontSize: '1.15rem' }} />
+                                    <span>
+                                        {targetPhone
+                                            ? `Share Card Image to WhatsApp (+${targetPhone})`
+                                            : 'Share Card Image to WhatsApp'}
+                                    </span>
+                                </>
+                            )}
                         </button>
+
+                        <small style={{ fontSize: '0.71rem', color: '#64748B', display: 'flex', alignItems: 'center', gap: 5 }}>
+                            <i className="fas fa-camera" style={{ color: '#0E88B8', fontSize: '0.75rem' }} />
+                            <span>
+                                {canNativeShare
+                                    ? 'Web Share API active: Captures loyalty card image & opens WhatsApp / Share Sheet directly.'
+                                    : 'Captures card image, copies to clipboard & downloads PNG ready to send in WhatsApp.'}
+                            </span>
+                        </small>
                     </div>
                 )}
 
@@ -759,6 +913,139 @@ export default function CardPreview() {
                     <span>{downloading ? 'Downloading...' : `Download ${card.title || (cardType === 2 ? 'Membership Pass' : 'Stamp Card')}`}</span>
                 </button>
             </div>
+
+            {/* OPTION 1 INSTRUCTION MODAL: CARD IMAGE COPIED & WHATSAPP CHAT OPENED */}
+            {copiedModalOpen && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'rgba(15, 23, 42, 0.75)',
+                        backdropFilter: 'blur(4px)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 99999,
+                        padding: 16
+                    }}
+                    onClick={() => setCopiedModalOpen(false)}
+                >
+                    <div
+                        style={{
+                            background: '#FFFFFF',
+                            borderRadius: 20,
+                            padding: 24,
+                            maxWidth: 440,
+                            width: '100%',
+                            boxShadow: '0 20px 50px rgba(0,0,0,0.3)',
+                            position: 'relative',
+                            textAlign: 'center',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 16
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Header icon */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <div
+                                style={{
+                                    width: 60,
+                                    height: 60,
+                                    borderRadius: '50%',
+                                    background: '#DCFCE7',
+                                    color: '#16A34A',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '1.8rem',
+                                    boxShadow: '0 4px 14px rgba(22, 163, 74, 0.2)'
+                                }}
+                            >
+                                <i className="fab fa-whatsapp" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#0F172A' }}>
+                                Card Image Copied &amp; WhatsApp Opened!
+                            </h3>
+                            {targetPhone ? (
+                                <div style={{ marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 6, background: '#F1F5F9', padding: '4px 12px', borderRadius: 20, fontSize: '0.8rem', fontWeight: 700, color: '#334155' }}>
+                                    <i className="fas fa-user-check" style={{ color: '#0E88B8' }} />
+                                    <span>Sending to: <strong>{customerName || 'Customer'} (+{targetPhone})</strong></span>
+                                </div>
+                            ) : (
+                                <p style={{ fontSize: '0.84rem', color: '#64748B', marginTop: 4, margin: 0 }}>
+                                    WhatsApp has been opened with your message.
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Image Preview Thumbnail */}
+                        {capturedImageUrl && (
+                            <div style={{ borderRadius: 12, overflow: 'hidden', border: '1.5px solid #E2E8F0', background: '#F8FAFC', padding: 6 }}>
+                                <img
+                                    src={capturedImageUrl}
+                                    alt="Captured Loyalty Card"
+                                    style={{ width: '100%', maxHeight: 150, objectFit: 'contain', borderRadius: 8 }}
+                                />
+                            </div>
+                        )}
+
+                        {/* Instruction Steps */}
+                        <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 12, padding: '12px 14px', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: '0.82rem', color: '#334155' }}>
+                                <span style={{ width: 22, height: 22, borderRadius: '50%', background: '#0E88B8', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.72rem', flexShrink: 0 }}>
+                                    1
+                                </span>
+                                <div>
+                                    <strong>WhatsApp Chat Ready:</strong> Your pre-filled text is already in the WhatsApp chat box.
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: '0.82rem', color: '#334155' }}>
+                                <span style={{ width: 22, height: 22, borderRadius: '50%', background: '#16A34A', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.72rem', flexShrink: 0 }}>
+                                    2
+                                </span>
+                                <div>
+                                    <strong>Paste the Card Image:</strong> Press <kbd style={{ background: '#E2E8F0', padding: '2px 5px', borderRadius: 4, fontWeight: 700 }}>Ctrl + V</kbd> (or right-click Paste / long-press Paste) in the chat to attach the card, then hit <strong>Send</strong>!
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Modal Action Buttons */}
+                        <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+                            {targetPhone && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const desc = customText.trim() || defaultDesc
+                                        const waUrl = `https://api.whatsapp.com/send?phone=${targetPhone}&text=${encodeURIComponent(desc)}`
+                                        window.open(waUrl, '_blank')
+                                    }}
+                                    className="btn btn-outline-secondary"
+                                    style={{ flex: 1, padding: '9px 14px', borderRadius: 10, fontWeight: 700, fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                                >
+                                    <i className="fas fa-external-link-alt" /> Re-open WhatsApp
+                                </button>
+                            )}
+
+                            <button
+                                type="button"
+                                onClick={() => setCopiedModalOpen(false)}
+                                className="btn firstloop-btn-primary"
+                                style={{ flex: 1, padding: '9px 14px', borderRadius: 10, fontWeight: 700, fontSize: '0.82rem' }}
+                            >
+                                Got it, Done!
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

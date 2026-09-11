@@ -694,27 +694,29 @@ export default function ReceptionistCustomerList() {
                                             {/* Actions */}
                                             <td style={{ padding: '14px 18px', textAlign: 'right', verticalAlign: 'top' }}>
                                                 <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-                                                    <button
-                                                        type="button"
-                                                        className="btn btn-sm"
-                                                        onClick={() => navigate(`/receptionist/add-card-customer/${branchId}?email=${encodeURIComponent(cus.email || '')}`)}
-                                                        style={{
-                                                            background: 'rgba(14, 136, 184, 0.1)',
-                                                            color: 'var(--firstloop-primary, #0E88B8)',
-                                                            fontWeight: 700,
-                                                            borderRadius: 8,
-                                                            fontSize: '0.76rem',
-                                                            padding: '6px 10px',
-                                                            border: '1px solid rgba(14, 136, 184, 0.25)',
-                                                            display: 'inline-flex',
-                                                            alignItems: 'center',
-                                                            gap: 4
-                                                        }}
-                                                        title="Add Card to this customer"
-                                                    >
-                                                        <i className="fas fa-plus-circle" />
-                                                        <span>Add Card</span>
-                                                    </button>
+                                                    {Number(cus.is_filled) !== 1 && (
+                                                        <button
+                                                            type="button"
+                                                            className="btn btn-sm"
+                                                            onClick={() => navigate(`/receptionist/add-card-customer/${branchId}?email=${encodeURIComponent(cus.email || '')}`)}
+                                                            style={{
+                                                                background: 'rgba(14, 136, 184, 0.1)',
+                                                                color: 'var(--firstloop-primary, #0E88B8)',
+                                                                fontWeight: 700,
+                                                                borderRadius: 8,
+                                                                fontSize: '0.76rem',
+                                                                padding: '6px 10px',
+                                                                border: '1px solid rgba(14, 136, 184, 0.25)',
+                                                                display: 'inline-flex',
+                                                                alignItems: 'center',
+                                                                gap: 4
+                                                            }}
+                                                            title="Add Card to this customer"
+                                                        >
+                                                            <i className="fas fa-plus-circle" />
+                                                            <span>Add Card</span>
+                                                        </button>
+                                                    )}
 
                                                     <button
                                                         type="button"
