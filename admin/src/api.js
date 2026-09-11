@@ -26,7 +26,40 @@ export const getAppType = (reqUrl = "") => {
         path.startsWith("/panel/saleperson/")
     );
 
-    // 1. Explicit API endpoint checks (HIGHEST PRIORITY - endpoint dictates required auth)
+    const isMerchantPage = (
+        path === "/merchant" ||
+        path.startsWith("/merchant/") ||
+        path === "/merchant-login" ||
+        path === "/panel/merchant" ||
+        path.startsWith("/panel/merchant/") ||
+        path === "/panel/merchant-login"
+    );
+
+    const isReceptionistPage = (
+        path === "/receptionist" ||
+        path.startsWith("/receptionist/") ||
+        path === "/receptionist-login" ||
+        path === "/panel/receptionist" ||
+        path.startsWith("/panel/receptionist/") ||
+        path === "/panel/receptionist-login"
+    );
+
+    // Active Admin Portal context (e.g. /view-merchant, /view-fl-branch, /merchants, /dashboard, etc.)
+    const isAdminPage = (
+        !isMerchantPage &&
+        !isReceptionistPage &&
+        !isSalesPersonPage &&
+        !path.startsWith("/card-preview") &&
+        !path.startsWith("/card-image") &&
+        !path.startsWith("/card-only")
+    );
+
+    // 1. Explicit API endpoint checks
+
+    // Portal login endpoints
+    if (cleanUrl.includes("merchant/login")) return "merchant";
+    if (cleanUrl.includes("receptionist/login")) return "receptionist";
+    if (cleanUrl.includes("saleperson/login")) return "saleperson";
 
     // SalesPerson specific endpoints
     // Note: admin/saleperson/* (generate-code, list, details, create, update, status-update, etc.)
@@ -40,6 +73,18 @@ export const getAppType = (reqUrl = "") => {
         return "saleperson";
     }
 
+    // If currently on an Admin portal page, any management endpoint calls (e.g. creating stamp/membership cards,
+    // branch details, or customer lists) should run under Admin authentication with Admin tokens
+    if (isAdminPage && (
+        cleanUrl.startsWith("admin/") ||
+        cleanUrl.includes("/admin/") ||
+        cleanUrl.startsWith("firstloop/") ||
+        cleanUrl.includes("/firstloop/") ||
+        cleanUrl.startsWith("api/merchant/")
+    )) {
+        return "admin";
+    }
+
     if (
         cleanUrl.startsWith("firstloop/merchant/") ||
         cleanUrl.includes("/firstloop/merchant/") ||
@@ -50,8 +95,7 @@ export const getAppType = (reqUrl = "") => {
         cleanUrl.startsWith("firstloop/branch/") ||
         cleanUrl.includes("/firstloop/branch/") ||
         cleanUrl.startsWith("firstloop/card/") ||
-        cleanUrl.includes("/firstloop/card/") ||
-        cleanUrl.includes("/merchant/login")
+        cleanUrl.includes("/firstloop/card/")
     ) {
         return "merchant";
     }
@@ -62,8 +106,7 @@ export const getAppType = (reqUrl = "") => {
         cleanUrl.startsWith("firstloop/receptionist/") ||
         cleanUrl.includes("/firstloop/receptionist/") ||
         cleanUrl.startsWith("api/receptionist/") ||
-        cleanUrl.includes("/api/receptionist/") ||
-        cleanUrl.includes("/receptionist/login")
+        cleanUrl.includes("/api/receptionist/")
     ) {
         return "receptionist";
     }
@@ -79,32 +122,14 @@ export const getAppType = (reqUrl = "") => {
     }
 
     // 2. Active Browser URL Path checks (When reqUrl is empty or generic)
-
-    // Specific merchant routes only (must NOT match /merchants, /merchant-reports, /view-merchant, etc.)
-    if (
-        path === "/merchant" ||
-        path.startsWith("/merchant/") ||
-        path === "/merchant-login" ||
-        path === "/panel/merchant" ||
-        path.startsWith("/panel/merchant/") ||
-        path === "/panel/merchant-login"
-    ) {
+    if (isMerchantPage) {
         return "merchant";
     }
 
-    // Specific receptionist routes
-    if (
-        path === "/receptionist" ||
-        path.startsWith("/receptionist/") ||
-        path === "/receptionist-login" ||
-        path === "/panel/receptionist" ||
-        path.startsWith("/panel/receptionist/") ||
-        path === "/panel/receptionist-login"
-    ) {
+    if (isReceptionistPage) {
         return "receptionist";
     }
 
-    // Specific salesperson routes
     if (isSalesPersonPage) {
         return "saleperson";
     }
@@ -177,6 +202,11 @@ export const getAccessToken = (reqUrl = "") => {
         if (merToken && merToken !== "null" && merToken !== "undefined") {
             return merToken;
         }
+        // Safety Fallback: If no merchant token exists but user is logged in as admin
+        const adminFallback = localStorage.getItem("access_token") || localStorage.getItem("admin_token");
+        if (adminFallback && adminFallback !== "null" && adminFallback !== "undefined") {
+            return adminFallback;
+        }
     }
 
     if (keys.role === "receptionist") {
@@ -225,6 +255,11 @@ export const getRefreshToken = (reqUrl = "") => {
         if (merToken && merToken !== "null" && merToken !== "undefined") {
             return merToken;
         }
+        // Safety Fallback: If no merchant refresh token exists but admin refresh token exists
+        const adminRefreshFallback = localStorage.getItem("refresh_token") || localStorage.getItem("admin_refresh_token");
+        if (adminRefreshFallback && adminRefreshFallback !== "null" && adminRefreshFallback !== "undefined") {
+            return adminRefreshFallback;
+        }
     }
 
     return null;
@@ -252,6 +287,10 @@ export const saveTokens = (accessToken, refreshToken = null, reqUrl = "") => {
 --------------------------------------------------- */
 export const getRefreshEndpoint = (appType = "admin") => {
     if (appType === "merchant") {
+        const hasMerRefresh = Boolean(localStorage.getItem("mer_refresh_token") || localStorage.getItem("merchant_refresh_token"));
+        if (!hasMerRefresh && (localStorage.getItem("refresh_token") || localStorage.getItem("admin_refresh_token"))) {
+            return "admin/refresh-token";
+        }
         return "api/merchant/refreshAccessToken";
     }
     if (appType === "receptionist") {
@@ -408,7 +447,12 @@ const addAuthHeaders = (config) => {
             const role = localStorage.getItem("role") || "firstpass";
             config.headers["X-Role"] = role;
         } else if (appType === "merchant") {
-            config.headers["X-Role"] = "merchant";
+            const hasMerToken = Boolean(localStorage.getItem("mer_access_token") || localStorage.getItem("merchant_token"));
+            if (!hasMerToken && (localStorage.getItem("access_token") || localStorage.getItem("admin_token"))) {
+                config.headers["X-Role"] = localStorage.getItem("role") || "firstpass";
+            } else {
+                config.headers["X-Role"] = "merchant";
+            }
         } else if (appType === "receptionist") {
             config.headers["X-Role"] = "receptionist";
         } else if (appType === "saleperson") {

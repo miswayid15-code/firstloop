@@ -3,7 +3,7 @@ const CommonMailTemplate = require('../../helpers/CommonMailTemplate');
 const sendMail = require('../../helpers/sendMail');
 const { deleteFile } = require('../../helpers/fileHelper');
 const { bool } = require('sharp');
-
+const axios = require("axios");
 
 exports.banner_list = async (req, res) => {
     try {
@@ -776,6 +776,51 @@ const mailType = Number(type) === 3 ? "customer" : "merchant";
         return res.status(500).json({
             status: 0,
             message: "Internal server error."
+        });
+    }
+};
+
+
+exports.sent = async (req, res) => {
+    try {
+        const { contacts, message } = req.body;
+
+        if (!contacts || !message) {
+            return res.status(400).json({
+                status: 0,
+                message: "Contacts and message are required"
+            });
+        }
+
+        const post = {
+            key: "46AA3DD25224AD",
+            contacts: contacts,
+            msg: encodeURIComponent(message),
+            country_code: "91"
+        };
+
+        const response = await axios.post(
+            "http://itswhatsapp.com/wapi/index",
+            new URLSearchParams(post).toString(),
+            {
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                }
+            }
+        );
+
+        return res.status(200).json({
+            status: 1,
+            data: response.data
+        });
+
+    } catch (error) {
+        console.error("WhatsApp API Error:", error.message);
+
+        return res.status(500).json({
+            status: 0,
+            message: "Failed to send WhatsApp message",
+            error: error.message
         });
     }
 };

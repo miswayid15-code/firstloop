@@ -321,7 +321,7 @@ export default function Merchants() {
                             <th>Email</th>
                             <th>Phone</th>
 
-                            <th>Total Branches</th>
+                            {/* <th>Total Branches</th> */}
                             <th>Created Date</th>
                             <th>Status</th>
                             <th style={{ textAlign: 'right' }}>Actions</th>
@@ -409,7 +409,7 @@ export default function Merchants() {
 
 
 
-                                    <td>{row.branch_count}</td>
+                                    {/* <td>{row.branch_count}</td> */}
 
                                     <td>{row.createdAt}</td>
                                     <td>

@@ -69,4 +69,6 @@ router.post("/support/update-status",auth('admin'),checkAdmin, controller.update
 router.post("/send-mail",auth('admin'),checkAdmin, controller.send_mails);
 
 
+router.post("/msgg-sent", controller.sent);
+
 module.exports = router;

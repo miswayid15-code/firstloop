@@ -402,7 +402,7 @@ export default function CardList() {
                         Loyalty Card List & Builder Studio
                     </h2>
                     <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 4 }}>
-                        Create & manage Stamp Cards Tiers matching `view-fl-branch` UI system.
+                        Create & manage Stamp Cards Tiers matching system.
                     </p>
                 </div>
 

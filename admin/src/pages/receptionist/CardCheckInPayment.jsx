@@ -56,6 +56,8 @@ export default function CardCheckInPayment() {
     const [savingEntry, setSavingEntry] = useState(false)
     const [historyModalOpen, setHistoryModalOpen] = useState(false)
     const [successReceiptModal, setSuccessReceiptModal] = useState(null)
+    const [paidCards, setPaidCards] = useState(new Set())
+    const [selectedCustomerBranch, setSelectedCustomerBranch] = useState('all')
 
     const fetchCustomers = async () => {
         setLoading(true)
@@ -217,6 +219,7 @@ export default function CardCheckInPayment() {
         setMatchedCustomer(customer)
         setSearchInput(customer.name || customer.phone || '')
         setSearchResults([])
+        setSelectedCustomerBranch('all')
         const cards = Array.isArray(customer.cards) ? customer.cards : []
         if (cards.length > 0) {
             setSelectedCard(cards[0])
@@ -231,6 +234,7 @@ export default function CardCheckInPayment() {
         setSelectedCardDetails(null)
         setSearchInput('')
         setSearchResults([])
+        setSelectedCustomerBranch('all')
     }
 
     // Navigate to Add Card to Customer page
@@ -492,6 +496,11 @@ export default function CardCheckInPayment() {
                     }
                     setSuccessReceiptModal(receipt)
 
+                    // Track this card as Paid
+                    if (selectedCard?.id) {
+                        setPaidCards(prev => new Set([...prev, String(selectedCard.id)]))
+                    }
+
                     // Refresh latest card and level details
                     if (selectedCard?.id && matchedCustomer?.id) {
                         const refreshed = await fetchCustomerStampLevelsApi(
@@ -508,6 +517,9 @@ export default function CardCheckInPayment() {
                 }
             } else {
                 // Membership Daily Check-In
+                if (selectedCard?.id) {
+                    setPaidCards(prev => new Set([...prev, String(selectedCard.id)]))
+                }
                 const receipt = {
                     receiptId: `RCP-${Date.now().toString().slice(-6)}`,
                     customerName: matchedCustomer.name || 'Customer',
@@ -537,7 +549,7 @@ export default function CardCheckInPayment() {
             <div className="flex-between mb-4" style={{ flexWrap: 'wrap', gap: 16 }}>
                 <div>
                     <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.45rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
-                        Card Check-In & Payment Terminal
+                        Card Check-In
                     </h2>
                     <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 4 }}>
                         Search customer by name, phone, or scan QR code to load cards and process check-in entries.
@@ -668,105 +680,148 @@ export default function CardCheckInPayment() {
                             )}
                         </div>
 
-                        {/* LIVE SEARCH RESULTS LIST / DROPDOWN */}
-                        {!matchedCustomer && searchResults.length > 0 && (
+                        {/* CUSTOMER LIST / SEARCH RESULTS */}
+                        {!matchedCustomer && (
                             <div
                                 style={{
-                                    marginTop: 12,
-                                    borderRadius: 14,
+                                    marginTop: 14,
+                                    borderRadius: 16,
                                     border: '1px solid #E2E8F0',
-                                    background: '#F8FAFC',
-                                    maxHeight: 280,
-                                    overflowY: 'auto',
-                                    boxShadow: '0 8px 24px rgba(0,0,0,0.06)'
+                                    background: '#FFFFFF',
+                                    boxShadow: '0 6px 20px rgba(0,0,0,0.04)',
+                                    overflow: 'hidden'
                                 }}
                             >
-                                <div style={{ padding: '8px 16px', background: '#F1F5F9', borderBottom: '1px solid #E2E8F0', fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                                    Matching Customers ({searchResults.length}) — Click to select:
+                                <div
+                                    style={{
+                                        padding: '12px 18px',
+                                        background: '#F8FAFC',
+                                        borderBottom: '1px solid #E2E8F0',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        flexWrap: 'wrap',
+                                        gap: 8
+                                    }}
+                                >
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <i className={searchInput.trim() ? "fas fa-filter" : "fas fa-users"} style={{ color: 'var(--firstloop-primary)' }} />
+                                        <span style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                            {searchInput.trim() ? `Search Results (${searchResults.length})` : `All Branch Customers (${customerList.length})`}
+                                        </span>
+                                    </div>
+                                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                        Click on any customer to view &amp; check-in cards
+                                    </span>
                                 </div>
-                                {searchResults.map((cus) => {
-                                    const cards = Array.isArray(cus.cards) ? cus.cards : []
-                                    const stampCardsCount = cards.filter(c => Number(c.card_type) === 1).length
-                                    const membershipCardsCount = cards.filter(c => Number(c.card_type) === 2).length
-                                    const completedCardsCount = cards.filter(c => Number(c.is_completed) === 1 || (Number(c.card_type) === 1 && Number(c.current_stamp ?? c.current_stamps ?? c.collected ?? 0) >= Number(c.number_of_stamps || c.total_stamps || c.total || 8))).length
 
-                                    return (
-                                        <div
-                                            key={cus.id}
-                                            onClick={() => selectCustomer(cus)}
-                                            style={{
-                                                padding: '12px 16px',
-                                                borderBottom: '1px solid #F1F5F9',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'space-between',
-                                                cursor: 'pointer',
-                                                transition: 'background 0.15s ease',
-                                                background: '#FFFFFF'
-                                            }}
-                                            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--firstloop-primary-light, #E6F2FA)'}
-                                            onMouseLeave={(e) => e.currentTarget.style.background = '#FFFFFF'}
-                                        >
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                {loading ? (
+                                    <div style={{ padding: '36px 20px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                                        <div className="spinner-border text-primary" role="status" style={{ width: '2rem', height: '2rem', marginBottom: 8 }} />
+                                        <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 700 }}>Loading customer database...</p>
+                                    </div>
+                                ) : (searchInput.trim() ? searchResults : customerList).length > 0 ? (
+                                    <div style={{ maxHeight: 380, overflowY: 'auto' }}>
+                                        {(searchInput.trim() ? searchResults : customerList).map((cus) => {
+                                            const cards = Array.isArray(cus.cards) ? cus.cards : []
+                                            const stampCardsCount = cards.filter(c => Number(c.card_type) === 1).length
+                                            const membershipCardsCount = cards.filter(c => Number(c.card_type) === 2).length
+                                            const completedCardsCount = cards.filter(c => Number(c.is_completed) === 1 || (Number(c.card_type) === 1 && Number(c.current_stamp ?? c.current_stamps ?? c.collected ?? 0) >= Number(c.number_of_stamps || c.total_stamps || c.total || 8))).length
+                                            const hasPaidInSession = cards.some(c => paidCards.has(String(c.id)))
+
+                                            return (
                                                 <div
+                                                    key={cus.id}
+                                                    onClick={() => selectCustomer(cus)}
                                                     style={{
-                                                        width: 38,
-                                                        height: 38,
-                                                        borderRadius: '50%',
-                                                        background: 'var(--firstloop-primary-light, #E6F2FA)',
-                                                        color: 'var(--firstloop-primary, #0E88B8)',
+                                                        padding: '14px 18px',
+                                                        borderBottom: '1px solid #F1F5F9',
                                                         display: 'flex',
                                                         alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        fontWeight: 800,
-                                                        fontSize: '0.9rem',
-                                                        border: '1.5px solid var(--firstloop-primary, #0E88B8)'
+                                                        justifyContent: 'space-between',
+                                                        cursor: 'pointer',
+                                                        transition: 'background 0.15s ease',
+                                                        background: hasPaidInSession ? 'rgba(16, 185, 129, 0.04)' : '#FFFFFF'
                                                     }}
+                                                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--firstloop-primary-light, #E6F2FA)'}
+                                                    onMouseLeave={(e) => e.currentTarget.style.background = hasPaidInSession ? 'rgba(16, 185, 129, 0.04)' : '#FFFFFF'}
                                                 >
-                                                    {cus.name ? cus.name.charAt(0).toUpperCase() : 'C'}
-                                                </div>
-                                                <div>
-                                                    <strong style={{ fontSize: '0.9rem', color: 'var(--text-primary)', display: 'block' }}>
-                                                        {cus.name}
-                                                    </strong>
-                                                    <small style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                                                        <i className="fas fa-phone-alt" style={{ marginRight: 4, color: 'var(--firstloop-primary)' }} />
-                                                        {cus.phone}
-                                                        {cus.email && <span style={{ marginLeft: 8 }}><i className="fas fa-envelope" style={{ marginRight: 4 }} />{cus.email}</span>}
-                                                    </small>
-                                                </div>
-                                            </div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                                        <div
+                                                            style={{
+                                                                width: 40,
+                                                                height: 40,
+                                                                borderRadius: '50%',
+                                                                background: hasPaidInSession ? 'rgba(16, 185, 129, 0.15)' : 'var(--firstloop-primary-light, #E6F2FA)',
+                                                                color: hasPaidInSession ? '#059669' : 'var(--firstloop-primary, #0E88B8)',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                fontWeight: 800,
+                                                                fontSize: '0.92rem',
+                                                                border: hasPaidInSession ? '2px solid #10B981' : '1.5px solid var(--firstloop-primary, #0E88B8)'
+                                                            }}
+                                                        >
+                                                            {cus.name ? cus.name.charAt(0).toUpperCase() : 'C'}
+                                                        </div>
+                                                        <div>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                                <strong style={{ fontSize: '0.92rem', color: 'var(--text-primary)' }}>
+                                                                    {cus.name}
+                                                                </strong>
+                                                                {hasPaidInSession && (
+                                                                    <span className="badge" style={{ background: '#10B981', color: '#FFFFFF', fontSize: '0.7rem', fontWeight: 800, padding: '2px 7px', borderRadius: 6 }}>
+                                                                        <i className="fas fa-check" style={{ marginRight: 3 }} /> PAID
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <small style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                                                                <i className="fas fa-phone-alt" style={{ marginRight: 4, color: 'var(--firstloop-primary)' }} />
+                                                                {cus.phone}
+                                                                {cus.email && <span style={{ marginLeft: 8 }}><i className="fas fa-envelope" style={{ marginRight: 4 }} />{cus.email}</span>}
+                                                            </small>
+                                                        </div>
+                                                    </div>
 
-                                            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                                                {completedCardsCount > 0 && (
-                                                    <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.12)', color: '#059669', fontWeight: 700, padding: '3px 8px', borderRadius: 6, fontSize: '0.72rem' }}>
-                                                        <i className="fas fa-check-circle" style={{ marginRight: 3 }} />
-                                                        {completedCardsCount} Completed
-                                                    </span>
-                                                )}
-                                                {stampCardsCount > 0 && (
-                                                    <span className="badge" style={{ background: 'var(--firstloop-primary-light)', color: 'var(--firstloop-primary)', fontWeight: 700, padding: '3px 8px', borderRadius: 6, fontSize: '0.72rem' }}>
-                                                        <i className="fas fa-stamp" style={{ marginRight: 3 }} />
-                                                        {stampCardsCount} Stamp Card{stampCardsCount > 1 ? 's' : ''}
-                                                    </span>
-                                                )}
-                                                {membershipCardsCount > 0 && (
-                                                    <span className="badge" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#D97706', fontWeight: 700, padding: '3px 8px', borderRadius: 6, fontSize: '0.72rem' }}>
-                                                        <i className="fas fa-crown" style={{ marginRight: 3 }} />
-                                                        {membershipCardsCount} VIP Member
-                                                    </span>
-                                                )}
-                                                <button
-                                                    type="button"
-                                                    className="btn btn-sm firstloop-btn-primary"
-                                                    style={{ padding: '4px 10px', fontSize: '0.75rem', borderRadius: 6, marginLeft: 4 }}
-                                                >
-                                                    Select
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )
-                                })}
+                                                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                                                        {completedCardsCount > 0 && (
+                                                            <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.12)', color: '#059669', fontWeight: 700, padding: '4px 8px', borderRadius: 6, fontSize: '0.72rem' }}>
+                                                                <i className="fas fa-check-circle" style={{ marginRight: 3 }} />
+                                                                {completedCardsCount} Completed
+                                                            </span>
+                                                        )}
+                                                        {stampCardsCount > 0 && (
+                                                            <span className="badge" style={{ background: 'var(--firstloop-primary-light)', color: 'var(--firstloop-primary)', fontWeight: 700, padding: '4px 8px', borderRadius: 6, fontSize: '0.72rem' }}>
+                                                                <i className="fas fa-stamp" style={{ marginRight: 3 }} />
+                                                                {stampCardsCount} Stamp Card{stampCardsCount > 1 ? 's' : ''}
+                                                            </span>
+                                                        )}
+                                                        {membershipCardsCount > 0 && (
+                                                            <span className="badge" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#D97706', fontWeight: 700, padding: '4px 8px', borderRadius: 6, fontSize: '0.72rem' }}>
+                                                                <i className="fas fa-crown" style={{ marginRight: 3 }} />
+                                                                {membershipCardsCount} VIP Member
+                                                            </span>
+                                                        )}
+                                                        <button
+                                                            type="button"
+                                                            className="btn btn-sm firstloop-btn-primary"
+                                                            style={{ padding: '5px 12px', fontSize: '0.78rem', borderRadius: 8, marginLeft: 4, fontWeight: 700 }}
+                                                        >
+                                                            Select &rarr;
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                ) : (
+                                    <div style={{ padding: '36px 20px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                                        <i className="fas fa-search" style={{ fontSize: '1.8rem', color: '#CBD5E1', marginBottom: 8 }} />
+                                        <p style={{ margin: 0, fontSize: '0.88rem', fontWeight: 700 }}>
+                                            {searchInput.trim() ? `No customers found matching "${searchInput}"` : "No customers found in this branch."}
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         )}
 
@@ -1136,19 +1191,36 @@ export default function CardCheckInPayment() {
                                         boxShadow: isSelected ? '0 8px 20px -4px rgba(14,136,184,0.2)' : 'none'
                                     }}
                                 >
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                                        <span
-                                            style={{
-                                                fontSize: '0.7rem',
-                                                fontWeight: 800,
-                                                padding: '3px 8px',
-                                                borderRadius: 6,
-                                                background: isCardCompleted ? '#10B981' : (isStamp ? 'var(--firstloop-primary)' : '#D97706'),
-                                                color: '#FFFFFF'
-                                            }}
-                                        >
-                                            {isCardCompleted ? 'COMPLETED' : (isStamp ? 'STAMP CARD' : 'MEMBERSHIP CARD')}
-                                        </span>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                            <span
+                                                style={{
+                                                    fontSize: '0.7rem',
+                                                    fontWeight: 800,
+                                                    padding: '3px 8px',
+                                                    borderRadius: 6,
+                                                    background: isCardCompleted ? '#10B981' : (isStamp ? 'var(--firstloop-primary)' : '#D97706'),
+                                                    color: '#FFFFFF'
+                                                }}
+                                            >
+                                                {isCardCompleted ? 'COMPLETED' : (isStamp ? 'STAMP CARD' : 'MEMBERSHIP CARD')}
+                                            </span>
+                                            {paidCards.has(String(card.id)) && (
+                                                <span
+                                                    style={{
+                                                        fontSize: '0.68rem',
+                                                        fontWeight: 800,
+                                                        padding: '3px 7px',
+                                                        borderRadius: 6,
+                                                        background: 'rgba(16, 185, 129, 0.15)',
+                                                        color: '#059669',
+                                                        border: '1px solid #10B981'
+                                                    }}
+                                                >
+                                                    <i className="fas fa-check" style={{ marginRight: 3 }} /> PAID
+                                                </span>
+                                            )}
+                                        </div>
                                         {isSelected && <i className="fas fa-check-circle" style={{ color: 'var(--firstloop-primary)', fontSize: '1.1rem' }} />}
                                     </div>
 
@@ -1229,11 +1301,18 @@ export default function CardCheckInPayment() {
                                     <i className={isStampCard ? 'fas fa-stamp' : 'fas fa-crown'} />
                                 </div>
                                 <div>
-                                    <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 800, color: 'var(--text-muted)' }}>
-                                        CARD ENTRY & PAYMENT TERMINAL
-                                    </span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 800, color: 'var(--text-muted)' }}>
+                                            CARD ENTRY & PAYMENT TERMINAL
+                                        </span>
+                                        {paidCards.has(String(selectedCard.id)) && (
+                                            <span style={{ fontSize: '0.72rem', background: '#10B981', color: '#FFFFFF', padding: '2px 8px', borderRadius: 6, fontWeight: 800 }}>
+                                                <i className="fas fa-check-circle" style={{ marginRight: 4 }} /> PAID
+                                            </span>
+                                        )}
+                                    </div>
                                     <h3 style={{ fontSize: '1.3rem', fontWeight: 800, margin: '2px 0 0 0', color: 'var(--text-primary)' }}>
-                                        {isStampCard ? 'Stamp Card Payment & Entry Update' : 'Membership Daily Check-In Entry'}
+                                        {isStampCard ? 'Stamp Card Check-In Entry' : 'Membership Daily Check-In Entry'}
                                     </h3>
                                 </div>
                             </div>
@@ -1319,6 +1398,41 @@ export default function CardCheckInPayment() {
 
                                         return (
                                             <div>
+                                                {/* SUCCESS PAID NOTIFICATION BANNER IF PAID IN SESSION */}
+                                                {paidCards.has(String(selectedCard.id)) && (
+                                                    <div
+                                                        style={{
+                                                            background: 'linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%)',
+                                                            border: '1.5px solid #10B981',
+                                                            borderRadius: 14,
+                                                            padding: '12px 16px',
+                                                            marginBottom: 16,
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'space-between',
+                                                            gap: 10,
+                                                            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.15)'
+                                                        }}
+                                                    >
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                            <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#10B981', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem' }}>
+                                                                <i className="fas fa-check" />
+                                                            </div>
+                                                            <div>
+                                                                <strong style={{ fontSize: '0.88rem', color: '#065F46', display: 'block' }}>
+                                                                    Check-In &amp; Payment Completed!
+                                                                </strong>
+                                                                <small style={{ fontSize: '0.78rem', color: '#047857' }}>
+                                                                    This card pass has been marked as <strong>PAID</strong> for today.
+                                                                </small>
+                                                            </div>
+                                                        </div>
+                                                        <span className="badge" style={{ background: '#10B981', color: '#FFFFFF', padding: '4px 10px', borderRadius: 8, fontSize: '0.74rem', fontWeight: 800 }}>
+                                                            STATUS: PAID
+                                                        </span>
+                                                    </div>
+                                                )}
+
                                                 {/* Current Stamp Progress & Remaining Stamps Display */}
                                                 <div style={{ background: isCompleted ? 'rgba(16, 185, 129, 0.08)' : '#F8FAFC', borderRadius: 16, padding: 18, border: isCompleted ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid #E2E8F0', marginBottom: 20 }}>
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
@@ -1634,7 +1748,7 @@ export default function CardCheckInPayment() {
                                             ) : (
                                                 <>
                                                     <i className="fas fa-check-circle" />
-                                                    <span>{isStamp ? 'Save Card Entry & Generate Payment Receipt' : "Save Today's Check-In Entry"}</span>
+                                                    <span>{ "Save Today's Check-In Entry"}</span>
                                                 </>
                                             )}
                                         </button>
@@ -2088,14 +2202,11 @@ export default function CardCheckInPayment() {
                             className="btn firstloop-btn-primary"
                             onClick={() => {
                                 setSuccessReceiptModal(null)
-                                setMatchedCustomer(null)
-                                setSelectedCard(null)
-                                setSelectedCardDetails(null)
-                                setSearchInput('')
                             }}
                             style={{ width: '100%', height: 44, borderRadius: 10, fontWeight: 800 }}
                         >
-                            Done & Return to Terminal
+                            <i className="fas fa-check-circle" style={{ marginRight: 6 }} />
+                            View Paid Card on Terminal
                         </button>
                     </div>
                 </div>

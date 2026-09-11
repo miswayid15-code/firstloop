@@ -1371,6 +1371,7 @@ exports.get_rep_cus = async (req, res) => {
         // 2. GET BRANCH ID
         // ---------------------------------------
 
+
         const { br_id } = req.body;
 
         if (!br_id) {
@@ -1626,6 +1627,7 @@ exports.get_rep_cus = async (req, res) => {
         // 14. FORMAT CUSTOMER DATA
         // ---------------------------------------
 
+
         const customerData = customers.map(customer => {
 
             const data = customer.toJSON();
@@ -1637,6 +1639,34 @@ exports.get_rep_cus = async (req, res) => {
 
             // Customer cards
             data.cards = cardsByCustomer[data.id] || [];
+
+
+
+            if (matchingStampCardIds.length > 0) {
+
+                // Get unique stamp card IDs this customer has
+                const customerStampCardIds = [
+                    ...new Set(
+                        data.cards
+                            .map(card => Number(card.merchant_card_id))
+                            .filter(id => Number.isInteger(id))
+                    )
+                ];
+
+                // Check whether customer has ALL
+                // stamp cards linked to this branch
+                const hasAllStampCards = matchingStampCardIds.every(
+                    stampCardId =>
+                        customerStampCardIds.includes(Number(stampCardId))
+                );
+
+                data.is_filled = hasAllStampCards ? 1 : 0;
+
+            } else {
+
+                data.is_filled = 0;
+
+            }
 
             return data;
         });
