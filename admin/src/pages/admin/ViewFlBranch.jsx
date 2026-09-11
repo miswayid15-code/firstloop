@@ -765,12 +765,12 @@ export default function ViewFlBranch() {
                                 </div>
                             </div>
 
-                            <div style={{ padding: 14, borderRadius: 12, background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
+                            {/* <div style={{ padding: 14, borderRadius: 12, background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
                                 <div style={{ fontSize: '0.78rem', color: '#D97706', fontWeight: 600 }}>Membership Tiers</div>
                                 <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#D97706', marginTop: 4 }}>
                                     {membershipCards.length} Tiers
                                 </div>
-                            </div>
+                            </div> */}
 
                             <div style={{ padding: 14, borderRadius: 12, background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
                                 <div style={{ fontSize: '0.78rem', color: '#059669', fontWeight: 600 }}>Assigned Staff</div>
@@ -831,8 +831,8 @@ export default function ViewFlBranch() {
                 )}
             </div>
 
-            {/* MEMBERSHIP CARDS SECTION - VISUAL PASS LIST VIEW WITH LARGE MIDDLE QR CODE */}
-            <div className="card" style={{ marginBottom: 28, padding: 15 }}>
+          
+            {/* <div className="card" style={{ marginBottom: 28, padding: 15 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, marginBottom: 20 }}>
                     <div>
                         <h3 style={{ fontSize: '1.15rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-primary)' }}>
@@ -859,7 +859,7 @@ export default function ViewFlBranch() {
                     </div>
                 </div>
 
-                {/* Membership Cards Grid */}
+                
                 {filteredMemberships.length === 0 ? (
                     <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
                         <i className="fas fa-id-card" style={{ fontSize: '2rem', marginBottom: 8, opacity: 0.4 }} />
@@ -877,9 +877,9 @@ export default function ViewFlBranch() {
                         ))}
                     </div>
                 )}
-            </div>
+            </div> */}
 
-            {/* REUSABLE STAMP CARD BUILDER MODAL COMPONENT */}
+          
             <StampCardBuilderModal
                 isOpen={stampBuilderOpen}
                 cardData={selectedEditStampCard}

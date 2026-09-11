@@ -62,7 +62,7 @@ export default function ReceptionistLayout() {
     const navLinks = [
         { to: '/receptionist/dashboard', icon: 'fa-chart-line', label: 'Dashboard' },
         { to: '/receptionist/customers', icon: 'fa-users', label: 'Customers' },
-        { to: '/receptionist/checkin', icon: 'fa-qrcode', label: 'Check-In & Pay' }
+        // { to: '/receptionist/checkin', icon: 'fa-qrcode', label: 'Check-In & Pay' }
     ]
 
     return (

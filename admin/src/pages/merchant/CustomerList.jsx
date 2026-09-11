@@ -207,7 +207,7 @@ export default function CustomerList() {
                     </div>
 
                     <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        {/* <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>
                                 Filter Card:
                             </span>
@@ -234,7 +234,7 @@ export default function CustomerList() {
                                 <option value="stamps">Stamp Cards</option>
                                 <option value="membership">Membership Tiers</option>
                             </select>
-                        </div>
+                        </div> */}
 
                         {/* Page Size Selector */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -279,7 +279,7 @@ export default function CustomerList() {
                                 <th style={{ padding: '14px 18px', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'capitalize' }}>Customer Info</th>
                                 <th style={{ padding: '14px 18px', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'capitalize' }}>Contact Details</th>
                                 <th style={{ padding: '14px 18px', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'capitalize' }}>Assigned Stamp Cards</th>
-                                <th style={{ padding: '14px 18px', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'capitalize' }}>Membership Tiers</th>
+                                {/* <th style={{ padding: '14px 18px', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'capitalize' }}>Membership Tiers</th> */}
                                 {/* <th style={{ padding: '14px 18px', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'capitalize' }}>Visits</th> */}
                                 <th style={{ padding: '14px 18px', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'capitalize', textAlign: 'right' }}>Actions</th>
                             </tr>
@@ -383,7 +383,7 @@ export default function CustomerList() {
                                             </td>
 
                                             {/* Membership Tiers Count */}
-                                            <td style={{ padding: '14px 18px' }}>
+                                            {/* <td style={{ padding: '14px 18px' }}>
                                                 <span
                                                     style={{
                                                         display: 'inline-flex',
@@ -402,7 +402,7 @@ export default function CustomerList() {
                                                     <i className="fas fa-crown" style={{ fontSize: '0.78rem' }} />
                                                     {membershipCards.length}
                                                 </span>
-                                            </td>
+                                            </td> */}
 
                                             <td style={{ padding: '14px 18px', textAlign: 'right' }}>
                                                 <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', flexWrap: 'wrap' }}>

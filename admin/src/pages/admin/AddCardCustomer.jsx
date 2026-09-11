@@ -802,7 +802,7 @@ const handleCheckEmail = async (customEmail) => {
                             </button>
 
                             {/* Membership Pass Option */}
-                            <button
+                            {/* <button
                                 type="button"
                                 onClick={() => setCardType("membership")}
                                 style={{
@@ -848,7 +848,7 @@ const handleCheckEmail = async (customEmail) => {
                                         Tiered VIP access pass offering persistent discounts, privileges, and lounge access.
                                     </p>
                                 </div>
-                            </button>
+                            </button> */}
                         </div>
                     </div>
 

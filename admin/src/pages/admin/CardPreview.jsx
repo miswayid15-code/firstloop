@@ -5,12 +5,7 @@ import CustomerCard from '../../components/CustomerCard.jsx'
 import { fetchCustomerStampLevelsApi } from '../../services/cardService.js'
 import API from '../../api.js'
 
-/*
-|--------------------------------------------------------------------------
-| PUBLIC & FREE CARD PREVIEW COMPONENT
-| (Does not require any active session / authentication token)
-|--------------------------------------------------------------------------
-*/
+
 
 export default function CardPreview() {
     const navigate = useNavigate()
@@ -31,6 +26,7 @@ export default function CardPreview() {
     const [loading, setLoading] = useState(Boolean(cardId))
     const [hasStaffToken, setHasStaffToken] = useState(false)
     const [customText, setCustomText] = useState('')
+    const [selectedTemplate, setSelectedTemplate] = useState('default')
 
     // Recipient Customer states for direct WhatsApp messaging
     const [customerPhone, setCustomerPhone] = useState(
@@ -405,20 +401,62 @@ export default function CardPreview() {
 
     const card = cardData
 
-    const defaultDesc = card.description || card.descption || card.reward_text || card.reward || (cardType === 2 ? 'Enjoy exclusive perks and privileges with our digital membership pass!' : 'Collect stamps and unlock exciting rewards on every visit!')
+    const brand = card?.brandName || card?.brand_name || 'FirstLoop'
+    const title = card?.title || card?.name || (cardType === 2 ? 'Membership Pass' : 'Stamp Card')
+    const defaultDesc = card?.description || card?.descption || card?.reward_text || card?.reward || (cardType === 2 ? 'Enjoy exclusive perks and privileges with our digital membership pass!' : 'Collect stamps and unlock exciting rewards on every visit!')
+    const recipient = customerName ? customerName : 'Valued Customer'
+
+    const messageTemplates = [
+        {
+            id: 'default',
+            label: '📋 Default Card Description',
+            getText: () => defaultDesc
+        },
+        {
+            id: 'welcome',
+            label: '🎉 Welcome & Card Invitation',
+            getText: () => `🎉 Hello ${recipient}! Here is your digital ${cardType === 2 ? 'membership pass' : 'stamp pass'} for *${brand}* - ${title}. Collect stamps & unlock exciting rewards!`
+        },
+        {
+            id: 'reward',
+            label: '🎁 Special Reward & Perks Alert',
+            getText: () => `🎁 Special Perk from *${brand}*! Check your digital card and enjoy exclusive rewards on your visits.`
+        },
+        {
+            id: 'reminder',
+            label: '⭐ Visit & Stamp Reminder',
+            getText: () => `⭐ Don't forget to present your digital pass at *${brand}* during your next visit to collect your stamps and claim your rewards!`
+        },
+        {
+            id: 'custom',
+            label: '✍️ Custom Message (Type below)',
+            getText: () => ''
+        }
+    ]
+
+    const handleTemplateChange = (templateId) => {
+        setSelectedTemplate(templateId)
+        const tmpl = messageTemplates.find(t => t.id === templateId)
+        if (tmpl && templateId !== 'custom') {
+            setCustomText(tmpl.getText())
+        }
+    }
 
     const targetPhone = cleanPhone(customerPhone, customerCountryCode)
 
     const handleSendToWhatsApp = () => {
-        const brand = card.brandName || card.brand_name || 'FirstLoop'
-        const title = card.title || card.name || (cardType === 2 ? 'Membership Pass' : 'Stamp Card')
         const passUrl = window.location.href
 
-        const descToSend = customText.trim() ? customText.trim() : defaultDesc
+        let descToSend = customText.trim()
+        if (!descToSend) {
+            const tmpl = messageTemplates.find(t => t.id === selectedTemplate)
+            descToSend = tmpl && tmpl.id !== 'custom' ? tmpl.getText() : defaultDesc
+        }
+
         const hasUrl = descToSend.includes('http://') || descToSend.includes('https://')
 
         let message = ''
-        if (customText.trim()) {
+        if (customText.trim() || selectedTemplate !== 'default') {
             message = `${descToSend}${hasUrl ? '' : `\n\n👉 *View Card:* ${passUrl}`}`
         } else {
             message = `🎉 *${brand}* - ${title}\n\n📝 *Description:*\n${descToSend}\n\n👉 *View Card:* ${passUrl}`
@@ -560,23 +598,30 @@ export default function CardPreview() {
                             )}
                         </div>
 
-                        {/* DESCRIPTION / MESSAGE BOX */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {/* DESCRIPTION / MESSAGE BOX WITH DROPDOWN TEMPLATES */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                 <label
                                     style={{
                                         fontSize: '0.8rem',
                                         fontWeight: 700,
                                         color: '#334155',
-                                        margin: 0
+                                        margin: 0,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 6
                                     }}
                                 >
+                                    <i className="fas fa-comment-alt" style={{ color: '#0E88B8', fontSize: '0.85rem' }} />
                                     <span>WhatsApp Description / Message</span>
                                 </label>
-                                {customText && (
+                                {(customText || selectedTemplate !== 'default') && (
                                     <button
                                         type="button"
-                                        onClick={() => setCustomText('')}
+                                        onClick={() => {
+                                            setCustomText('')
+                                            setSelectedTemplate('default')
+                                        }}
                                         style={{
                                             background: 'transparent',
                                             border: 'none',
@@ -592,25 +637,65 @@ export default function CardPreview() {
                                 )}
                             </div>
 
-                            <textarea
-                                className="form-control"
-                                rows={3}
-                                placeholder={`Type custom text here or leave blank to send default description:\n"${defaultDesc}"`}
-                                value={customText}
-                                onChange={(e) => setCustomText(e.target.value)}
-                                style={{
-                                    width: '100%',
-                                    minHeight: 70,
-                                    fontSize: '0.84rem',
-                                    borderRadius: 10,
-                                    border: '1.5px solid #CBD5E1',
-                                    background: '#FFFFFF',
-                                    color: '#0F172A',
-                                    colorScheme: 'light',
-                                    padding: '8px 12px',
-                                    resize: 'vertical'
-                                }}
-                            />
+                            {/* Dropdown list for pre-set messages */}
+                            <div>
+                                <label style={{ fontSize: '0.74rem', fontWeight: 600, color: '#64748B', marginBottom: 3, display: 'block' }}>
+                                    Select Pre-set Template or Write Custom:
+                                </label>
+                                <select
+                                    className="form-control"
+                                    value={selectedTemplate}
+                                    onChange={(e) => handleTemplateChange(e.target.value)}
+                                    style={{
+                                        height: 38,
+                                        borderRadius: 10,
+                                        border: '1.5px solid #CBD5E1',
+                                        fontSize: '0.82rem',
+                                        fontWeight: 600,
+                                        color: '#1E293B',
+                                        background: '#FFFFFF',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    {messageTemplates.map(tmpl => (
+                                        <option key={tmpl.id} value={tmpl.id}>
+                                            {tmpl.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Text box for custom message */}
+                            <div>
+                                <label style={{ fontSize: '0.74rem', fontWeight: 600, color: '#64748B', marginBottom: 3, display: 'block' }}>
+                                    Message Text Box:
+                                </label>
+                                <textarea
+                                    className="form-control"
+                                    rows={3}
+                                    placeholder={`Type custom text here or select from dropdown above...\nDefault: "${defaultDesc}"`}
+                                    value={customText}
+                                    onChange={(e) => {
+                                        setCustomText(e.target.value)
+                                        setSelectedTemplate('custom')
+                                    }}
+                                    style={{
+                                        width: '100%',
+                                        minHeight: 70,
+                                        fontSize: '0.84rem',
+                                        borderRadius: 10,
+                                        border: '1.5px solid #CBD5E1',
+                                        background: '#FFFFFF',
+                                        color: '#0F172A',
+                                        colorScheme: 'light',
+                                        padding: '8px 12px',
+                                        resize: 'vertical'
+                                    }}
+                                />
+                                <small style={{ fontSize: '0.71rem', color: '#94A3B8', marginTop: 2, display: 'block' }}>
+                                    💡 If you don't select from the dropdown, your text above will be sent. Card link is attached automatically.
+                                </small>
+                            </div>
                         </div>
 
                         {/* SEND BUTTON */}

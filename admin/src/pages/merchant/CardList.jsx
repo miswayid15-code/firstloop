@@ -396,13 +396,13 @@ export default function CardList() {
     return (
         <div style={{ paddingBottom: 40 }}>
             {/* Header */}
-            <div className="flex-between mb-4" style={{ flexWrap: 'wrap', gap: 16 }}>
+            <div className="mb-4 flex-between" style={{ flexWrap: 'wrap', gap: 16 }}>
                 <div>
                     <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.4rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
                         Loyalty Card List & Builder Studio
                     </h2>
                     <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 4 }}>
-                        Create & manage Stamp Cards and Membership Tiers matching `view-fl-branch` UI system.
+                        Create & manage Stamp Cards Tiers matching `view-fl-branch` UI system.
                     </p>
                 </div>
 
@@ -417,7 +417,7 @@ export default function CardList() {
                         <span>+ Add Stamp Card</span>
                     </button>
 
-                    <button
+                    {/* <button
                         type="button"
                         className="btn"
                         onClick={handleOpenCreateMembership}
@@ -425,7 +425,7 @@ export default function CardList() {
                     >
                         <i className="fas fa-plus-circle" />
                         <span>+ Add Membership Card</span>
-                    </button>
+                    </button> */}
                 </div>
             </div>
 
@@ -452,7 +452,7 @@ export default function CardList() {
                     <span>Stamp Cards ({stampCards.length})</span>
                 </button>
 
-                <button
+                {/* <button
                     type="button"
                     onClick={() => setActiveTab('memberships')}
                     style={{
@@ -471,7 +471,7 @@ export default function CardList() {
                 >
                     <i className="fas fa-crown" />
                     <span>Membership Cards ({membershipCards.length})</span>
-                </button>
+                </button> */}
             </div>
 
             {/* ================= STAMP CARDS TAB ================= */}

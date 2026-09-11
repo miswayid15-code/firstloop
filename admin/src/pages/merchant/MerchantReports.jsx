@@ -139,7 +139,7 @@ export default function MerchantReports() {
                     totalSpendGenerated: totalSpend,
                     rewardsProcessed: repLogs.filter(l => String(l.reward_type) === '1').length,
                     customersServed: repLogs.length || stampsCollected,
-                    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(rep.name)}`,
+                    // avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(rep.name)}`,
 
                     status: 'Active',
                     badge: stampsCollected > 0 ? (idx === 0 ? 'Top Receptionist' : 'Verified Receptionist') : 'Front Desk Staff'
@@ -364,7 +364,7 @@ export default function MerchantReports() {
                     name: cus.name || `Customer #${cus.id}`,
                     email: cus.email || 'N/A',
                     phone: `+${cus.country_code || '91'} ${cus.phone || ''}`,
-                    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(cus.name || 'User')}`,
+                    // avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(cus.name || 'User')}`,
                     joinedDate: joined,
                     branchVisited: primaryBranch,
                     branchNames: branchNames,
@@ -1117,7 +1117,7 @@ export default function MerchantReports() {
                     <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3.5, background: 'linear-gradient(90deg, #10B981 0%, #34D399 100%)' }} />
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                         <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
-                            Member Gross Spend
+                            Member Gross Revenue
                         </span>
                         <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(16, 185, 129, 0.12)', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.05rem', boxShadow: '0 2px 8px rgba(16, 185, 129, 0.15)' }}>
                             <i className="fas fa-wallet" />
@@ -1387,7 +1387,7 @@ export default function MerchantReports() {
                                     <option value="all">All Outlets (Default)</option>
                                     <option value="large_stamp">Largest Stamp Card Volume (Stamps)</option>
                                     <option value="large_membership">Most Membership Cards (VIP Members)</option>
-                                    <option value="highest_spend">Highest Customer Spend / Revenue</option>
+                                    <option value="highest_spend">Highest Customer Revenue</option>
                                     <option value="highest_footfall">Highest Customer Footfall (Visits)</option>
                                 </select>
                             </div>
@@ -1446,7 +1446,7 @@ export default function MerchantReports() {
                         </div>
 
                         {/* Card Category Selector */}
-                        <div>
+                        {/* <div>
                             <label style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-secondary)', marginBottom: 5, display: 'flex', alignItems: 'center', gap: 5, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                                 <i className="fas fa-id-card" style={{ color: '#8B5CF6' }} />
                                 Card Category
@@ -1464,7 +1464,7 @@ export default function MerchantReports() {
                                 <option value="stamp">Stamp Cards Only</option>
                                 <option value="membership">Membership Tiers Only</option>
                             </select>
-                        </div>
+                        </div> */}
 
                         {/* Rows per page for logs table */}
                         {activeTab === 'logs' && (
@@ -1718,7 +1718,7 @@ export default function MerchantReports() {
 
                                                 <div style={{ textAlign: 'center' }}>
                                                     <small style={{ color: 'var(--text-muted)', fontSize: '0.72rem', display: 'block', fontWeight: 800, letterSpacing: '0.4px' }}>
-                                                        TOTAL SPEND
+                                                        TOTAL Revenue
                                                     </small>
                                                     <strong style={{ fontSize: '1.3rem', color: '#059669', fontWeight: 900 }}>
                                                         {(branch.totalSpend || 0).toLocaleString()}
@@ -1789,7 +1789,7 @@ export default function MerchantReports() {
                                     Comprehensive Outlet Performance Breakdown
                                 </h3>
                                 <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '3px 0 0 0' }}>
-                                    Comparative analysis of stamps collected, VIP cards, customer spend & visits per branch
+                                    Comparative analysis of stamps collected, VIP cards, customer Revenue & visits per branch
                                 </p>
                             </div>
 
@@ -2353,7 +2353,7 @@ export default function MerchantReports() {
                                     </div>
                                 </div>
 
-                                <div className="fl-report-kpi-card">
+                                {/* <div className="fl-report-kpi-card">
                                     <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3.5, background: 'linear-gradient(90deg, #F59E0B 0%, #FBBF24 100%)' }} />
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                                         <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>VIP Member Tiers</span>
@@ -2368,7 +2368,7 @@ export default function MerchantReports() {
                                         <i className="fas fa-users" />
                                         {membershipCards.reduce((s, c) => s + (c.activeMembers || 0), 0)} Enrolled VIP Customers
                                     </div>
-                                </div>
+                                </div> */}
 
                                 <div className="fl-report-kpi-card">
                                     <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3.5, background: 'linear-gradient(90deg, #0E88B8 0%, #38BDF8 100%)' }} />
@@ -2478,7 +2478,7 @@ export default function MerchantReports() {
                     </div>
 
                     {/* Membership Tiers Section */}
-                    <div>
+                    {/* <div>
                         <div className="flex-between mb-3">
                             <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
                                 Membership VIP Tiers Performance
@@ -2508,7 +2508,7 @@ export default function MerchantReports() {
                                                 position: 'relative'
                                             }}
                                         >
-                                            {/* Top Accent Stripe */}
+                                        
                                             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: isGold ? 'linear-gradient(90deg, #F59E0B 0%, #FBBF24 100%)' : 'linear-gradient(90deg, #0E88B8 0%, #38BDF8 100%)' }} />
 
                                             <div className="flex-between mb-2" style={{ marginTop: 2 }}>
@@ -2553,7 +2553,7 @@ export default function MerchantReports() {
                                 })
                             )}
                         </div>
-                    </div>
+                    </div> */}
                 </div>
             )}
 
@@ -2668,7 +2668,7 @@ export default function MerchantReports() {
                                         <th>Contact</th>
                                         <th>Primary Hub</th>
                                         <th>Stamp Passes</th>
-                                        <th>Membership Tier</th>
+                                        {/* <th>Membership Tier</th> */}
                                         <th>Total Visits</th>
                                         <th>Spend</th>
                                         <th>Status</th>
@@ -2701,11 +2701,11 @@ export default function MerchantReports() {
                                             <tr key={cus.id} className="fl-table-row">
                                                 <td style={{ padding: '14px 20px' }}>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                        <img
+                                                        {/* <img
                                                             src={cus.avatar}
                                                             alt={cus.name}
                                                             style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--firstloop-primary)' }}
-                                                        />
+                                                        /> */}
                                                         <div>
                                                             <span style={{ fontWeight: 800, color: 'var(--text-primary)', display: 'block' }}>{cus.name}</span>
                                                             <small style={{ color: 'var(--text-muted)', fontSize: '0.74rem' }}>Joined {cus.joinedDate}</small>
@@ -2846,7 +2846,7 @@ export default function MerchantReports() {
                                                         <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>No Stamp Pass</span>
                                                     )}
                                                 </td>
-                                                <td style={{ padding: '14px 20px' }}>
+                                                {/* <td style={{ padding: '14px 20px' }}>
                                                     {cus.hasMembership ? (
                                                         <span className="badge" style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#D97706', fontWeight: 800 }}>
                                                             {cus.membershipTier}
@@ -2856,7 +2856,7 @@ export default function MerchantReports() {
                                                             No Tier
                                                         </span>
                                                     )}
-                                                </td>
+                                                </td> */}
                                                 <td style={{ padding: '14px 20px', fontWeight: 800 }}>
                                                     {cus.totalVisits} {cus.totalVisits === 1 ? 'Visit' : 'Visits'}
                                                 </td>
@@ -3027,7 +3027,7 @@ export default function MerchantReports() {
                                         </div>
 
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 }}>
-                                            <img
+                                            {/* <img
                                                 src={stf.avatar}
                                                 alt={stf.name}
                                                 style={{
@@ -3037,7 +3037,7 @@ export default function MerchantReports() {
                                                     objectFit: 'cover',
                                                     border: `3px solid ${isFirst ? '#F59E0B' : 'var(--firstloop-primary)'}`
                                                 }}
-                                            />
+                                            /> */}
                                             <div>
                                                 <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)' }}>
                                                     {stf.name}
@@ -3176,11 +3176,11 @@ export default function MerchantReports() {
                                                                 #{rank}
                                                             </span>
 
-                                                            <img
+                                                            {/* <img
                                                                 src={stf.avatar}
                                                                 alt={stf.name}
                                                                 style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--firstloop-primary)' }}
-                                                            />
+                                                            /> */}
 
                                                             <div>
                                                                 <strong style={{ fontSize: '0.92rem', color: 'var(--text-primary)', display: 'block' }}>{stf.name}</strong>
@@ -3302,11 +3302,11 @@ export default function MerchantReports() {
                             }}
                         >
                             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                                <img
+                                {/* <img
                                     src={selectedStaffLog.avatar}
                                     alt={selectedStaffLog.name}
                                     style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', border: '2.5px solid #FFFFFF' }}
-                                />
+                                /> */}
                                 <div>
                                     <h4 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800 }}>
                                         {selectedStaffLog.name} — Staff Stamps & Audit Log
@@ -3651,11 +3651,11 @@ export default function MerchantReports() {
                             }}
                         >
                             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                <img
+                                {/* <img
                                     src={selectedCustomerCards.avatar}
                                     alt={selectedCustomerCards.name}
                                     style={{ width: 44, height: 44, borderRadius: '50%', border: '2px solid rgba(255, 255, 255, 0.4)', background: '#fff' }}
-                                />
+                                /> */}
                                 <div>
                                     <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#FFFFFF' }}>
                                         {selectedCustomerCards.name}

@@ -1609,8 +1609,11 @@ exports.get_rep_cus = async (req, res) => {
 
             const cardData = card.toJSON();
 
-            // Add branch name
-            cardData.branch_name = branchMap[cardData.branch_id] || null;
+            cardData.branch_name =
+                branchMap[cardData.branch_id] || null;
+
+            cardData.is_branch =
+                Number(cardData.branch_id) === branchId ? 1 : 0;
 
             if (!cardsByCustomer[card.customer_id]) {
                 cardsByCustomer[card.customer_id] = [];
