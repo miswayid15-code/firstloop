@@ -1351,6 +1351,325 @@ exports.get_branch_cus = async (req, res) => {
         });
     }
 };
+exports.get_rep_cus = async (req, res) => {
+    try {
+
+        // ---------------------------------------
+        // 1. GET RECEPTIONIST ID
+        // ---------------------------------------
+
+        const rep_id = req.user?.id;
+
+        if (!rep_id) {
+            return res.status(400).json({
+                status: 0,
+                message: "Issues with Authorization"
+            });
+        }
+
+        // ---------------------------------------
+        // 2. GET BRANCH ID
+        // ---------------------------------------
+
+        const { br_id } = req.body;
+
+        if (!br_id) {
+            return res.status(400).json({
+                status: 0,
+                message: "Branch ID is required"
+            });
+        }
+
+        const branchId = Number(br_id);
+
+        if (!Number.isInteger(branchId) || branchId <= 0) {
+            return res.status(400).json({
+                status: 0,
+                message: "Invalid Branch ID"
+            });
+        }
+
+        // ---------------------------------------
+        // 3. GET RECEPTIONIST
+        // ---------------------------------------
+
+        const receptionist = await Receptionist.findByPk(rep_id, {
+            attributes: [
+                "merchant_id"
+            ]
+        });
+
+        if (!receptionist) {
+            return res.status(404).json({
+                status: 0,
+                message: "Receptionist not found"
+            });
+        }
+
+        const mer_id = receptionist.merchant_id;
+
+        // ---------------------------------------
+        // 4. GET STAMP CARDS
+        // ---------------------------------------
+
+        const stamp_cards = await Stampcard.findAll({
+            where: {
+                merchant_id: mer_id
+            },
+
+            attributes: [
+                "id",
+                "branch_ids"
+            ]
+        });
+
+        // ---------------------------------------
+        // 5. GET MATCHING STAMP CARD IDS
+        // ---------------------------------------
+
+        const matchingStampCardIds = [];
+
+        stamp_cards.forEach(stampCard => {
+
+            let branch_ids = stampCard.branch_ids;
+
+            if (typeof branch_ids === "string") {
+
+                branch_ids = branch_ids
+                    .replace(/[{}]/g, "")
+                    .split(",")
+                    .map(id => Number(id.trim()))
+                    .filter(id => Number.isInteger(id));
+
+            } else if (Array.isArray(branch_ids)) {
+
+                branch_ids = branch_ids
+                    .map(id => Number(id))
+                    .filter(id => Number.isInteger(id));
+
+            } else {
+                branch_ids = [];
+            }
+
+            if (branch_ids.includes(branchId)) {
+                matchingStampCardIds.push(stampCard.id);
+            }
+        });
+
+        // ---------------------------------------
+        // 6. GET CUSTOMER CARDS
+        // ---------------------------------------
+
+        const customerCardConditions = [
+            {
+                branch_id: branchId
+            }
+        ];
+
+        if (matchingStampCardIds.length > 0) {
+
+            customerCardConditions.push({
+                merchant_card_id: {
+                    [Op.in]: matchingStampCardIds
+                }
+            });
+        }
+
+        const customer_cards = await CustomerCard.findAll({
+
+            where: {
+                [Op.or]: customerCardConditions
+            },
+
+            attributes: [
+                "id",
+                "customer_id",
+                "card_number",
+                "card_type",
+                "title",
+                "current_stamp",
+                "number_of_stamps",
+                "is_completed",
+                "merchant_card_id",
+                "branch_id"
+            ],
+
+            order: [
+                ["id", "DESC"]
+            ]
+        });
+
+        // ---------------------------------------
+        // 7. GET UNIQUE CUSTOMER IDS
+        // ---------------------------------------
+
+        const customerIds = [
+            ...new Set(
+                customer_cards
+                    .map(card => card.customer_id)
+                    .filter(id => id)
+            )
+        ];
+
+        console.log("Customer IDs:", customerIds);
+
+        // ---------------------------------------
+        // 8. NO CUSTOMERS
+        // ---------------------------------------
+
+        if (customerIds.length === 0) {
+            return res.status(200).json({
+                status: 1,
+                message: "No customers found for this branch",
+                data: []
+            });
+        }
+
+        // ---------------------------------------
+        // 9. GET ACTIVE CUSTOMERS
+        // ---------------------------------------
+
+        const customers = await Customer.findAll({
+
+            where: {
+                id: {
+                    [Op.in]: customerIds
+                },
+
+                status: 1,
+
+                del_status: 0
+            },
+
+            attributes: [
+                "id",
+                "name",
+                "email",
+                "phone",
+                "country_code",
+                "profile_image",
+                "status",
+                "del_status"
+            ],
+
+            order: [
+                ["id", "DESC"]
+            ]
+        });
+
+        // ---------------------------------------
+        // 10. GET UNIQUE BRANCH IDS
+        // ---------------------------------------
+
+        const branchIds = [
+            ...new Set(
+                customer_cards
+                    .map(card => card.branch_id)
+                    .filter(id => id)
+                    .map(id => Number(id))
+            )
+        ];
+
+        // ---------------------------------------
+        // 11. GET BRANCH NAMES
+        // ---------------------------------------
+
+        const branches = await Branch.findAll({
+            where: {
+                id: {
+                    [Op.in]: branchIds
+                }
+            },
+
+            attributes: [
+                "id",
+                "name"
+            ]
+        });
+
+        // ---------------------------------------
+        // 12. CREATE BRANCH NAME MAP
+        // ---------------------------------------
+
+        const branchMap = {};
+
+        branches.forEach(branch => {
+
+            branchMap[branch.id] = branch.name;
+
+        });
+
+        // ---------------------------------------
+        // 13. GROUP CARDS BY CUSTOMER
+        // ---------------------------------------
+
+        const cardsByCustomer = {};
+
+        customer_cards.forEach(card => {
+
+            const cardData = card.toJSON();
+
+            // Add branch name
+            cardData.branch_name = branchMap[cardData.branch_id] || null;
+
+            if (!cardsByCustomer[card.customer_id]) {
+                cardsByCustomer[card.customer_id] = [];
+            }
+
+            cardsByCustomer[card.customer_id].push(cardData);
+        });
+
+        // ---------------------------------------
+        // 14. FORMAT CUSTOMER DATA
+        // ---------------------------------------
+
+        const customerData = customers.map(customer => {
+
+            const data = customer.toJSON();
+
+            // Profile image
+            data.profile_image = data.profile_image
+                ? baseUrl + "/" + data.profile_image
+                : null;
+
+            // Customer cards
+            data.cards = cardsByCustomer[data.id] || [];
+
+            return data;
+        });
+
+        // ---------------------------------------
+        // 15. RESPONSE
+        // ---------------------------------------
+
+        return res.status(200).json({
+
+            status: 1,
+
+            message: "Customers fetched successfully",
+
+            data: customerData
+
+        });
+
+    } catch (err) {
+
+        console.error(
+            "get_rep_cus Error:",
+            err
+        );
+
+        return res.status(500).json({
+
+            status: 0,
+
+            message: "Something went wrong",
+
+            error: err.message
+
+        });
+    }
+};
 
 exports.get_merchant_customers = async (req, res) => {
     try {
@@ -1574,7 +1893,7 @@ exports.stamp_paid = async (req, res) => {
         const userType = req.merchant
             ? 'merchant'
             : 'receptionist';
-        const user_id =user.id;
+        const user_id = user.id;
         const customerId = Number(cus_id);
         const cardId = Number(card_id);
         const paidAmount = Number(amount);
@@ -1755,8 +2074,8 @@ exports.stamp_paid = async (req, res) => {
                 payment_type: String(payment_type),
                 payment_status: 1,
                 paid_date: new Date(),
-                role:userType,
-                role_id:user_id
+                role: userType,
+                role_id: user_id
             },
             {
                 where: {

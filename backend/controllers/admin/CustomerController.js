@@ -25,9 +25,7 @@ const { otpTemplate } = require('../../helpers/mailTemplate');
 const { Op } = require('sequelize');
 const axios = require("axios");
 const moment = require('moment');
-const {
-    getDistanceDuration
-} = require('../../helpers/distanceHelper');
+
 
 
 exports.list = async (req, res) => {

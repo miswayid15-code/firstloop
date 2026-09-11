@@ -30,9 +30,12 @@ const { otpTemplate } = require('../../helpers/mailTemplate');
 const { Op } = require('sequelize');
 const axios = require("axios");
 const moment = require('moment');
+// const {
+//     getDistanceDuration
+// } = require('../../helpers/distanceHelper');
 const {
-    getDistanceDuration
-} = require('../../helpers/distanceHelper');
+    getDistance
+} = require('../../helpers/getFreeDistance');
 const { messaging } = require('firebase-admin');
 exports.register = async (req, res) => {
 
@@ -1237,6 +1240,37 @@ exports.home = async (req, res) => {
                 item.distance_value = null;
 
 
+                // if (
+                //     lat &&
+                //     lon &&
+                //     item.lat &&
+                //     item.lon &&
+                //     !isNaN(Number(lat)) &&
+                //     !isNaN(Number(lon)) &&
+                //     !isNaN(Number(item.lat)) &&
+                //     !isNaN(Number(item.lon))
+                // ) {
+
+                //     const distanceData =
+                //         await getDistanceDuration(
+
+                //             lat,
+                //             lon,
+
+                //             item.lat,
+                //             item.lon,
+
+                //             googleApiKey
+
+                //         );
+
+                //     item.distance =
+                //         distanceData.distance;
+
+                //     item.duration =
+                //         distanceData.duration;
+                //     item.distance_value = distanceData.distance_value;
+                // }
                 if (
                     lat &&
                     lon &&
@@ -1248,25 +1282,16 @@ exports.home = async (req, res) => {
                     !isNaN(Number(item.lon))
                 ) {
 
-                    const distanceData =
-                        await getDistanceDuration(
+                    const distanceData = getDistance(
+                        Number(lat),
+                        Number(lon),
+                        Number(item.lat),
+                        Number(item.lon)
+                    );
 
-                            lat,
-                            lon,
-
-                            item.lat,
-                            item.lon,
-
-                            googleApiKey
-
-                        );
-
-                    item.distance =
-                        distanceData.distance;
-
-                    item.duration =
-                        distanceData.duration;
+                    item.distance = distanceData.distance;
                     item.distance_value = distanceData.distance_value;
+                    item.duration = null;
                 }
                 delete item.Merchant;
                 delete item.city;
@@ -1632,38 +1657,60 @@ exports.branch_details = async (req, res) => {
         item.duration = null;
 
 
+        // if (
+        //     lat &&
+        //     lon &&
+        //     item.lat &&
+        //     item.lon &&
+        //     !isNaN(Number(lat)) &&
+        //     !isNaN(Number(lon)) &&
+        //     !isNaN(Number(item.lat)) &&
+        //     !isNaN(Number(item.lon))
+        // ) {
+
+        //     const distanceData =
+        //         await getDistanceDuration(
+
+        //             lat,
+        //             lon,
+
+        //             item.lat,
+        //             item.lon,
+
+        //             googleApiKey
+
+        //         );
+
+        //     item.distance =
+        //         distanceData.distance;
+
+        //     item.duration =
+        //         distanceData.duration;
+
+        // }
+
         if (
-            lat &&
-            lon &&
-            item.lat &&
-            item.lon &&
-            !isNaN(Number(lat)) &&
-            !isNaN(Number(lon)) &&
-            !isNaN(Number(item.lat)) &&
-            !isNaN(Number(item.lon))
-        ) {
+    lat &&
+    lon &&
+    item.lat &&
+    item.lon &&
+    !isNaN(Number(lat)) &&
+    !isNaN(Number(lon)) &&
+    !isNaN(Number(item.lat)) &&
+    !isNaN(Number(item.lon))
+) {
 
-            const distanceData =
-                await getDistanceDuration(
+    const distanceData = getDistance(
+        Number(lat),
+        Number(lon),
+        Number(item.lat),
+        Number(item.lon)
+    );
 
-                    lat,
-                    lon,
-
-                    item.lat,
-                    item.lon,
-
-                    googleApiKey
-
-                );
-
-            item.distance =
-                distanceData.distance;
-
-            item.duration =
-                distanceData.duration;
-
-        }
-
+    item.distance = distanceData.distance;
+    item.duration = distanceData.duration;
+    item.distance_value = distanceData.distance_value;
+}
 
         const wishlist = await Wishlist.findOne({
             where: {

@@ -9,7 +9,7 @@ const upload = require('../../middleware/upload');
 
 const auth = require('../../middleware/auth');
 const checkCustomer = require('../../middleware/checkCustomer');
-const checkMerchantOrReceptionist = require('../../middleware/checkMerchantOrReceptionist'); 
+const checkMerchantOrReceptionist = require('../../middleware/checkMerchantOrReceptionist');
 router.post(
     '/check-customer',
     auth(),
@@ -31,13 +31,18 @@ router.post(
     controller.get_branch_cus
 );
 router.post(
+    '/fetch-rep-customers',
+    auth(),
+    controller.get_rep_cus
+);
+router.post(
     '/fetch-merchant-customers',
     auth(),
     controller.get_merchant_customers
 );
 router.post(
     '/stamp-paid',
-    auth(),checkMerchantOrReceptionist,
+    auth(), checkMerchantOrReceptionist,
     controller.stamp_paid
 );
 router.post(
