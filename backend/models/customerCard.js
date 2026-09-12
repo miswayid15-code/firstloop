@@ -26,6 +26,7 @@ module.exports = (sequelize, DataTypes) => {
                 allowNull: false,
             },
 
+
             // 1 = Stamp Card
             // 2 = Membership Card
             card_type: {
@@ -69,6 +70,10 @@ module.exports = (sequelize, DataTypes) => {
             },
 
             border_color: {
+                type: DataTypes.STRING(30),
+                allowNull: true,
+            },
+            qr_color: {
                 type: DataTypes.STRING(30),
                 allowNull: true,
             },

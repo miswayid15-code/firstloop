@@ -1,7 +1,23 @@
 import React from 'react'
+import { QRCodeCanvas } from 'qrcode.react'
 import flLogo from '../assets/img/firstloop-favicon.png'
 import qrImg from '../assets/img/qr-img.png'
 import { getCardStyle, formatImageUrl } from '../services/cardService.js'
+import CardIcon from './CardIcon.jsx'
+
+const RealQRCode = ({ size = 80, color = '#000000' }) => (
+    <QRCodeCanvas
+        value="https://firstloop.co.in/"
+        size={size}
+        fgColor={color}
+        bgColor="#FFFFFF"
+        style={{
+            width: size,
+            height: size,
+            flexShrink: 0
+        }}
+    />
+);
 
 export default function StampCardItem({
     card,
@@ -76,29 +92,58 @@ export default function StampCardItem({
                             {/* Stamp Circles Grid */}
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 6, maxWidth: 220 }}>
                                 {Array.from({ length: totalStamps }).map((_, i) => {
-                                    const rewardItem = card.levelRewards ? card.levelRewards[i] : null
-                                    let iconMarkup = i + 1
+                                    const stampNum = i + 1
+                                    const levels = card.CustomerStampLevels || card.levelRewards || card.stamp_levels || []
+                                    const rewardItem = Array.isArray(levels)
+                                        ? (levels.find(l => Number(l.stamp_number) === stampNum) || levels[i])
+                                        : null
 
-                                    if (rewardItem) {
-                                        if (rewardItem.type === 'Free') {
-                                            iconMarkup = <i className="fas fa-gift" style={{ fontSize: '0.8rem' }} />
-                                        } else if (rewardItem.type === 'Discount') {
-                                            iconMarkup = (
-                                                <span style={{ fontSize: '0.65rem', fontWeight: 800 }}>
-                                                    {rewardItem.discount ?? rewardItem.discountVal ?? 0}%
-                                                </span>
-                                            )
-                                        } else if (rewardItem.type === 'Paid') {
-                                            iconMarkup = <i className={`fas ${rewardItem.icon || 'fa-tag'}`} style={{ fontSize: '0.8rem' }} />
-                                        }
+                                    const hasCustomer = Boolean(
+                                        card.card_number ||
+                                        card.customer_id ||
+                                        card.cus_id ||
+                                        card.customer_name ||
+                                        card.cardholderName ||
+                                        card.customer ||
+                                        card.qr_token ||
+                                        card.customer_card_id
+                                    )
+
+                                    const isStamped = Boolean(
+                                        (rewardItem && (Number(rewardItem.status) === 1 || rewardItem.status === true || rewardItem.status === '1')) ||
+                                        (hasCustomer && Number(card.current_stamp ?? card.current_stamps ?? card.collected ?? 0) >= stampNum)
+                                    )
+
+                                    const rType = rewardItem
+                                        ? (rewardItem.type || (rewardItem.reward_type === '2' || Number(rewardItem.reward_type) === 2 ? 'Discount' : (rewardItem.reward_type === '3' || Number(rewardItem.reward_type) === 3 ? 'Paid' : 'Free')))
+                                        : null
+
+                                    let iconMarkup = null
+                                    if (rewardItem && rType === 'Free') {
+                                        iconMarkup = <CardIcon name={rewardItem.icon || 'fa-gift'} style={{ fontSize: '0.82rem' }} />
+                                    } else if (rewardItem && rType === 'Discount') {
+                                        const disc = Number(rewardItem.discount ?? rewardItem.discountVal ?? (parseInt(rewardItem.reward_text) || 0))
+                                        iconMarkup = (
+                                            <span style={{ fontSize: '0.62rem', fontWeight: 800, lineHeight: 1 }}>
+                                                {disc}%
+                                            </span>
+                                        )
+                                    } else if (rewardItem && rType === 'Paid') {
+                                        iconMarkup = <CardIcon name={rewardItem.icon || 'fa-tag'} style={{ fontSize: '0.82rem' }} />
+                                    } else {
+                                        iconMarkup = (
+                                            <span style={{ fontSize: '0.82rem', fontWeight: 800, lineHeight: 1 }}>
+                                                {i + 1}
+                                            </span>
+                                        )
                                     }
 
-                                    const hasFreeStamp = rewardItem && (rewardItem.type === 'Discount' || rewardItem.type === 'Paid') && (Number(rewardItem.free_stamp) === 1 || rewardItem.free_stamp === true || rewardItem.free_stamp === '1')
+                                    const hasFreeStamp = rewardItem && (rType === 'Discount' || rType === 'Paid') && (Number(rewardItem.free_stamp) === 1 || rewardItem.free_stamp === true || rewardItem.free_stamp === '1')
 
                                     return (
                                         <div
                                             key={i}
-                                            title={hasFreeStamp ? `${rewardItem.reward || (rewardItem.type === 'Discount' ? `${rewardItem.discount ?? rewardItem.discountVal}% Off` : 'Paid Perk')} Free: ${rewardItem.free_text || 'Free Item'}` : undefined}
+                                            title={isStamped ? `Stamp #${stampNum} - Completed` : (hasFreeStamp ? `${rewardItem.reward || (rType === 'Discount' ? `${rewardItem.discount ?? rewardItem.discountVal}% Off` : 'Paid Perk')} Free: ${rewardItem.free_text || 'Free Item'}` : undefined)}
                                             style={{
                                                 width: 36,
                                                 height: 36,
@@ -115,7 +160,20 @@ export default function StampCardItem({
                                                 position: 'relative'
                                             }}
                                         >
-                                            {iconMarkup}
+                                            {isStamped ? (
+                                                <CardIcon
+                                                    name="fa-check"
+                                                    style={{
+                                                        fontSize: '0.88rem',
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        lineHeight: 1
+                                                    }}
+                                                />
+                                            ) : (
+                                                iconMarkup
+                                            )}
                                             {hasFreeStamp && (
                                                 <span
                                                     title={rewardItem.free_text ? `Free Perk: ${rewardItem.free_text}` : 'Free Perk Included'}
@@ -139,7 +197,7 @@ export default function StampCardItem({
                                                         lineHeight: 1
                                                     }}
                                                 >
-                                                    <i className="fas fa-gift" style={{ lineHeight: 1, fontSize: '0.45rem' }} />
+                                                    <CardIcon name="fa-gift" style={{ lineHeight: 1, fontSize: '0.45rem' }} />
                                                 </span>
                                             )}
                                         </div>
@@ -150,11 +208,16 @@ export default function StampCardItem({
 
                         {/* Right Side: QR Code */}
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                            <img
-                                src={qrImg}
-                                alt="QR Code"
-                                style={{ width: 86, height: 86, objectFit: 'contain', flexShrink: 0 }}
-                            />
+                            <div style={{
+                                backgroundColor: '#FFFFFF',
+                                padding: 4,
+                                borderRadius: 8,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}>
+                                <RealQRCode size={78} color={(card.qr_color && card.qr_color !== '#FFFFFF') ? card.qr_color : (card.qrColor && card.qrColor !== '#FFFFFF' ? card.qrColor : '#000000')} />
+                            </div>
                             <small style={{ fontSize: '0.6rem', fontWeight: 700, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.5px', opacity: 0.9 }}>
                                 SCAN TO STAMP
                             </small>

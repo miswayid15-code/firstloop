@@ -14,7 +14,8 @@ import {
     captureCardCanvas,
     waitForCardAssets,
     cleanPhoneForWhatsApp,
-    fetchCustomerStampLevelsApi
+    fetchCustomerStampLevelsApi,
+    formatExpiryDate
 } from '../services/cardService.js'
 import CardIcon from './CardIcon.jsx'
 
@@ -228,16 +229,6 @@ export default function MembershipCardPreviewModal({
     const brandName = activeCard.brandName || activeCard.brand_name || fallbackBrandName
     const brandLogo = activeCard.brandLogo || activeCard.brand_image ? formatImageUrl(activeCard.brandLogo || activeCard.brand_image) : logo
     const cardTitle = activeCard.name || activeCard.title || 'Membership Card'
-    const formatExpiryDate = (val) => {
-        if (!val) return null
-        try {
-            const d = new Date(val)
-            if (isNaN(d.getTime())) return String(val)
-            return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-        } catch {
-            return String(val)
-        }
-    }
 
     const cardholder = activeCard.cardholderName || activeCard.cardholder_name || activeCard.customer_name || (hasCustomer ? 'Member Pass' : '')
     const cardNo = activeCard.card_number || null

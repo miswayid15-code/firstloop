@@ -1636,7 +1636,7 @@ export default function MerchantReports() {
             </div>
 
             {/* FILTER TOOLBAR */}
-            <div className="card mb-4" style={{ padding: '18px 24px', borderRadius: 20, border: '1px solid #E2E8F0', background: '#FFFFFF', boxShadow: '0 4px 18px rgba(0,0,0,0.02)' }}>
+            <div className="mb-4 card" style={{ padding: '18px 24px', borderRadius: 20, border: '1px solid #E2E8F0', background: '#FFFFFF', boxShadow: '0 4px 18px rgba(0,0,0,0.02)' }}>
                 <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
                         {/* Branch Outlet Selector */}
@@ -1949,7 +1949,7 @@ export default function MerchantReports() {
                                         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3.5, background: 'linear-gradient(90deg, #0E88B8 0%, #0284C7 100%)' }} />
                                         <div>
                                             {/* Card Top */}
-                                            <div className="flex-between mb-3" style={{ alignItems: 'flex-start' }}>
+                                            <div className="mb-3 flex-between" style={{ alignItems: 'flex-start' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                                                     <div
                                                         style={{
@@ -1997,7 +1997,7 @@ export default function MerchantReports() {
                                             </div>
 
                                             {/* Multi-Metric Performance Grid */}
-                                            <div className="fl-inner-metric-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                                            <div className="fl-inner-metric-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
                                                 <div style={{ textAlign: 'center' }}>
                                                     <small style={{ color: 'var(--text-muted)', fontSize: '0.72rem', display: 'block', fontWeight: 800, letterSpacing: '0.4px' }}>
                                                         STAMPS ISSUED
@@ -2007,14 +2007,14 @@ export default function MerchantReports() {
                                                     </strong>
                                                 </div>
 
-                                                <div style={{ textAlign: 'center', borderLeft: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0' }}>
+                                                {/* <div style={{ textAlign: 'center', borderLeft: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0' }}>
                                                     <small style={{ color: 'var(--text-muted)', fontSize: '0.72rem', display: 'block', fontWeight: 800, letterSpacing: '0.4px' }}>
                                                         VIP MEMBERS
                                                     </small>
                                                     <strong style={{ fontSize: '1.3rem', color: '#D97706', fontWeight: 900 }}>
                                                         {branch.membershipCount || 0}
                                                     </strong>
-                                                </div>
+                                                </div> */}
 
                                                 <div style={{ textAlign: 'center' }}>
                                                     <small style={{ color: 'var(--text-muted)', fontSize: '0.72rem', display: 'block', fontWeight: 800, letterSpacing: '0.4px' }}>
@@ -2104,7 +2104,7 @@ export default function MerchantReports() {
                         </div>
 
                         <div className="table-responsive">
-                            <table className="table table-hover align-middle mb-0" style={{ fontSize: '0.86rem' }}>
+                            <table className="table mb-0 align-middle table-hover" style={{ fontSize: '0.86rem' }}>
                                 <thead className="fl-table-header">
                                     <tr>
                                         <th style={{ padding: '14px 20px', fontSize: '0.74rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Branch Location</th>
@@ -2188,7 +2188,7 @@ export default function MerchantReports() {
                         {/* Stamp Pass Utilization Breakdown */}
                         <div className="fl-luxury-card" style={{ padding: 24 }}>
                             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3.5, background: 'linear-gradient(90deg, #0E88B8 0%, #38BDF8 100%)' }} />
-                            <div className="flex-between mb-3">
+                            <div className="mb-3 flex-between">
                                 <div>
                                     {loading ? (
                                         <>
@@ -2275,7 +2275,7 @@ export default function MerchantReports() {
                         {/* Membership Tier Distribution */}
                         {/* <div className="fl-luxury-card" style={{ padding: 24 }}>
                             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3.5, background: 'linear-gradient(90deg, #F59E0B 0%, #FBBF24 100%)' }} />
-                            <div className="flex-between mb-3">
+                            <div className="mb-3 flex-between">
                                 <div>
                                     {loading ? (
                                         <>
@@ -2383,7 +2383,7 @@ export default function MerchantReports() {
                         </div>
 
                         <div className="table-responsive">
-                            <table className="table table-hover align-middle mb-0" style={{ fontSize: '0.86rem' }}>
+                            <table className="table mb-0 align-middle table-hover" style={{ fontSize: '0.86rem' }}>
                                 <thead className="fl-table-header">
                                     <tr>
                                         <th style={{ padding: '14px 20px', fontSize: '0.74rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Timestamp & ID</th>
@@ -2461,7 +2461,7 @@ export default function MerchantReports() {
                                                     </td>
                                                     <td style={{ padding: '14px 20px' }}>
                                                         <span
-                                                            className="badge mb-1"
+                                                            className="mb-1 badge"
                                                             style={{
                                                                 background: isStamp ? 'rgba(239, 0, 3, 0.1)' : 'rgba(245, 158, 11, 0.1)',
                                                                 color: isStamp ? '#EF0003' : '#D97706',
@@ -2712,7 +2712,7 @@ export default function MerchantReports() {
 
                     {/* Stamp Cards Section */}
                     <div>
-                        <div className="flex-between mb-3">
+                        <div className="mb-3 flex-between">
                             <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
                                 Stamp Loyalty Cards Performance
                             </h3>
@@ -2749,7 +2749,7 @@ export default function MerchantReports() {
                                             {/* Red/Rose Accent Stripe for Stamp Cards */}
                                             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: 'linear-gradient(90deg, #EF0003 0%, #F87171 100%)' }} />
 
-                                            <div className="flex-between mb-2" style={{ marginTop: 2 }}>
+                                            <div className="mb-2 flex-between" style={{ marginTop: 2 }}>
                                                 <span
                                                     className="badge"
                                                     style={{
@@ -2799,7 +2799,7 @@ export default function MerchantReports() {
 
                     {/* Membership Tiers Section */}
                     {/* <div>
-                        <div className="flex-between mb-3">
+                        <div className="mb-3 flex-between">
                             <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
                                 Membership VIP Tiers Performance
                             </h3>
@@ -2831,7 +2831,7 @@ export default function MerchantReports() {
                                         
                                             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: isGold ? 'linear-gradient(90deg, #F59E0B 0%, #FBBF24 100%)' : 'linear-gradient(90deg, #0E88B8 0%, #38BDF8 100%)' }} />
 
-                                            <div className="flex-between mb-2" style={{ marginTop: 2 }}>
+                                            <div className="mb-2 flex-between" style={{ marginTop: 2 }}>
                                                 <span
                                                     className="badge"
                                                     style={{
@@ -2981,7 +2981,7 @@ export default function MerchantReports() {
                         </div>
 
                         <div className="table-responsive">
-                            <table className="table table-hover align-middle mb-0" style={{ fontSize: '0.86rem' }}>
+                            <table className="table mb-0 align-middle table-hover" style={{ fontSize: '0.86rem' }}>
                                 <thead className="fl-table-header">
                                     <tr>
                                         <th>Customer</th>
@@ -3327,7 +3327,7 @@ export default function MerchantReports() {
                                         {/* Rank Stripe */}
                                         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: stripeBg }} />
 
-                                        <div className="flex-between mb-3" style={{ marginTop: 2 }}>
+                                        <div className="mb-3 flex-between" style={{ marginTop: 2 }}>
                                             <span
                                                 style={{
                                                     background: medalBg,
@@ -3436,7 +3436,7 @@ export default function MerchantReports() {
                         </div>
 
                         <div className="table-responsive">
-                            <table className="table table-hover align-middle mb-0" style={{ fontSize: '0.86rem' }}>
+                            <table className="table mb-0 align-middle table-hover" style={{ fontSize: '0.86rem' }}>
                                 <thead className="fl-table-header">
                                     <tr>
                                         <th>Rank & Staff</th>
@@ -3706,7 +3706,7 @@ export default function MerchantReports() {
 
                         {/* Activity List Body */}
                         <div style={{ padding: '20px 26px', overflowY: 'auto', flex: 1 }}>
-                            <div className="flex-between mb-3">
+                            <div className="mb-3 flex-between">
                                 <h5 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 800, color: 'var(--text-primary)' }}>
                                     Recorded Activity Trail for {selectedStaffLog.name}
                                 </h5>

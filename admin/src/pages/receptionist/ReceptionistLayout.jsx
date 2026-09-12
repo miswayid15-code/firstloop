@@ -308,7 +308,7 @@ export default function ReceptionistLayout() {
                             </div>
                             <div>
                                 <h4 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 800, color: '#991B1B' }}>
-                                     Account Suspended
+                                    Account Suspended
                                 </h4>
                                 <p style={{ margin: '4px 0 0', fontSize: '0.84rem', color: '#B91C1C', lineHeight: 1.4 }}>
                                     {accountStatus?.message || "Your receptionist terminal has been marked inactive or deleted. Customer operations and terminal features are locked."}
@@ -328,7 +328,7 @@ export default function ReceptionistLayout() {
                                     letterSpacing: '0.5px'
                                 }}
                             >
-                               RESTRICTED
+                                RESTRICTED
                             </span>
                             <button
                                 type="button"

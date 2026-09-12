@@ -4,20 +4,10 @@ import { QRCodeCanvas } from 'qrcode.react'
 import {
     formatImageUrl,
     getCardStyle,
-    formatValidity
+    formatValidity,
+    formatExpiryDate
 } from '../services/cardService.js'
 import CardIcon from './CardIcon.jsx'
-
-const formatExpiryDate = (val) => {
-    if (!val) return null
-    try {
-        const d = new Date(val)
-        if (isNaN(d.getTime())) return String(val)
-        return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-    } catch {
-        return String(val)
-    }
-}
 
 /**
  * Reusable Customer Card Component
@@ -45,7 +35,8 @@ const CustomerCard = forwardRef(({ card, cardType: propCardType, canvasId, style
         card.customer_name ||
         card.cardholderName ||
         card.customer ||
-        card.qr_token
+        card.qr_token ||
+        card.customer_card_id
     )
     const cardholder = card.cardholderName || card.customer_name || (hasCustomer ? 'Customer' : '')
 
@@ -191,6 +182,14 @@ const CustomerCard = forwardRef(({ card, cardType: propCardType, canvasId, style
                                             : null
                                         let iconMarkup = null
 
+                                        const isStamped = Boolean(
+                                            (rewardItem && (Number(rewardItem.status) === 1 || rewardItem.status === true || rewardItem.status === '1')) ||
+                                            (hasCustomer && (
+                                                Number(card.is_completed) === 1 ||
+                                                Number(card.current_stamp ?? card.current_stamps ?? card.collected ?? 0) >= stampNum
+                                            ))
+                                        )
+
                                         const rType = rewardItem
                                             ? (rewardItem.type || (rewardItem.reward_type === '2' || Number(rewardItem.reward_type) === 2 ? 'Discount' : (rewardItem.reward_type === '3' || Number(rewardItem.reward_type) === 3 ? 'Paid' : 'Free')))
                                             : null
@@ -263,14 +262,18 @@ const CustomerCard = forwardRef(({ card, cardType: propCardType, canvasId, style
                                         return (
                                             <div
                                                 key={i}
-                                                title={hasFreeStamp ? `${rewardItem.reward || (rType === 'Discount' ? `${rewardItem.discount ?? rewardItem.discountVal}% Off` : 'Paid Perk')} Free: ${rewardItem.free_text || 'Free Item'}` : undefined}
+                                                title={isStamped ? `Stamp #${stampNum} - Completed` : (hasFreeStamp ? `${rewardItem.reward || (rType === 'Discount' ? `${rewardItem.discount ?? rewardItem.discountVal}% Off` : 'Paid Perk')} Free: ${rewardItem.free_text || 'Free Item'}` : undefined)}
                                                 style={{
                                                     width: 36,
                                                     height: 36,
                                                     borderRadius: `${card.stamp_radius ?? card.stampRadius ?? 50}%`,
-                                                    border: `2px solid ${card.stampBorderColor || card.stamp_border_color || '#FFFFFF'}`,
-                                                    background: card.stampBgColor || card.stamp_background || 'rgba(255, 255, 255, 0.3)',
-                                                    color: card.stampTextColor || card.stamp_text_color || 'inherit',
+                                                    border: isStamped
+                                                        ? '2px solid #FFFFFF'
+                                                        : `2px dashed ${card.stampBorderColor || card.stamp_border_color || 'rgba(255, 255, 255, 0.7)'}`,
+                                                    background: isStamped
+                                                        ? 'linear-gradient(135deg, #10B981 0%, #059669 60%, #047857 100%)'
+                                                        : (card.stampBgColor || card.stamp_background || 'rgba(255, 255, 255, 0.22)'),
+                                                    color: isStamped ? '#FFFFFF' : (card.stampTextColor || card.stamp_text_color || 'inherit'),
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     justifyContent: 'center',
@@ -279,10 +282,43 @@ const CustomerCard = forwardRef(({ card, cardType: propCardType, canvasId, style
                                                     fontWeight: 800,
                                                     flexShrink: 0,
                                                     boxSizing: 'border-box',
-                                                    position: 'relative'
+                                                    position: 'relative',
+                                                    boxShadow: isStamped
+                                                        ? '0 4px 10px rgba(0, 0, 0, 0.35), 0 2px 4px rgba(16, 185, 129, 0.4), inset 0 1px 2px rgba(255, 255, 255, 0.4)'
+                                                        : '0 2px 4px rgba(0, 0, 0, 0.1)',
+                                                    padding: isStamped ? '2px' : 0
                                                 }}
                                             >
-                                                {iconMarkup}
+                                                {isStamped ? (
+                                                    <div
+                                                        style={{
+                                                            width: '100%',
+                                                            height: '100%',
+                                                            borderRadius: 'inherit',
+                                                            border: '1px dashed rgba(255, 255, 255, 0.65)',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            background: 'radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.28) 0%, transparent 68%)',
+                                                            boxSizing: 'border-box'
+                                                        }}
+                                                    >
+                                                        <CardIcon
+                                                            name="fa-check"
+                                                            style={{
+                                                                fontSize: '0.92rem',
+                                                                color: '#FFFFFF',
+                                                                filter: 'drop-shadow(0 1.5px 2px rgba(0, 0, 0, 0.4))',
+                                                                display: 'inline-flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                lineHeight: 1
+                                                            }}
+                                                        />
+                                                    </div>
+                                                ) : (
+                                                    iconMarkup
+                                                )}
                                                 {hasFreeStamp && (
                                                     <span
                                                         title={rewardItem.free_text ? `Free Perk: ${rewardItem.free_text}` : 'Free Perk Included'}
@@ -345,36 +381,27 @@ const CustomerCard = forwardRef(({ card, cardType: propCardType, canvasId, style
                     >
                         <div
                             style={{
-                                background: '#fff',
+                                background: '#FFFFFF',
                                 padding: '4px',
-                                borderRadius: 4,
-                                zIndex: 999
+                                borderRadius: 8,
+                                zIndex: 999,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
                             }}
                         >
-                            {card.qrImg && typeof card.qrImg === 'string' && (card.qrImg.startsWith('http') || card.qrImg.startsWith('data:') || card.qrImg.includes('/')) ? (
-                                <img
-                                    src={card.qrImg}
-                                    alt="QR Code"
-                                    crossOrigin="anonymous"
-                                    style={{
-                                        width: 92,
-                                        height: 92,
-                                        objectFit: 'contain',
-                                        display: 'block'
-                                    }}
-                                />
-                            ) : (
-                                <QRCodeCanvas
-                                    value={card.qr_token || card.qrImg || 'firstloop'}
-                                    size={92}
-                                    style={{
-                                        width: 92,
-                                        height: 92,
-                                        objectFit: 'contain',
-                                        display: 'block'
-                                    }}
-                                />
-                            )}
+                            <QRCodeCanvas
+                                value={card.qr_token || (card.qrImg && typeof card.qrImg === 'string' && !card.qrImg.includes('/') && !card.qrImg.startsWith('data:') ? card.qrImg : '') || 'https://firstloop.co.in/'}
+                                size={84}
+                                fgColor={(card.qr_color && card.qr_color !== '#FFFFFF') ? card.qr_color : (card.qrColor && card.qrColor !== '#FFFFFF' ? card.qrColor : '#000000')}
+                                bgColor="#FFFFFF"
+                                style={{
+                                    width: 84,
+                                    height: 84,
+                                    objectFit: 'contain',
+                                    display: 'block'
+                                }}
+                            />
                         </div>
 
                         <small

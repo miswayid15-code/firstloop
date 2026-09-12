@@ -170,24 +170,6 @@ export default function ReceptionistCustomerList() {
                 <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
                     <button
                         type="button"
-                        className="btn firstloop-btn-secondary"
-                        onClick={() => navigate(`/receptionist/add-card-customer/${branchId}`)}
-                        style={{
-                            padding: '9px 16px',
-                            borderRadius: 10,
-                            fontWeight: 700,
-                            fontSize: '0.85rem',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 8
-                        }}
-                    >
-                        <i className="fas fa-plus-circle" />
-                        <span>Add Card to Customer</span>
-                    </button>
-
-                    <button
-                        type="button"
                         className="btn firstloop-btn-primary"
                         onClick={() => setQrModalOpen(true)}
                         style={{
@@ -210,20 +192,46 @@ export default function ReceptionistCustomerList() {
             {/* Filter Bar */}
             <div className="mb-4 card" style={{ padding: 16, borderRadius: 14, background: '#FFFFFF', border: '1px solid #E2E8F0', boxShadow: '0 2px 10px rgba(0,0,0,0.03)' }}>
                 <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
-                    {/* Search Input */}
-                    <div style={{ position: 'relative', width: 320 }}>
-                        <i className="fas fa-search" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                        <input
-                            type="text"
-                            className="form-control"
-                            placeholder="Search by name, email, phone or card..."
-                            value={search}
-                            onChange={(e) => {
-                                setSearch(e.target.value)
-                                setCurrentPage(1)
-                            }}
-                            style={{ paddingLeft: 40, height: 40, borderRadius: 10, fontSize: '0.85rem' }}
-                        />
+                    {/* Search Input & Conditional Add Customer Button */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                        <div style={{ position: 'relative', width: 320 }}>
+                            <i className="fas fa-search" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                            <input
+                                type="text"
+                                className="form-control"
+                                placeholder="Search by name, email, phone or card..."
+                                value={search}
+                                onChange={(e) => {
+                                    setSearch(e.target.value)
+                                    setCurrentPage(1)
+                                }}
+                                style={{ paddingLeft: 40, height: 40, borderRadius: 10, fontSize: '0.85rem' }}
+                            />
+                        </div>
+
+                        {/* Display Add Customer button ONLY when no customers are found */}
+                        {!loading && ((search.trim().length > 0 && filteredCustomers.length === 0) || (customers.length === 0)) && (
+                            <button
+                                type="button"
+                                className="btn firstloop-btn-primary"
+                                onClick={() => navigate(`/receptionist/add-card-customer/${branchId}`)}
+                                style={{
+                                    height: 40,
+                                    padding: '0 16px',
+                                    borderRadius: 10,
+                                    fontWeight: 700,
+                                    fontSize: '0.84rem',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 8,
+                                    whiteSpace: 'nowrap',
+                                    boxShadow: '0 2px 8px rgba(14, 136, 184, 0.2)'
+                                }}
+                            >
+                                <i className="fas fa-plus-circle" />
+                                <span>Add Customer</span>
+                            </button>
+                        )}
                     </div>
 
                     {/* Filter & Page Size Controls */}

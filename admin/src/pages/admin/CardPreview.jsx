@@ -4,7 +4,7 @@ import html2canvas from 'html2canvas'
 import { toBlob } from 'html-to-image'
 import { toast } from 'react-hot-toast'
 import CustomerCard from '../../components/CustomerCard.jsx'
-import { fetchCustomerStampLevelsApi, waitForCardAssets, captureCardCanvas, cleanPhoneForWhatsApp } from '../../services/cardService.js'
+import { fetchCustomerStampLevelsApi, waitForCardAssets, captureCardCanvas, cleanPhoneForWhatsApp, formatExpiryDate } from '../../services/cardService.js'
 import API from '../../api.js'
 
 
@@ -54,16 +54,6 @@ export default function CardPreview() {
         return cleanPhoneForWhatsApp(phone, countryCode)
     }
 
-    const formatExpiryDate = (val) => {
-        if (!val) return null
-        try {
-            const d = new Date(val)
-            if (isNaN(d.getTime())) return String(val)
-            return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-        } catch {
-            return String(val)
-        }
-    }
 
 
     /*

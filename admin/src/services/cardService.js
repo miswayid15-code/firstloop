@@ -347,6 +347,8 @@ export const fetchStampCardsApi = async ({ merchantId, branchId, fallbackBrandNa
                 stampBorderColor: item.stamp_border_color || '#FFFFFF',
                 stampTextColor: item.stamp_text_color || '#FFFFFF',
                 stamp_radius: Number(item.stamp_radius ?? 50),
+                qr_color: item.qr_color || item.qrColor || '#FFFFFF',
+                qrColor: item.qr_color || item.qrColor || '#FFFFFF',
                 preset: 'Custom',
                 branch_ids: Array.isArray(item.branch_ids)
                     ? item.branch_ids.map(Number)
@@ -704,6 +706,16 @@ export const fetchCustomerStampLevelsApi = async (cardId, cardType, cusId) => {
                 qrImg:
                     item.qr_token,
 
+                qr_color:
+                    item.qr_color ||
+                    item.qrColor ||
+                    '#FFFFFF',
+
+                qrColor:
+                    item.qr_color ||
+                    item.qrColor ||
+                    '#FFFFFF',
+
                 customer:
                     item.customer || item.Customer || null,
 
@@ -777,6 +789,8 @@ export const fetchCustomerStampLevelsApi = async (cardId, cardType, cusId) => {
                 customer_phone: item.customer?.phone || item.Customer?.phone || item.phone || item.mobile || null,
                 customer_country_code: item.customer?.country_code || item.Customer?.country_code || item.country_code || null,
                 qrImg: item.qr_token,
+                qr_color: item.qr_color || item.qrColor || '#FFFFFF',
+                qrColor: item.qr_color || item.qrColor || '#FFFFFF',
                 validityMonths: item.month || item.validityMonths || item.totalMonth || 12,
                 expiry: item.expires_at,
                 bgColor: item.background_color || '#D97706',
@@ -819,3 +833,62 @@ export const fetchCustomerCardDetailsApi = async (cardId) => {
         return null;
     }
 };
+
+/**
+ * Format expiry date supporting DD/MM/YY, DD/MM/YYYY, ISO, and standard date formats.
+ * Correctly treats first number as Day and second number as Month for slash/dash formats.
+ *
+ * @param {string|Date} val - Expiry date string (e.g. "12/09/28", "12/09/2028", "2028-09-12")
+ * @returns {string|null} Formatted date like "12 Sep 2028"
+ */
+export const formatExpiryDate = (val) => {
+    if (!val) return null;
+    try {
+        const str = String(val).trim();
+        if (!str) return null;
+
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+        // 1. DD/MM/YY or DD/MM/YYYY or DD-MM-YY or DD-MM-YYYY
+        const dmyMatch = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2}|\d{4})$/);
+        if (dmyMatch) {
+            const day = parseInt(dmyMatch[1], 10);
+            const month = parseInt(dmyMatch[2], 10);
+            let year = parseInt(dmyMatch[3], 10);
+            if (year < 100) {
+                year = 2000 + year;
+            }
+            if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+                const dayStr = String(day).padStart(2, '0');
+                const monthStr = months[month - 1];
+                return `${dayStr} ${monthStr} ${year}`;
+            }
+        }
+
+        // 2. YYYY-MM-DD or YYYY/MM/DD
+        const ymdMatch = str.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+        if (ymdMatch) {
+            const year = parseInt(ymdMatch[1], 10);
+            const month = parseInt(ymdMatch[2], 10);
+            const day = parseInt(ymdMatch[3], 10);
+            if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+                const dayStr = String(day).padStart(2, '0');
+                const monthStr = months[month - 1];
+                return `${dayStr} ${monthStr} ${year}`;
+            }
+        }
+
+        // 3. Fallback to Date object parsing
+        const d = new Date(str);
+        if (!isNaN(d.getTime())) {
+            const dayStr = String(d.getDate()).padStart(2, '0');
+            const monthStr = months[d.getMonth()];
+            const year = d.getFullYear();
+            return `${dayStr} ${monthStr} ${year}`;
+        }
+
+        return str;
+    } catch {
+        return String(val);
+    }
+};

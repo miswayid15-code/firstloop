@@ -14,7 +14,8 @@ module.exports = {
       max: 3,
       min: 0,
       acquire: 30000,
-      idle: 10000
+      idle: 10000,
+      evict: 10000
     },
 
     dialectOptions: {
@@ -39,7 +40,8 @@ module.exports = {
       max: 2,
       min: 0,
       acquire: 30000,
-      idle: 10000
+      idle: 10000,
+      evict: 10000
     },
 
     dialectOptions: {
@@ -64,7 +66,8 @@ module.exports = {
       max: 3,
       min: 0,
       acquire: 30000,
-      idle: 10000
+      idle: 10000,
+      evict: 10000
     },
 
     dialectOptions: {

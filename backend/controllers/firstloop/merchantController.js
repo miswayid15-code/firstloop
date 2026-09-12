@@ -607,7 +607,7 @@ exports.branch_id = async (req, res) => {
 exports.stamp_card = async (req, res) => {
     try {
 
-        console.log("req body", req.body)
+        // console.log("req body", req.body)
         let {
             id,
             title,
@@ -623,6 +623,7 @@ exports.stamp_card = async (req, res) => {
             stamp_border_color,
             stamp_text_color,
             stamp_levels,
+            qr_color,
             month
 
         } = req.body;
@@ -932,7 +933,9 @@ exports.stamp_card = async (req, res) => {
 
             stamp_text_color:
                 stamp_text_color || null,
-                month:month||0,
+            month: month || 0,
+            qr_color:
+                qr_color || null,
 
             status: 1
         };

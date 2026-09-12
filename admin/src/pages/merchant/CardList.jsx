@@ -10,6 +10,7 @@ import StampCardBuilderModal from '../../components/StampCardBuilderModal.jsx'
 import MembershipCardBuilderModal from '../../components/MembershipCardBuilderModal.jsx'
 import StampCardPreviewModal from '../../components/StampCardPreviewModal.jsx'
 import MembershipCardPreviewModal from '../../components/MembershipCardPreviewModal.jsx'
+import { formatExpiryDate } from '../../services/cardService.js'
 
 const DEFAULT_CARD_DESIGNS = [
     {
@@ -383,16 +384,6 @@ export default function CardList() {
         }
     }
 
-    const formatExpiryDate = (val) => {
-        if (!val) return 'N/A'
-        try {
-            const d = new Date(val)
-            if (isNaN(d.getTime())) return String(val)
-            return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-        } catch {
-            return String(val)
-        }
-    }
 
     const getBranchNames = (card) => {
         const bIds = Array.isArray(card?.branch_ids) ? card.branch_ids : (card?.branch_id ? [card.branch_id] : [])

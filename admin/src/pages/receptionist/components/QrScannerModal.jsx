@@ -5,17 +5,55 @@ import { toast } from 'react-hot-toast'
 import API from '../../../api.js'
 import CustomerCard from '../../../components/CustomerCard.jsx'
 import CustomerCardHistory from '../../../components/CustomerCardHistory.jsx'
-import { fetchCustomerStampLevelsApi } from '../../../services/cardService.js'
+import {
+    fetchCustomerStampLevelsApi,
+    formatExpiryDate,
+    cleanPhoneForWhatsApp,
+    waitForCardAssets,
+    captureCardCanvas
+} from '../../../services/cardService.js'
 
-const formatExpiryDate = (val) => {
-    if (!val) return null
-    try {
-        const d = new Date(val)
-        if (isNaN(d.getTime())) return String(val)
-        return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-    } catch {
-        return String(val)
-    }
+// Helper to inspect reward type ('Free' | 'Discount' | 'Paid') for a given stamp level or card
+const getRewardTypeInfo = (cardDetails, stampIndex = 0) => {
+    if (!cardDetails) return 'Free'
+    const levels = cardDetails.CustomerStampLevels || cardDetails.levelRewards || cardDetails.stamp_levels || []
+    const activeLevel = levels[stampIndex] || null
+
+    const rawType = String(
+        activeLevel?.reward_type ??
+        activeLevel?.rewardType ??
+        activeLevel?.type ??
+        cardDetails?.reward_type ??
+        cardDetails?.rewardType ??
+        ''
+    ).trim().toLowerCase()
+
+    if (rawType === '2' || rawType === 'discount') return 'Discount'
+    if (rawType === '3' || rawType === 'paid') return 'Paid'
+    if (rawType === '1' || rawType === 'free') return 'Free'
+
+    const disc = parseFloat(activeLevel?.discountVal ?? activeLevel?.discount ?? cardDetails?.discount_val ?? 0) || 0
+    if (disc > 0) return 'Discount'
+
+    const amt = parseFloat(activeLevel?.amt ?? cardDetails?.current_amt ?? 0) || 0
+    if (amt > 0) return 'Paid'
+
+    return 'Free'
+}
+
+// Helper to get discount percentage for current stamp
+const getDiscountPercentage = (cardDetails, stampIndex = 0) => {
+    if (!cardDetails) return 0
+    const levels = cardDetails.CustomerStampLevels || cardDetails.levelRewards || cardDetails.stamp_levels || []
+    const activeLevel = levels[stampIndex] || null
+    const disc =
+        activeLevel?.discountVal ??
+        activeLevel?.discount ??
+        activeLevel?.discount_percentage ??
+        cardDetails?.discount_val ??
+        cardDetails?.discount_percentage ??
+        0
+    return parseFloat(disc) || 0
 }
 
 export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = '' }) {
@@ -46,10 +84,13 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
     const [paymentAmount, setPaymentAmount] = useState('0.00')
     const [savingCheckIn, setSavingCheckIn] = useState(false)
     const [lastReceipt, setLastReceipt] = useState(null)
+    const [selectedStampIndex, setSelectedStampIndex] = useState(null)
     const [historyModalOpen, setHistoryModalOpen] = useState(false)
+    const [sharingWhatsApp, setSharingWhatsApp] = useState(false)
 
     const scannerRef = useRef(null)
     const fileInputRef = useRef(null)
+    const cardRef = useRef(null)
 
     // Reset state on modal open/close
     useEffect(() => {
@@ -140,12 +181,9 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
         try {
             const data = await fetchCustomerStampLevelsApi(cardId, cardType, customerId)
             if (data) {
-                const totalStamps = Number(data.total_stamps || 8)
-                const collected = Number(data.current_stamp ?? data.collected ?? 0)
-                const isCompleted = Number(data.is_completed) === 1 || collected >= totalStamps
-                const amt = isCompleted ? '0.00' : Number(data?.overAll_amt ?? data?.current_amt ?? 0).toFixed(2)
                 setSelectedCardDetails(data)
-                setPaymentAmount(amt)
+                setSelectedStampIndex(null)
+                setPaymentAmount('0.00')
             }
         } catch (err) {
             console.error("Error refreshing card details:", err)
@@ -154,16 +192,68 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
         }
     }
 
+    // Direct selection of a stamp number with step-by-step progression enforcement
+    const handleSelectStamp = (idx) => {
+        const levels = selectedCardDetails?.CustomerStampLevels || selectedCardDetails?.levelRewards || selectedCardDetails?.stamp_levels || []
+        const levelData = levels[idx] || null
+        const isProcessed = Number(levelData?.status) === 1
+
+        const total = Number(selectedCardDetails?.total_stamps || selectedCardDetails?.number_of_stamps || selectedCard?.total_stamps || 8)
+        let firstUnprocessed = total
+        for (let i = 0; i < total; i++) {
+            const lvl = levels[i]
+            const isPaid = lvl?.status !== undefined ? Number(lvl.status) === 1 : false
+            if (!isPaid) {
+                firstUnprocessed = i
+                break
+            }
+        }
+
+        // Step-by-step enforcement: Only completed stamps or the immediate next stamp can be clicked
+        if (!isProcessed && idx > firstUnprocessed) {
+            toast.error(`Please complete Stamp #${firstUnprocessed + 1} first! Stamps must be processed step by step.`)
+            return
+        }
+
+        setSelectedStampIndex(idx)
+        const rType = getRewardTypeInfo(selectedCardDetails, idx)
+
+        if (rType === 'Free') {
+            setPaymentAmount('0.00')
+        } else {
+            const recordedAmt = parseFloat(levelData?.amount ?? levelData?.current_amt ?? levelData?.amt ?? 0)
+            const fallbackAmt = parseFloat(levelData?.amt ?? selectedCardDetails?.current_amt ?? selectedCard?.amount ?? 0)
+
+            if (recordedAmt > 0) {
+                setPaymentAmount(recordedAmt.toFixed(2))
+            } else if (fallbackAmt > 0) {
+                setPaymentAmount(fallbackAmt.toFixed(2))
+            } else {
+                setPaymentAmount('0.00')
+            }
+        }
+
+        if (isProcessed) {
+            if (levelData?.payment_type == 2 || String(levelData?.payment_method).toLowerCase() === 'online') {
+                setPaymentMethod('Online')
+            } else {
+                setPaymentMethod('Cash')
+            }
+        }
+    }
+
     // Load full card levels when a card is selected
     useEffect(() => {
         if (!selectedCard?.id || !matchedCustomer?.id) {
             setSelectedCardDetails(null)
+            setSelectedStampIndex(null)
             return
         }
 
         let isMounted = true
         const loadCardDetails = async () => {
             setLoadingCardDetails(true)
+            setSelectedStampIndex(null)
             try {
                 const data = await fetchCustomerStampLevelsApi(
                     selectedCard.id,
@@ -172,8 +262,8 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
                 )
                 if (isMounted) {
                     setSelectedCardDetails(data || selectedCard)
-                    const amt = Number(data?.overAll_amt ?? data?.current_amt ?? selectedCard?.amount ?? 0).toFixed(2)
-                    setPaymentAmount(amt)
+                    setSelectedStampIndex(null)
+                    setPaymentAmount('0.00')
                 }
             } catch (err) {
                 console.error("Error loading card levels:", err)
@@ -297,6 +387,125 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
         }
     }
 
+    // Share updated customer card to WhatsApp
+    const handleShareToWhatsApp = async (receiptData = null) => {
+        const cardEl = cardRef.current
+        const activeCard = selectedCardDetails || selectedCard
+        const customer = matchedCustomer
+
+        const isStamp = Number(selectedCard?.card_type || activeCard?.card_type || 1) === 1
+        const brand = activeCard?.brand_name || activeCard?.brandName || selectedCard?.brand_name || 'FirstLoop'
+        const title = activeCard?.title || activeCard?.name || (isStamp ? 'Loyalty Stamp Pass' : 'VIP Membership Pass')
+        const total = Number(receiptData?.totalStamps || activeCard?.total_stamps || activeCard?.number_of_stamps || activeCard?.total || 8)
+        const currentStamps = receiptData?.newStamps !== undefined
+            ? Number(receiptData.newStamps)
+            : Number(activeCard?.current_stamp ?? activeCard?.current_stamps ?? activeCard?.collected ?? 0)
+
+        const customerPhone = customer?.phone || customer?.mobile || activeCard?.customerPhone || activeCard?.phone || ''
+        const customerCountryCode = customer?.country_code || customer?.countryCode || activeCard?.country_code || '91'
+        const targetPhone = cleanPhoneForWhatsApp(customerPhone, customerCountryCode)
+        const customerName = customer?.name || activeCard?.cardholderName || activeCard?.customer_name || 'Valued Customer'
+        const expiryFormatted = formatExpiryDate(activeCard?.expires_at || activeCard?.expiry)
+        const expiryLine = expiryFormatted ? `\n⏳ *Expires On:* ${expiryFormatted}` : ''
+
+        let descToSend = ''
+        if (isStamp) {
+            const perkLine = receiptData?.freePerk ? `\n🎁 *Perk Unlocked:* ${receiptData.freePerk}` : ''
+            const stampMsg = receiptData?.stampNumber
+                ? `⭐ *Stamp #${receiptData.stampNumber} Recorded!* (${currentStamps}/${total} Stamps collected)`
+                : `⭐ *Stamp Progress:* ${currentStamps}/${total} Stamps collected`
+
+            descToSend = `🎉 *Hello ${customerName}!* 👋\nHere is your updated loyalty stamp pass for *${brand}* - *${title}*:\n\n${stampMsg}${perkLine}${expiryLine}\n\nThank you for choosing ${brand}! ✨`
+        } else {
+            descToSend = `🎉 *Hello ${customerName}!* 👋\nHere is your digital membership pass for *${brand}* - *${title}*:\n\n👑 *Daily VIP Check-In Validated!*${expiryLine}\n\nThank you for visiting ${brand}! ✨`
+        }
+
+        const rawName = title || 'customer-card'
+        const safeName = rawName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'card'
+        const fileName = `${safeName}-${Date.now().toString().slice(-4)}.png`
+
+        const openWhatsAppDirectly = () => {
+            const waUrl = targetPhone
+                ? `https://api.whatsapp.com/send?phone=${targetPhone}&text=${encodeURIComponent(descToSend)}`
+                : `https://api.whatsapp.com/send?text=${encodeURIComponent(descToSend)}`
+            window.open(waUrl, '_blank')
+        }
+
+        if (!cardEl) {
+            openWhatsAppDirectly()
+            toast.success(`Opening WhatsApp (+${targetPhone || customerPhone || 'Customer'})...`)
+            return
+        }
+
+        setSharingWhatsApp(true)
+        const toastId = toast.loading('Capturing card image for WhatsApp...')
+
+        try {
+            await waitForCardAssets(cardEl)
+            const canvas = await captureCardCanvas(cardEl)
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'))
+
+            if (!blob) {
+                throw new Error('Failed to generate image blob from card')
+            }
+
+            const file = new File([blob], fileName, { type: 'image/png' })
+            const blobUrl = URL.createObjectURL(blob)
+
+            if (!targetPhone && typeof navigator !== 'undefined' && typeof navigator.share === 'function' && typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })) {
+                toast.dismiss(toastId)
+                try {
+                    await navigator.share({
+                        files: [file],
+                        title: `${brand} - ${title}`,
+                        text: descToSend
+                    })
+                    toast.success('Card image shared successfully! 🎉')
+                    return
+                } catch (shareErr) {
+                    if (shareErr.name === 'AbortError') return
+                    console.warn('Web Share API error, falling back:', shareErr)
+                }
+            }
+
+            toast.dismiss(toastId)
+
+            let copiedToClipboard = false
+            try {
+                if (navigator.clipboard && window.ClipboardItem) {
+                    await navigator.clipboard.write([
+                        new ClipboardItem({ 'image/png': blob })
+                    ])
+                    copiedToClipboard = true
+                }
+            } catch (clipErr) {
+                console.warn('Clipboard write image not supported:', clipErr)
+            }
+
+            const dlLink = document.createElement('a')
+            dlLink.href = blobUrl
+            dlLink.download = fileName
+            document.body.appendChild(dlLink)
+            dlLink.click()
+            document.body.removeChild(dlLink)
+
+            openWhatsAppDirectly()
+
+            if (copiedToClipboard) {
+                toast.success(`Card image copied! In WhatsApp (+${targetPhone || customerPhone || ''}), press Ctrl+V to paste & send.`, { duration: 6000 })
+            } else {
+                toast.success(`Card image downloaded! Opening WhatsApp (+${targetPhone || customerPhone || ''})...`, { duration: 6000 })
+            }
+        } catch (error) {
+            console.warn('Image capture note, opening WhatsApp directly:', error)
+            toast.dismiss(toastId)
+            openWhatsAppDirectly()
+            toast.success(`Opening WhatsApp (+${targetPhone || customerPhone || ''})...`)
+        } finally {
+            setSharingWhatsApp(false)
+        }
+    }
+
     // Handle Save / Submit Check-In & Stamp
     const handleConfirmCheckIn = async (e) => {
         if (e && e.preventDefault) e.preventDefault()
@@ -310,40 +519,65 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
         const totalStamps = Number(selectedCardDetails?.total_stamps || selectedCardDetails?.number_of_stamps || selectedCard?.total_stamps || 8)
         const currentCollected = Number(selectedCardDetails?.current_stamp ?? selectedCardDetails?.current_stamps ?? selectedCard?.current_stamp ?? selectedCard?.collected ?? 0)
 
-        if (isStamp && currentCollected >= totalStamps) {
-            toast.error("This stamp card is already fully completed!")
-            return
-        }
+        if (isStamp) {
+            if (selectedStampIndex === null || selectedStampIndex === undefined) {
+                toast.error("Please select a stamp number first")
+                return
+            }
 
-        setSavingCheckIn(true)
-        try {
-            if (isStamp) {
+            const levels = selectedCardDetails?.CustomerStampLevels || selectedCardDetails?.levelRewards || selectedCardDetails?.stamp_levels || []
+            const activeLevel = levels[selectedStampIndex] || null
+            const isProcessed = Number(activeLevel?.status) === 1
+
+            if (!isProcessed && currentCollected >= totalStamps) {
+                toast.error("This stamp card is already fully completed!")
+                return
+            }
+
+            setSavingCheckIn(true)
+            try {
                 const stampLevelId = Number(
+                    activeLevel?.id ||
+                    activeLevel?.stamp_level_id ||
                     selectedCardDetails?.stamp_level_id ||
-                    selectedCardDetails?.CustomerStampLevels?.[currentCollected]?.id ||
-                    selectedCardDetails?.levelRewards?.[currentCollected]?.id ||
-                    selectedCardDetails?.stamp_levels?.[currentCollected]?.id ||
                     0
                 )
+
+                const stampId = activeLevel?.id || activeLevel?.stamp_level_id || 0
+
+                const rType = getRewardTypeInfo(selectedCardDetails, selectedStampIndex)
+                const discPercent = getDiscountPercentage(selectedCardDetails, selectedStampIndex)
+
+                const enteredAmt = rType === 'Free' ? 0 : (parseFloat(paymentAmount) || 0)
+                const finalPaidAmt = rType === 'Free'
+                    ? 0
+                    : (rType === 'Discount'
+                        ? Math.max(0, enteredAmt - (enteredAmt * discPercent) / 100)
+                        : enteredAmt)
 
                 const payload = {
                     cus_id: Number(matchedCustomer.id),
                     card_id: Number(selectedCard.id),
                     payment_type: paymentMethod === 'Online' ? 2 : 1,
-                    amount: parseFloat(paymentAmount) || 0,
+                    amount: enteredAmt,
+                    paid_amount: parseFloat(finalPaidAmt.toFixed(2)),
                     stamp_level_id: stampLevelId
+                }
+
+                // If the stamp has already been processed (status = 1), pass that stamp's id to the API and treat it as an edit action
+                if (isProcessed && stampId) {
+                    payload.id = Number(stampId)
                 }
 
                 const res = await API.post('firstloop/customer/stamp-paid', payload)
 
                 if (res?.data?.status == 1) {
-                    const newStamps = currentCollected + 1
-                    toast.success(res.data.message || "Stamp payment entry logged successfully! 🚀")
+                    const newStamps = isProcessed ? currentCollected : Math.min(totalStamps, currentCollected + 1)
+                    toast.success(res.data.message || (isProcessed ? `Stamp #${selectedStampIndex + 1} updated successfully! 🚀` : "Stamp payment entry logged successfully! 🚀"))
 
-                    const activeReward = selectedCardDetails?.CustomerStampLevels?.[currentCollected] || selectedCardDetails?.levelRewards?.[currentCollected] || selectedCardDetails?.stamp_levels?.[currentCollected]
-                    const earnedFreePerk = (Number(selectedCardDetails?.free_stamp) === 1 || Number(activeReward?.free_stamp) === 1 || Boolean(selectedCardDetails?.free_text) || Boolean(activeReward?.free_text))
-                        ? (selectedCardDetails?.free_text || activeReward?.free_text || 'Free Perk')
-                        : null
+                    const earnedFreePerk = (Number(activeLevel?.free_stamp) === 1 || Boolean(activeLevel?.free_text))
+                        ? (activeLevel?.free_text || 'Free Perk')
+                        : (Number(selectedCardDetails?.free_stamp) === 1 ? (selectedCardDetails?.free_text || 'Free Perk') : null)
 
                     const receipt = {
                         receiptId: res.data.receipt_id || `RCP-${Date.now().toString().slice(-6)}`,
@@ -355,23 +589,39 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
                         newStamps: newStamps,
                         totalStamps: totalStamps,
                         paymentMethod: paymentMethod,
-                        paymentAmount: `$${parseFloat(paymentAmount).toFixed(2)}`,
+                        paymentAmount: `${finalPaidAmt.toFixed(2)}`,
                         freePerk: earnedFreePerk,
-                        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                        actionType: isProcessed ? 'Stamp Edit' : 'Stamp Check-In',
+                        stampNumber: selectedStampIndex + 1
                     }
 
                     // DO NOT CLOSE MODAL: keep modal open and refresh card details live!
                     setLastReceipt(receipt)
+                    setSelectedStampIndex(null)
 
                     // Refresh card details so new stamp fills in live on card preview & progress circles
                     await refreshCardDetails(selectedCard.id, selectedCard.card_type, matchedCustomer.id)
 
                     if (onSuccess) onSuccess()
+
+                    // Automatically share to WhatsApp after submit
+                    setTimeout(() => {
+                        handleShareToWhatsApp(receipt)
+                    }, 400)
                 } else {
-                    toast.error(res?.data?.message || "Failed to log stamp entry")
+                    toast.error(res?.data?.message || (isProcessed ? "Failed to update stamp entry" : "Failed to log stamp entry"))
                 }
-            } else {
-                // Membership Daily Check-In
+            } catch (err) {
+                console.error("Check-In submission error:", err)
+                toast.error(err?.response?.data?.message || "Failed to process check-in")
+            } finally {
+                setSavingCheckIn(false)
+            }
+        } else {
+            // Membership Daily Check-In
+            setSavingCheckIn(true)
+            try {
                 toast.success("Membership Check-In Validated! 👑")
                 const receipt = {
                     receiptId: `MBR-${Date.now().toString().slice(-6)}`,
@@ -385,12 +635,17 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
                 }
                 setLastReceipt(receipt)
                 if (onSuccess) onSuccess()
+
+                // Automatically share to WhatsApp after submit
+                setTimeout(() => {
+                    handleShareToWhatsApp(receipt)
+                }, 400)
+            } catch (err) {
+                console.error("Check-In submission error:", err)
+                toast.error(err?.response?.data?.message || "Failed to process check-in")
+            } finally {
+                setSavingCheckIn(false)
             }
-        } catch (err) {
-            console.error("Check-In submission error:", err)
-            toast.error(err?.response?.data?.message || "Failed to process check-in")
-        } finally {
-            setSavingCheckIn(false)
         }
     }
 
@@ -399,6 +654,7 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
         setSelectedCard(null)
         setSelectedCardDetails(null)
         setLastReceipt(null)
+        setSelectedStampIndex(null)
         setManualCode('')
         setCameraError(null)
     }
@@ -411,6 +667,34 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
     const isCardDone = Number(selectedCardDetails?.is_completed) === 1 || Number(selectedCard?.is_completed) === 1 || collectedStamps >= totalStamps
     const isCompleted = isStampCard && isCardDone
     const remainingStamps = Math.max(0, totalStamps - collectedStamps)
+
+    // Step-by-step lock & reward calculation for stamp pass
+    const stampLevelsList = selectedCardDetails?.CustomerStampLevels || selectedCardDetails?.levelRewards || selectedCardDetails?.stamp_levels || []
+
+    let firstUnprocessedIndex = totalStamps
+    for (let i = 0; i < totalStamps; i++) {
+        const lvl = stampLevelsList[i]
+        const isPaid = lvl?.status !== undefined ? Number(lvl.status) === 1 : false
+        if (!isPaid) {
+            firstUnprocessedIndex = i
+            break
+        }
+    }
+
+    const activeStampIdx = selectedStampIndex !== null ? selectedStampIndex : -1
+    const activeLevel = activeStampIdx >= 0 ? stampLevelsList[activeStampIdx] : null
+    const isSelectedStampProcessed = activeLevel?.status !== undefined ? Number(activeLevel.status) === 1 : false
+
+    const currentRewardType = activeStampIdx >= 0 ? getRewardTypeInfo(selectedCardDetails, activeStampIdx) : 'Paid'
+    const currentDiscountPercent = activeStampIdx >= 0 ? getDiscountPercentage(selectedCardDetails, activeStampIdx) : 0
+    const currentPerkText = activeLevel?.reward || activeLevel?.free_text || selectedCardDetails?.descption || ''
+
+    const enteredTransactionAmount = currentRewardType === 'Free' ? 0 : (parseFloat(paymentAmount) || 0)
+    const discountAmountDeduction = currentRewardType === 'Discount' ? (enteredTransactionAmount * currentDiscountPercent) / 100 : 0
+    const finalPayableAmount = currentRewardType === 'Free' ? 0 : Math.max(0, enteredTransactionAmount - discountAmountDeduction)
+
+    const hasFreeBonus = activeStampIdx >= 0 && (Number(activeLevel?.free_stamp) === 1 || Boolean(activeLevel?.free_text))
+    const freeBonusText = activeLevel?.free_text || ''
 
     const handleAddNewCard = () => {
         const bId = branchId || receptionist?.user_branch_id || ''
@@ -635,20 +919,57 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
                                         </div>
                                     </div>
 
-                                    <button
-                                        type="button"
-                                        onClick={() => setLastReceipt(null)}
-                                        style={{
-                                            background: 'transparent',
-                                            border: 'none',
-                                            color: '#059669',
-                                            cursor: 'pointer',
-                                            fontSize: '1rem',
-                                            padding: 4
-                                        }}
-                                    >
-                                        <i className="fas fa-times" />
-                                    </button>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleShareToWhatsApp(lastReceipt)}
+                                            disabled={sharingWhatsApp}
+                                            style={{
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: 8,
+                                                padding: '8px 16px',
+                                                borderRadius: 10,
+                                                background: '#25D366',
+                                                color: '#FFFFFF',
+                                                fontWeight: 700,
+                                                fontSize: '0.82rem',
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                                boxShadow: '0 2px 8px rgba(37, 211, 102, 0.35)',
+                                                transition: 'all 0.2s ease',
+                                                whiteSpace: 'nowrap'
+                                            }}
+                                        >
+                                            {sharingWhatsApp ? (
+                                                <>
+                                                    <i className="fas fa-spinner fa-spin" />
+                                                    <span>Opening WhatsApp...</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <i className="fab fa-whatsapp" style={{ fontSize: '1.05rem' }} />
+                                                    <span>Share Card to WhatsApp{matchedCustomer?.phone ? ` (+${cleanPhoneForWhatsApp(matchedCustomer.phone, matchedCustomer.country_code || matchedCustomer.countryCode || '91')})` : ''}</span>
+                                                </>
+                                            )}
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => setLastReceipt(null)}
+                                            style={{
+                                                background: 'transparent',
+                                                border: 'none',
+                                                color: '#059669',
+                                                cursor: 'pointer',
+                                                fontSize: '1rem',
+                                                padding: 4
+                                            }}
+                                            title="Dismiss"
+                                        >
+                                            <i className="fas fa-times" />
+                                        </button>
+                                    </div>
                                 </div>
                             )}
 
@@ -974,10 +1295,51 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
                                                     <small style={{ fontWeight: 700, color: 'var(--text-muted)' }}>Loading Card Design...</small>
                                                 </div>
                                             ) : (
-                                                <CustomerCard
-                                                    card={cardForPreview}
-                                                    cardType={Number(selectedCard.card_type)}
-                                                />
+                                                <>
+                                                    <CustomerCard
+                                                        ref={cardRef}
+                                                        card={cardForPreview}
+                                                        cardType={Number(selectedCard.card_type)}
+                                                    />
+
+                                                    {/* WhatsApp Share Card Quick Action Button */}
+                                                    <div style={{ marginTop: 14, width: '100%', maxWidth: 380 }}>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleShareToWhatsApp(lastReceipt)}
+                                                            disabled={sharingWhatsApp}
+                                                            style={{
+                                                                width: '100%',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                gap: 8,
+                                                                padding: '11px 16px',
+                                                                borderRadius: 12,
+                                                                background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
+                                                                color: '#FFFFFF',
+                                                                fontWeight: 700,
+                                                                fontSize: '0.85rem',
+                                                                border: 'none',
+                                                                cursor: 'pointer',
+                                                                boxShadow: '0 3px 12px rgba(37, 211, 102, 0.3)',
+                                                                transition: 'all 0.2s ease'
+                                                            }}
+                                                        >
+                                                            {sharingWhatsApp ? (
+                                                                <>
+                                                                    <i className="fas fa-spinner fa-spin" />
+                                                                    <span>Capturing Card for WhatsApp...</span>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <i className="fab fa-whatsapp" style={{ fontSize: '1.15rem' }} />
+                                                                    <span>Share Card to WhatsApp{matchedCustomer?.phone ? ` (+${cleanPhoneForWhatsApp(matchedCustomer.phone, matchedCustomer.country_code || matchedCustomer.countryCode || '91')})` : ''}</span>
+                                                                </>
+                                                            )}
+                                                        </button>
+                                                    </div>
+                                                </>
                                             )}
                                         </div>
 
@@ -986,206 +1348,462 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
                                             <form onSubmit={handleConfirmCheckIn}>
                                                 {isStampCard ? (
                                                     <div>
-                                                        {/* Current Stamp Progress & Stamp Circles */}
+                                                        {/* Current Stamp Progress Card */}
                                                         <div
                                                             style={{
-                                                                background: isCompleted ? 'rgba(16, 185, 129, 0.08)' : '#F8FAFC',
+                                                                background: '#FFFFFF',
                                                                 borderRadius: 16,
-                                                                padding: 18,
-                                                                border: isCompleted ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid #E2E8F0',
-                                                                marginBottom: 18
+                                                                border: '1.5px solid #E2E8F0',
+                                                                marginBottom: 16,
+                                                                overflow: 'hidden',
+                                                                boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
                                                             }}
                                                         >
-                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                                                                <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                                                                    Current Stamp Progress:
-                                                                </span>
-                                                                <span style={{ fontSize: '0.85rem', fontWeight: 800, color: isCompleted ? '#059669' : 'var(--firstloop-primary, #0E88B8)' }}>
-                                                                    {isCompleted
-                                                                        ? `🎉 Card Completed (${collectedStamps}/${totalStamps})`
-                                                                        : `${remainingStamps} Remaining (${collectedStamps}/${totalStamps})`}
+                                                            {/* Header */}
+                                                            <div
+                                                                style={{
+                                                                    padding: '14px 18px',
+                                                                    background: '#F8FAFC',
+                                                                    borderBottom: '1px solid #E2E8F0',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'space-between',
+                                                                    gap: 12
+                                                                }}
+                                                            >
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                                    <div
+                                                                        style={{
+                                                                            width: 38,
+                                                                            height: 38,
+                                                                            borderRadius: 10,
+                                                                            background: 'var(--firstloop-primary, #0E88B8)',
+                                                                            color: '#FFFFFF',
+                                                                            display: 'flex',
+                                                                            alignItems: 'center',
+                                                                            justifyContent: 'center',
+                                                                            fontSize: '1rem',
+                                                                            flexShrink: 0
+                                                                        }}
+                                                                    >
+                                                                        <i className="fas fa-stamp" />
+                                                                    </div>
+                                                                    <div>
+                                                                        <span style={{ fontSize: '0.86rem', fontWeight: 800, color: 'var(--text-primary)', display: 'block' }}>
+                                                                            Current Stamp Progress
+                                                                        </span>
+                                                                        <span style={{ fontSize: '0.74rem', color: '#64748B', fontWeight: 600 }}>
+                                                                            {remainingStamps} stamp{remainingStamps > 1 ? 's' : ''} remaining • Select a stamp number below
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+
+                                                                <span
+                                                                    style={{
+                                                                        fontSize: '0.8rem',
+                                                                        fontWeight: 800,
+                                                                        color: 'var(--firstloop-primary, #0E88B8)',
+                                                                        background: '#FFFFFF',
+                                                                        padding: '4px 12px',
+                                                                        borderRadius: 20,
+                                                                        border: '1px solid #CBD5E1'
+                                                                    }}
+                                                                >
+                                                                    {collectedStamps}/{totalStamps} Stamps
                                                                 </span>
                                                             </div>
 
-                                                            {/* Visual Stamp Circles (Paid vs Not Paid) */}
-                                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                                                                {Array.from({ length: totalStamps }).map((_, idx) => {
-                                                                    const levelData = selectedCardDetails?.CustomerStampLevels?.[idx] || selectedCardDetails?.levelRewards?.[idx] || selectedCardDetails?.stamp_levels?.[idx]
-                                                                    const isPaid = levelData?.status !== undefined
-                                                                        ? Number(levelData.status) === 1
-                                                                        : (isCompleted || idx < collectedStamps)
-                                                                    const hasFree = Number(levelData?.free_stamp) === 1 || levelData?.free_stamp === true || levelData?.free_stamp === '1' || Boolean(levelData?.free_text)
-                                                                    const freePerkText = levelData?.free_text || ''
+                                                            {/* Stamp Circles: Step-by-Step with Locking */}
+                                                            <div style={{ padding: '16px 18px', background: '#FFFFFF' }}>
+                                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                                                                    <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                                        Select Stamp Number to Process or Edit:
+                                                                    </span>
+                                                                    <span style={{ fontSize: '0.72rem', color: '#64748B' }}>
+                                                                        Click on any unlocked circle
+                                                                    </span>
+                                                                </div>
 
-                                                                    return (
-                                                                        <div
-                                                                            key={idx}
-                                                                            style={{ position: 'relative' }}
-                                                                        >
+                                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                                                                    {Array.from({ length: totalStamps }).map((_, idx) => {
+                                                                        const levelData = selectedCardDetails?.CustomerStampLevels?.[idx] || selectedCardDetails?.levelRewards?.[idx] || selectedCardDetails?.stamp_levels?.[idx]
+                                                                        const isPaid = levelData?.status !== undefined
+                                                                            ? Number(levelData.status) === 1
+                                                                            : (isCompleted || idx < collectedStamps)
+                                                                        const isSelected = selectedStampIndex === idx
+                                                                        const isCurrentNext = idx === firstUnprocessedIndex
+                                                                        const isLocked = !isPaid && !isCurrentNext
+                                                                        const hasFree = Number(levelData?.free_stamp) === 1 || levelData?.free_stamp === true || levelData?.free_stamp === '1' || Boolean(levelData?.free_text)
+                                                                        const freePerkText = levelData?.free_text || ''
+
+                                                                        return (
                                                                             <div
-                                                                                title={`Stamp ${idx + 1}: ${isPaid ? 'Paid / Collected' : 'Pending / Not Paid'}${levelData?.reward ? ` • ${levelData.reward}` : ''}${hasFree ? ` (Free: ${freePerkText || 'Free Perk'})` : ''}`}
+                                                                                key={idx}
+                                                                                onClick={() => handleSelectStamp(idx)}
+                                                                                role="button"
+                                                                                tabIndex={isLocked ? -1 : 0}
                                                                                 style={{
-                                                                                    width: 34,
-                                                                                    height: 34,
-                                                                                    borderRadius: `${selectedCardDetails?.stamp_radius ?? 50}%`,
-                                                                                    background: isPaid ? 'var(--firstloop-gradient-primary, linear-gradient(135deg, #0E88B8 0%, #0284C7 100%))' : '#FFFFFF',
-                                                                                    color: isPaid ? '#FFFFFF' : '#94A3B8',
-                                                                                    border: isPaid ? 'none' : '2px dashed #CBD5E1',
                                                                                     display: 'flex',
+                                                                                    flexDirection: 'column',
                                                                                     alignItems: 'center',
-                                                                                    justifyContent: 'center',
-                                                                                    fontWeight: 800,
-                                                                                    fontSize: '0.8rem',
-                                                                                    boxShadow: isPaid ? '0 2px 6px rgba(14, 136, 184, 0.25)' : 'none',
-                                                                                    transition: 'all 0.2s ease'
+                                                                                    cursor: isLocked ? 'not-allowed' : 'pointer',
+                                                                                    padding: '4px 6px',
+                                                                                    borderRadius: 12,
+                                                                                    background: isSelected ? 'rgba(14, 136, 184, 0.08)' : 'transparent',
+                                                                                    border: isSelected ? '1.5px solid var(--firstloop-primary, #0E88B8)' : '1.5px solid transparent',
+                                                                                    opacity: isLocked ? 0.48 : 1,
+                                                                                    transition: 'all 0.15s ease'
                                                                                 }}
                                                                             >
-                                                                                {isPaid ? <i className="fas fa-check" /> : idx + 1}
-                                                                            </div>
-                                                                            {hasFree && (
-                                                                                <span
-                                                                                    title={freePerkText ? `Free Perk: ${freePerkText}` : 'Free Bonus Perk'}
+                                                                                <div
+                                                                                    title={`Stamp ${idx + 1}: ${isPaid ? 'Processed (status = 1) • Click to Edit' : (isCurrentNext ? 'Next Stamp in Line • Click to Process' : `Locked • Complete Stamp #${firstUnprocessedIndex + 1} first`)}${levelData?.reward ? ` • ${levelData.reward}` : ''}${hasFree ? ` (Free: ${freePerkText || 'Free Perk'})` : ''}`}
                                                                                     style={{
-                                                                                        position: 'absolute',
-                                                                                        top: -4,
-                                                                                        right: -4,
-                                                                                        width: 15,
-                                                                                        height: 15,
-                                                                                        borderRadius: '50%',
-                                                                                        background: '#10B981',
-                                                                                        color: '#FFFFFF',
-                                                                                        border: '1.5px solid #FFFFFF',
+                                                                                        width: 40,
+                                                                                        height: 40,
+                                                                                        borderRadius: `${selectedCardDetails?.stamp_radius ?? 50}%`,
+                                                                                        background: isSelected
+                                                                                            ? 'var(--firstloop-primary, #0E88B8)'
+                                                                                            : (isPaid
+                                                                                                ? 'linear-gradient(135deg, #059669 0%, #10B981 100%)'
+                                                                                                : (isCurrentNext ? '#FFFFFF' : '#F1F5F9')),
+                                                                                        color: (isSelected || isPaid) ? '#FFFFFF' : (isCurrentNext ? 'var(--firstloop-primary, #0E88B8)' : '#94A3B8'),
+                                                                                        border: isSelected
+                                                                                            ? '2px solid #0369A1'
+                                                                                            : (isPaid ? 'none' : (isCurrentNext ? '2px solid var(--firstloop-primary, #0E88B8)' : '1.5px dashed #CBD5E1')),
                                                                                         display: 'flex',
                                                                                         alignItems: 'center',
                                                                                         justifyContent: 'center',
-                                                                                        fontSize: '0.45rem',
-                                                                                        boxShadow: '0 2px 4px rgba(0,0,0,0.25)',
-                                                                                        pointerEvents: 'none',
-                                                                                        zIndex: 2
+                                                                                        fontWeight: 800,
+                                                                                        fontSize: '0.84rem',
+                                                                                        boxShadow: isSelected
+                                                                                            ? '0 0 0 3px rgba(14, 136, 184, 0.3), 0 4px 10px rgba(14, 136, 184, 0.25)'
+                                                                                            : (isPaid
+                                                                                                ? '0 2px 6px rgba(16, 185, 129, 0.25)'
+                                                                                                : (isCurrentNext ? '0 0 0 2px rgba(14, 136, 184, 0.2)' : 'none')),
+                                                                                        transform: isSelected ? 'scale(1.06)' : 'scale(1)',
+                                                                                        transition: 'all 0.2s ease',
+                                                                                        position: 'relative'
                                                                                     }}
                                                                                 >
-                                                                                    <i className="fas fa-gift" />
+                                                                                    {isPaid ? (
+                                                                                        isSelected ? <i className="fas fa-edit" style={{ fontSize: '0.8rem' }} /> : <i className="fas fa-check" />
+                                                                                    ) : (
+                                                                                        isCurrentNext ? (
+                                                                                            idx + 1
+                                                                                        ) : (
+                                                                                            <i className="fas fa-lock" style={{ fontSize: '0.72rem', opacity: 0.8 }} />
+                                                                                        )
+                                                                                    )}
+
+                                                                                    {hasFree && (
+                                                                                        <span
+                                                                                            title={freePerkText ? `Free Perk: ${freePerkText}` : 'Free Bonus Perk'}
+                                                                                            style={{
+                                                                                                position: 'absolute',
+                                                                                                top: -5,
+                                                                                                right: -5,
+                                                                                                width: 16,
+                                                                                                height: 16,
+                                                                                                borderRadius: '50%',
+                                                                                                background: '#10B981',
+                                                                                                color: '#FFFFFF',
+                                                                                                border: '1.5px solid #FFFFFF',
+                                                                                                display: 'flex',
+                                                                                                alignItems: 'center',
+                                                                                                justifyContent: 'center',
+                                                                                                fontSize: '0.5rem',
+                                                                                                boxShadow: '0 2px 4px rgba(0,0,0,0.25)',
+                                                                                                pointerEvents: 'none',
+                                                                                                zIndex: 2
+                                                                                            }}
+                                                                                        >
+                                                                                            <i className="fas fa-gift" />
+                                                                                        </span>
+                                                                                    )}
+                                                                                </div>
+
+                                                                                <span
+                                                                                    style={{
+                                                                                        fontSize: '0.68rem',
+                                                                                        fontWeight: isSelected ? 800 : (isCurrentNext ? 800 : 700),
+                                                                                        color: isSelected
+                                                                                            ? 'var(--firstloop-primary, #0E88B8)'
+                                                                                            : (isPaid ? '#059669' : (isCurrentNext ? 'var(--firstloop-primary, #0E88B8)' : '#94A3B8')),
+                                                                                        marginTop: 4
+                                                                                    }}
+                                                                                >
+                                                                                    {isPaid ? 'Edit' : (isCurrentNext ? 'Next' : `S-${idx + 1}`)}
                                                                                 </span>
-                                                                            )}
-                                                                        </div>
-                                                                    )
-                                                                })}
+                                                                            </div>
+                                                                        )
+                                                                    })}
+                                                                </div>
                                                             </div>
                                                         </div>
 
-                                                        {/* Completed Card Notice or Perk & Payment Controls */}
-                                                        {isCompleted ? (
-                                                            <div style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: 16, padding: '20px', marginBottom: 18, textAlign: 'center' }}>
-                                                                <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#10B981', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px', fontSize: '1.3rem' }}>
-                                                                    <i className="fas fa-check-double" />
-                                                                </div>
-                                                                <h5 style={{ fontWeight: 800, color: '#065F46', margin: '0 0 4px', fontSize: '1rem' }}>
-                                                                    Stamp Card Fully Completed!
-                                                                </h5>
-                                                                <p style={{ fontSize: '0.82rem', color: '#047857', margin: '0 0 14px 0' }}>
-                                                                    All {totalStamps} stamps collected. Customer has unlocked all reward perks!
-                                                                </p>
-                                                                <div>
-                                                                    <button
-                                                                        type="button"
-                                                                        className="btn btn-primary"
-                                                                        onClick={handleAddNewCard}
-                                                                        style={{
-                                                                            borderRadius: 12,
-                                                                            fontWeight: 800,
-                                                                            fontSize: '0.88rem',
-                                                                            padding: '9px 20px',
-                                                                            display: 'inline-flex',
-                                                                            alignItems: 'center',
-                                                                            gap: 8,
-                                                                            boxShadow: '0 4px 14px rgba(14, 136, 184, 0.35)'
-                                                                        }}
-                                                                    >
-                                                                        <i className="fas fa-plus-circle" />
-                                                                        <span>Add New Card for Customer</span>
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                        ) : (
-                                                            <>
-                                                                {/* Current Stamp Perk & Payable Amount */}
-                                                                {(() => {
-                                                                    const currentStampIdx = collectedStamps
-                                                                    const activeLevel = selectedCardDetails?.CustomerStampLevels?.[currentStampIdx] || selectedCardDetails?.levelRewards?.[currentStampIdx] || selectedCardDetails?.stamp_levels?.[currentStampIdx]
-                                                                    const hasFreeBonus = (Number(selectedCardDetails?.free_stamp) === 1 || Number(activeLevel?.free_stamp) === 1 || Boolean(selectedCardDetails?.free_text) || Boolean(activeLevel?.free_text))
-                                                                    const freeBonusText = selectedCardDetails?.free_text || activeLevel?.free_text || ''
-
-                                                                    return (
-                                                                        <div
+                                                        {/* DETAILS AREA: Shown when a stamp number is selected */}
+                                                        {selectedStampIndex !== null ? (
+                                                            <div>
+                                                                {/* Active Selection Banner */}
+                                                                <div
+                                                                    style={{
+                                                                        background: isSelectedStampProcessed ? 'rgba(245, 158, 11, 0.08)' : 'rgba(14, 136, 184, 0.08)',
+                                                                        border: isSelectedStampProcessed ? '1.5px solid rgba(245, 158, 11, 0.35)' : '1.5px solid rgba(14, 136, 184, 0.3)',
+                                                                        borderRadius: 12,
+                                                                        padding: '10px 14px',
+                                                                        marginBottom: 16,
+                                                                        display: 'flex',
+                                                                        justifyContent: 'space-between',
+                                                                        alignItems: 'center',
+                                                                        flexWrap: 'wrap',
+                                                                        gap: 8
+                                                                    }}
+                                                                >
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                                        <span
+                                                                            className="badge"
                                                                             style={{
-                                                                                background: '#F8FAFC',
-                                                                                borderRadius: 14,
-                                                                                padding: '14px 16px',
-                                                                                border: '1px solid #E2E8F0',
-                                                                                marginBottom: 16,
-                                                                                display: 'flex',
-                                                                                flexDirection: 'column',
-                                                                                gap: 10
+                                                                                background: isSelectedStampProcessed ? '#D97706' : 'var(--firstloop-primary, #0E88B8)',
+                                                                                color: '#FFFFFF',
+                                                                                fontWeight: 800,
+                                                                                fontSize: '0.78rem',
+                                                                                padding: '4px 8px',
+                                                                                borderRadius: 6
                                                                             }}
                                                                         >
-                                                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                                                                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)' }}>
-                                                                                    Current Stamp Perk:
-                                                                                </span>
-                                                                                <span
-                                                                                    className="badge"
-                                                                                    style={{
-                                                                                        background: '#F59E0B',
-                                                                                        color: '#FFF',
-                                                                                        fontWeight: 800,
-                                                                                        padding: '4px 12px',
-                                                                                        borderRadius: 6,
-                                                                                        fontSize: '0.78rem'
-                                                                                    }}
-                                                                                >
-                                                                                    <i className="fas fa-tag" style={{ marginRight: 5 }} />
-                                                                                    {selectedCardDetails?.descption || 'Paid Perk'}
-                                                                                </span>
-                                                                            </div>
-
-                                                                            {hasFreeBonus && (
-                                                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px dashed #E2E8F0', paddingTop: 8 }}>
-                                                                                    <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#059669', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                                                                                        <i className="fas fa-gift text-success" />
-                                                                                        <span>Bonus Free Perk:</span>
-                                                                                    </span>
-                                                                                    <span
-                                                                                        className="badge"
-                                                                                        style={{
-                                                                                            background: 'rgba(16, 185, 129, 0.15)',
-                                                                                            color: '#059669',
-                                                                                            border: '1px solid rgba(16, 185, 129, 0.3)',
-                                                                                            fontWeight: 800,
-                                                                                            padding: '4px 12px',
-                                                                                            borderRadius: 6,
-                                                                                            fontSize: '0.78rem',
-                                                                                            display: 'inline-flex',
-                                                                                            alignItems: 'center',
-                                                                                            gap: 5
-                                                                                        }}
-                                                                                    >
-                                                                                        <i className="fas fa-gift" />
-                                                                                        <span>Free: {freeBonusText || 'Free Bonus Item'}</span>
-                                                                                    </span>
-                                                                                </div>
+                                                                            {isSelectedStampProcessed ? (
+                                                                                <><i className="fas fa-edit" style={{ marginRight: 4 }} /> Edit Stamp #{selectedStampIndex + 1}</>
+                                                                            ) : (
+                                                                                <><i className="fas fa-stamp" style={{ marginRight: 4 }} /> Stamp #{selectedStampIndex + 1} Check-In</>
                                                                             )}
+                                                                        </span>
+                                                                        <span style={{ fontSize: '0.8rem', color: isSelectedStampProcessed ? '#B45309' : '#0369A1', fontWeight: 600 }}>
+                                                                            {isSelectedStampProcessed
+                                                                                ? 'Already processed. Submitting will update this stamp record.'
+                                                                                : 'Selected for check-in.'}
+                                                                        </span>
+                                                                    </div>
 
-                                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #E2E8F0', paddingTop: 8 }}>
-                                                                                <span style={{ color: 'var(--text-secondary)', fontWeight: 700, fontSize: '0.85rem' }}>Payable Amount:</span>
-                                                                                <strong style={{ color: 'var(--firstloop-primary, #0E88B8)', fontWeight: 800, fontSize: '1.05rem' }}>
-                                                                                    {Number(selectedCardDetails?.overAll_amt ?? selectedCardDetails?.current_amt ?? paymentAmount ?? 0).toFixed(2)}
-                                                                                </strong>
-                                                                            </div>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setSelectedStampIndex(null)}
+                                                                        style={{
+                                                                            background: 'none',
+                                                                            border: 'none',
+                                                                            color: '#64748B',
+                                                                            fontSize: '0.75rem',
+                                                                            cursor: 'pointer',
+                                                                            fontWeight: 700
+                                                                        }}
+                                                                    >
+                                                                        Change Stamp <i className="fas fa-times" />
+                                                                    </button>
+                                                                </div>
+
+                                                                {/* 1. Transaction Payment Amount */}
+                                                                <div className="form-group mb-3">
+                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                                                                        <label style={{ fontSize: '0.82rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
+                                                                            Transaction Payment Amount
+                                                                        </label>
+                                                                        {currentRewardType === 'Discount' && currentDiscountPercent > 0 && (
+                                                                            <span style={{ fontSize: '0.74rem', color: '#0284C7', fontWeight: 700 }}>
+                                                                                {currentDiscountPercent}% discount will be applied
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+
+                                                                    {currentRewardType === 'Free' ? (
+                                                                        <div
+                                                                            style={{
+                                                                                background: 'rgba(16, 185, 129, 0.08)',
+                                                                                border: '1px solid rgba(16, 185, 129, 0.25)',
+                                                                                borderRadius: 10,
+                                                                                padding: '10px 14px',
+                                                                                fontSize: '0.85rem',
+                                                                                fontWeight: 700,
+                                                                                color: '#059669',
+                                                                                display: 'flex',
+                                                                                alignItems: 'center',
+                                                                                gap: 8
+                                                                            }}
+                                                                        >
+                                                                            <i className="fas fa-gift" />
+                                                                            <span>Free Stamp Perk — No payment amount required</span>
                                                                         </div>
-                                                                    )
-                                                                })()}
+                                                                    ) : (
+                                                                        <div style={{ position: 'relative' }}>
+                                                                            <span
+                                                                                style={{
+                                                                                    position: 'absolute',
+                                                                                    left: 14,
+                                                                                    top: '50%',
+                                                                                    transform: 'translateY(-50%)',
+                                                                                    fontWeight: 800,
+                                                                                    color: '#64748B',
+                                                                                    fontSize: '0.9rem'
+                                                                                }}
+                                                                            >
+                                                                                ₹
+                                                                            </span>
+                                                                            <input
+                                                                                type="number"
+                                                                                step="0.01"
+                                                                                min="0"
+                                                                                className="form-control"
+                                                                                placeholder="Enter transaction amount (e.g. 100)..."
+                                                                                value={paymentAmount}
+                                                                                onChange={(e) => setPaymentAmount(e.target.value)}
+                                                                                style={{
+                                                                                    height: 42,
+                                                                                    paddingLeft: 30,
+                                                                                    borderRadius: 10,
+                                                                                    fontWeight: 700,
+                                                                                    fontSize: '0.92rem',
+                                                                                    border: '1.5px solid #CBD5E1'
+                                                                                }}
+                                                                            />
+                                                                        </div>
+                                                                    )}
+                                                                </div>
 
-                                                                {/* Payment Method Selector */}
+                                                                {/* 2. Current Stamp Perk */}
+                                                                <div
+                                                                    style={{
+                                                                        background: '#F8FAFC',
+                                                                        borderRadius: 12,
+                                                                        padding: '12px 16px',
+                                                                        border: '1px solid #E2E8F0',
+                                                                        marginBottom: 12,
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        justifyContent: 'space-between',
+                                                                        flexWrap: 'wrap',
+                                                                        gap: 8
+                                                                    }}
+                                                                >
+                                                                    <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)' }}>
+                                                                        Current Stamp Perk:
+                                                                    </span>
+                                                                    <span
+                                                                        className="badge"
+                                                                        style={{
+                                                                            background: currentRewardType === 'Discount' ? '#0284C7' : (currentRewardType === 'Paid' ? '#F59E0B' : '#10B981'),
+                                                                            color: '#FFF',
+                                                                            fontWeight: 800,
+                                                                            padding: '5px 12px',
+                                                                            borderRadius: 6,
+                                                                            fontSize: '0.8rem',
+                                                                            display: 'inline-flex',
+                                                                            alignItems: 'center',
+                                                                            gap: 6
+                                                                        }}
+                                                                    >
+                                                                        <i className={currentRewardType === 'Discount' ? 'fas fa-percent' : (currentRewardType === 'Paid' ? 'fas fa-tag' : 'fas fa-gift')} />
+                                                                        <span>{currentPerkText || (currentRewardType === 'Discount' ? 'Discount Perk' : (currentRewardType === 'Paid' ? 'Paid Perk' : 'Free Item'))}</span>
+                                                                    </span>
+                                                                </div>
+
+                                                                {/* 3. Payable Amount */}
+                                                                <div
+                                                                    style={{
+                                                                        background: currentRewardType === 'Discount'
+                                                                            ? 'rgba(14, 136, 184, 0.06)'
+                                                                            : (currentRewardType === 'Free' ? 'rgba(16, 185, 129, 0.06)' : '#F8FAFC'),
+                                                                        borderRadius: 12,
+                                                                        padding: '12px 16px',
+                                                                        border: currentRewardType === 'Discount'
+                                                                            ? '1px solid rgba(14, 136, 184, 0.25)'
+                                                                            : (currentRewardType === 'Free' ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid #E2E8F0'),
+                                                                        marginBottom: 12,
+                                                                        display: 'flex',
+                                                                        justifyContent: 'space-between',
+                                                                        alignItems: 'center'
+                                                                    }}
+                                                                >
+                                                                    <div>
+                                                                        <span style={{ color: 'var(--text-secondary)', fontWeight: 700, fontSize: '0.85rem', display: 'block' }}>
+                                                                            Payable Amount:
+                                                                        </span>
+                                                                        {currentRewardType === 'Discount' && currentDiscountPercent > 0 && (
+                                                                            <small style={{ color: '#0284C7', fontSize: '0.72rem', fontWeight: 600 }}>
+                                                                                ({currentDiscountPercent}% discount applied to entered amount)
+                                                                            </small>
+                                                                        )}
+                                                                    </div>
+                                                                    <strong style={{ color: currentRewardType === 'Free' ? '#059669' : 'var(--firstloop-primary, #0E88B8)', fontWeight: 800, fontSize: '1.15rem' }}>
+                                                                        {currentRewardType === 'Free' ? '0.00' : finalPayableAmount.toFixed(2)}
+                                                                    </strong>
+                                                                </div>
+
+                                                                {/* 4. Other details such as Free Stamp and Discount */}
+                                                                <div
+                                                                    style={{
+                                                                        background: '#F8FAFC',
+                                                                        borderRadius: 12,
+                                                                        padding: '12px 16px',
+                                                                        border: '1px solid #E2E8F0',
+                                                                        marginBottom: 14,
+                                                                        display: 'flex',
+                                                                        flexDirection: 'column',
+                                                                        gap: 8
+                                                                    }}
+                                                                >
+                                                                    <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                                        Other details such as Free Stamp and Discount:
+                                                                    </span>
+
+                                                                    {/* Discount Detail */}
+                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem' }}>
+                                                                        <span style={{ color: currentRewardType === 'Discount' ? '#0284C7' : '#64748B', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                                                                            <i className="fas fa-percent" />
+                                                                            <span>Discount:</span>
+                                                                        </span>
+                                                                        {currentRewardType === 'Discount' && currentDiscountPercent > 0 ? (
+                                                                            <span style={{ color: '#0284C7', fontWeight: 800 }}>
+                                                                                {currentDiscountPercent}% (-{discountAmountDeduction.toFixed(2)})
+                                                                            </span>
+                                                                        ) : (
+                                                                            <span style={{ color: '#94A3B8', fontWeight: 600 }}>
+                                                                                No discount applicable
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+
+                                                                    {/* Free Stamp / Bonus Perk Detail */}
+                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', borderTop: '1px dashed #E2E8F0', paddingTop: 8 }}>
+                                                                        <span style={{ color: hasFreeBonus ? '#059669' : '#64748B', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                                                                            <i className="fas fa-gift" />
+                                                                            <span>Free Stamp Perk:</span>
+                                                                        </span>
+                                                                        {hasFreeBonus ? (
+                                                                            <span
+                                                                                className="badge"
+                                                                                style={{
+                                                                                    background: 'rgba(16, 185, 129, 0.15)',
+                                                                                    color: '#059669',
+                                                                                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                                                                                    fontWeight: 800,
+                                                                                    padding: '3px 8px',
+                                                                                    borderRadius: 6,
+                                                                                    fontSize: '0.76rem',
+                                                                                    display: 'inline-flex',
+                                                                                    alignItems: 'center',
+                                                                                    gap: 4
+                                                                                }}
+                                                                            >
+                                                                                <i className="fas fa-gift" />
+                                                                                <span>Free: {freeBonusText || 'Free Bonus Perk'}</span>
+                                                                            </span>
+                                                                        ) : (
+                                                                            <span style={{ color: '#94A3B8', fontWeight: 600 }}>
+                                                                                None
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* 5. Select Payment Method */}
                                                                 <div className="form-group mb-3">
                                                                     <label style={{ fontSize: '0.82rem', fontWeight: 800, marginBottom: 8, display: 'block', color: 'var(--text-primary)' }}>
                                                                         Select Payment Method:
@@ -1206,7 +1824,8 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
                                                                                 display: 'flex',
                                                                                 alignItems: 'center',
                                                                                 justifyContent: 'center',
-                                                                                gap: 8
+                                                                                gap: 8,
+                                                                                transition: 'all 0.15s ease'
                                                                             }}
                                                                         >
                                                                             <i className="fas fa-money-bill-wave" />
@@ -1228,7 +1847,8 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
                                                                                 display: 'flex',
                                                                                 alignItems: 'center',
                                                                                 justifyContent: 'center',
-                                                                                gap: 8
+                                                                                gap: 8,
+                                                                                transition: 'all 0.15s ease'
                                                                             }}
                                                                         >
                                                                             <i className="fas fa-credit-card" />
@@ -1237,75 +1857,173 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
                                                                     </div>
                                                                 </div>
 
-                                                                {/* Amount Field */}
-                                                                <div className="form-group mb-4">
-                                                                    <label style={{ fontSize: '0.82rem', fontWeight: 800, marginBottom: 4, display: 'block', color: 'var(--text-primary)' }}>
-                                                                        Transaction Payment Amount
-                                                                    </label>
-                                                                    <input
-                                                                        type="number"
-                                                                        step="0.01"
-                                                                        className="form-control"
-                                                                        value={paymentAmount}
-                                                                        onChange={(e) => setPaymentAmount(e.target.value)}
-                                                                        style={{ height: 42, borderRadius: 10, fontWeight: 700 }}
-                                                                    />
+                                                                {/* Submit Button */}
+                                                                <button
+                                                                    type="submit"
+                                                                    className="btn firstloop-btn-primary"
+                                                                    disabled={savingCheckIn}
+                                                                    style={{
+                                                                        width: '100%',
+                                                                        padding: '13px',
+                                                                        borderRadius: 12,
+                                                                        fontWeight: 800,
+                                                                        fontSize: '0.92rem',
+                                                                        marginTop: 6,
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        justifyContent: 'center',
+                                                                        gap: 8,
+                                                                        boxShadow: '0 4px 14px rgba(14, 136, 184, 0.25)'
+                                                                    }}
+                                                                >
+                                                                    {savingCheckIn ? (
+                                                                        <>
+                                                                            <i className="fas fa-spinner fa-spin" />
+                                                                            <span>{isSelectedStampProcessed ? 'Updating Stamp Record...' : 'Saving Card Entry...'}</span>
+                                                                        </>
+                                                                    ) : (
+                                                                        <>
+                                                                            <i className={isSelectedStampProcessed ? "fas fa-save" : "fas fa-check-circle"} />
+                                                                            <span>
+                                                                                {isSelectedStampProcessed
+                                                                                    ? `Update Stamp #${selectedStampIndex + 1} Entry ${finalPayableAmount > 0 ? `(₹${finalPayableAmount.toFixed(2)})` : ''}`
+                                                                                    : (currentRewardType === 'Free'
+                                                                                        ? `Log Free Stamp #${selectedStampIndex + 1} Entry`
+                                                                                        : `Log Stamp #${selectedStampIndex + 1} & Collect ₹${finalPayableAmount.toFixed(2)}`)}
+                                                                            </span>
+                                                                        </>
+                                                                    )}
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            /* Instruction guide when no stamp number has been selected yet */
+                                                            isCompleted ? (
+                                                                <div style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: 16, padding: '20px', marginBottom: 18, textAlign: 'center' }}>
+                                                                    <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#10B981', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px', fontSize: '1.3rem' }}>
+                                                                        <i className="fas fa-check-double" />
+                                                                    </div>
+                                                                    <h5 style={{ fontWeight: 800, color: '#065F46', margin: '0 0 4px', fontSize: '1rem' }}>
+                                                                        Stamp Card Fully Completed!
+                                                                    </h5>
+                                                                    <p style={{ fontSize: '0.82rem', color: '#047857', margin: '0 0 14px 0' }}>
+                                                                        All {totalStamps} stamps collected. Customer has unlocked all reward perks! You can click any stamp above to edit its record.
+                                                                    </p>
+                                                                    <div>
+                                                                        <button
+                                                                            type="button"
+                                                                            className="btn btn-primary"
+                                                                            onClick={handleAddNewCard}
+                                                                            style={{
+                                                                                borderRadius: 12,
+                                                                                fontWeight: 800,
+                                                                                fontSize: '0.88rem',
+                                                                                padding: '9px 20px',
+                                                                                display: 'inline-flex',
+                                                                                alignItems: 'center',
+                                                                                gap: 8,
+                                                                                boxShadow: '0 4px 14px rgba(14, 136, 184, 0.35)'
+                                                                            }}
+                                                                        >
+                                                                            <i className="fas fa-plus-circle" />
+                                                                            <span>Add New Card for Customer</span>
+                                                                        </button>
+                                                                    </div>
                                                                 </div>
-                                                            </>
+                                                            ) : (
+                                                                <div
+                                                                    style={{
+                                                                        padding: '24px 18px',
+                                                                        borderRadius: 14,
+                                                                        border: '1.5px dashed #CBD5E1',
+                                                                        background: '#F8FAFC',
+                                                                        color: '#64748B',
+                                                                        textAlign: 'center',
+                                                                        display: 'flex',
+                                                                        flexDirection: 'column',
+                                                                        alignItems: 'center',
+                                                                        justifyContent: 'center',
+                                                                        gap: 8
+                                                                    }}
+                                                                >
+                                                                    <div
+                                                                        style={{
+                                                                            width: 44,
+                                                                            height: 44,
+                                                                            borderRadius: '50%',
+                                                                            background: 'rgba(14, 136, 184, 0.1)',
+                                                                            color: 'var(--firstloop-primary, #0E88B8)',
+                                                                            display: 'flex',
+                                                                            alignItems: 'center',
+                                                                            justifyContent: 'center',
+                                                                            fontSize: '1.2rem'
+                                                                        }}
+                                                                    >
+                                                                        <i className="fas fa-hand-pointer" />
+                                                                    </div>
+                                                                    <strong style={{ fontSize: '0.88rem', color: 'var(--text-primary)' }}>
+                                                                        Step-by-Step: Click on Stamp #{firstUnprocessedIndex + 1}
+                                                                    </strong>
+                                                                    <p style={{ fontSize: '0.78rem', margin: 0, maxWidth: 320, lineHeight: 1.4 }}>
+                                                                        Stamps are completed in sequence. Click Stamp #{firstUnprocessedIndex + 1} to enter payment details, or click any completed stamp to edit.
+                                                                    </p>
+                                                                </div>
+                                                            )
                                                         )}
                                                     </div>
                                                 ) : (
                                                     /* Membership Card Check-In */
-                                                    <div style={{ background: '#F8FAFC', borderRadius: 16, padding: 20, border: '1px solid #E2E8F0', marginBottom: 20 }}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                                                            <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(245, 158, 11, 0.15)', color: '#D97706', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                                <i className="fas fa-crown" />
+                                                    <div>
+                                                        <div style={{ background: '#F8FAFC', borderRadius: 16, padding: 20, border: '1px solid #E2E8F0', marginBottom: 20 }}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                                                                <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(245, 158, 11, 0.15)', color: '#D97706', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                                    <i className="fas fa-crown" />
+                                                                </div>
+                                                                <div>
+                                                                    <strong style={{ fontSize: '0.92rem', color: '#0F172A', display: 'block' }}>
+                                                                        VIP Membership Daily Pass
+                                                                    </strong>
+                                                                    <small style={{ fontSize: '0.75rem', color: '#64748B' }}>
+                                                                        Log daily attendance for active member
+                                                                    </small>
+                                                                </div>
                                                             </div>
-                                                            <div>
-                                                                <strong style={{ fontSize: '0.92rem', color: '#0F172A', display: 'block' }}>
-                                                                    VIP Membership Daily Pass
-                                                                </strong>
-                                                                <small style={{ fontSize: '0.75rem', color: '#64748B' }}>
-                                                                    Log daily attendance for active member
-                                                                </small>
-                                                            </div>
+                                                            <p style={{ fontSize: '0.84rem', color: '#475569', margin: 0 }}>
+                                                                Customer is eligible for daily branch check-in under active membership tier.
+                                                            </p>
                                                         </div>
-                                                        <p style={{ fontSize: '0.84rem', color: '#475569', margin: 0 }}>
-                                                            Customer is eligible for daily branch check-in under active membership tier.
-                                                        </p>
+
+                                                        {/* Submit Button */}
+                                                        <button
+                                                            type="submit"
+                                                            className="btn firstloop-btn-primary"
+                                                            disabled={savingCheckIn}
+                                                            style={{
+                                                                width: '100%',
+                                                                padding: '13px',
+                                                                borderRadius: 12,
+                                                                fontWeight: 800,
+                                                                fontSize: '0.92rem',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                gap: 8,
+                                                                boxShadow: '0 4px 14px rgba(14, 136, 184, 0.25)'
+                                                            }}
+                                                        >
+                                                            {savingCheckIn ? (
+                                                                <>
+                                                                    <i className="fas fa-spinner fa-spin" />
+                                                                    <span>Saving Card Entry...</span>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <i className="fas fa-check-circle" />
+                                                                    <span>Save Today's Check-In Entry</span>
+                                                                </>
+                                                            )}
+                                                        </button>
                                                     </div>
                                                 )}
-
-                                                {/* Submit Button */}
-                                                <button
-                                                    type="submit"
-                                                    className="btn firstloop-btn-primary"
-                                                    disabled={savingCheckIn || (isStampCard && isCompleted)}
-                                                    style={{
-                                                        width: '100%',
-                                                        padding: '13px',
-                                                        borderRadius: 12,
-                                                        fontWeight: 800,
-                                                        fontSize: '0.92rem',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        gap: 8,
-                                                        boxShadow: '0 4px 14px rgba(14, 136, 184, 0.25)'
-                                                    }}
-                                                >
-                                                    {savingCheckIn ? (
-                                                        <>
-                                                            <i className="fas fa-spinner fa-spin" />
-                                                            <span>Saving Card Entry...</span>
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <i className="fas fa-check-circle" />
-                                                            <span>Save Today's Check-In Entry</span>
-                                                        </>
-                                                    )}
-                                                </button>
                                             </form>
                                         </div>
                                     </div>

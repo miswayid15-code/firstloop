@@ -47,7 +47,7 @@ export const checkAccountStatusApi = async (userType, id) => {
         }
 
         const data = res?.data;
-        console.log("data",data)
+        // console.log
         if (!data) {
             return { isActive: true, isDeleted: true, isStatus: true, message: '' };
         }

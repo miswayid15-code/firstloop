@@ -4,21 +4,23 @@ import flLogo from '../assets/img/firstloop-favicon.png'
 import qrImg from '../assets/img/qr-img.png'
 import API from '../api.js'
 import { toast } from 'react-hot-toast'
+import { QRCodeCanvas } from 'qrcode.react';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 // Default Card Designs Fallback List
 // --- QR Code Component ---
-const RealQRCode = ({ size = 80 }) => (
-    <img
-        src={qrImg}
-        alt="QR Code"
+const RealQRCode = ({ size = 80, color = '#000000' }) => (
+    <QRCodeCanvas
+        value="https://firstloop.co.in/"
+        size={size}
+        fgColor={color}
+        bgColor="#FFFFFF"
         style={{
             width: size,
             height: size,
-            objectFit: 'contain',
             flexShrink: 0
         }}
     />
-)
+);
 
 import {
     getRelativeImagePath,
@@ -175,6 +177,8 @@ export default function StampCardBuilderModal({
         stampBorderColor: '#FFFFFF',
         stampTextColor: '#FFFFFF',
         stampRadius: 50,
+        qr_color: '#000000',
+        qrColor: '#000000',
         preset: 'Custom',
         branch_ids: [],
         category_id: merchantData?.cat_id || null,
@@ -272,18 +276,18 @@ export default function StampCardBuilderModal({
             }
 
             // Validation: Stamp Levels amounts for Paid & Discount
-            for (let i = 0; i < (stampForm.levelRewards || []).length; i++) {
-                const lvl = stampForm.levelRewards[i];
-                const isPaidOrDiscount = lvl.type === 'Paid' || lvl.type === 'Discount';
-                if (isPaidOrDiscount) {
-                    const numAmt = Number(lvl.amt);
-                    if (!lvl.amt || isNaN(numAmt) || numAmt <= 0) {
-                        toast.error(`Please enter an amount greater than 0 for Stamp #${i + 1} (${lvl.type} reward)`);
-                        setIsSubmitting(false);
-                        return;
-                    }
-                }
-            }
+            // for (let i = 0; i < (stampForm.levelRewards || []).length; i++) {
+            //     const lvl = stampForm.levelRewards[i];
+            //     const isPaidOrDiscount = lvl.type === 'Paid' || lvl.type === 'Discount';
+            //     if (isPaidOrDiscount) {
+            //         const numAmt = Number(lvl.amt);
+            //         if (!lvl.amt || isNaN(numAmt) || numAmt <= 0) {
+            //             toast.error(`Please enter an amount greater than 0 for Stamp #${i + 1} (${lvl.type} reward)`);
+            //             setIsSubmitting(false);
+            //             return;
+            //         }
+            //     }
+            // }
 
             // Core required fields
             formData.append('merchant_id', Number(targetMerchantId));
@@ -318,6 +322,7 @@ export default function StampCardBuilderModal({
             formData.append('stamp_background', stampForm.stampBgColor || 'rgba(255, 255, 255, 0.3)');
             formData.append('stamp_border_color', stampForm.stampBorderColor || '#FFFFFF');
             formData.append('stamp_text_color', stampForm.stampTextColor || '#FFFFFF');
+            formData.append('qr_color', stampForm.qr_color || stampForm.qrColor || '#000000');
 
             // Category ID resolution
             const catId =
@@ -474,6 +479,8 @@ export default function StampCardBuilderModal({
                 stampBorderColor: cardData.stampBorderColor || cardData.stamp_border_color || '#FFFFFF',
                 stampTextColor: cardData.stampTextColor || cardData.stamp_text_color || '#FFFFFF',
                 stampRadius: Number(cardData.stamp_radius ?? cardData.stampRadius ?? 50),
+                qr_color: (cardData.qr_color && cardData.qr_color !== '#FFFFFF') ? cardData.qr_color : (cardData.qrColor && cardData.qrColor !== '#FFFFFF' ? cardData.qrColor : '#000000'),
+                qrColor: (cardData.qr_color && cardData.qr_color !== '#FFFFFF') ? cardData.qr_color : (cardData.qrColor && cardData.qrColor !== '#FFFFFF' ? cardData.qrColor : '#000000'),
                 preset: cardData.preset || 'Custom',
                 branch_ids: resolvedBranchIds,
                 category_id: cardData.category_id || cardData.cat_id || merchantData?.cat_id || null,
@@ -996,6 +1003,26 @@ export default function StampCardBuilderModal({
                                             />
                                         </div>
                                     </div>
+                                    <div>
+                                        <label style={{ fontSize: '0.8rem', fontWeight: 600, marginBottom: 4, display: 'block' }}>
+                                            Qr Color
+                                        </label>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            <input
+                                                type="color"
+                                                value={(stampForm.qr_color || stampForm.qrColor || '#000000').startsWith('#') ? (stampForm.qr_color || stampForm.qrColor || '#000000') : '#000000'}
+                                                onChange={(e) => setStampForm(prev => ({ ...prev, qr_color: e.target.value, qrColor: e.target.value }))}
+                                                style={{ width: 40, height: 36, padding: 0, border: 'none', borderRadius: 6, cursor: 'pointer' }}
+                                            />
+                                            <input
+                                                type="text"
+                                                className="form-control"
+                                                value={stampForm.qr_color || stampForm.qrColor || '#000000'}
+                                                onChange={(e) => setStampForm(prev => ({ ...prev, qr_color: e.target.value, qrColor: e.target.value }))}
+                                                style={{ height: 36, fontSize: '0.82rem' }}
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -1067,7 +1094,7 @@ export default function StampCardBuilderModal({
                                                             });
                                                         }}
                                                     />
-                                                    <span style={{ fontWeight: 600 }}>{b.name || b.branch_name || `Branch #${b.id}`}</span>
+                                                    <span style={{ fontWeight: 600 }}>{b.name || b.branch_name || `Branch #${b.id}`} - {b.address}</span>
                                                 </label>
                                             );
                                         })
@@ -1361,7 +1388,7 @@ export default function StampCardBuilderModal({
                                                         style={{ flex: 2, height: 34, fontSize: '0.8rem' }}
                                                     />
 
-                                                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                    {/* <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 4 }}>
                                                         <input
                                                             type="number"
                                                             min="0"
@@ -1394,7 +1421,7 @@ export default function StampCardBuilderModal({
                                                                 cursor: reward.type === 'Free' ? 'not-allowed' : 'text'
                                                             }}
                                                         />
-                                                    </div>
+                                                    </div> */}
                                                 </div>
 
                                                 {/* Free Stamp & Free Text (Shown only for reward_type 2: Discount and 3: Paid) */}
@@ -1634,9 +1661,42 @@ export default function StampCardBuilderModal({
                                     </div>
 
                                     {/* Right Side: QR CODE */}
-                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                        <RealQRCode size={86} />
-                                        <small style={{ fontSize: '0.6rem', fontWeight: 700, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.5px', opacity: 0.9 }}>
+                                    <div
+                                        style={{
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            flexShrink: 0
+                                        }}
+                                    >
+                                        <div
+                                            style={{
+                                                backgroundColor: '#FFFFFF',
+                                                borderRadius: '12px',
+                                                padding: '4px',
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center'
+                                            }}
+                                        >
+                                            <RealQRCode
+                                                size={83}
+                                                color={stampForm.qr_color || stampForm.qrColor || '#000000'}
+                                            />
+                                        </div>
+
+
+                                        <small
+                                            style={{
+                                                fontSize: '0.6rem',
+                                                fontWeight: 700,
+                                                marginTop: 4,
+                                                textTransform: 'uppercase',
+                                                letterSpacing: '0.5px',
+                                                opacity: 0.9
+                                            }}
+                                        >
                                             SCAN TO STAMP
                                         </small>
                                     </div>

@@ -85,6 +85,10 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.INTEGER,
                 allowNull: true
             },
+            qr_color: {
+                type: DataTypes.STRING(30),
+                allowNull: true,
+            },
 
             status: {
                 type: DataTypes.SMALLINT,

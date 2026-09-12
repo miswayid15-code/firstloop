@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import API from '../api.js'
-import { fetchCustomerCardDetailsApi } from '../services/cardService.js'
+import { fetchCustomerCardDetailsApi, formatExpiryDate } from '../services/cardService.js'
 
 /**
  * CustomerCardHistory Component (Popup Modal)
@@ -68,7 +68,7 @@ const CustomerCardHistory = ({ isOpen, onClose, cardId, card }) => {
     const customer = historyData?.customer
     const cardInfo = historyData?.card
     const summary = historyData?.summary
-    const stampHistory = historyData?.stamp_history || []
+    const stampHistory = historyData?.stamp_history || historyData?.stamp_levels || historyData?.CustomerStampLevels || []
     const isCompleted = Number(cardInfo?.is_completed) === 1 || Number(card?.is_completed) === 1 || (summary?.total_stamps && Number(summary?.current_stamp) >= Number(summary?.total_stamps))
     const expiryDateVal = cardInfo?.expires_at || card?.expires_at || historyData?.expires_at || cardInfo?.expiry || card?.expiry || null
 
@@ -99,20 +99,6 @@ const CustomerCardHistory = ({ isOpen, onClose, cardId, card }) => {
         }
     }
 
-    const formatExpiryDate = (dateStr) => {
-        if (!dateStr) return '-'
-        try {
-            const d = new Date(dateStr)
-            if (isNaN(d.getTime())) return dateStr
-            return d.toLocaleDateString('en-GB', {
-                day: '2-digit',
-                month: 'short',
-                year: 'numeric'
-            })
-        } catch {
-            return dateStr
-        }
-    }
 
     return (
         <div

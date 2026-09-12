@@ -136,6 +136,7 @@ export default function ReceptionistDashboard() {
             if (userId) payload.user_id = userId
 
             const response = await API.post('firstloop/reception/dashboard', payload)
+            console.log("Dashboard payload:", payload);
             if (response.data?.status == 1 || response.data?.status === "1" || response.data?.success) {
                 const dashData = (response.data?.data && typeof response.data.data === 'object')
                     ? response.data.data
@@ -179,7 +180,7 @@ export default function ReceptionistDashboard() {
     return (
         <div style={{ paddingBottom: 40 }}>
             {/* Header Banner */}
-            <div className="flex-between mb-4" style={{ flexWrap: 'wrap', gap: 16 }}>
+            <div className="mb-4 flex-between" style={{ flexWrap: 'wrap', gap: 16 }}>
                 <div>
                     <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.45rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
                         Receptionist Counter Dashboard
@@ -365,8 +366,8 @@ export default function ReceptionistDashboard() {
             </div>
 
             {/* QUICK ACTIONS BANNER */}
-            <div
-                className="card mb-4"
+            {/* <div
+                className="mb-4 card"
                 style={{
                     padding: 24,
                     borderRadius: 20,
@@ -416,7 +417,7 @@ export default function ReceptionistDashboard() {
                         </div>
                     )}
                 </div>
-            </div>
+            </div> */}
 
             {/* TODAY'S CHECK-IN LOG ACTIVITY TABLE */}
             <div className="card" style={{ padding: 0, overflow: 'hidden', borderRadius: 18, border: '1px solid #E2E8F0', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
@@ -433,7 +434,7 @@ export default function ReceptionistDashboard() {
                 </div>
 
                 <div className="table-responsive">
-                    <table className="table table-hover align-middle mb-0">
+                    <table className="table mb-0 align-middle table-hover">
                         <thead style={{ background: '#F8FAFC', borderBottom: '2px solid #E2E8F0' }}>
                             <tr>
                                 <th style={{ padding: '12px 18px', fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Date & Time</th>

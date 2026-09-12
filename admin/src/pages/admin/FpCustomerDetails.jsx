@@ -4,24 +4,13 @@ import { QRCodeCanvas } from 'qrcode.react'
 import logo from '../../assets/img/firstloop-favicon.png'
 import flLogo from '../../assets/img/firstloop-favicon.png'
 import qrImg from '../../assets/img/qr-img.png'
-import { getCardStyle, formatImageUrl } from '../../services/cardService.js'
+import { getCardStyle, formatImageUrl, formatExpiryDate } from '../../services/cardService.js'
 import API from '../../api.js'
 import { toast } from 'react-hot-toast'
 import CustomerCardHistory from '../../components/CustomerCardHistory.jsx'
 import StampCardPreviewModal from '../../components/StampCardPreviewModal.jsx'
 import MembershipCardPreviewModal from '../../components/MembershipCardPreviewModal.jsx'
-
-// --- Expiry Date Formatter Helper ---
-const formatExpiryDate = (val) => {
-    if (!val) return null
-    try {
-        const d = new Date(val)
-        if (isNaN(d.getTime())) return String(val)
-        return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-    } catch {
-        return String(val)
-    }
-}
+import CardIcon from '../../components/CardIcon.jsx'
 
 // --- QR Code Component Supporting Live Tokens or Default Static QR ---
 const RealQRCode = ({ token, size = 80 }) => {
@@ -890,12 +879,29 @@ export default function FpCustomerDetails() {
                                                                 )
                                                             }
 
+                                                            const hasCustomer = Boolean(
+                                                                card.card_number ||
+                                                                card.customer_id ||
+                                                                card.cus_id ||
+                                                                card.customer_name ||
+                                                                card.cardholderName ||
+                                                                card.customer ||
+                                                                card.qr_token ||
+                                                                card.customer_card_id ||
+                                                                customer?.id
+                                                            )
+
+                                                            const isStamped = Boolean(
+                                                                (rewardItem && (Number(rewardItem.status) === 1 || rewardItem.status === true || rewardItem.status === '1')) ||
+                                                                (hasCustomer && Number(card.current_stamp ?? card.current_stamps ?? card.collected ?? 0) >= stampNum)
+                                                            )
+
                                                             const hasFreeStamp = rewardItem && (rType === 'Discount' || rType === 'Paid') && (Number(rewardItem.free_stamp) === 1 || rewardItem.free_stamp === true || rewardItem.free_stamp === '1')
 
                                                             return (
                                                                 <div
                                                                     key={i}
-                                                                    title={hasFreeStamp ? `${rewardItem.reward || (rType === 'Discount' ? `${rewardItem.discount ?? rewardItem.discountVal}% Off` : 'Paid Perk')} Free: ${rewardItem.free_text || 'Free Item'}` : (rewardItem?.reward_text ? `Stamp #${stampNum}: ${rewardItem.reward_text}` : `Stamp #${stampNum}`)}
+                                                                    title={isStamped ? `Stamp #${stampNum} - Completed` : (hasFreeStamp ? `${rewardItem.reward || (rType === 'Discount' ? `${rewardItem.discount ?? rewardItem.discountVal}% Off` : 'Paid Perk')} Free: ${rewardItem.free_text || 'Free Item'}` : (rewardItem?.reward_text ? `Stamp #${stampNum}: ${rewardItem.reward_text}` : `Stamp #${stampNum}`))}
                                                                     style={{
                                                                         width: 36,
                                                                         height: 36,
@@ -914,7 +920,20 @@ export default function FpCustomerDetails() {
                                                                         position: 'relative'
                                                                     }}
                                                                 >
-                                                                    {iconMarkup}
+                                                                    {isStamped ? (
+                                                                        <CardIcon
+                                                                            name="fa-check"
+                                                                            style={{
+                                                                                fontSize: '0.88rem',
+                                                                                display: 'inline-flex',
+                                                                                alignItems: 'center',
+                                                                                justifyContent: 'center',
+                                                                                lineHeight: 1
+                                                                            }}
+                                                                        />
+                                                                    ) : (
+                                                                        iconMarkup
+                                                                    )}
                                                                     {hasFreeStamp && (
                                                                         <span
                                                                             title={rewardItem.free_text ? `Free Perk: ${rewardItem.free_text}` : 'Free Perk Included'}

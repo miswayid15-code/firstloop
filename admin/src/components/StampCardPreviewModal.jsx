@@ -13,22 +13,12 @@ import {
     captureCardCanvas,
     waitForCardAssets,
     cleanPhoneForWhatsApp,
-    fetchCustomerStampLevelsApi
+    fetchCustomerStampLevelsApi,
+    formatExpiryDate
 } from '../services/cardService.js'
 import CardIcon from './CardIcon.jsx'
 
-const formatExpiryDate = (val) => {
-    if (!val) return null
-    try {
-        const d = new Date(val)
-        if (isNaN(d.getTime())) return String(val)
-        return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-    } catch {
-        return String(val)
-    }
-}
-
-export default function StampCardPreviewModal({
+function StampCardPreviewModal({
     isOpen = true,
     card = null,
     onClose,
@@ -409,12 +399,30 @@ export default function StampCardPreviewModal({
                                                 )
                                             }
 
-                                            const hasFreeStamp = rewardItem && (rType === 'Discount' || rType === 'Paid') && (Number(rewardItem.free_stamp) === 1 || rewardItem.free_stamp === true || rewardItem.free_stamp === '1')
+                                            const hasCustomer = Boolean(
+                                                activeCard.card_number ||
+                                                activeCard.customer_id ||
+                                                activeCard.cus_id ||
+                                                activeCard.customer_name ||
+                                                activeCard.cardholderName ||
+                                                activeCard.customer ||
+                                                activeCard.qr_token ||
+                                                activeCard.customer_card_id
+                                            )
+
+                                            const isStamped = Boolean(
+                                                (rewardItem && (Number(rewardItem.status) === 1 || rewardItem.status === true || rewardItem.status === '1')) ||
+                                                (hasCustomer && Number(activeCard.current_stamp ?? activeCard.current_stamps ?? activeCard.collected ?? 0) >= stampNum)
+                                            )
 
                                             return (
                                                 <div
                                                     key={i}
-                                                    title={hasFreeStamp ? `${rewardItem.reward || (rType === 'Discount' ? `${rewardItem.discount ?? rewardItem.discountVal}% Off` : 'Paid Perk')} Free: ${rewardItem.free_text || 'Free Item'}` : undefined}
+                                                    title={
+                                                        isStamped
+                                                            ? `Stamp #${stampNum} - Completed`
+                                                            : `${rewardItem.reward || (rType === 'Discount' ? `${rewardItem.discount ?? rewardItem.discountVal}% Off` : 'Paid Perk')} Free: ${rewardItem.free_text || 'Free Item'}`
+                                                    }
                                                     style={{
                                                         width: 36,
                                                         height: 36,
@@ -433,8 +441,21 @@ export default function StampCardPreviewModal({
                                                         position: 'relative'
                                                     }}
                                                 >
-                                                    {iconMarkup}
-                                                    {hasFreeStamp && (
+                                                    {isStamped ? (
+                                                        <CardIcon
+                                                            name="fa-check"
+                                                            style={{
+                                                                fontSize: '0.88rem',
+                                                                display: 'inline-flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                lineHeight: 1
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        iconMarkup
+                                                    )}
+                                                    {/* {hasFreeStamp && (
                                                         <span
                                                             title={rewardItem.free_text ? `Free Perk: ${rewardItem.free_text}` : 'Free Perk Included'}
                                                             style={{
@@ -459,7 +480,7 @@ export default function StampCardPreviewModal({
                                                         >
                                                         <CardIcon name="fa-gift" style={{ fontSize: '0.45rem', lineHeight: 1 }} />
                                                         </span>
-                                                    )}
+                                                    )} */}
                                                 </div>
                                             )
                                         })}
@@ -474,30 +495,29 @@ export default function StampCardPreviewModal({
 
                                 {/* Right Side: QR CODE */}
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                    {hasCustomer && (activeCard.qr_token || activeCard.qrImg) ? (
+                                    <div
+                                        style={{
+                                            backgroundColor: '#FFFFFF',
+                                            padding: 4,
+                                            borderRadius: 8,
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center'
+                                        }}
+                                    >
                                         <QRCodeCanvas
-                                            value={activeCard.qr_token || activeCard.qrImg}
-                                            size={92}
+                                            value={activeCard.qr_token || (activeCard.qrImg && typeof activeCard.qrImg === 'string' && !activeCard.qrImg.includes('/') && !activeCard.qrImg.startsWith('data:') ? activeCard.qrImg : '') || 'https://firstloop.co.in/'}
+                                            size={84}
+                                            fgColor={(activeCard.qr_color && activeCard.qr_color !== '#FFFFFF') ? activeCard.qr_color : (activeCard.qrColor && activeCard.qrColor !== '#FFFFFF' ? activeCard.qrColor : '#000000')}
+                                            bgColor="#FFFFFF"
                                             style={{
-                                                width: 92,
-                                                height: 92,
+                                                width: 84,
+                                                height: 84,
                                                 objectFit: 'contain',
                                                 display: 'block'
                                             }}
                                         />
-                                    ) : (
-                                        <img
-                                            src={qrImg}
-                                            alt="QR Code"
-                                            crossOrigin="anonymous"
-                                            style={{
-                                                width: 92,
-                                                height: 92,
-                                                objectFit: 'contain',
-                                                display: 'block'
-                                            }}
-                                        />
-                                    )}
+                                    </div>
                                     <small style={{ fontSize: '0.6rem', fontWeight: 700, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.5px', opacity: 0.9 }}>
                                         SCAN TO STAMP
                                     </small>
@@ -679,3 +699,6 @@ export default function StampCardPreviewModal({
         </div>
     )
 }
+
+export { StampCardPreviewModal }
+export default StampCardPreviewModal

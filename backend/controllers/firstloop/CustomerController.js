@@ -525,7 +525,10 @@ exports.Link_customer = async (req, res) => {
                 card_type === 1
                     ? merchantCard.stamp_text_color || null
                     : null,
-
+            qr_color:
+                card_type === 1
+                    ? merchantCard.qr_color || null
+                    : null,
 
             // ----------------------------------------------
             // MEMBERSHIP CARD DETAILS
@@ -601,8 +604,8 @@ exports.Link_customer = async (req, res) => {
                         stamp_number:
                             level.stamp_number,
 
-                        amt:
-                            level.amt,
+                        // amt:
+                        //     level.amt,
 
                         discount:
                             level.discount,
@@ -622,8 +625,8 @@ exports.Link_customer = async (req, res) => {
                         icon:
                             level.icon || null,
 
-                        category_id:
-                            level.category_id || null,
+                        // category_id:
+                        //     level.category_id || null,
 
                         status:
                             0
@@ -849,6 +852,7 @@ exports.fetch_card = async (req, res) => {
 
                 "card_number",
                 "qr_token",
+                "qr_color",
                 "current_stamp",
                 "status",
                 "is_completed",
@@ -1375,11 +1379,32 @@ exports.get_rep_cus = async (req, res) => {
         }
 
         // ---------------------------------------
-        // 2. GET BRANCH ID
+        // 2. GET RECEPTIONIST
         // ---------------------------------------
 
+        const receptionist = await Receptionist.findByPk(rep_id, {
+            attributes: [
+                "merchant_id",
+                "branch_id"
+            ]
+        });
 
-        const { br_id } = req.body;
+        if (!receptionist) {
+            return res.status(404).json({
+                status: 0,
+                message: "Receptionist not found"
+            });
+        }
+
+        // ---------------------------------------
+        // 3. GET BRANCH ID (Fallback to receptionist.branch_id)
+        // ---------------------------------------
+
+        let { br_id } = req.body;
+
+        if (!br_id && receptionist.branch_id) {
+            br_id = receptionist.branch_id;
+        }
 
         if (!br_id) {
             return res.status(400).json({
@@ -1394,23 +1419,6 @@ exports.get_rep_cus = async (req, res) => {
             return res.status(400).json({
                 status: 0,
                 message: "Invalid Branch ID"
-            });
-        }
-
-        // ---------------------------------------
-        // 3. GET RECEPTIONIST
-        // ---------------------------------------
-
-        const receptionist = await Receptionist.findByPk(rep_id, {
-            attributes: [
-                "merchant_id"
-            ]
-        });
-
-        if (!receptionist) {
-            return res.status(404).json({
-                status: 0,
-                message: "Receptionist not found"
             });
         }
 
@@ -1883,21 +1891,36 @@ exports.stamp_paid = async (req, res) => {
 
     try {
         const {
+            id,                 // Existing stamp level ID for edit
             cus_id,
             card_id,
             payment_type,
             amount,
+            paid_amount,
             stamp_level_id
         } = req.body;
 
+        // ---------------------------------------
+        // 1. REQUIRED FIELDS
+        // ---------------------------------------
 
-
-        if (!cus_id || !card_id || !stamp_level_id) {
+        if (!cus_id || !card_id) {
             await transaction.rollback();
 
             return res.status(400).json({
                 status: 0,
-                message: "Customer ID, Card ID, and Stamp Level ID are required"
+                message: "Customer ID and Card ID are required"
+            });
+        }
+
+        // For create, stamp_level_id is required.
+        // For edit, id is required.
+        if (!id && !stamp_level_id) {
+            await transaction.rollback();
+
+            return res.status(400).json({
+                status: 0,
+                message: "Stamp Level ID is required"
             });
         }
 
@@ -1907,6 +1930,15 @@ exports.stamp_paid = async (req, res) => {
             return res.status(400).json({
                 status: 0,
                 message: "Amount is required"
+            });
+        }
+
+        if (paid_amount === undefined || paid_amount === null || paid_amount === '') {
+            await transaction.rollback();
+
+            return res.status(400).json({
+                status: 0,
+                message: "Paid amount is required"
             });
         }
 
@@ -1928,26 +1960,57 @@ exports.stamp_paid = async (req, res) => {
             });
         }
 
+        // ---------------------------------------
+        // 2. USER
+        // ---------------------------------------
+
         const user = req.merchant || req.receptionist;
+
+        if (!user) {
+            await transaction.rollback();
+
+            return res.status(401).json({
+                status: 0,
+                message: "Unauthorized user"
+            });
+        }
 
         const userType = req.merchant
             ? 'merchant'
             : 'receptionist';
+
         const user_id = user.id;
+
         const customerId = Number(cus_id);
         const cardId = Number(card_id);
-        const paidAmount = Number(amount);
+        const Amount = Number(amount);
+        const paidAmount = Number(paid_amount);
+
+        // ---------------------------------------
+        // 3. VALIDATE AMOUNTS
+        // ---------------------------------------
+
+        if (!Number.isFinite(Amount) || Amount < 0) {
+            await transaction.rollback();
+
+            return res.status(400).json({
+                status: 0,
+                message: "Invalid transaction amount"
+            });
+        }
 
         if (!Number.isFinite(paidAmount) || paidAmount < 0) {
             await transaction.rollback();
 
             return res.status(400).json({
                 status: 0,
-                message: "Invalid amount"
+                message: "Invalid paid amount"
             });
         }
 
-
+        // ---------------------------------------
+        // 4. FIND CUSTOMER CARD
+        // ---------------------------------------
 
         const customer_card = await CustomerCard.findOne({
             where: {
@@ -1967,7 +2030,9 @@ exports.stamp_paid = async (req, res) => {
             });
         }
 
-
+        // ---------------------------------------
+        // 5. VALIDATE CARD TYPE
+        // ---------------------------------------
 
         if (Number(customer_card.card_type) !== 1) {
             await transaction.rollback();
@@ -1978,69 +2043,83 @@ exports.stamp_paid = async (req, res) => {
             });
         }
 
+        // ---------------------------------------
+        // 6. FIND STAMP LEVEL
+        // ---------------------------------------
 
+        let stamp_level;
 
-        if (Number(customer_card.is_completed) !== 0) {
-            await transaction.rollback();
-
-            return res.status(400).json({
-                status: 400,
-                message: "The stamp card is already completed"
+        // EDIT MODE
+        if (id) {
+            stamp_level = await CustomerStampLevel.findOne({
+                where: {
+                    id: Number(id),
+                    customer_card_id: cardId
+                },
+                transaction,
+                lock: transaction.LOCK.UPDATE
             });
+
+            if (!stamp_level) {
+                await transaction.rollback();
+
+                return res.status(404).json({
+                    status: 0,
+                    message: "Stamp level not found"
+                });
+            }
+
+            console.log(
+                "EDIT STAMP LEVEL:",
+                stamp_level.toJSON()
+            );
         }
 
-        // ---------------------------------------
-        // 5. CURRENT STAMP
-        // ---------------------------------------
+        // CREATE MODE
+        else {
+            if (Number(customer_card.is_completed) !== 0) {
+                await transaction.rollback();
 
-        const currentStamp = Number(
-            customer_card.current_stamp || 0
-        );
+                return res.status(400).json({
+                    status: 400,
+                    message: "The stamp card is already completed"
+                });
+            }
 
-        const nextStamp = currentStamp + 1;
+            const currentStamp = Number(
+                customer_card.current_stamp || 0
+            );
 
-        // ---------------------------------------
-        // 6. FIND CURRENT STAMP LEVEL
-        // ---------------------------------------
+            const nextStamp = currentStamp + 1;
 
-        const whereCondition = {
-            customer_card_id: cardId,
-            stamp_number: nextStamp,
-            status: 0
-        };
-
-        // If stamp_level_id is provided
-        if (stamp_level_id) {
-            whereCondition.id = Number(stamp_level_id);
-        }
-
-        const stamp_level = await CustomerStampLevel.findOne({
-            where: whereCondition,
-            transaction,
-            lock: transaction.LOCK.UPDATE
-        });
-
-        // console.log("stamp_level:", stamp_level?.toJSON());
-        // console.log("whereCondition:", whereCondition);
-        const checkLevel = await CustomerStampLevel.findOne({
-            where: {
-                id: Number(stamp_level_id)
-            },
-            raw: true
-        });
-
-        console.log("STAMP LEVEL BY ID:", checkLevel);
-        if (!stamp_level) {
-            await transaction.rollback();
-
-            return res.status(404).json({
-                status: 0,
-                message: `Stamp level ${currentStamp} is already completed`
+            stamp_level = await CustomerStampLevel.findOne({
+                where: {
+                    id: Number(stamp_level_id),
+                    customer_card_id: cardId,
+                    stamp_number: nextStamp,
+                    status: 0
+                },
+                transaction,
+                lock: transaction.LOCK.UPDATE
             });
+
+            if (!stamp_level) {
+                await transaction.rollback();
+
+                return res.status(404).json({
+                    status: 0,
+                    message: `Stamp level ${currentStamp} is already completed`
+                });
+            }
+
+            console.log(
+                "CREATE STAMP LEVEL:",
+                stamp_level.toJSON()
+            );
         }
 
         // ---------------------------------------
-        // 7. VALIDATE REWARD TYPE
+        // 7. REWARD TYPE
         // ---------------------------------------
 
         const rewardType = String(
@@ -2056,98 +2135,197 @@ exports.stamp_paid = async (req, res) => {
 
             return res.status(400).json({
                 status: 0,
-                message: "This stamp level does not require payment"
+                message: "Invalid reward type"
             });
         }
 
         // ---------------------------------------
-        // 8. VALIDATE AMOUNT
+        // 8. CALCULATE PAYABLE AMOUNT
         // ---------------------------------------
 
-        const requiredAmount = Number(stamp_level.amt || 0);
-        const discount = Number(stamp_level.discount || 0);
-
-        const finalAmount = requiredAmount - (
-            requiredAmount * discount / 100
+        const discount = Number(
+            stamp_level.discount || 0
         );
-        if (finalAmount !== paidAmount) {
+
+        if (
+            !Number.isFinite(discount) ||
+            discount < 0 ||
+            discount > 100
+        ) {
             await transaction.rollback();
 
             return res.status(400).json({
                 status: 0,
-                message: `Invalid amount. Required amount is ${finalAmount}`
+                message: "Invalid discount percentage"
             });
         }
 
-        // ---------------------------------------
-        // 9. UPDATE CUSTOMER CARD
-        // ---------------------------------------
+        let finalAmount = 0;
 
-        const totalStamps = Number(
-            customer_card.number_of_stamps || 0
-        );
+        // FREE
+        if (rewardType === '1') {
+            finalAmount = 0;
 
-        const updatedStamp = nextStamp;
+            if (Amount !== 0 || paidAmount !== 0) {
+                await transaction.rollback();
 
-        const isCompleted =
-            totalStamps > 0 &&
-            updatedStamp >= totalStamps;
-
-        await customer_card.update(
-            {
-                current_stamp: updatedStamp,
-                is_completed: isCompleted ? 1 : 0
-            },
-            {
-                transaction
+                return res.status(400).json({
+                    status: 0,
+                    message: "Free stamp does not require payment"
+                });
             }
-        );
+        }
+
+        // DISCOUNT
+        else if (rewardType === '2') {
+            finalAmount = Amount - (
+                Amount * discount / 100
+            );
+
+            finalAmount = Number(
+                finalAmount.toFixed(2)
+            );
+
+            if (
+                Number(paidAmount.toFixed(2)) !== finalAmount
+            ) {
+                await transaction.rollback();
+
+                return res.status(400).json({
+                    status: 0,
+                    message: `Invalid paid amount. Required amount is ${finalAmount.toFixed(2)}`
+                });
+            }
+        }
+
+        // PAID
+        else if (rewardType === '3') {
+            finalAmount = Number(
+                Amount.toFixed(2)
+            );
+
+            if (
+                Number(paidAmount.toFixed(2)) !== finalAmount
+            ) {
+                await transaction.rollback();
+
+                return res.status(400).json({
+                    status: 0,
+                    message: `Invalid paid amount. Required amount is ${finalAmount.toFixed(2)}`
+                });
+            }
+        }
 
         // ---------------------------------------
-        // 10. UPDATE STAMP LEVEL
+        // 9. UPDATE / CREATE STAMP
         // ---------------------------------------
 
-        await CustomerStampLevel.update(
-            {
-                status: 1,
-                paid_amt: paidAmount,
-                payment_type: String(payment_type),
-                payment_status: 1,
-                paid_date: new Date(),
-                role: userType,
-                role_id: user_id
-            },
-            {
-                where: {
-                    id: stamp_level.id,
-                    customer_card_id: cardId
+        if (id) {
+            // -----------------------------------
+            // EDIT MODE
+            // -----------------------------------
+
+            await stamp_level.update(
+                {
+                    amt: Number(Amount.toFixed(2)),
+                    paid_amt: Number(paidAmount.toFixed(2)),
+                    payment_type: String(payment_type),
+                    payment_status: 1,
+                    paid_date: new Date(),
+                    role: userType,
+                    role_id: user_id
                 },
-                transaction
-            }
-        );
+                {
+                    transaction
+                }
+            );
+        } else {
+            // -----------------------------------
+            // CREATE MODE
+            // -----------------------------------
+
+            const currentStamp = Number(
+                customer_card.current_stamp || 0
+            );
+
+            const updatedStamp = currentStamp + 1;
+
+            const totalStamps = Number(
+                customer_card.number_of_stamps || 0
+            );
+
+            const isCompleted =
+                totalStamps > 0 &&
+                updatedStamp >= totalStamps;
+
+            await customer_card.update(
+                {
+                    current_stamp: updatedStamp,
+                    is_completed: isCompleted ? 1 : 0
+                },
+                {
+                    transaction
+                }
+            );
+
+            await stamp_level.update(
+                {
+                    status: 1,
+                    amt: Number(Amount.toFixed(2)),
+                    paid_amt: Number(paidAmount.toFixed(2)),
+                    payment_type: String(payment_type),
+                    payment_status: 1,
+                    paid_date: new Date(),
+                    role: userType,
+                    role_id: user_id
+                },
+                {
+                    transaction
+                }
+            );
+        }
 
         // ---------------------------------------
-        // 11. COMMIT
+        // 10. COMMIT
         // ---------------------------------------
 
         await transaction.commit();
 
         // ---------------------------------------
-        // 12. RESPONSE
+        // 11. RESPONSE
         // ---------------------------------------
+
+        const currentStampAfterUpdate = Number(
+            customer_card.current_stamp || 0
+        );
 
         return res.status(200).json({
             status: 1,
-            message: "Paid stamp processed successfully",
+            message: id
+                ? "Stamp payment updated successfully"
+                : "Paid stamp processed successfully",
+
             data: {
+                id: stamp_level.id,
                 card_id: customer_card.id,
                 customer_id: customer_card.customer_id,
                 stamp_level_id: stamp_level.id,
-                stamp_number: updatedStamp,
+                stamp_number: stamp_level.stamp_number,
                 reward_type: Number(stamp_level.reward_type),
-                amount: paidAmount,
+
+                // Transaction amount entered
+                amount: Number(Amount.toFixed(2)),
+
+                // Final amount after discount
+                paid_amount: Number(paidAmount.toFixed(2)),
+
                 payment_type: Number(payment_type),
-                is_completed: isCompleted ? 1 : 0
+
+                current_stamp: currentStampAfterUpdate,
+
+                is_completed: Number(
+                    customer_card.is_completed || 0
+                )
             }
         });
 
@@ -2155,10 +2333,16 @@ exports.stamp_paid = async (req, res) => {
         try {
             await transaction.rollback();
         } catch (rollbackError) {
-            console.error("Rollback Error:", rollbackError);
+            console.error(
+                "Rollback Error:",
+                rollbackError
+            );
         }
 
-        console.error("stamp_paid Error:", err);
+        console.error(
+            "stamp_paid Error:",
+            err
+        );
 
         return res.status(500).json({
             status: 0,
@@ -2238,6 +2422,7 @@ exports.get_customer_details = async (req, res) => {
                 // CUSTOMER CARD DETAILS
                 "card_number",
                 "qr_token",
+                "qr_color",
                 "current_stamp",
                 "status",
                 "is_completed",
