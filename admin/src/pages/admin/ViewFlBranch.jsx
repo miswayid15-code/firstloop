@@ -16,7 +16,8 @@ import {
     getRelativeImagePath,
     formatImageUrl,
     getCardStyle,
-    formatValidity
+    formatValidity,
+    captureCardCanvas
 } from '../../services/cardService.js'
 
 // Helper: Download Canvas Image using html2canvas
@@ -24,12 +25,7 @@ const handleDownloadCard = async (elementId, title) => {
     const element = document.getElementById(elementId)
     if (!element) return
     try {
-        const canvas = await html2canvas(element, {
-            scale: 2,
-            useCORS: true,
-            allowTaint: true,
-            backgroundColor: null
-        })
+        const canvas = await captureCardCanvas(element)
         const image = canvas.toDataURL('image/png')
         const link = document.createElement('a')
         link.href = image
@@ -221,6 +217,7 @@ export default function ViewFlBranch() {
                         : (Array.isArray(item.stamp_levels) ? item.stamp_levels : [])
 
                     return {
+                        ...item,
                         id: item.id || item._id,
                         title: item.title || 'Stamp Pass',
                         brandName: item.brand_name || branch?.name || 'Elite Branch',
@@ -228,6 +225,8 @@ export default function ViewFlBranch() {
                         total_stamps: totalStamps,
                         reward: item.reward || 'Special Gift',
                         active_members: Number(item.active_members) || 0,
+                        month: item.month || item.validity_months || item.validityMonths || item.totalMonth || item.total_month || 12,
+                        validityMonths: item.month || item.validity_months || item.validityMonths || item.totalMonth || item.total_month || 12,
                         expiry: item.expiry || '2026-12-31',
                         status: Number(item.status) === 1 ? 'Active' : 'Inactive',
                         bgColor: item.background_color || '#0E88B8',
@@ -253,7 +252,9 @@ export default function ViewFlBranch() {
                                     discount: disc,
                                     icon: rType === 'Discount' ? 'fa-percent' : (rType === 'Paid' ? (lvl.icon || 'fa-tag') : 'fa-gift'),
                                     amt: Number(lvl.amt) || 0,
-                                    category_id: lvl.category_id
+                                    category_id: lvl.category_id,
+                                    free_stamp: Number(lvl.free_stamp) === 1 ? 1 : 0,
+                                    free_text: lvl.free_text || ''
                                 };
                             })
                             : Array.from({ length: totalStamps }).map((_, i) => ({
@@ -263,8 +264,11 @@ export default function ViewFlBranch() {
                                 discountVal: 0,
                                 discount: 0,
                                 icon: 'fa-gift',
-                                amt: 0
-                            }))
+                                amt: 0,
+                                free_stamp: 0,
+                                free_text: ''
+                            })),
+                        StampLevels: item.StampLevels || item.stamp_levels || []
                     }
                 })
 
@@ -392,6 +396,8 @@ export default function ViewFlBranch() {
                 brandName: savedForm.brandName,
                 brandLogo: savedForm.brandLogo || logo,
                 total_stamps: count,
+                month: Number(savedForm.month) || 12,
+                validityMonths: Number(savedForm.month) || 12,
                 reward: savedForm.reward,
                 bgColor: savedForm.bgColor,
                 bgImage: savedForm.bgImage,
@@ -412,6 +418,8 @@ export default function ViewFlBranch() {
                 brandLogo: savedForm.brandLogo || logo,
                 tagline: `Collect ${count} Stamps & Get Rewards`,
                 total_stamps: count,
+                month: Number(savedForm.month) || 12,
+                validityMonths: Number(savedForm.month) || 12,
                 reward: savedForm.reward || 'Special Gift Voucher',
                 active_members: 1,
                 expiry: '2026-12-31',
@@ -1050,7 +1058,7 @@ export default function ViewFlBranch() {
                                         </td>
                                         <td style={{ padding: '14px 16px' }}>
                                             {Array.isArray(cus.cards) && cus.cards.length > 0 ? (
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                                                     {cus.cards.map((card, cIdx) => {
                                                         const isStamp = Number(card.card_type) === 1
                                                         const isMembership = Number(card.card_type) === 2
@@ -1061,17 +1069,31 @@ export default function ViewFlBranch() {
                                                                     display: 'inline-flex',
                                                                     alignItems: 'center',
                                                                     justifyContent: 'space-between',
-                                                                    gap: 10,
-                                                                    padding: '6px 10px',
-                                                                    borderRadius: 8,
+                                                                    gap: 12,
+                                                                    padding: '8px 12px',
+                                                                    borderRadius: 10,
                                                                     background: isStamp ? 'rgba(14, 136, 184, 0.08)' : isMembership ? 'rgba(217, 119, 6, 0.08)' : '#F1F5F9',
                                                                     border: `1px solid ${isStamp ? 'rgba(14, 136, 184, 0.22)' : isMembership ? 'rgba(217, 119, 6, 0.22)' : '#E2E8F0'}`,
-                                                                    maxWidth: 360
+                                                                    maxWidth: 420
                                                                 }}
                                                             >
                                                                 <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-                                                                    <div style={{ fontWeight: 600, fontSize: '0.82rem', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                                                        {card.title || (isStamp ? 'Stamp Card' : isMembership ? 'Membership Card' : 'Card')}
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                                        <span style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                                            {card.title || (isStamp ? 'Stamp Card' : isMembership ? 'Membership Card' : 'Card')}
+                                                                        </span>
+                                                                        <span
+                                                                            style={{
+                                                                                fontSize: '0.65rem',
+                                                                                fontWeight: 700,
+                                                                                padding: '1px 6px',
+                                                                                borderRadius: 4,
+                                                                                background: isStamp ? 'var(--firstloop-primary, #0E88B8)' : isMembership ? '#D97706' : '#64748B',
+                                                                                color: '#FFFFFF'
+                                                                            }}
+                                                                        >
+                                                                            {isStamp ? 'Stamp' : isMembership ? 'VIP' : 'Card'}
+                                                                        </span>
                                                                     </div>
                                                                     {card.card_number && (
                                                                         <small style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontFamily: 'monospace' }}>
@@ -1079,23 +1101,83 @@ export default function ViewFlBranch() {
                                                                         </small>
                                                                     )}
                                                                 </div>
-                                                                <span
-                                                                    style={{
-                                                                        flexShrink: 0,
-                                                                        fontSize: '0.68rem',
-                                                                        fontWeight: 700,
-                                                                        padding: '2px 8px',
-                                                                        borderRadius: 6,
-                                                                        display: 'inline-flex',
-                                                                        alignItems: 'center',
-                                                                        gap: 4,
-                                                                        background: isStamp ? 'var(--firstloop-primary, #0E88B8)' : isMembership ? '#D97706' : '#64748B',
-                                                                        color: '#FFFFFF'
-                                                                    }}
-                                                                >
-                                                                    <i className={isStamp ? 'fas fa-stamp' : isMembership ? 'fas fa-id-card' : 'fas fa-credit-card'} style={{ fontSize: '0.65rem' }} />
-                                                                    {isStamp ? 'Stamp Card' : isMembership ? 'Membership Card' : 'Card'}
-                                                                </span>
+
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                                                                    {/* Send to WhatsApp (opens CardPreview with recipient preloaded) */}
+                                                                    <button
+                                                                        type="button"
+                                                                        className="btn"
+                                                                        title={`Send to WhatsApp (${cus.country_code ? `+${cus.country_code} ` : ''}${cus.phone || ''})`}
+                                                                        onClick={() => {
+                                                                            const targetUrl = `/card-preview/${card.id}?type=${card.card_type || (isStamp ? 1 : 2)}&cus_id=${cus.id}&phone=${encodeURIComponent(cus.phone || '')}&country_code=${encodeURIComponent(cus.country_code || '')}&customer_name=${encodeURIComponent(cus.name || '')}`
+                                                                            window.open(targetUrl, '_blank')
+                                                                        }}
+                                                                        style={{
+                                                                            background: '#25D366',
+                                                                            color: '#FFFFFF',
+                                                                            border: 'none',
+                                                                            borderRadius: 6,
+                                                                            padding: '4px 8px',
+                                                                            fontSize: '0.72rem',
+                                                                            fontWeight: 700,
+                                                                            display: 'inline-flex',
+                                                                            alignItems: 'center',
+                                                                            gap: 4,
+                                                                            cursor: 'pointer',
+                                                                            boxShadow: '0 2px 5px rgba(37, 211, 102, 0.3)'
+                                                                        }}
+                                                                    >
+                                                                        <i className="fab fa-whatsapp" style={{ fontSize: '0.82rem' }} />
+                                                                        <span>Send</span>
+                                                                    </button>
+
+                                                                    {/* Preview Card Modal */}
+                                                                    <button
+                                                                        type="button"
+                                                                        className="btn"
+                                                                        title="Preview Card"
+                                                                        onClick={() => {
+                                                                            const cardPayload = {
+                                                                                ...card,
+                                                                                customer_id: cus.id,
+                                                                                customerPhone: cus.phone,
+                                                                                customer_phone: cus.phone,
+                                                                                phone: cus.phone,
+                                                                                customerCountryCode: cus.country_code,
+                                                                                customer_country_code: cus.country_code,
+                                                                                country_code: cus.country_code,
+                                                                                cardholderName: cus.name,
+                                                                                customer_name: cus.name,
+                                                                                brandName: branch?.name || 'Elite Branch',
+                                                                                total_stamps: Number(card.number_of_stamps) || 10,
+                                                                                number_of_stamps: Number(card.number_of_stamps) || 10,
+                                                                                collected: Number(card.current_stamp) || 0,
+                                                                                current_stamp: Number(card.current_stamp) || 0
+                                                                            }
+                                                                            if (isStamp) {
+                                                                                setSelectedStampCard(cardPayload)
+                                                                            } else {
+                                                                                setSelectedMembership(cardPayload)
+                                                                            }
+                                                                        }}
+                                                                        style={{
+                                                                            background: '#FFFFFF',
+                                                                            color: '#475569',
+                                                                            border: '1px solid #CBD5E1',
+                                                                            borderRadius: 6,
+                                                                            padding: '4px 8px',
+                                                                            fontSize: '0.72rem',
+                                                                            fontWeight: 600,
+                                                                            display: 'inline-flex',
+                                                                            alignItems: 'center',
+                                                                            gap: 4,
+                                                                            cursor: 'pointer'
+                                                                        }}
+                                                                    >
+                                                                        <i className="fas fa-eye" style={{ fontSize: '0.75rem' }} />
+                                                                        <span>Preview</span>
+                                                                    </button>
+                                                                </div>
                                                             </div>
                                                         )
                                                     })}

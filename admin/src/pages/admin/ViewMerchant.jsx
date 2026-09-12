@@ -26,7 +26,8 @@ import {
     fetchMembershipCardsApi,
     getCardStyle,
     formatImageUrl,
-    getRelativeImagePath
+    getRelativeImagePath,
+    captureCardCanvas
 } from '../../services/cardService.js'
 import qrImg from '../../assets/img/qr-img.png'
 
@@ -54,12 +55,7 @@ const handleDownloadCard = async (elementId, fileNameTitle) => {
             return
         }
 
-        const canvas = await html2canvas(element, {
-            useCORS: true,
-            allowTaint: true,
-            scale: 2,
-            backgroundColor: null
-        })
+        const canvas = await captureCardCanvas(element)
 
         const image = canvas.toDataURL('image/png')
         const link = document.createElement('a')
@@ -314,6 +310,8 @@ export default function ViewMerchant() {
                 brandName: savedForm.brandName,
                 brandLogo: savedForm.brandLogo,
                 total_stamps: count,
+                month: Number(savedForm.month) || 12,
+                validityMonths: Number(savedForm.month) || 12,
                 reward: savedForm.reward,
                 expiry: savedForm.expiry,
                 bgColor: savedForm.bgColor,

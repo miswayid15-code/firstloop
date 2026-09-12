@@ -8,6 +8,7 @@ import CorporateAddressField from '../../components/CorporateAddressField'
 import API from '../../api.js';
 import { useMerchantFormStore } from '../../store/useMerchantFormStore.js'
 import SalePersonHeader from '../../components/SalePersonHeader';
+import { checkAccountStatusApi } from '../../services/accountStatusService.js';
 
 const libraries = ['places']
 
@@ -67,6 +68,18 @@ export default function AddMerchant() {
             localStorage.removeItem("sale_access_token");
             localStorage.removeItem("saleperson_data");
             navigate("/saleperson-login");
+            return;
+        }
+
+        const salesPersonData = JSON.parse(localStorage.getItem("saleperson_data")) || {};
+        const spId = salesPersonData.id || salesPersonData.user_id;
+        if (spId) {
+            checkAccountStatusApi(4, spId).then(res => {
+                if (!res.isActive) {
+                    toast.error(res.message || "Account is inactive or deleted. Restricted to dashboard.", { id: 'sp-inactive-toast' });
+                    navigate('/saleperson-dashboard', { replace: true });
+                }
+            });
         }
     }, [navigate]);
     const { isLoaded: isMapLoaded, loadError: mapLoadError } = useJsApiLoader({

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import API from '../api.js'
 import { fetchCustomerCardDetailsApi } from '../services/cardService.js'
 
@@ -13,6 +14,10 @@ import { fetchCustomerCardDetailsApi } from '../services/cardService.js'
  * @param {Object} [props.card] - Optional card object
  */
 const CustomerCardHistory = ({ isOpen, onClose, cardId, card }) => {
+    const navigate = useNavigate()
+    const location = useLocation()
+    const isMerchant = location.pathname.includes('/merchant')
+
     const [loading, setLoading] = useState(false)
     const [historyData, setHistoryData] = useState(null)
     const [error, setError] = useState(null)
@@ -64,6 +69,19 @@ const CustomerCardHistory = ({ isOpen, onClose, cardId, card }) => {
     const cardInfo = historyData?.card
     const summary = historyData?.summary
     const stampHistory = historyData?.stamp_history || []
+    const isCompleted = Number(cardInfo?.is_completed) === 1 || Number(card?.is_completed) === 1 || (summary?.total_stamps && Number(summary?.current_stamp) >= Number(summary?.total_stamps))
+    const expiryDateVal = cardInfo?.expires_at || card?.expires_at || historyData?.expires_at || cardInfo?.expiry || card?.expiry || null
+
+    const handleAddNewCard = () => {
+        const branchId = cardInfo?.branch_id || card?.branch_id || ''
+        const emailQuery = customer?.email ? `?email=${encodeURIComponent(customer.email)}` : ''
+        onClose()
+        if (isMerchant) {
+            navigate(`/merchant/add-card-customer/${branchId}${emailQuery}`)
+        } else {
+            navigate(`/receptionist/add-card-customer/${branchId}${emailQuery}`)
+        }
+    }
 
     const formatDate = (dateStr) => {
         if (!dateStr) return '-'
@@ -75,6 +93,21 @@ const CustomerCardHistory = ({ isOpen, onClose, cardId, card }) => {
                 year: 'numeric',
                 hour: '2-digit',
                 minute: '2-digit'
+            })
+        } catch {
+            return dateStr
+        }
+    }
+
+    const formatExpiryDate = (dateStr) => {
+        if (!dateStr) return '-'
+        try {
+            const d = new Date(dateStr)
+            if (isNaN(d.getTime())) return dateStr
+            return d.toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
             })
         } catch {
             return dateStr
@@ -162,6 +195,26 @@ const CustomerCardHistory = ({ isOpen, onClose, cardId, card }) => {
                                         {cardInfo.is_completed === 1 ? 'Completed Card' : `Stamp ${cardInfo.current_stamp || 0}`}
                                     </span>
                                 )}
+                                {expiryDateVal && (
+                                    <span
+                                        className="badge"
+                                        style={{
+                                            background: 'rgba(217, 119, 6, 0.12)',
+                                            color: '#B45309',
+                                            border: '1px solid rgba(217, 119, 6, 0.25)',
+                                            fontWeight: 700,
+                                            padding: '4px 10px',
+                                            borderRadius: 6,
+                                            fontSize: '0.72rem',
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: 4
+                                        }}
+                                    >
+                                        <i className="far fa-calendar-alt" />
+                                        Expires: {formatExpiryDate(expiryDateVal)}
+                                    </span>
+                                )}
                             </div>
                             {customer && (
                                 <small style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>
@@ -171,26 +224,49 @@ const CustomerCardHistory = ({ isOpen, onClose, cardId, card }) => {
                         </div>
                     </div>
 
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        style={{
-                            width: 36,
-                            height: 36,
-                            borderRadius: '50%',
-                            border: '1px solid #E2E8F0',
-                            background: '#FFFFFF',
-                            color: '#64748B',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '1.1rem',
-                            transition: 'all 0.2s ease'
-                        }}
-                    >
-                        &times;
-                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        {isCompleted && (
+                            <button
+                                type="button"
+                                className="btn btn-sm btn-primary"
+                                onClick={handleAddNewCard}
+                                style={{
+                                    borderRadius: 10,
+                                    fontWeight: 700,
+                                    fontSize: '0.82rem',
+                                    padding: '7px 14px',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 6,
+                                    boxShadow: '0 2px 8px rgba(14, 136, 184, 0.25)'
+                                }}
+                            >
+                                <i className="fas fa-plus-circle" />
+                                <span>Add New Card</span>
+                            </button>
+                        )}
+
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            style={{
+                                width: 36,
+                                height: 36,
+                                borderRadius: '50%',
+                                border: '1px solid #E2E8F0',
+                                background: '#FFFFFF',
+                                color: '#64748B',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '1.1rem',
+                                transition: 'all 0.2s ease'
+                            }}
+                        >
+                            &times;
+                        </button>
+                    </div>
                 </div>
 
                 {/* MODAL BODY */}
@@ -210,8 +286,60 @@ const CustomerCardHistory = ({ isOpen, onClose, cardId, card }) => {
                         </div>
                     ) : (
                         <>
+                            {/* COMPLETED CARD BANNER */}
+                            {isCompleted && (
+                                <div
+                                    style={{
+                                        background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.05) 100%)',
+                                        border: '1.5px solid rgba(16, 185, 129, 0.35)',
+                                        borderRadius: 16,
+                                        padding: '16px 20px',
+                                        marginBottom: 20,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        flexWrap: 'wrap',
+                                        gap: 12
+                                    }}
+                                >
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                        <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#10B981', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', flexShrink: 0 }}>
+                                            <i className="fas fa-check-double" />
+                                        </div>
+                                        <div>
+                                            <strong style={{ fontSize: '0.95rem', color: '#065F46', display: 'block' }}>
+                                                Stamp Card Fully Completed!
+                                            </strong>
+                                            <small style={{ fontSize: '0.82rem', color: '#047857' }}>
+                                                All stamps have been collected for this pass. You can now issue a new card to this customer.
+                                            </small>
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        className="btn btn-sm btn-primary"
+                                        onClick={handleAddNewCard}
+                                        style={{
+                                            borderRadius: 10,
+                                            fontWeight: 700,
+                                            fontSize: '0.85rem',
+                                            padding: '8px 16px',
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: 6,
+                                            boxShadow: '0 4px 12px rgba(14, 136, 184, 0.3)'
+                                        }}
+                                    >
+                                        <i className="fas fa-plus-circle" />
+                                        <span>Add New Card</span>
+                                    </button>
+                                </div>
+                            )}
+
                             {/* SUMMARY METRICS CARDS */}
-                            {summary && (
+                            {summary && (() => {
+                                const freeStampsCount = stampHistory.filter(s => Number(s.free_stamp) === 1 || s.free_stamp === true || s.free_stamp === '1' || Boolean(s.free_text)).length
+                                return (
                                 <div
                                     style={{
                                         display: 'grid',
@@ -240,14 +368,31 @@ const CustomerCardHistory = ({ isOpen, onClose, cardId, card }) => {
                                         <h4 style={{ fontSize: '1.35rem', fontWeight: 800, margin: '4px 0 0', color: '#D97706' }}>{summary.paid_stamps || 0}</h4>
                                     </div>
 
+                                    {freeStampsCount > 0 && (
+                                        <div style={{ padding: 14, borderRadius: 14, background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', textAlign: 'center' }}>
+                                            <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#047857', textTransform: 'uppercase' }}>Free Perks</span>
+                                            <h4 style={{ fontSize: '1.35rem', fontWeight: 800, margin: '4px 0 0', color: '#047857' }}>{freeStampsCount}</h4>
+                                        </div>
+                                    )}
+
                                     <div style={{ padding: 14, borderRadius: 14, background: 'rgba(14, 136, 184, 0.1)', border: '1px solid rgba(14, 136, 184, 0.3)', textAlign: 'center' }}>
                                         <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--firstloop-primary)', textTransform: 'uppercase' }}>Total Paid</span>
                                         <h4 style={{ fontSize: '1.35rem', fontWeight: 800, margin: '4px 0 0', color: 'var(--firstloop-primary)' }}>
                                             {Number(summary.total_paid_amount || 0).toFixed(2)}
                                         </h4>
                                     </div>
+
+                                    {expiryDateVal && (
+                                        <div style={{ padding: 14, borderRadius: 14, background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.25)', textAlign: 'center' }}>
+                                            <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#B45309', textTransform: 'uppercase' }}>Expires On</span>
+                                            <h4 style={{ fontSize: '1rem', fontWeight: 800, margin: '6px 0 0', color: '#B45309' }}>
+                                                {formatExpiryDate(expiryDateVal)}
+                                            </h4>
+                                        </div>
+                                    )}
                                 </div>
-                            )}
+                                )
+                            })()}
 
                             {/* STAMP LEVEL HISTORY TABLE */}
                             <div style={{ border: '1px solid #E2E8F0', borderRadius: 16, overflow: 'hidden' }}>
@@ -286,53 +431,125 @@ const CustomerCardHistory = ({ isOpen, onClose, cardId, card }) => {
                                                 stampHistory.map((item) => {
                                                     const isPaid = Number(item.status) === 1
                                                     const rewardTypeStr = item.reward_type_text || (Number(item.reward_type) === 2 ? 'Discount' : (Number(item.reward_type) === 3 ? 'Paid' : 'Free'))
+                                                    const hasFree = Number(item.free_stamp) === 1 || item.free_stamp === true || item.free_stamp === '1' || Boolean(item.free_text)
+                                                    const freePerkText = item.free_text || ''
 
                                                     return (
                                                         <tr key={item.id} style={{ verticalAlign: 'middle' }}>
                                                             {/* STAMP CIRCLE */}
                                                             <td style={{ padding: '12px 14px' }}>
-                                                                <div
-                                                                    style={{
-                                                                        width: 32,
-                                                                        height: 32,
-                                                                        borderRadius: '50%',
-                                                                        background: isPaid ? 'var(--firstloop-gradient-primary)' : '#F1F5F9',
-                                                                        color: isPaid ? '#FFFFFF' : '#64748B',
-                                                                        display: 'flex',
-                                                                        alignItems: 'center',
-                                                                        justifyContent: 'center',
-                                                                        fontWeight: 800,
-                                                                        fontSize: '0.8rem',
-                                                                        border: isPaid ? 'none' : '1px dashed #CBD5E1'
-                                                                    }}
-                                                                >
-                                                                    {isPaid ? <i className="fas fa-check" /> : item.stamp_number}
+                                                                <div style={{ position: 'relative', width: 32, height: 32 }}>
+                                                                    <div
+                                                                        style={{
+                                                                            width: 32,
+                                                                            height: 32,
+                                                                            borderRadius: '50%',
+                                                                            background: isPaid ? 'var(--firstloop-gradient-primary)' : '#F1F5F9',
+                                                                            color: isPaid ? '#FFFFFF' : '#64748B',
+                                                                            display: 'flex',
+                                                                            alignItems: 'center',
+                                                                            justifyContent: 'center',
+                                                                            fontWeight: 800,
+                                                                            fontSize: '0.8rem',
+                                                                            border: isPaid ? 'none' : '1px dashed #CBD5E1'
+                                                                        }}
+                                                                    >
+                                                                        {isPaid ? <i className="fas fa-check" /> : item.stamp_number}
+                                                                    </div>
+                                                                    {hasFree && (
+                                                                        <span
+                                                                            title={freePerkText ? `Free Perk: ${freePerkText}` : 'Free Bonus Perk'}
+                                                                            style={{
+                                                                                position: 'absolute',
+                                                                                top: -4,
+                                                                                right: -4,
+                                                                                width: 15,
+                                                                                height: 15,
+                                                                                borderRadius: '50%',
+                                                                                background: '#10B981',
+                                                                                color: '#FFFFFF',
+                                                                                border: '1.5px solid #FFFFFF',
+                                                                                display: 'flex',
+                                                                                alignItems: 'center',
+                                                                                justifyContent: 'center',
+                                                                                fontSize: '0.45rem',
+                                                                                boxShadow: '0 2px 4px rgba(0,0,0,0.25)',
+                                                                                pointerEvents: 'none'
+                                                                            }}
+                                                                        >
+                                                                            <i className="fas fa-gift" />
+                                                                        </span>
+                                                                    )}
                                                                 </div>
                                                             </td>
 
-                                                            {/* REWARD TEXT */}
-                                                            <td style={{ padding: '12px 14px', fontWeight: 700, color: '#0F172A' }}>
-                                                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                                                    {item.icon && <i className={`fas ${item.icon}`} style={{ color: 'var(--firstloop-primary)' }} />}
-                                                                    <span>{item.reward_text || `Stamp #${item.stamp_number}`}</span>
+                                                            {/* REWARD TEXT & FREE PERK */}
+                                                            <td style={{ padding: '12px 14px', color: '#0F172A' }}>
+                                                                <div style={{ display: 'flex', flexDirection: 'column', gap: 5, alignItems: 'flex-start' }}>
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700 }}>
+                                                                        {item.icon && <i className={`fas ${item.icon}`} style={{ color: 'var(--firstloop-primary)' }} />}
+                                                                        <span>{item.reward_text || `Stamp #${item.stamp_number}`}</span>
+                                                                    </div>
+                                                                    {hasFree && (
+                                                                        <span
+                                                                            className="badge"
+                                                                            title={`Bonus Free Perk: ${freePerkText || 'Included'}`}
+                                                                            style={{
+                                                                                background: 'rgba(16, 185, 129, 0.12)',
+                                                                                color: '#059669',
+                                                                                border: '1px solid rgba(16, 185, 129, 0.25)',
+                                                                                fontWeight: 700,
+                                                                                padding: '3px 8px',
+                                                                                borderRadius: 6,
+                                                                                fontSize: '0.72rem',
+                                                                                display: 'inline-flex',
+                                                                                alignItems: 'center',
+                                                                                gap: 5,
+                                                                                lineHeight: 1.3
+                                                                            }}
+                                                                        >
+                                                                            <i className="fas fa-gift" style={{ fontSize: '0.68rem' }} />
+                                                                            <span>Free: {freePerkText || 'Bonus Perk'}</span>
+                                                                        </span>
+                                                                    )}
                                                                 </div>
                                                             </td>
 
                                                             {/* REWARD TYPE */}
                                                             <td style={{ padding: '12px 14px' }}>
-                                                                <span
-                                                                    className="badge"
-                                                                    style={{
-                                                                        background: rewardTypeStr === 'Discount' ? 'rgba(2, 132, 199, 0.12)' : (rewardTypeStr === 'Paid' ? 'rgba(245, 158, 11, 0.12)' : 'rgba(16, 185, 129, 0.12)'),
-                                                                        color: rewardTypeStr === 'Discount' ? '#0284C7' : (rewardTypeStr === 'Paid' ? '#D97706' : '#059669'),
-                                                                        fontWeight: 800,
-                                                                        padding: '4px 8px',
-                                                                        borderRadius: 6,
-                                                                        fontSize: '0.72rem'
-                                                                    }}
-                                                                >
-                                                                    {rewardTypeStr}
-                                                                </span>
+                                                                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
+                                                                    <span
+                                                                        className="badge"
+                                                                        style={{
+                                                                            background: rewardTypeStr === 'Discount' ? 'rgba(2, 132, 199, 0.12)' : (rewardTypeStr === 'Paid' ? 'rgba(245, 158, 11, 0.12)' : 'rgba(16, 185, 129, 0.12)'),
+                                                                            color: rewardTypeStr === 'Discount' ? '#0284C7' : (rewardTypeStr === 'Paid' ? '#D97706' : '#059669'),
+                                                                            fontWeight: 800,
+                                                                            padding: '4px 8px',
+                                                                            borderRadius: 6,
+                                                                            fontSize: '0.72rem'
+                                                                        }}
+                                                                    >
+                                                                        {rewardTypeStr}
+                                                                    </span>
+                                                                    {hasFree && (
+                                                                        <span
+                                                                            className="badge"
+                                                                            style={{
+                                                                                background: 'rgba(16, 185, 129, 0.15)',
+                                                                                color: '#047857',
+                                                                                fontWeight: 800,
+                                                                                padding: '2px 6px',
+                                                                                borderRadius: 4,
+                                                                                fontSize: '0.66rem',
+                                                                                display: 'inline-flex',
+                                                                                alignItems: 'center',
+                                                                                gap: 3
+                                                                            }}
+                                                                        >
+                                                                            <i className="fas fa-gift" style={{ fontSize: '0.6rem' }} /> +FREE
+                                                                        </span>
+                                                                    )}
+                                                                </div>
                                                             </td>
 
                                                             {/* BASE AMOUNT */}

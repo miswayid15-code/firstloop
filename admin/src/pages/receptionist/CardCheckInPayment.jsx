@@ -37,6 +37,17 @@ export default function CardCheckInPayment() {
     const [searchParams] = useSearchParams()
     const effectiveBranchId = paramBranchId || searchParams.get('branchId') || receptionist?.user_branch_id || receptionist?.branch_id || ''
 
+    const formatExpiryDate = (val) => {
+        if (!val) return null
+        try {
+            const d = new Date(val)
+            if (isNaN(d.getTime())) return String(val)
+            return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+        } catch {
+            return String(val)
+        }
+    }
+
     // Customers State
     const [customerList, setCustomerList] = useState([])
     const [loading, setLoading] = useState(false)
@@ -513,6 +524,11 @@ export default function CardCheckInPayment() {
                     selectedCard.is_completed = isNowCompleted
                     setSelectedCardDetails(prev => prev ? { ...prev, current_stamp: updatedStamps, collected: updatedStamps, is_completed: isNowCompleted } : prev)
 
+                    const activeReward = selectedCardDetails?.CustomerStampLevels?.[currentCollected] || selectedCardDetails?.levelRewards?.[currentCollected] || selectedCardDetails?.stamp_levels?.[currentCollected]
+                    const earnedFreePerk = (Number(selectedCardDetails?.free_stamp) === 1 || Number(activeReward?.free_stamp) === 1 || Boolean(selectedCardDetails?.free_text) || Boolean(activeReward?.free_text))
+                        ? (selectedCardDetails?.free_text || activeReward?.free_text || 'Free Perk')
+                        : null
+
                     const receipt = {
                         receiptId: res.data.receipt_id || `RCP-${Date.now().toString().slice(-6)}`,
                         customerName: matchedCustomer.name || 'Customer',
@@ -526,6 +542,7 @@ export default function CardCheckInPayment() {
                         remainingStamps: Math.max(0, totalStamps - updatedStamps),
                         paymentMethod: paymentMethod,
                         paymentAmount: `$${parseFloat(paymentAmount).toFixed(2)}`,
+                        freePerk: earnedFreePerk,
                         time: nowTime,
                         date: new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
                     }
@@ -536,17 +553,98 @@ export default function CardCheckInPayment() {
                         setPaidCards(prev => new Set([...prev, String(selectedCard.id)]))
                     }
 
-                    // Refresh latest card and level details
+                    // Update matched customer's card list in local state
+                    setMatchedCustomer(prev => {
+                        if (!prev) return prev
+                        const updatedCards = Array.isArray(prev.cards) ? prev.cards.map(c => {
+                            if (String(c.id) === String(selectedCard.id)) {
+                                return {
+                                    ...c,
+                                    collected: updatedStamps,
+                                    current_stamp: updatedStamps,
+                                    is_completed: isNowCompleted
+                                }
+                            }
+                            return c
+                        }) : []
+                        return { ...prev, cards: updatedCards }
+                    })
+
+                    // Refresh latest card and level details & recalculate next stamp payment amount
                     if (selectedCard?.id && matchedCustomer?.id) {
                         const refreshed = await fetchCustomerStampLevelsApi(
                             selectedCard.id,
                             selectedCard.card_type,
                             matchedCustomer.id
                         )
-                        if (refreshed) {
-                            setSelectedCardDetails(refreshed)
+
+                        if (isNowCompleted || updatedStamps >= totalStamps) {
+                            setPaymentAmount('0.00')
+                            if (refreshed) {
+                                setSelectedCardDetails({
+                                    ...refreshed,
+                                    current_stamp: updatedStamps,
+                                    collected: updatedStamps,
+                                    is_completed: 1,
+                                    current_amt: '0.00',
+                                    overAll_amt: 0
+                                })
+                            }
+                        } else if (refreshed) {
+                            const refreshedStamps = Number(refreshed.current_stamp ?? refreshed.collected ?? 0)
+                            if (refreshedStamps >= updatedStamps) {
+                                const nextAmt = Number(refreshed.overAll_amt ?? refreshed.current_amt ?? 0).toFixed(2)
+                                setPaymentAmount(String(nextAmt))
+                                setSelectedCardDetails(refreshed)
+                            } else {
+                                // In case backend returns prior stamp count, calculate next level explicitly
+                                const nextStampNum = updatedStamps + 1
+                                const levels = refreshed.levelRewards || refreshed.CustomerStampLevels || selectedCardDetails?.levelRewards || selectedCardDetails?.CustomerStampLevels || []
+                                const nextLvl = levels.find(l => Number(l.stamp_number || l.stamp) === nextStampNum) || levels[updatedStamps]
+                                if (nextLvl) {
+                                    const rawAmt = Number(nextLvl.amt || 0)
+                                    const rType = Number(nextLvl.rewardType || nextLvl.reward_type || 1)
+                                    const disc = Number(nextLvl.discountVal || nextLvl.discount || 0)
+                                    let net = rawAmt
+                                    if (rType === 2) {
+                                        net = rawAmt - (rawAmt * disc) / 100
+                                    }
+                                    const nextAmt = Math.max(0, net).toFixed(2)
+                                    setPaymentAmount(String(nextAmt))
+                                    refreshed.current_stamp = updatedStamps
+                                    refreshed.collected = updatedStamps
+                                    refreshed.current_amt = rawAmt.toFixed(2)
+                                    refreshed.overAll_amt = net
+                                    refreshed.discount_val = disc
+                                    refreshed.reward_type = rType
+                                    refreshed.descption = nextLvl.reward || nextLvl.reward_text || ''
+                                    refreshed.free_stamp = Number(nextLvl.free_stamp) === 1 ? 1 : 0
+                                    refreshed.free_text = nextLvl.free_text || ''
+                                }
+                                setSelectedCardDetails({ ...refreshed })
+                            }
+                        } else {
+                            // If refreshed API call returned null, calculate from current card details
+                            const nextStampNum = updatedStamps + 1
+                            const levels = selectedCardDetails?.levelRewards || selectedCardDetails?.CustomerStampLevels || []
+                            const nextLvl = levels.find(l => Number(l.stamp_number || l.stamp) === nextStampNum) || levels[updatedStamps]
+                            if (nextLvl) {
+                                const rawAmt = Number(nextLvl.amt || 0)
+                                const rType = Number(nextLvl.rewardType || nextLvl.reward_type || 1)
+                                const disc = Number(nextLvl.discountVal || nextLvl.discount || 0)
+                                let net = rawAmt
+                                if (rType === 2) {
+                                    net = rawAmt - (rawAmt * disc) / 100
+                                }
+                                setPaymentAmount(String(Math.max(0, net).toFixed(2)))
+                            }
                         }
+                    } else if (isNowCompleted || updatedStamps >= totalStamps) {
+                        setPaymentAmount('0.00')
                     }
+
+                    // Background refresh of customer list
+                    fetchCustomers()
                 } else {
                     toast.error(res?.data?.message || "Failed to log stamp payment entry")
                 }
@@ -1273,26 +1371,60 @@ export default function CardCheckInPayment() {
                                         {card.title || (isStamp ? 'Stamp Card' : 'Membership Pass')}
                                     </h5>
                                     {card.card_number && (
-                                        <small style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'monospace', fontWeight: 600, display: 'block', marginBottom: 6 }}>
+                                        <small style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'monospace', fontWeight: 600, display: 'block', marginBottom: 4 }}>
                                             {card.card_number}
                                         </small>
+                                    )}
+                                    {(card.expires_at || card.expiry) && (
+                                        <div style={{ fontSize: '0.72rem', color: '#B45309', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6 }}>
+                                            <i className="far fa-calendar-alt" />
+                                            <span>Expires: {formatExpiryDate(card.expires_at || card.expiry)}</span>
+                                        </div>
                                     )}
 
                                     {isStamp ? (
                                         <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: 6 }}>
                                             {isCardCompleted ? (
-                                                <strong style={{ color: '#059669', fontWeight: 800 }}>
-                                                    <i className="fas fa-check-circle" style={{ marginRight: 4 }} />
-                                                    Card Fully Completed
-                                                </strong>
+                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6 }}>
+                                                    <strong style={{ color: '#059669', fontWeight: 800 }}>
+                                                        <i className="fas fa-check-circle" style={{ marginRight: 4 }} />
+                                                        Card Fully Completed
+                                                    </strong>
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-xs btn-outline-primary"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation()
+                                                            const branchId = effectiveBranchId || ''
+                                                            const emailQuery = matchedCustomer?.email ? `?email=${encodeURIComponent(matchedCustomer.email)}` : ''
+                                                            if (isMerchant) {
+                                                                navigate(`/merchant/add-card-customer/${branchId}${emailQuery}`)
+                                                            } else {
+                                                                navigate(`/receptionist/add-card-customer/${branchId}${emailQuery}`)
+                                                            }
+                                                        }}
+                                                        style={{
+                                                            fontSize: '0.72rem',
+                                                            padding: '3px 8px',
+                                                            borderRadius: 6,
+                                                            fontWeight: 700,
+                                                            display: 'inline-flex',
+                                                            alignItems: 'center',
+                                                            gap: 4
+                                                        }}
+                                                    >
+                                                        <i className="fas fa-plus-circle" />
+                                                        <span>Add New Card</span>
+                                                    </button>
+                                                </div>
                                             ) : (
                                                 <>
                                                     Remaining: <strong style={{ color: 'var(--firstloop-primary)', fontWeight: 800 }}>{remainingStamps} stamps remaining</strong>
                                                 </>
                                             )}
-                                            <div style={{ fontSize: '0.75rem', color: '#059669', marginTop: 4, fontWeight: 700 }}>
+                                            {/* <div style={{ fontSize: '0.75rem', color: '#059669', marginTop: 4, fontWeight: 700 }}>
                                                 Progress: {collectedStamps}/{totalStamps} Stamps Collected
-                                            </div>
+                                            </div> */}
                                         </div>
                                     ) : (
                                         <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: 6 }}>
@@ -1315,6 +1447,7 @@ export default function CardCheckInPayment() {
                 const totalStampsVal = Number(selectedCardDetails?.total_stamps || selectedCardDetails?.number_of_stamps || selectedCard?.total_stamps || selectedCard?.number_of_stamps || selectedCard?.total || 8);
                 const collectedStampsVal = Number(selectedCardDetails?.current_stamp ?? selectedCardDetails?.current_stamps ?? selectedCardDetails?.collected ?? selectedCard?.current_stamp ?? selectedCard?.current_stamps ?? selectedCard?.collected ?? 0);
                 const remainingStampsVal = Math.max(0, totalStampsVal - collectedStampsVal);
+                const isCompletedVal = Number(selectedCardDetails?.is_completed ?? selectedCard?.is_completed ?? (collectedStampsVal >= totalStampsVal ? 1 : 0)) === 1;
 
                 return (
                     <div
@@ -1355,6 +1488,12 @@ export default function CardCheckInPayment() {
                                                 <i className="fas fa-check-circle" style={{ marginRight: 4 }} /> PAID
                                             </span>
                                         )}
+                                        {(selectedCard.expires_at || selectedCardDetails?.expires_at || selectedCard.expiry) && (
+                                            <span style={{ fontSize: '0.72rem', background: 'rgba(217, 119, 6, 0.1)', color: '#B45309', border: '1px solid rgba(217, 119, 6, 0.25)', padding: '2px 8px', borderRadius: 6, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                                <i className="far fa-calendar-alt" />
+                                                Expires: {formatExpiryDate(selectedCard.expires_at || selectedCardDetails?.expires_at || selectedCard.expiry)}
+                                            </span>
+                                        )}
                                     </div>
                                     <h3 style={{ fontSize: '1.3rem', fontWeight: 800, margin: '2px 0 0 0', color: 'var(--text-primary)' }}>
                                         {isStampCard ? 'Stamp Card Check-In Entry' : 'Membership Daily Check-In Entry'}
@@ -1363,7 +1502,7 @@ export default function CardCheckInPayment() {
                             </div>
 
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                                {isStampCard && remainingStampsVal <= 4 && (
+                                {isStampCard && (isCompletedVal || remainingStampsVal <= 4 || Number(selectedCard?.is_completed) === 1) && (
                                     <button
                                         type="button"
                                         className="btn btn-sm btn-primary"
@@ -1496,28 +1635,56 @@ export default function CardCheckInPayment() {
                                                             const isPaid = levelData?.status !== undefined
                                                                 ? Number(levelData.status) === 1
                                                                 : (isCompleted || idx < collectedStamps)
+                                                            const hasFree = Number(levelData?.free_stamp) === 1 || levelData?.free_stamp === true || levelData?.free_stamp === '1' || Boolean(levelData?.free_text)
+                                                            const freePerkText = levelData?.free_text || ''
 
                                                             return (
-                                                                <div
-                                                                    key={idx}
-                                                                    title={`Stamp ${idx + 1}: ${isPaid ? 'Paid / Completed' : 'Not Paid'}`}
-                                                                    style={{
-                                                                        width: 32,
-                                                                        height: 32,
-                                                                        borderRadius: `${selectedCardDetails?.stamp_radius ?? 50}%`,
-                                                                        background: isPaid ? 'var(--firstloop-gradient-primary)' : '#FFFFFF',
-                                                                        color: isPaid ? '#FFFFFF' : '#94A3B8',
-                                                                        border: isPaid ? 'none' : '2px dashed #CBD5E1',
-                                                                        display: 'flex',
-                                                                        alignItems: 'center',
-                                                                        justifyContent: 'center',
-                                                                        fontWeight: 800,
-                                                                        fontSize: '0.78rem',
-                                                                        boxShadow: isPaid ? '0 2px 6px rgba(14, 136, 184, 0.25)' : 'none',
-                                                                        transition: 'all 0.2s ease'
-                                                                    }}
-                                                                >
-                                                                    {isPaid ? <i className="fas fa-check" /> : idx + 1}
+                                                                <div key={idx} style={{ position: 'relative' }}>
+                                                                    <div
+                                                                        title={`Stamp ${idx + 1}: ${isPaid ? 'Paid / Completed' : 'Not Paid'}${levelData?.reward ? ` • ${levelData.reward}` : ''}${hasFree ? ` (+ Free: ${freePerkText || 'Free Perk'})` : ''}`}
+                                                                        style={{
+                                                                            width: 32,
+                                                                            height: 32,
+                                                                            borderRadius: `${selectedCardDetails?.stamp_radius ?? 50}%`,
+                                                                            background: isPaid ? 'var(--firstloop-gradient-primary)' : '#FFFFFF',
+                                                                            color: isPaid ? '#FFFFFF' : '#94A3B8',
+                                                                            border: isPaid ? 'none' : '2px dashed #CBD5E1',
+                                                                            display: 'flex',
+                                                                            alignItems: 'center',
+                                                                            justifyContent: 'center',
+                                                                            fontWeight: 800,
+                                                                            fontSize: '0.78rem',
+                                                                            boxShadow: isPaid ? '0 2px 6px rgba(14, 136, 184, 0.25)' : 'none',
+                                                                            transition: 'all 0.2s ease'
+                                                                        }}
+                                                                    >
+                                                                        {isPaid ? <i className="fas fa-check" /> : idx + 1}
+                                                                    </div>
+                                                                    {hasFree && (
+                                                                        <span
+                                                                            title={freePerkText ? `Free Perk: ${freePerkText}` : 'Free Bonus Perk'}
+                                                                            style={{
+                                                                                position: 'absolute',
+                                                                                top: -4,
+                                                                                right: -4,
+                                                                                width: 15,
+                                                                                height: 15,
+                                                                                borderRadius: '50%',
+                                                                                background: '#10B981',
+                                                                                color: '#FFFFFF',
+                                                                                border: '1.5px solid #FFFFFF',
+                                                                                display: 'flex',
+                                                                                alignItems: 'center',
+                                                                                justifyContent: 'center',
+                                                                                fontSize: '0.45rem',
+                                                                                boxShadow: '0 2px 4px rgba(0,0,0,0.25)',
+                                                                                pointerEvents: 'none',
+                                                                                zIndex: 2
+                                                                            }}
+                                                                        >
+                                                                            <i className="fas fa-gift" />
+                                                                        </span>
+                                                                    )}
                                                                 </div>
                                                             )
                                                         })}
@@ -1533,9 +1700,37 @@ export default function CardCheckInPayment() {
                                                         <h4 style={{ fontWeight: 800, color: '#065F46', margin: '0 0 6px', fontSize: '1.05rem' }}>
                                                             Stamp Card Fully Completed!
                                                         </h4>
-                                                        <p style={{ fontSize: '0.84rem', color: '#047857', margin: 0, lineHeight: 1.5 }}>
+                                                        <p style={{ fontSize: '0.84rem', color: '#047857', margin: '0 0 16px 0', lineHeight: 1.5 }}>
                                                             All <strong>{totalStamps}</strong> stamps have been successfully collected for this customer card. No further stamps or payment check-ins are required.
                                                         </p>
+                                                        <div>
+                                                            <button
+                                                                type="button"
+                                                                className="btn btn-primary"
+                                                                onClick={() => {
+                                                                    const branchId = effectiveBranchId || '';
+                                                                    const emailQuery = matchedCustomer?.email ? `?email=${encodeURIComponent(matchedCustomer.email)}` : '';
+                                                                    if (isMerchant) {
+                                                                        navigate(`/merchant/add-card-customer/${branchId}${emailQuery}`);
+                                                                    } else {
+                                                                        navigate(`/receptionist/add-card-customer/${branchId}${emailQuery}`);
+                                                                    }
+                                                                }}
+                                                                style={{
+                                                                    borderRadius: 12,
+                                                                    fontWeight: 800,
+                                                                    fontSize: '0.92rem',
+                                                                    padding: '10px 22px',
+                                                                    display: 'inline-flex',
+                                                                    alignItems: 'center',
+                                                                    gap: 8,
+                                                                    boxShadow: '0 4px 14px rgba(14, 136, 184, 0.35)'
+                                                                }}
+                                                            >
+                                                                <i className="fas fa-plus-circle" />
+                                                                <span>Add New Card for Customer</span>
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 ) : (
                                                     <>
@@ -1579,6 +1774,41 @@ export default function CardCheckInPayment() {
                                                                         </span>
                                                                     </div>
                                                                 )}
+
+                                                                {/* BONUS FREE PERK IF FREE_STAMP IS ACTIVE */}
+                                                                {(() => {
+                                                                    const currentStampIdx = collectedStamps
+                                                                    const activeLevel = selectedCardDetails?.CustomerStampLevels?.[currentStampIdx] || selectedCardDetails?.levelRewards?.[currentStampIdx] || selectedCardDetails?.stamp_levels?.[currentStampIdx]
+                                                                    const hasFreeBonus = (Number(selectedCardDetails?.free_stamp) === 1 || Number(activeLevel?.free_stamp) === 1 || Boolean(selectedCardDetails?.free_text) || Boolean(activeLevel?.free_text))
+                                                                    const freeBonusText = selectedCardDetails?.free_text || activeLevel?.free_text || ''
+
+                                                                    return hasFreeBonus ? (
+                                                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, paddingBottom: 8, borderBottom: '1px solid #E2E8F0' }}>
+                                                                            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#059669', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                                                                                <i className="fas fa-gift text-success" />
+                                                                                <span>Bonus Free Perk:</span>
+                                                                            </span>
+                                                                            <span
+                                                                                className="badge"
+                                                                                style={{
+                                                                                    background: 'rgba(16, 185, 129, 0.15)',
+                                                                                    color: '#059669',
+                                                                                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                                                                                    fontWeight: 800,
+                                                                                    padding: '4px 10px',
+                                                                                    borderRadius: 6,
+                                                                                    fontSize: '0.78rem',
+                                                                                    display: 'inline-flex',
+                                                                                    alignItems: 'center',
+                                                                                    gap: 5
+                                                                                }}
+                                                                            >
+                                                                                <i className="fas fa-gift" />
+                                                                                <span>+ Free: {freeBonusText || 'Free Bonus Perk'}</span>
+                                                                            </span>
+                                                                        </div>
+                                                                    ) : null
+                                                                })()}
 
                                                                 {/* PRICING BREAKDOWN */}
                                                                 {Number(selectedCardDetails.reward_type) === 2 ? (
@@ -1703,6 +1933,12 @@ export default function CardCheckInPayment() {
                                                     {selectedCard.card_number && (
                                                         <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontFamily: 'monospace', margin: '4px 0 0 0' }}>
                                                             {selectedCard.card_number}
+                                                        </p>
+                                                    )}
+                                                    {(selectedCard.expires_at || selectedCardDetails?.expires_at || selectedCard.expiry) && (
+                                                        <p style={{ fontSize: '0.78rem', color: '#B45309', fontWeight: 700, margin: '4px 0 0 0', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                            <i className="far fa-calendar-alt" />
+                                                            <span>Expires: {formatExpiryDate(selectedCard.expires_at || selectedCardDetails?.expires_at || selectedCard.expiry)}</span>
                                                         </p>
                                                     )}
                                                 </div>
@@ -2224,6 +2460,14 @@ export default function CardCheckInPayment() {
                                         <span>Stamps Remaining:</span>
                                         <strong>{successReceiptModal.remainingStamps} stamps remaining</strong>
                                     </div>
+                                    {successReceiptModal.freePerk && (
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, color: '#047857', background: 'rgba(16, 185, 129, 0.12)', padding: '6px 10px', borderRadius: 8 }}>
+                                            <span style={{ fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                                                <i className="fas fa-gift" /> Free Perk Unlocked:
+                                            </span>
+                                            <strong>{successReceiptModal.freePerk}</strong>
+                                        </div>
+                                    )}
                                 </>
                             ) : (
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, color: '#D97706' }}>

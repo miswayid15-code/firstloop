@@ -68,7 +68,15 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.STRING(255),
                 allowNull: true,
             },
-
+            free_stamp: {
+                type: DataTypes.ENUM('0', '1'),
+                allowNull: false,
+                defaultValue: '0',
+            },
+            free_text: {
+                type: DataTypes.STRING(255),
+                allowNull: true,
+            },
             icon: {
                 type: DataTypes.STRING(255),
                 allowNull: true,

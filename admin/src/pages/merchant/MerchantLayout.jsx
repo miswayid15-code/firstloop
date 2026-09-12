@@ -17,11 +17,16 @@ const getStoredMerchant = () => {
     return {}
 }
 
+import { checkAccountStatusApi } from '../../services/accountStatusService.js'
+import AccountRestrictedSupportModal from '../../components/AccountRestrictedSupportModal.jsx'
+
 export default function MerchantLayout() {
     const navigate = useNavigate()
     const location = useLocation()
     const [mobileOpen, setMobileOpen] = useState(false)
     const [merchant, setMerchant] = useState(getStoredMerchant)
+    const [accountStatus, setAccountStatus] = useState({ checked: false, isActive: true, message: '' })
+    const [supportModalOpen, setSupportModalOpen] = useState(false)
 
     // Ensure FirstLoop theme is set for merchant portal & refresh merchant data on route changes
     useEffect(() => {
@@ -32,6 +37,34 @@ export default function MerchantLayout() {
 
         setMerchant(getStoredMerchant())
     }, [location.pathname])
+
+    // Check account status via api/check_status_account
+    useEffect(() => {
+        let isMounted = true
+        const verifyStatus = async () => {
+            const mId = merchant?.id || merchant?.user_id || merchant?.merchant_id || localStorage.getItem("mer_user_id")
+            if (!mId) return
+            const result = await checkAccountStatusApi(1, mId)
+            if (isMounted) {
+                setAccountStatus({
+                    checked: true,
+                    isActive: result.isActive,
+                    message: result.message
+                })
+
+                // If inactive and trying to navigate to other pages, restrict to dashboard
+                if (!result.isActive) {
+                    const cleanPath = location.pathname.replace(/\/+$/, '')
+                    if (cleanPath !== '/merchant/dashboard' && cleanPath !== '/merchant') {
+                        toast.error(result.message || 'Account is inactive. Access restricted to Dashboard only.', { id: 'acct-status-toast' })
+                        navigate('/merchant/dashboard', { replace: true })
+                    }
+                }
+            }
+        }
+        verifyStatus()
+        return () => { isMounted = false }
+    }, [merchant?.id, merchant?.user_id, location.pathname, navigate])
 
     const handleLogout = async () => {
         try {
@@ -64,7 +97,7 @@ export default function MerchantLayout() {
         }
     }
 
-    const menuItems = [
+    const allMenuItems = [
         { to: '/merchant/dashboard', icon: 'fa-chart-pie', label: 'Dashboard' },
         { to: '/merchant/customers', icon: 'fa-users', label: 'Customers' },
         { to: '/merchant/cards', icon: 'fa-id-card', label: 'Cards' },
@@ -72,6 +105,11 @@ export default function MerchantLayout() {
         { to: '/merchant/receptionists', icon: 'fa-user-tie', label: 'Receptionists' },
         { to: '/merchant/reports', icon: 'fa-chart-line', label: 'Reports' },
     ]
+
+    // If account is inactive, only allow Dashboard
+    const menuItems = accountStatus.checked && !accountStatus.isActive
+        ? allMenuItems.filter(item => item.to === '/merchant/dashboard')
+        : allMenuItems
 
     return (
         <div className="app-container firstloop-theme" data-role="firstloop" data-theme="firstloop" style={{ minHeight: '100vh', background: 'var(--bg-primary)' }}>
@@ -335,7 +373,91 @@ export default function MerchantLayout() {
 
                 {/* PAGE CONTAINER */}
                 <main style={{ flex: 1, padding: '16px 14px 80px', maxWidth: 1400, width: '100%', margin: '0 auto' }}>
-                    <Outlet />
+                    {accountStatus.checked && !accountStatus.isActive && (
+                        <div
+                            style={{
+                                background: 'linear-gradient(135deg, #FEF2F2 0%, #FEE2E2 100%)',
+                                border: '1.5px solid #EF4444',
+                                borderRadius: 16,
+                                padding: '16px 20px',
+                                marginBottom: 24,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 14,
+                                boxShadow: '0 4px 14px rgba(239, 68, 68, 0.12)'
+                            }}
+                        >
+                            <div
+                                style={{
+                                    width: 42,
+                                    height: 42,
+                                    borderRadius: 12,
+                                    background: '#EF4444',
+                                    color: '#FFF',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '1.25rem',
+                                    flexShrink: 0
+                                }}
+                            >
+                                <i className="fas fa-exclamation-triangle" />
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <h4 style={{ margin: '0 0 3px', fontSize: '0.98rem', fontWeight: 800, color: '#991B1B' }}>
+                                    Account Status Inactive or Suspended
+                                </h4>
+                                <p style={{ margin: 0, fontSize: '0.84rem', color: '#B91C1C', lineHeight: 1.4 }}>
+                                    {accountStatus.message || "Your account has been deactivated or marked inactive. Only the dashboard view is permitted. Access to cards, customers, branches, and receptionists is restricted."}
+                                </p>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                                <span
+                                    style={{
+                                        background: '#DC2626',
+                                        color: '#FFFFFF',
+                                        padding: '4px 10px',
+                                        borderRadius: 8,
+                                        fontSize: '0.74rem',
+                                        fontWeight: 800,
+                                        letterSpacing: '0.5px'
+                                    }}
+                                >
+                                    RESTRICTED
+                                </span>
+                                <button
+                                    type="button"
+                                    onClick={() => setSupportModalOpen(true)}
+                                    style={{
+                                        background: '#991B1B',
+                                        color: '#FFFFFF',
+                                        border: 'none',
+                                        borderRadius: 8,
+                                        padding: '6px 14px',
+                                        fontSize: '0.8rem',
+                                        fontWeight: 800,
+                                        cursor: 'pointer',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: 6,
+                                        boxShadow: '0 2px 8px rgba(153, 27, 27, 0.3)'
+                                    }}
+                                >
+                                    <i className="fas fa-headset" />
+                                    <span>Contact Support</span>
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                    <Outlet context={{ isAccountActive: accountStatus.isActive, accountMessage: accountStatus.message, openSupportModal: () => setSupportModalOpen(true) }} />
+
+                    {/* Support Popup Modal */}
+                    <AccountRestrictedSupportModal
+                        isOpen={supportModalOpen}
+                        onClose={() => setSupportModalOpen(false)}
+                        userType={1}
+                        accountMessage={accountStatus?.message}
+                    />
                 </main>
 
                 {/* FLOATING MOBILE BOTTOM NAVIGATION BAR FOR MERCHANT */}

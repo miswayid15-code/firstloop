@@ -45,10 +45,11 @@ const formatExpiry = (date) => {
 
     const expiryDate = new Date(date);
 
+    const day = String(expiryDate.getUTCDate()).padStart(2, '0');
     const month = String(expiryDate.getUTCMonth() + 1).padStart(2, '0');
     const year = String(expiryDate.getUTCFullYear()).slice(-2);
 
-    return `${month}/${year}`;
+    return `${day}/${month}/${year}`;
 };
 exports.check_customer = async (req, res) => {
     try {
@@ -310,7 +311,7 @@ exports.Link_customer = async (req, res) => {
         // --------------------------------------------------
 
         let merchantCard = null;
-        let month = null;
+
 
 
         if (card_type === 1) {
@@ -347,30 +348,30 @@ exports.Link_customer = async (req, res) => {
                 message: 'Card configuration not found'
             });
         }
+        month = parseInt(
+            merchantCard.month,
+            10
+        );
 
+
+        if (!month || month <= 0) {
+
+            await transaction.rollback();
+
+            return res.status(400).json({
+                status: 0,
+                message: 'Valid month is required for membership card'
+            });
+        }
 
         // --------------------------------------------------
         // 7. MEMBERSHIP VALIDITY
         // --------------------------------------------------
 
-        if (card_type === 2) {
-
-            month = parseInt(
-                merchantCard.month,
-                10
-            );
+        // if (card_type === 2) {
 
 
-            if (!month || month <= 0) {
-
-                await transaction.rollback();
-
-                return res.status(400).json({
-                    status: 0,
-                    message: 'Valid month is required for membership card'
-                });
-            }
-        }
+        // }
 
 
         // --------------------------------------------------
@@ -443,16 +444,16 @@ exports.Link_customer = async (req, res) => {
         let expires_at = null;
 
 
-        if (card_type === 2) {
+        // if (card_type === 2) {
 
-            const expiryDate = new Date();
+        const expiryDate = new Date();
 
-            expiryDate.setMonth(
-                expiryDate.getMonth() + month
-            );
+        expiryDate.setMonth(
+            expiryDate.getMonth() + month
+        );
 
-            expires_at = expiryDate;
-        }
+        expires_at = expiryDate;
+        // }
 
 
         // --------------------------------------------------
@@ -530,10 +531,8 @@ exports.Link_customer = async (req, res) => {
             // MEMBERSHIP CARD DETAILS
             // ----------------------------------------------
 
-            month:
-                card_type === 2
-                    ? month
-                    : null,
+            month: month || null,
+
 
 
             // ----------------------------------------------
@@ -613,6 +612,12 @@ exports.Link_customer = async (req, res) => {
 
                         reward_text:
                             level.reward_text || null,
+
+                        free_stamp:
+                            level.free_stamp || 0,
+
+                        free_text:
+                            level.free_text || null,
 
                         icon:
                             level.icon || null,
@@ -891,6 +896,8 @@ exports.fetch_card = async (req, res) => {
                                 "discount",
                                 "reward_type",
                                 "reward_text",
+                                "free_stamp",
+                                "free_text",
                                 "icon",
                                 "category_id",
                                 "status"
@@ -2284,6 +2291,8 @@ exports.get_customer_details = async (req, res) => {
                         "discount",
                         "reward_type",
                         "reward_text",
+                        "free_stamp",
+                        "free_text",
                         "icon",
                         "category_id",
                         "status"
@@ -2444,6 +2453,8 @@ exports.get_customer_card_details = async (req, res) => {
                 reward_type: rewardType,
                 reward_type_text: rewardTypeText,
 
+                free_text: level.free_text,
+                free_stamp: level.free_stamp,
                 reward_text: level.reward_text,
                 icon: level.icon,
                 category_id: level.category_id,

@@ -35,4 +35,5 @@ router.post("/get-notification-list", controller.get_notification_list);
 router.post("/update-notification-list", controller.update_notification);
 router.post("/create_support", controller.create_support);
 router.post("/check_account", controller.check_delete_account);
+router.post("/check_status_account", controller.check_status_account);
 module.exports = router;

@@ -81,6 +81,10 @@ module.exports = (sequelize, DataTypes) => {
                 allowNull: true,
                 defaultValue: [],
             },
+            month: {
+                type: DataTypes.INTEGER,
+                allowNull: true
+            },
 
             status: {
                 type: DataTypes.SMALLINT,

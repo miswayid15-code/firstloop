@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink, useNavigate, useOutletContext } from 'react-router-dom'
 import { toast } from "react-hot-toast"
 import API from '../../api.js';
+import AccountRestrictedSupportModal from '../../components/AccountRestrictedSupportModal.jsx';
 
 // Helper to safely retrieve merchant data from localStorage
 const getStoredMerchant = () => {
@@ -83,9 +84,12 @@ const getPaymentLabel = (type) => {
 
 export default function MerchantDashboard() {
     const navigate = useNavigate()
+    const outletCtx = useOutletContext()
+    const isAccountActive = (outletCtx && outletCtx.isAccountActive !== undefined) ? outletCtx.isAccountActive : true
     const [dashboard, setDashboard] = useState(null)
     const [loading, setLoading] = useState(false)
     const [merchant, setMerchant] = useState(getStoredMerchant)
+    const [supportModalOpen, setSupportModalOpen] = useState(false)
 
     const fetchDashboard = async (currentMerchant = merchant) => {
         try {
@@ -195,48 +199,74 @@ export default function MerchantDashboard() {
                         <span>Refresh</span>
                     </button>
 
-                    <button
-                        type="button"
-                        onClick={() => navigate('/merchant/cards')}
-                        style={{
-                            background: '#FFFFFF',
-                            color: 'var(--firstloop-primary)',
-                            padding: '10px 18px',
-                            borderRadius: 12,
-                            fontWeight: 700,
-                            fontSize: '0.85rem',
-                            border: 'none',
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 8,
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                        }}
-                    >
-                        <i className="fas fa-plus-circle" />
-                        <span>Manage Cards</span>
-                    </button>
+                    {isAccountActive ? (
+                        <>
+                            <button
+                                type="button"
+                                onClick={() => navigate('/merchant/cards')}
+                                style={{
+                                    background: '#FFFFFF',
+                                    color: 'var(--firstloop-primary)',
+                                    padding: '10px 18px',
+                                    borderRadius: 12,
+                                    fontWeight: 700,
+                                    fontSize: '0.85rem',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 8,
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                                }}
+                            >
+                                <i className="fas fa-plus-circle" />
+                                <span>Manage Cards</span>
+                            </button>
 
-                    <button
-                        type="button"
-                        onClick={() => navigate('/merchant/branches')}
-                        style={{
-                            background: 'rgba(255, 255, 255, 0.2)',
-                            color: '#FFFFFF',
-                            padding: '10px 18px',
-                            borderRadius: 12,
-                            fontWeight: 700,
-                            fontSize: '0.85rem',
-                            border: '1px solid rgba(255, 255, 255, 0.4)',
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 8
-                        }}
-                    >
-                        <i className="fas fa-store" />
-                        <span>View Branches</span>
-                    </button>
+                            <button
+                                type="button"
+                                onClick={() => navigate('/merchant/branches')}
+                                style={{
+                                    background: 'rgba(255, 255, 255, 0.2)',
+                                    color: '#FFFFFF',
+                                    padding: '10px 18px',
+                                    borderRadius: 12,
+                                    fontWeight: 700,
+                                    fontSize: '0.85rem',
+                                    border: '1px solid rgba(255, 255, 255, 0.4)',
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 8
+                                }}
+                            >
+                                <i className="fas fa-store" />
+                                <span>View Branches</span>
+                            </button>
+                        </>
+                    ) : (
+                        <button
+                            type="button"
+                            onClick={() => setSupportModalOpen(true)}
+                            style={{
+                                background: '#DC2626',
+                                color: '#FFFFFF',
+                                padding: '10px 18px',
+                                borderRadius: 12,
+                                fontWeight: 800,
+                                fontSize: '0.85rem',
+                                border: 'none',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 8,
+                                boxShadow: '0 4px 12px rgba(220, 38, 38, 0.35)'
+                            }}
+                        >
+                            <i className="fas fa-headset" />
+                            <span>Contact Support</span>
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -244,17 +274,17 @@ export default function MerchantDashboard() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 18, marginBottom: 28 }}>
                 <div
                     className="card"
-                    onClick={() => navigate('/merchant/branches')}
+                    onClick={isAccountActive ? () => navigate('/merchant/branches') : undefined}
                     style={{
                         padding: 18,
                         borderRadius: 16,
                         border: '1px solid rgba(14, 136, 184, 0.15)',
                         background: '#FFFFFF',
-                        cursor: 'pointer',
+                        cursor: isAccountActive ? 'pointer' : 'default',
                         transition: 'transform 0.15s ease, box-shadow 0.15s ease'
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-                    onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                    onMouseEnter={(e) => { if (isAccountActive) e.currentTarget.style.transform = 'translateY(-2px)' }}
+                    onMouseLeave={(e) => { if (isAccountActive) e.currentTarget.style.transform = 'translateY(0)' }}
                 >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>Active Branches</span>
@@ -272,24 +302,26 @@ export default function MerchantDashboard() {
                     >
                         {loading ? <i className="fas fa-spinner fa-spin" style={{ fontSize: '1.2rem' }} /> : `${dashboard?.active_br ?? 0} Locations`}
                     </div>
-                    <small style={{ fontSize: '0.72rem', color: 'var(--firstloop-primary)', fontWeight: 700, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <span>Manage Branches &rarr;</span>
-                    </small>
+                    {isAccountActive && (
+                        <small style={{ fontSize: '0.72rem', color: 'var(--firstloop-primary)', fontWeight: 700, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <span>Manage Branches &rarr;</span>
+                        </small>
+                    )}
                 </div>
 
                 <div
                     className="card"
-                    onClick={() => navigate('/merchant/customers')}
+                    onClick={isAccountActive ? () => navigate('/merchant/customers') : undefined}
                     style={{
                         padding: 18,
                         borderRadius: 16,
                         border: '1px solid rgba(14, 136, 184, 0.15)',
                         background: '#FFFFFF',
-                        cursor: 'pointer',
+                        cursor: isAccountActive ? 'pointer' : 'default',
                         transition: 'transform 0.15s ease, box-shadow 0.15s ease'
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-                    onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                    onMouseEnter={(e) => { if (isAccountActive) e.currentTarget.style.transform = 'translateY(-2px)' }}
+                    onMouseLeave={(e) => { if (isAccountActive) e.currentTarget.style.transform = 'translateY(0)' }}
                 >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>Enrolled Customers</span>
@@ -300,24 +332,26 @@ export default function MerchantDashboard() {
                     <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: 8 }}>
                         {loading ? <i className="fas fa-spinner fa-spin" style={{ fontSize: '1.2rem' }} /> : `${dashboard?.active_cus ?? 0} Members`}
                     </div>
-                    <small style={{ fontSize: '0.72rem', color: '#059669', fontWeight: 700, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <span>View Customer List &rarr;</span>
-                    </small>
+                    {isAccountActive && (
+                        <small style={{ fontSize: '0.72rem', color: '#059669', fontWeight: 700, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <span>View Customer List &rarr;</span>
+                        </small>
+                    )}
                 </div>
 
                 <div
                     className="card"
-                    onClick={() => navigate('/merchant/cards')}
+                    onClick={isAccountActive ? () => navigate('/merchant/cards') : undefined}
                     style={{
                         padding: 18,
                         borderRadius: 16,
                         border: '1px solid rgba(14, 136, 184, 0.15)',
                         background: '#FFFFFF',
-                        cursor: 'pointer',
+                        cursor: isAccountActive ? 'pointer' : 'default',
                         transition: 'transform 0.15s ease, box-shadow 0.15s ease'
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-                    onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                    onMouseEnter={(e) => { if (isAccountActive) e.currentTarget.style.transform = 'translateY(-2px)' }}
+                    onMouseLeave={(e) => { if (isAccountActive) e.currentTarget.style.transform = 'translateY(0)' }}
                 >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>Active Stamp Cards</span>
@@ -328,24 +362,26 @@ export default function MerchantDashboard() {
                     <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: 8 }}>
                         {loading ? <i className="fas fa-spinner fa-spin" style={{ fontSize: '1.2rem' }} /> : `${dashboard?.active_st_cr ?? 0} Active Passes`}
                     </div>
-                    <small style={{ fontSize: '0.72rem', color: '#EF0003', fontWeight: 700, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <span>Manage Stamp Cards &rarr;</span>
-                    </small>
+                    {isAccountActive && (
+                        <small style={{ fontSize: '0.72rem', color: '#EF0003', fontWeight: 700, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <span>Manage Stamp Cards &rarr;</span>
+                        </small>
+                    )}
                 </div>
 
                 <div
                     className="card"
-                    onClick={() => navigate('/merchant/cards')}
+                    onClick={isAccountActive ? () => navigate('/merchant/cards') : undefined}
                     style={{
                         padding: 18,
                         borderRadius: 16,
                         border: '1px solid rgba(14, 136, 184, 0.15)',
                         background: '#FFFFFF',
-                        cursor: 'pointer',
+                        cursor: isAccountActive ? 'pointer' : 'default',
                         transition: 'transform 0.15s ease, box-shadow 0.15s ease'
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-                    onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                    onMouseEnter={(e) => { if (isAccountActive) e.currentTarget.style.transform = 'translateY(-2px)' }}
+                    onMouseLeave={(e) => { if (isAccountActive) e.currentTarget.style.transform = 'translateY(0)' }}
                 >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>Membership Tiers</span>
@@ -356,9 +392,11 @@ export default function MerchantDashboard() {
                     <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: 8 }}>
                         {loading ? <i className="fas fa-spinner fa-spin" style={{ fontSize: '1.2rem' }} /> : `${dashboard?.active_mem_cr ?? 0} Tiers`}
                     </div>
-                    <small style={{ fontSize: '0.72rem', color: '#D97706', fontWeight: 700, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <span>Manage Memberships &rarr;</span>
-                    </small>
+                    {isAccountActive && (
+                        <small style={{ fontSize: '0.72rem', color: '#D97706', fontWeight: 700, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <span>Manage Memberships &rarr;</span>
+                        </small>
+                    )}
                 </div>
             </div>
 
@@ -379,9 +417,11 @@ export default function MerchantDashboard() {
                         </p>
                     </div>
 
-                    <NavLink to="/merchant/reports" className="btn btn-sm" style={{ background: 'var(--firstloop-primary-light)', color: 'var(--firstloop-primary)', fontWeight: 700, fontSize: '0.82rem', borderRadius: 8, padding: '6px 12px', textDecoration: 'none' }}>
-                        View Full Reports &rarr;
-                    </NavLink>
+                    {isAccountActive && (
+                        <NavLink to="/merchant/reports" className="btn btn-sm" style={{ background: 'var(--firstloop-primary-light)', color: 'var(--firstloop-primary)', fontWeight: 700, fontSize: '0.82rem', borderRadius: 8, padding: '6px 12px', textDecoration: 'none' }}>
+                            View Full Reports &rarr;
+                        </NavLink>
+                    )}
                 </div>
 
                 <div className="table-responsive">
@@ -420,11 +460,11 @@ export default function MerchantDashboard() {
                                                 </div>
                                             </td>
                                             <td
-                                                onClick={() => navigate('/merchant/customers')}
-                                                style={{ cursor: 'pointer' }}
-                                                title="View in Customer List"
+                                                onClick={isAccountActive ? () => navigate('/merchant/customers') : undefined}
+                                                style={{ cursor: isAccountActive ? 'pointer' : 'default' }}
+                                                title={isAccountActive ? "View in Customer List" : undefined}
                                             >
-                                                <strong style={{ fontWeight: 700, color: 'var(--firstloop-primary)', display: 'block' }}>
+                                                <strong style={{ fontWeight: 700, color: isAccountActive ? 'var(--firstloop-primary)' : 'inherit', display: 'block' }}>
                                                     {tx.name || 'Customer'}
                                                 </strong>
                                                 <small style={{ color: 'var(--text-muted)' }}>{phoneFormatted}</small>
@@ -432,10 +472,10 @@ export default function MerchantDashboard() {
                                             <td>
                                                 <span
                                                     className="badge"
-                                                    onClick={(e) => {
+                                                    onClick={isAccountActive ? (e) => {
                                                         e.stopPropagation()
                                                         navigate(tx.branch_id ? `/merchant/branches/${tx.branch_id}` : '/merchant/branches')
-                                                    }}
+                                                    } : undefined}
                                                     style={{
                                                         background: '#F1F5F9',
                                                         color: '#475569',
@@ -445,9 +485,9 @@ export default function MerchantDashboard() {
                                                         display: 'inline-flex',
                                                         alignItems: 'center',
                                                         gap: 4,
-                                                        cursor: 'pointer'
+                                                        cursor: isAccountActive ? 'pointer' : 'default'
                                                     }}
-                                                    title="View Branch Details"
+                                                    title={isAccountActive ? "View Branch Details" : undefined}
                                                 >
                                                     <i className="fas fa-map-marker-alt" style={{ color: 'var(--firstloop-primary)' }} />
                                                     {tx.branch_name || 'Branch'}
@@ -457,19 +497,19 @@ export default function MerchantDashboard() {
                                                 {isStamp ? (
                                                     <span
                                                         className="badge"
-                                                        onClick={(e) => {
+                                                        onClick={isAccountActive ? (e) => {
                                                             e.stopPropagation()
                                                             navigate('/merchant/cards')
-                                                        }}
+                                                        } : undefined}
                                                         style={{
                                                             background: 'var(--firstloop-primary-light)',
                                                             color: 'var(--firstloop-primary)',
                                                             fontWeight: 700,
                                                             padding: '6px 10px',
                                                             borderRadius: 8,
-                                                            cursor: 'pointer'
+                                                            cursor: isAccountActive ? 'pointer' : 'default'
                                                         }}
-                                                        title="Manage Stamp Cards"
+                                                        title={isAccountActive ? "Manage Stamp Cards" : undefined}
                                                     >
                                                         <i className="fas fa-stamp" style={{ marginRight: 4 }} />
                                                         {tx.card_name || 'Stamp Card'}
@@ -477,19 +517,19 @@ export default function MerchantDashboard() {
                                                 ) : (
                                                     <span
                                                         className="badge"
-                                                        onClick={(e) => {
+                                                        onClick={isAccountActive ? (e) => {
                                                             e.stopPropagation()
                                                             navigate('/merchant/cards')
-                                                        }}
+                                                        } : undefined}
                                                         style={{
                                                             background: 'rgba(245, 158, 11, 0.15)',
                                                             color: '#D97706',
                                                             fontWeight: 700,
                                                             padding: '6px 10px',
                                                             borderRadius: 8,
-                                                            cursor: 'pointer'
+                                                            cursor: isAccountActive ? 'pointer' : 'default'
                                                         }}
-                                                        title="Manage Membership Cards"
+                                                        title={isAccountActive ? "Manage Membership Cards" : undefined}
                                                     >
                                                         <i className="fas fa-crown" style={{ marginRight: 4 }} />
                                                         {tx.card_name || 'VIP Membership'}
@@ -528,6 +568,14 @@ export default function MerchantDashboard() {
                     </table>
                 </div>
             </div>
+
+            {/* Support Popup Modal */}
+            <AccountRestrictedSupportModal
+                isOpen={supportModalOpen}
+                onClose={() => setSupportModalOpen(false)}
+                userType={1}
+                accountMessage={outletCtx?.accountMessage}
+            />
         </div>
     )
 }

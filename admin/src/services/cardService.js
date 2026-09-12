@@ -1,4 +1,5 @@
 import API from '../api.js';
+import html2canvas from 'html2canvas';
 
 // Helper: Clean relative image path
 export const getRelativeImagePath = (value) => {
@@ -76,6 +77,237 @@ export const formatValidity = (val) => {
 };
 
 /**
+ * Clean phone number for WhatsApp API (combines country_code and phone into international digits)
+ * Handles country_code being number (e.g. 91) or string (e.g. "91", "+91")
+ * Handles phone having trunk zeros (e.g. "08608862409") or already prefixed with country code
+ * @param {string|number} phone
+ * @param {string|number} [countryCode]
+ * @returns {string} digits only
+ */
+export const cleanPhoneForWhatsApp = (phone, countryCode = '') => {
+    if (!phone) return '';
+    const p = String(phone).trim();
+    const cc = String(countryCode || '').replace(/\D/g, '');
+    let digits = p.replace(/\D/g, '');
+    if (!digits) return '';
+
+    if (cc) {
+        // If digits start with trunk prefix '0' (common in local formats), strip it
+        if (digits.startsWith('0')) {
+            digits = digits.replace(/^0+/, '');
+        }
+        // If digits do not already start with the country code, prepend it
+        if (!digits.startsWith(cc)) {
+            digits = `${cc}${digits}`;
+        }
+    }
+    return digits;
+};
+
+
+/**
+ * Ensures all fonts (Font Awesome, web fonts), <img> elements, and background images
+ * are fully loaded before html2canvas captures the card DOM element.
+ * @param {HTMLElement} element - The card container element to capture
+ * @returns {Promise<void>}
+ */
+export const waitForCardAssets = async (element) => {
+    if (!element) return;
+
+    // 1. Wait for document fonts (Font Awesome, web fonts) to be fully loaded
+    if (typeof document !== 'undefined' && document.fonts && document.fonts.ready) {
+        try {
+            await document.fonts.ready;
+        } catch (e) {
+            console.warn('Font loading check error:', e);
+        }
+    }
+
+    // 2. Wait for all <img> tags inside the card
+    const images = Array.from(element.querySelectorAll('img'));
+    const imgPromises = images.map((img) => {
+        if (img.complete && img.naturalHeight !== 0) {
+            return Promise.resolve();
+        }
+        return new Promise((resolve) => {
+            img.onload = () => resolve();
+            img.onerror = () => resolve();
+            setTimeout(resolve, 3000);
+        });
+    });
+
+    // 3. Wait for CSS background images on element or children
+    const bgImage = window.getComputedStyle(element).backgroundImage;
+    if (bgImage && bgImage !== 'none') {
+        const matches = bgImage.match(/url\(["']?([^"')]+)["']?\)/);
+        if (matches && matches[1]) {
+            const bgPromise = new Promise((resolve) => {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.src = matches[1];
+                if (img.complete && img.naturalHeight !== 0) {
+                    resolve();
+                } else {
+                    img.onload = () => resolve();
+                    img.onerror = () => resolve();
+                    setTimeout(resolve, 3000);
+                }
+            });
+            imgPromises.push(bgPromise);
+        }
+    }
+
+    await Promise.all(imgPromises);
+
+    // 4. Brief delay to guarantee browser render tree and subpixel layout stabilization
+    await new Promise((resolve) => setTimeout(resolve, 150));
+};
+
+/**
+ * Accurately captures the rendered card element into an HTML5 Canvas matching the Live Card Preview exactly.
+ * - Waits for all fonts (Font Awesome, web fonts) and images (img tags & CSS background)
+ * - Measures the exact live rendered dimensions (width and height)
+ * - Locks dimensions in the cloned document so responsive widths (width: 100%, max-width) do not stretch to iframe width
+ * - Uses scale: 2, useCORS: true, backgroundColor: null
+ *
+ * @param {HTMLElement} cardElement - The live DOM container element of the card
+ * @param {Object} [customOptions] - Optional html2canvas overrides
+ * @returns {Promise<HTMLCanvasElement>}
+ */
+export const captureCardCanvas = async (cardElement, customOptions = {}) => {
+    if (!cardElement) {
+        throw new Error('Card element not provided for capture');
+    }
+
+    // 1. Wait for document fonts to be ready
+    if (document.fonts?.ready) {
+        try {
+            await document.fonts.ready;
+        } catch (e) {
+            console.warn('Font loading check error:', e);
+        }
+    }
+
+    // 2. Wait for images in the original card element
+    const origImages = cardElement.querySelectorAll('img');
+    await Promise.all(
+        Array.from(origImages).map((img) => {
+            if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+            return new Promise((resolve) => {
+                img.onload = resolve;
+                img.onerror = resolve;
+            });
+        })
+    );
+
+    // 3. Detect the card's original/base design dimensions from computed CSS / style
+    const computed = window.getComputedStyle(cardElement);
+    const parsedMaxWidth = parseFloat(cardElement.style.maxWidth || computed.maxWidth);
+    const parsedWidth = parseFloat(cardElement.style.width || computed.width);
+
+    // Original base width is the unscaled card design width (e.g. 380px or 420px)
+    const baseWidth = (!isNaN(parsedMaxWidth) && parsedMaxWidth > 0)
+        ? parsedMaxWidth
+        : ((!isNaN(parsedWidth) && parsedWidth > 0) ? parsedWidth : 380);
+
+    // 4. Clone the card for export
+    const clone = cardElement.cloneNode(true);
+
+    // Transfer HTML5 canvas bitmap data (e.g. QRCodeCanvas) to the clone
+    const origCanvases = cardElement.querySelectorAll('canvas');
+    const cloneCanvases = clone.querySelectorAll('canvas');
+    origCanvases.forEach((origCanvas, idx) => {
+        const cloneCanvas = cloneCanvases[idx];
+        if (cloneCanvas) {
+            cloneCanvas.width = origCanvas.width;
+            cloneCanvas.height = origCanvas.height;
+            const ctx = cloneCanvas.getContext('2d');
+            if (ctx) {
+                ctx.drawImage(origCanvas, 0, 0);
+            }
+        }
+    });
+
+    // 5. Remove responsive scaling from the clone only and set to fixed original dimensions
+    clone.style.transform = 'none';
+    clone.style.webkitTransform = 'none';
+    clone.style.zoom = '1';
+    clone.style.width = `${baseWidth}px`;
+    clone.style.minWidth = `${baseWidth}px`;
+    clone.style.maxWidth = `${baseWidth}px`;
+    clone.style.boxSizing = 'border-box';
+    clone.style.margin = '0';
+    clone.style.flexShrink = '0';
+
+    // 6. Temporarily place the clone in an off-screen container
+    const container = document.createElement('div');
+    container.style.position = 'fixed';
+    container.style.top = '-99999px';
+    container.style.left = '-99999px';
+    container.style.width = `${baseWidth}px`;
+    container.style.zIndex = '-9999';
+    container.style.opacity = '1';
+    container.style.pointerEvents = 'none';
+    container.style.overflow = 'visible';
+
+    container.appendChild(clone);
+    document.body.appendChild(container);
+
+    let canvas;
+    try {
+        // Wait for clone images to be ready
+        const cloneImages = clone.querySelectorAll('img');
+        await Promise.all(
+            Array.from(cloneImages).map((img) => {
+                if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+                return new Promise((resolve) => {
+                    img.onload = resolve;
+                    img.onerror = resolve;
+                });
+            })
+        );
+
+        // Determine natural base height at the original unscaled baseWidth
+        const baseHeight = clone.offsetHeight || clone.scrollHeight || parseFloat(computed.minHeight) || 240;
+        clone.style.height = `${baseHeight}px`;
+        clone.style.minHeight = `${baseHeight}px`;
+        clone.style.maxHeight = `${baseHeight}px`;
+
+        // 7. Capture the unscaled clone using html2canvas
+        canvas = await html2canvas(clone, {
+            scale: 2,
+            useCORS: true,
+            allowTaint: false,
+            backgroundColor: null,
+            logging: false,
+            width: baseWidth,
+            height: baseHeight,
+            windowWidth: baseWidth,
+            windowHeight: baseHeight,
+            scrollX: 0,
+            scrollY: 0,
+            onclone: async (clonedDocument) => {
+                if (clonedDocument.fonts?.ready) {
+                    try {
+                        await clonedDocument.fonts.ready;
+                    } catch (e) {
+                        console.warn('Cloned font loading error:', e);
+                    }
+                }
+            },
+            ...customOptions
+        });
+    } finally {
+        // 8. Remove the temporary off-screen container
+        if (container && container.parentNode) {
+            container.parentNode.removeChild(container);
+        }
+    }
+
+    return canvas;
+};
+
+/**
  * Fetch and format Stamp Cards from API
  * @param {Object} params
  * @param {number|string} [params.merchantId]
@@ -95,6 +327,7 @@ export const fetchStampCardsApi = async ({ merchantId, branchId, fallbackBrandNa
             const list = Array.isArray(rawList) ? rawList : [];
 
             return list.map(item => ({
+                ...item,
                 id: item.id || item._id,
                 title: item.title || 'Stamp Pass',
                 brandName: item.brand_name || fallbackBrandName,
@@ -102,6 +335,8 @@ export const fetchStampCardsApi = async ({ merchantId, branchId, fallbackBrandNa
                 total_stamps: Number(item.number_of_stamps) || 8,
                 // reward: item.reward || 's',
                 active_members: item.active_members || 0,
+                month: item.month || item.validity_months || item.validityMonths || item.totalMonth || item.total_month || 12,
+                validityMonths: item.month || item.validity_months || item.validityMonths || item.totalMonth || item.total_month || 12,
                 expiry: item.expiry || '2026-12-31',
                 status: 'Active',
                 bgColor: item.background_color || '#0E88B8',
@@ -135,7 +370,9 @@ export const fetchStampCardsApi = async ({ merchantId, branchId, fallbackBrandNa
                                 discount: disc,
                                 icon: isDiscount ? 'fa-percent' : (isPaid ? (lvl.icon || 'fa-tag') : 'fa-gift'),
                                 amt: Number(lvl.amt) || 0,
-                                category_id: lvl.category_id || null
+                                category_id: lvl.category_id || null,
+                                free_stamp: Number(lvl.free_stamp) === 1 ? 1 : 0,
+                                free_text: lvl.free_text || ''
                             };
                         });
                     }
@@ -312,7 +549,9 @@ export const fetchCustomerStampLevelsApi = async (cardId, cardType, cusId) => {
                                         : 'fa-gift'
                             ),
 
-                        amt: Number(lvl.amt) || 0
+                        amt: Number(lvl.amt) || 0,
+                        free_stamp: Number(lvl.free_stamp) === 1 ? 1 : 0,
+                        free_text: lvl.free_text || ''
                     };
                 })
                 : Array.from({ length: totalStamps }).map((_, i) => ({
@@ -515,6 +754,11 @@ export const fetchCustomerStampLevelsApi = async (cardId, cardType, cusId) => {
                     || overAll_amt,
 
                 descption: item.reward_text || descption,
+                free_stamp: Number(item.free_stamp ?? latestReward?.free_stamp ?? 0) === 1 ? 1 : 0,
+                free_text: item.free_text || latestReward?.free_text || '',
+                expires_at: item.expires_at || item.expiry || null,
+                expiry: item.expires_at || item.expiry || null,
+                month: item.month || null,
                 is_completed: Number(item.is_completed ?? (currentStamp >= totalStamps ? 1 : 0))
             };
         }

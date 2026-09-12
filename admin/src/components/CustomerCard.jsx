@@ -7,6 +7,17 @@ import {
     formatValidity
 } from '../services/cardService.js'
 
+const formatExpiryDate = (val) => {
+    if (!val) return null
+    try {
+        const d = new Date(val)
+        if (isNaN(d.getTime())) return String(val)
+        return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+    } catch {
+        return String(val)
+    }
+}
+
 /**
  * Reusable Customer Card Component
  * Supports both Type 1 (Stamp Pass) and Type 2 (Membership Pass)
@@ -26,19 +37,30 @@ const CustomerCard = forwardRef(({ card, cardType: propCardType, canvasId, style
     const finalCanvasId = canvasId || (type === 2 ? 'membership-pass-preview-canvas' : 'stamp-card-preview-canvas')
     const totalStamps = Number(card.total_stamps || card.number_of_stamps || card.total || 8)
 
+    const hasCustomer = Boolean(
+        card.card_number ||
+        card.customer_id ||
+        card.cus_id ||
+        card.customer_name ||
+        card.cardholderName ||
+        card.customer ||
+        card.qr_token
+    )
+    const cardholder = card.cardholderName || card.customer_name || (hasCustomer ? 'Customer' : '')
+
     return (
         <div
             ref={ref}
             id={finalCanvasId}
             style={{
                 width: '100%',
-                maxWidth: 420,
-                minHeight: 240,
-                borderRadius: 22,
+                maxWidth: 380,
+                minHeight: 230,
+                borderRadius: 20,
                 ...getCardStyle(card, defaultBg),
-                color: card.textColor || '#FFFFFF',
-                padding: '22px 22px 16px 22px',
-                boxShadow: '0 20px 45px -10px rgba(0,0,0,0.3)',
+                color: card.textColor || card.text_color || '#FFFFFF',
+                padding: 20,
+                boxShadow: '0 16px 36px -8px rgba(0,0,0,0.25)',
                 position: 'relative',
                 display: 'flex',
                 flexDirection: 'column',
@@ -59,7 +81,7 @@ const CustomerCard = forwardRef(({ card, cardType: propCardType, canvasId, style
                 }}
             >
                 {/* Top / Main Body (Left Info + Right QR Code) */}
-                <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+                <div style={{ display: 'flex', gap: 16, alignItems: type === 2 ? 'flex-start' : 'center' }}>
                     {/* LEFT COLUMN */}
                     <div
                         style={{
@@ -67,7 +89,7 @@ const CustomerCard = forwardRef(({ card, cardType: propCardType, canvasId, style
                             minWidth: 0,
                             display: 'flex',
                             flexDirection: 'column',
-                            minHeight: 156,
+                            minHeight: type === 2 ? 156 : undefined,
                             justifyContent: type === 2 ? 'space-between' : 'flex-start'
                         }}
                     >
@@ -89,8 +111,9 @@ const CustomerCard = forwardRef(({ card, cardType: propCardType, canvasId, style
                                     }}
                                 >
                                     <img
-                                        src={formatImageUrl(card.brandLogo) || fl_logo}
+                                        src={formatImageUrl(card.brandLogo || card.brand_image || card.logo) || fl_logo}
                                         alt="Logo"
+                                        crossOrigin="anonymous"
                                         style={{
                                             width: '100%',
                                             height: '100%',
@@ -108,7 +131,7 @@ const CustomerCard = forwardRef(({ card, cardType: propCardType, canvasId, style
                                         display: 'inline-block'
                                     }}
                                 >
-                                    {card.brandName || 'Merchant'}
+                                    {card.brandName || card.brand_name || 'Merchant'}
                                 </span>
                             </div>
 
@@ -125,141 +148,184 @@ const CustomerCard = forwardRef(({ card, cardType: propCardType, canvasId, style
                             </div>
 
                             {/* CARDHOLDER NAME */}
-                            <div
-                                style={{
-                                    fontSize: '0.95rem',
-                                    opacity: 0.95,
-                                    fontWeight: 700,
-                                    marginBottom: type === 1 ? 8 : 0,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 6,
-                                    lineHeight: 1.35
-                                }}
-                            >
-                                <i className="fas fa-user" style={{ fontSize: '0.75rem', lineHeight: 1, verticalAlign: '0' }} />
-                                <span>{card.cardholderName || card.customer_name || (type === 2 ? 'Member Pass' : 'Stamp Pass')}</span>
-                            </div>
+                            {cardholder && (
+                                <div
+                                    style={{
+                                        fontSize: '0.95rem',
+                                        opacity: 0.95,
+                                        fontWeight: 700,
+                                        marginBottom: type === 1 ? 8 : 0,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 6,
+                                        lineHeight: 1.35
+                                    }}
+                                >
+                                    <i className="fas fa-user" style={{ fontSize: '0.75rem', lineHeight: 1, verticalAlign: '0' }} />
+                                    <span>{cardholder}</span>
+                                </div>
+                            )}
                         </div>
 
                         {/* TYPE SPECIFIC DETAILS */}
                         {type === 1 ? (
                             /* STAMP GRID (TYPE 1) */
-                            <div
-                                style={{
-                                    display: 'flex',
-                                    flexWrap: 'wrap',
-                                    gap: 6,
-                                    maxWidth: 220
-                                }}
-                            >
-                                {Array.from({
-                                    length: totalStamps
-                                }).map((_, i) => {
-                                    const stampNum = i + 1
-                                    const levels = card.CustomerStampLevels || card.levelRewards || card.stamp_levels || []
-                                    const rewardItem = Array.isArray(levels)
-                                        ? (levels.find(l => Number(l.stamp_number) === stampNum) || levels[i])
-                                        : null
-                                    let iconMarkup = null
+                            <div>
+                                <div
+                                    style={{
+                                        display: 'flex',
+                                        flexWrap: 'wrap',
+                                        gap: 8,
+                                        marginBottom: 6,
+                                        maxWidth: 220
+                                    }}
+                                >
+                                    {Array.from({
+                                        length: totalStamps
+                                    }).map((_, i) => {
+                                        const stampNum = i + 1
+                                        const levels = card.CustomerStampLevels || card.levelRewards || card.stamp_levels || []
+                                        const rewardItem = Array.isArray(levels)
+                                            ? (levels.find(l => Number(l.stamp_number) === stampNum) || levels[i])
+                                            : null
+                                        let iconMarkup = null
 
-                                    const rType = rewardItem
-                                        ? (rewardItem.type || (rewardItem.reward_type === '2' || Number(rewardItem.reward_type) === 2 ? 'Discount' : (rewardItem.reward_type === '3' || Number(rewardItem.reward_type) === 3 ? 'Paid' : 'Free')))
-                                        : null
+                                        const rType = rewardItem
+                                            ? (rewardItem.type || (rewardItem.reward_type === '2' || Number(rewardItem.reward_type) === 2 ? 'Discount' : (rewardItem.reward_type === '3' || Number(rewardItem.reward_type) === 3 ? 'Paid' : 'Free')))
+                                            : null
 
-                                    if (rewardItem && rType === 'Free') {
-                                        iconMarkup = (
-                                            <i
-                                                className={`fas ${rewardItem.icon || 'fa-gift'}`}
+                                        if (rewardItem && rType === 'Free') {
+                                            iconMarkup = (
+                                                <i
+                                                    className={`fas ${rewardItem.icon || 'fa-gift'}`}
+                                                    style={{
+                                                        fontSize: '0.82rem',
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        lineHeight: 1,
+                                                        verticalAlign: '0',
+                                                        margin: 0,
+                                                        padding: 0
+                                                    }}
+                                                />
+                                            )
+                                        } else if (rewardItem && rType === 'Discount') {
+                                            const disc = Number(rewardItem.discount ?? rewardItem.discountVal ?? (parseInt(rewardItem.reward_text) || 0))
+                                            iconMarkup = (
+                                                <span
+                                                    style={{
+                                                        fontSize: '0.62rem',
+                                                        fontWeight: 800,
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        lineHeight: 1,
+                                                        verticalAlign: '0',
+                                                        margin: 0,
+                                                        padding: 0
+                                                    }}
+                                                >
+                                                    {disc}%
+                                                </span>
+                                            )
+                                        } else if (rewardItem && rType === 'Paid') {
+                                            iconMarkup = (
+                                                <i
+                                                    className={`fas ${rewardItem.icon || 'fa-tag'}`}
+                                                    style={{
+                                                        fontSize: '0.82rem',
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        lineHeight: 1,
+                                                        verticalAlign: '0',
+                                                        margin: 0,
+                                                        padding: 0
+                                                    }}
+                                                />
+                                            )
+                                        } else {
+                                            iconMarkup = (
+                                                <span
+                                                    style={{
+                                                        fontSize: '0.82rem',
+                                                        fontWeight: 800,
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        lineHeight: 1,
+                                                        verticalAlign: '0',
+                                                        margin: 0,
+                                                        padding: 0
+                                                    }}
+                                                >
+                                                    {i + 1}
+                                                </span>
+                                            )
+                                        }
+
+                                        const hasFreeStamp = rewardItem && (rType === 'Discount' || rType === 'Paid') && (Number(rewardItem.free_stamp) === 1 || rewardItem.free_stamp === true || rewardItem.free_stamp === '1')
+
+                                        return (
+                                            <div
+                                                key={i}
+                                                title={hasFreeStamp ? `${rewardItem.reward || (rType === 'Discount' ? `${rewardItem.discount ?? rewardItem.discountVal}% Off` : 'Paid Perk')} Free: ${rewardItem.free_text || 'Free Item'}` : undefined}
                                                 style={{
-                                                    fontSize: '0.82rem',
-                                                    display: 'inline-flex',
+                                                    width: 36,
+                                                    height: 36,
+                                                    borderRadius: `${card.stamp_radius ?? card.stampRadius ?? 50}%`,
+                                                    border: `2px solid ${card.stampBorderColor || card.stamp_border_color || '#FFFFFF'}`,
+                                                    background: card.stampBgColor || card.stamp_background || 'rgba(255, 255, 255, 0.3)',
+                                                    color: card.stampTextColor || card.stamp_text_color || 'inherit',
+                                                    display: 'flex',
                                                     alignItems: 'center',
                                                     justifyContent: 'center',
-                                                    lineHeight: 1,
-                                                    verticalAlign: '0',
-                                                    margin: 0,
-                                                    padding: 0
-                                                }}
-                                            />
-                                        )
-                                    } else if (rewardItem && rType === 'Discount') {
-                                        const disc = Number(rewardItem.discount ?? rewardItem.discountVal ?? (parseInt(rewardItem.reward_text) || 10))
-                                        iconMarkup = (
-                                            <span
-                                                style={{
-                                                    fontSize: '0.62rem',
+                                                    textAlign: 'center',
+                                                    fontSize: '0.85rem',
                                                     fontWeight: 800,
-                                                    display: 'inline-flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    lineHeight: 1,
-                                                    verticalAlign: '0',
-                                                    margin: 0,
-                                                    padding: 0
+                                                    flexShrink: 0,
+                                                    boxSizing: 'border-box',
+                                                    position: 'relative'
                                                 }}
                                             >
-                                                {disc}%
-                                            </span>
+                                                {iconMarkup}
+                                                {hasFreeStamp && (
+                                                    <span
+                                                        title={rewardItem.free_text ? `Free Perk: ${rewardItem.free_text}` : 'Free Perk Included'}
+                                                        style={{
+                                                            position: 'absolute',
+                                                            top: -4,
+                                                            right: -4,
+                                                            width: 15,
+                                                            height: 15,
+                                                            borderRadius: '50%',
+                                                            background: '#10B981',
+                                                            color: '#FFFFFF',
+                                                            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.35)',
+                                                            border: '1.5px solid #FFFFFF',
+                                                            zIndex: 4,
+                                                            pointerEvents: 'none',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            fontSize: '0.45rem',
+                                                            lineHeight: 1
+                                                        }}
+                                                    >
+                                                        <i className="fas fa-gift" style={{ lineHeight: 1, fontSize: '0.45rem' }} />
+                                                    </span>
+                                                )}
+                                            </div>
                                         )
-                                    } else if (rewardItem && rType === 'Paid') {
-                                        iconMarkup = (
-                                            <i
-                                                className={`fas ${rewardItem.icon || 'fa-tag'}`}
-                                                style={{
-                                                    fontSize: '0.82rem',
-                                                    display: 'inline-flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    lineHeight: 1,
-                                                    verticalAlign: '0',
-                                                    margin: 0,
-                                                    padding: 0
-                                                }}
-                                            />
-                                        )
-                                    } else {
-                                        iconMarkup = (
-                                            <span
-                                                style={{
-                                                    fontSize: '0.82rem',
-                                                    fontWeight: 800,
-                                                    display: 'inline-flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    lineHeight: 1,
-                                                    verticalAlign: '0',
-                                                    margin: 0,
-                                                    padding: 0
-                                                }}
-                                            >
-                                                {i + 1}
-                                            </span>
-                                        )
-                                    }
-
-                                    return (
-                                        <div
-                                            key={i}
-                                            style={{
-                                                width: 36,
-                                                height: 36,
-                                                borderRadius: `${card.stamp_radius ?? 50}%`,
-                                                border: `2px solid ${card.stampBorderColor || '#FFFFFF'}`,
-                                                background: card.stampBgColor || 'rgba(255, 255, 255, 0.3)',
-                                                color: card.stampTextColor || 'inherit',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                textAlign: 'center',
-                                                flexShrink: 0,
-                                                boxSizing: 'border-box'
-                                            }}
-                                        >
-                                            {iconMarkup}
-                                        </div>
-                                    )
-                                })}
+                                    })}
+                                </div>
+                                {(card.expires_at || card.expiry) && (
+                                    <div style={{ fontSize: '0.68rem', opacity: 0.9, fontWeight: 700, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                        <i className="far fa-calendar-alt" style={{ fontSize: '0.62rem' }} />
+                                        <span>Expires: {formatExpiryDate(card.expires_at || card.expiry)}</span>
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             /* VALID THRU (TYPE 2) */
@@ -268,7 +334,7 @@ const CustomerCard = forwardRef(({ card, cardType: propCardType, canvasId, style
                                     Valid Thru
                                 </small>
                                 <div style={{ fontSize: '0.88rem', fontWeight: 800, color: 'inherit', marginTop: 1, lineHeight: 1.35 }}>
-                                    {card.expiry || formatValidity(card.validityMonths)}
+                                    {formatExpiryDate(card.expires_at) || card.expiry || formatValidity(card.validityMonths)}
                                 </div>
                             </div>
                         )}
@@ -277,30 +343,42 @@ const CustomerCard = forwardRef(({ card, cardType: propCardType, canvasId, style
                     {/* RIGHT SIDE - QR CODE & SCAN LABEL */}
                     <div
                         style={{
-                            width: 96,
                             display: 'flex',
                             flexDirection: 'column',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            flexShrink: 0,
-                            marginTop: 4
+                            flexShrink: 0
                         }}
                     >
-                        <QRCodeCanvas
-                            value={card.qrImg || card.qr_token || 'firstloop'}
-                            size={92}
-                            style={{
-                                width: 92,
-                                height: 92,
-                                objectFit: 'contain',
-                                display: 'block'
-                            }}
-                        />
+                        {card.qrImg && typeof card.qrImg === 'string' && (card.qrImg.startsWith('http') || card.qrImg.startsWith('data:') || card.qrImg.includes('/')) ? (
+                            <img
+                                src={card.qrImg}
+                                alt="QR Code"
+                                crossOrigin="anonymous"
+                                style={{
+                                    width: 92,
+                                    height: 92,
+                                    objectFit: 'contain',
+                                    display: 'block'
+                                }}
+                            />
+                        ) : (
+                            <QRCodeCanvas
+                                value={card.qr_token || card.qrImg || 'firstloop'}
+                                size={92}
+                                style={{
+                                    width: 92,
+                                    height: 92,
+                                    objectFit: 'contain',
+                                    display: 'block'
+                                }}
+                            />
+                        )}
                         <small
                             style={{
-                                fontSize: '0.62rem',
+                                fontSize: '0.6rem',
                                 fontWeight: 700,
-                                marginTop: 8,
+                                marginTop: 4,
                                 textTransform: 'uppercase',
                                 letterSpacing: '0.5px',
                                 opacity: 0.9,
@@ -334,6 +412,7 @@ const CustomerCard = forwardRef(({ card, cardType: propCardType, canvasId, style
                     <img
                         src={fl_logo}
                         alt="FirstLoop"
+                        crossOrigin="anonymous"
                         style={{
                             height: 13,
                             width: 'auto',

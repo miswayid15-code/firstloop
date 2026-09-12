@@ -316,6 +316,7 @@ export default function ViewFlBranch() {
                         : (Array.isArray(item.stamp_levels) ? item.stamp_levels : [])
 
                     return {
+                        ...item,
                         id: item.id || item._id,
                         title: item.title || 'Stamp Pass',
                         brandName: item.brand_name || branch?.name || 'Elite Branch',
@@ -323,6 +324,8 @@ export default function ViewFlBranch() {
                         total_stamps: totalStamps,
                         reward: item.reward || 'Special Gift',
                         active_members: Number(item.active_members) || 0,
+                        month: item.month || item.validity_months || item.validityMonths || item.totalMonth || item.total_month || 12,
+                        validityMonths: item.month || item.validity_months || item.validityMonths || item.totalMonth || item.total_month || 12,
                         expiry: item.expiry || '2026-12-31',
                         status: Number(item.status) === 1 ? 'Active' : 'Inactive',
                         bgColor: item.background_color || '#0E88B8',
@@ -348,7 +351,9 @@ export default function ViewFlBranch() {
                                     discount: disc,
                                     icon: rType === 'Discount' ? 'fa-percent' : (rType === 'Paid' ? (lvl.icon || 'fa-tag') : 'fa-gift'),
                                     amt: Number(lvl.amt) || 0,
-                                    category_id: lvl.category_id
+                                    category_id: lvl.category_id,
+                                    free_stamp: Number(lvl.free_stamp) === 1 ? 1 : 0,
+                                    free_text: lvl.free_text || ''
                                 };
                             })
                             : Array.from({ length: totalStamps }).map((_, i) => ({
@@ -358,8 +363,11 @@ export default function ViewFlBranch() {
                                 discountVal: 0,
                                 discount: 0,
                                 icon: 'fa-gift',
-                                amt: 0
-                            }))
+                                amt: 0,
+                                free_stamp: 0,
+                                free_text: ''
+                            })),
+                        StampLevels: item.StampLevels || item.stamp_levels || []
                     }
                 })
 

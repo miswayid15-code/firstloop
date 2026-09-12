@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react'
 import qrImg from '../../assets/img/qr-img.png'
 import axios from 'axios'
 import API from '../../api.js'
+import { toast } from 'react-hot-toast'
+import * as XLSX from 'xlsx'
 import StampCardItem from '../../components/StampCardItem.jsx'
 import MembershipCardItem from '../../components/MembershipCardItem.jsx'
 import StampCardBuilderModal from '../../components/StampCardBuilderModal.jsx'
@@ -64,6 +66,7 @@ import {
 export default function CardList() {
 
     const [activeTab, setActiveTab] = useState('stamps')
+    const [viewMode, setViewMode] = useState('grid') // 'grid' | 'table'
 
     // Dynamic Lists State
     const [stampCards, setStampCards] = useState([])
@@ -217,6 +220,7 @@ export default function CardList() {
                 const list = Array.isArray(rawList) ? rawList : []
 
                 const formatted = list.map(item => ({
+                    ...item,
                     id: item.id || item._id,
                     title: item.title || 'Stamp Pass',
                     brandName: item.brand_name || merchantData?.brand_name || merchantData?.bus_name || merchantData?.user_name || 'Merchant',
@@ -224,7 +228,10 @@ export default function CardList() {
                     total_stamps: Number(item.number_of_stamps) || 8,
                     reward: item.reward || 'Special Gift',
                     active_members: item.active_members || 0,
-                    expiry: item.expiry || '2026-12-31',
+                    month: item.month || item.validity_months || item.validityMonths || item.totalMonth || item.total_month || 12,
+                    validityMonths: item.month || item.validity_months || item.validityMonths || item.totalMonth || item.total_month || 12,
+                    expires_at: item.expires_at || item.expiry || null,
+                    expiry: item.expires_at || item.expiry || '2026-12-31',
                     status: 'Active',
                     bgColor: item.background_color || '#0E88B8',
                     bgImage: item.background_image ? formatImageUrl(item.background_image) : null,
@@ -257,7 +264,9 @@ export default function CardList() {
                                     discount: disc,
                                     icon: isDiscount ? 'fa-percent' : (isPaid ? (lvl.icon || 'fa-tag') : 'fa-gift'),
                                     amt: Number(lvl.amt) || 0,
-                                    category_id: lvl.category_id || null
+                                    category_id: lvl.category_id || null,
+                                    free_stamp: Number(lvl.free_stamp) === 1 ? 1 : 0,
+                                    free_text: lvl.free_text || ''
                                 };
                             });
                         }
@@ -268,9 +277,12 @@ export default function CardList() {
                             discountVal: 0,
                             discount: 0,
                             icon: 'fa-gift',
-                            amt: 0
+                            amt: 0,
+                            free_stamp: 0,
+                            free_text: ''
                         }));
-                    })()
+                    })(),
+                    StampLevels: item.StampLevels || item.stamp_levels || []
                 }))
 
                 setStampCards(formatted)
@@ -371,6 +383,104 @@ export default function CardList() {
         }
     }
 
+    const formatExpiryDate = (val) => {
+        if (!val) return 'N/A'
+        try {
+            const d = new Date(val)
+            if (isNaN(d.getTime())) return String(val)
+            return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+        } catch {
+            return String(val)
+        }
+    }
+
+    const getBranchNames = (card) => {
+        const bIds = Array.isArray(card?.branch_ids) ? card.branch_ids : (card?.branch_id ? [card.branch_id] : [])
+        if (!branchesData || branchesData.length === 0 || bIds.length === 0) return 'All Branches'
+        const names = bIds.map(id => {
+            const found = branchesData.find(b => Number(b.id) === Number(id))
+            return found?.branch_name || found?.name || `Branch #${id}`
+        })
+        return names.length > 0 ? names.join(', ') : 'All Branches'
+    }
+
+    const handleExportExcel = () => {
+        const listToExport = filteredStampCards.length > 0 ? filteredStampCards : stampCards
+        if (!listToExport || listToExport.length === 0) {
+            toast.error("No stamp cards available to export")
+            return
+        }
+
+        try {
+            const rows = listToExport.map((card, idx) => {
+                const branchNames = getBranchNames(card)
+                const levels = Array.isArray(card.levelRewards) ? card.levelRewards : []
+
+                const levelsSummary = levels.map((lvl) => {
+                    const num = lvl.stamp || (lvl.stamp_number ?? '')
+                    const rew = lvl.reward || ''
+                    const amt = lvl.amt ? ` - $${Number(lvl.amt).toFixed(2)}` : ''
+                    const disc = lvl.discountVal ? ` (${lvl.discountVal}% Off)` : ''
+                    const free = lvl.free_stamp ? ` [+Free: ${lvl.free_text || 'Perk'}]` : ''
+                    return `Stamp ${num}: ${rew}${amt}${disc}${free}`
+                }).join(' | ')
+
+                const row = {
+                    "S.No": idx + 1,
+                    "Card ID": card.id || '',
+                    "Card Title": card.title || 'Stamp Pass',
+                    "Brand Name": card.brandName || merchantData?.bus_name || merchantData?.name || 'Merchant',
+                    "Total Stamps": card.total_stamps || 8,
+                    "Validity (Months)": card.month || card.validityMonths || 12,
+                    "Expiry Date": formatExpiryDate(card.expires_at || card.expiry),
+                    "Completion Reward": card.reward || 'Special Gift',
+                    "Active Members": card.active_members || 0,
+                    "Assigned Branches": branchNames,
+                    "Card Background Color": card.bgColor || '#0E88B8',
+                    "Card Text Color": card.textColor || '#FFFFFF',
+                    "Stamp Shape Radius (%)": card.stamp_radius ?? 50,
+                    "Stamp Levels Count": levels.length,
+                    "All Stamp Levels Details": levelsSummary,
+                    "Status": card.status || 'Active'
+                }
+
+                levels.forEach((lvl, i) => {
+                    const sNum = lvl.stamp || (i + 1)
+                    row[`Stamp ${sNum} Perk`] = lvl.reward || ''
+                    row[`Stamp ${sNum} Type`] = lvl.type || 'Free'
+                    row[`Stamp ${sNum} Amount`] = lvl.amt !== undefined ? Number(lvl.amt).toFixed(2) : '0.00'
+                    row[`Stamp ${sNum} Discount %`] = lvl.discountVal || 0
+                    row[`Stamp ${sNum} Bonus Free Perk`] = lvl.free_stamp ? (lvl.free_text || 'Yes') : 'No'
+                })
+
+                return row
+            })
+
+            const worksheet = XLSX.utils.json_to_sheet(rows)
+
+            const colWidths = Object.keys(rows[0] || {}).map(key => {
+                const maxLen = Math.max(
+                    key.length,
+                    ...rows.map(r => String(r[key] || '').length)
+                )
+                return { wch: Math.min(50, Math.max(12, maxLen + 2)) }
+            })
+            worksheet['!cols'] = colWidths
+
+            const workbook = XLSX.utils.book_new()
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Stamp Cards")
+
+            const dateStr = new Date().toISOString().split('T')[0]
+            const fileName = `Stamp_Cards_Full_Details_${dateStr}.xlsx`
+
+            XLSX.writeFile(workbook, fileName)
+            toast.success("Stamp cards exported to Excel successfully! 📊")
+        } catch (err) {
+            console.error("Excel export error:", err)
+            toast.error("Failed to export Excel file")
+        }
+    }
+
     // --- MEMBERSHIP CARD HANDLERS ---
     const handleOpenCreateMembership = () => {
         setSelectedEditMembershipCard(null)
@@ -406,7 +516,33 @@ export default function CardList() {
                     </p>
                 </div>
 
-                <div style={{ display: 'flex', gap: 10 }}>
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                    <button
+                        type="button"
+                        className="btn"
+                        onClick={handleExportExcel}
+                        disabled={stampCards.length === 0}
+                        style={{
+                            padding: '10px 16px',
+                            borderRadius: 10,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 7,
+                            fontSize: '0.85rem',
+                            fontWeight: 700,
+                            border: '1.5px solid #10B981',
+                            color: '#059669',
+                            background: '#ECFDF5',
+                            cursor: stampCards.length === 0 ? 'not-allowed' : 'pointer',
+                            transition: 'all 0.2s ease',
+                            boxShadow: '0 2px 6px rgba(16, 185, 129, 0.15)'
+                        }}
+                        title="Export stamp card list with full details to Excel (.xlsx)"
+                    >
+                        <i className="fas fa-file-excel" style={{ fontSize: '1rem', color: '#10B981' }} />
+                        <span>Export to Excel</span>
+                    </button>
+
                     <button
                         type="button"
                         className="btn firstloop-btn-primary"
@@ -478,35 +614,241 @@ export default function CardList() {
             {activeTab === 'stamps' && (
                 <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
-                        <div style={{ position: 'relative', width: 300 }}>
-                            <i className="fas fa-search" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                            <input
-                                type="text"
-                                className="form-control"
-                                placeholder="Search stamp cards..."
-                                value={stampSearch}
-                                onChange={(e) => setStampSearch(e.target.value)}
-                                style={{ paddingLeft: 36, height: 38, borderRadius: 8, fontSize: '0.85rem' }}
-                            />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                            <div style={{ position: 'relative', width: 280 }}>
+                                <i className="fas fa-search" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    placeholder="Search stamp cards..."
+                                    value={stampSearch}
+                                    onChange={(e) => setStampSearch(e.target.value)}
+                                    style={{ paddingLeft: 36, height: 38, borderRadius: 8, fontSize: '0.85rem' }}
+                                />
+                            </div>
+
+                            {/* View Switcher: Cards Grid vs Detailed Table List */}
+                            <div className="btn-group" role="group" style={{ borderRadius: 8, overflow: 'hidden', border: '1px solid #E2E8F0' }}>
+                                <button
+                                    type="button"
+                                    className={`btn btn-sm ${viewMode === 'grid' ? 'btn-primary' : 'btn-light'}`}
+                                    onClick={() => setViewMode('grid')}
+                                    style={{ fontWeight: 700, fontSize: '0.8rem', padding: '6px 14px', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                                    title="Card Grid View"
+                                >
+                                    <i className="fas fa-th-large" />
+                                    <span>Cards Grid</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`btn btn-sm ${viewMode === 'table' ? 'btn-primary' : 'btn-light'}`}
+                                    onClick={() => setViewMode('table')}
+                                    style={{ fontWeight: 700, fontSize: '0.8rem', padding: '6px 14px', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                                    title="Detailed Stamp Card List Table View"
+                                >
+                                    <i className="fas fa-table-list" />
+                                    <span>Detailed List</span>
+                                </button>
+                            </div>
                         </div>
-                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                            Showing {filteredStampCards.length} Stamp Cards
+
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                            Showing {filteredStampCards.length} of {stampCards.length} Stamp Cards
                         </span>
                     </div>
 
                     {filteredStampCards.length > 0 ? (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 380px))', gap: 20 }}>
-                            {filteredStampCards.map((card) => (
-                                <StampCardItem
-                                    key={card.id}
-                                    card={card}
-                                    merchantName={merchantData?.bus_name || merchantData?.name || "Elite Branch"}
-                                    onEdit={handleOpenEditStampCard}
-                                    onPreview={setSelectedStampCard}
-                                    onDelete={handleDeleteStampCard}
-                                />
-                            ))}
-                        </div>
+                        viewMode === 'table' ? (
+                            /* DETAILED TABLE LIST VIEW */
+                            <div className="card" style={{ padding: 0, overflow: 'hidden', borderRadius: 16, border: '1px solid #E2E8F0', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', marginBottom: 20 }}>
+                                <div className="table-responsive">
+                                    <table className="table table-hover align-middle mb-0" style={{ minWidth: 960 }}>
+                                        <thead style={{ background: '#F8FAFC', borderBottom: '2px solid #E2E8F0' }}>
+                                            <tr>
+                                                <th style={{ padding: '14px 18px', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                    Card Design &amp; Title
+                                                </th>
+                                                <th style={{ padding: '14px 18px', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                    Stamps &amp; Validity
+                                                </th>
+                                                <th style={{ padding: '14px 18px', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                    Expires On
+                                                </th>
+                                                <th style={{ padding: '14px 18px', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                    Completion Reward
+                                                </th>
+                                                <th style={{ padding: '14px 18px', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                    Stamp Levels Breakdown
+                                                </th>
+                                                <th style={{ padding: '14px 18px', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                    Assigned Branches
+                                                </th>
+                                                <th style={{ padding: '14px 18px', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'center' }}>
+                                                    Status
+                                                </th>
+                                                <th style={{ padding: '14px 18px', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right' }}>
+                                                    Actions
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {filteredStampCards.map((card) => {
+                                                const branchNames = getBranchNames(card)
+                                                const levels = Array.isArray(card.levelRewards) ? card.levelRewards : []
+
+                                                return (
+                                                    <tr key={card.id}>
+                                                        <td style={{ padding: '14px 18px' }}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                                                <div
+                                                                    style={{
+                                                                        width: 44,
+                                                                        height: 30,
+                                                                        borderRadius: 6,
+                                                                        background: card.bgColor || '#0E88B8',
+                                                                        backgroundImage: card.bgImage ? `url(${card.bgImage})` : undefined,
+                                                                        backgroundSize: 'cover',
+                                                                        border: `1px solid ${card.borderColor || '#00A6D6'}`,
+                                                                        boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        justifyContent: 'center',
+                                                                        flexShrink: 0
+                                                                    }}
+                                                                >
+                                                                    <i className="fas fa-stamp" style={{ color: card.textColor || '#FFF', fontSize: '0.75rem' }} />
+                                                                </div>
+                                                                <div>
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                                        <strong style={{ fontSize: '0.88rem', color: 'var(--text-primary)' }}>
+                                                                            {card.title || 'Stamp Pass'}
+                                                                        </strong>
+                                                                        <span style={{ fontSize: '0.7rem', background: '#F1F5F9', color: '#64748B', padding: '1px 6px', borderRadius: 4, fontWeight: 700 }}>
+                                                                            #{card.id}
+                                                                        </span>
+                                                                    </div>
+                                                                    <small style={{ color: 'var(--text-muted)', fontSize: '0.76rem' }}>
+                                                                        {card.brandName || merchantData?.bus_name || 'Merchant'}
+                                                                    </small>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td style={{ padding: '14px 18px' }}>
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                                                <span className="badge" style={{ background: 'rgba(14, 136, 184, 0.1)', color: 'var(--firstloop-primary)', border: '1px solid rgba(14, 136, 184, 0.25)', fontWeight: 800, padding: '4px 8px', borderRadius: 6, fontSize: '0.76rem', alignSelf: 'flex-start' }}>
+                                                                    <i className="fas fa-bullseye me-1" /> {card.total_stamps || 8} Stamps
+                                                                </span>
+                                                                <small style={{ color: 'var(--text-muted)', fontSize: '0.76rem', fontWeight: 600 }}>
+                                                                    Validity: {card.month || card.validityMonths || 12} Mos
+                                                                </small>
+                                                            </div>
+                                                        </td>
+                                                        <td style={{ padding: '14px 18px' }}>
+                                                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', color: '#0F172A', fontWeight: 700 }}>
+                                                                <i className="far fa-calendar-alt text-muted" />
+                                                                <span>{formatExpiryDate(card.expires_at || card.expiry)}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td style={{ padding: '14px 18px' }}>
+                                                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#D97706', fontWeight: 700, fontSize: '0.84rem' }}>
+                                                                <i className="fas fa-trophy" />
+                                                                <span>{card.reward || 'Special Gift'}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td style={{ padding: '14px 18px', maxWidth: 280 }}>
+                                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                                                                {levels.slice(0, 3).map((lvl, lIdx) => (
+                                                                    <span
+                                                                        key={lIdx}
+                                                                        style={{
+                                                                            fontSize: '0.72rem',
+                                                                            padding: '2px 7px',
+                                                                            borderRadius: 6,
+                                                                            background: '#F8FAFC',
+                                                                            border: '1px solid #E2E8F0',
+                                                                            color: '#334155',
+                                                                            fontWeight: 700,
+                                                                            display: 'inline-flex',
+                                                                            alignItems: 'center',
+                                                                            gap: 4
+                                                                        }}
+                                                                        title={`Stamp #${lvl.stamp || lIdx + 1}: ${lvl.reward || ''}${lvl.amt ? ` • $${Number(lvl.amt).toFixed(2)}` : ''}${lvl.discountVal ? ` • ${lvl.discountVal}% Off` : ''}`}
+                                                                    >
+                                                                        <i className={`fas ${lvl.icon || 'fa-gift'}`} style={{ fontSize: '0.65rem', color: 'var(--firstloop-primary)' }} />
+                                                                        #{lvl.stamp || lIdx + 1}: {lvl.reward || 'Perk'}
+                                                                    </span>
+                                                                ))}
+                                                                {levels.length > 3 && (
+                                                                    <span style={{ fontSize: '0.72rem', color: 'var(--firstloop-primary)', fontWeight: 800, padding: '2px 4px' }}>
+                                                                        +{levels.length - 3} more
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                        <td style={{ padding: '14px 18px' }}>
+                                                            <span style={{ fontSize: '0.78rem', color: '#475569', fontWeight: 600 }}>
+                                                                <i className="fas fa-store text-muted me-1" />
+                                                                {branchNames}
+                                                            </span>
+                                                        </td>
+                                                        <td style={{ padding: '14px 18px', textAlign: 'center' }}>
+                                                            <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.12)', color: '#059669', border: '1px solid rgba(16, 185, 129, 0.25)', fontWeight: 800, padding: '4px 8px', borderRadius: 6, fontSize: '0.74rem' }}>
+                                                                Active
+                                                            </span>
+                                                        </td>
+                                                        <td style={{ padding: '14px 18px', textAlign: 'right' }}>
+                                                            <div style={{ display: 'inline-flex', gap: 6 }}>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setSelectedStampCard(card)}
+                                                                    className="btn btn-sm btn-light"
+                                                                    style={{ borderRadius: 8, padding: '5px 10px', fontSize: '0.78rem', color: 'var(--firstloop-primary)', border: '1px solid #E2E8F0' }}
+                                                                    title="Live Card Preview"
+                                                                >
+                                                                    <i className="fas fa-eye" />
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleOpenEditStampCard(card)}
+                                                                    className="btn btn-sm btn-light"
+                                                                    style={{ borderRadius: 8, padding: '5px 10px', fontSize: '0.78rem', color: '#0284C7', border: '1px solid #E2E8F0' }}
+                                                                    title="Edit Stamp Card"
+                                                                >
+                                                                    <i className="fas fa-pen" />
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleDeleteStampCard(card.id)}
+                                                                    className="btn btn-sm btn-light"
+                                                                    style={{ borderRadius: 8, padding: '5px 10px', fontSize: '0.78rem', color: '#EF4444', border: '1px solid #E2E8F0' }}
+                                                                    title="Delete Stamp Card"
+                                                                >
+                                                                    <i className="fas fa-trash-alt" />
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                )
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        ) : (
+                            /* CARDS GRID VIEW */
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 380px))', gap: 20 }}>
+                                {filteredStampCards.map((card) => (
+                                    <StampCardItem
+                                        key={card.id}
+                                        card={card}
+                                        merchantName={merchantData?.bus_name || merchantData?.name || "Elite Branch"}
+                                        onEdit={handleOpenEditStampCard}
+                                        onPreview={setSelectedStampCard}
+                                        onDelete={handleDeleteStampCard}
+                                    />
+                                ))}
+                            </div>
+                        )
                     ) : (
                         <div style={{ textAlign: 'center', padding: '48px 16px', background: '#F8FAFC', borderRadius: 16, border: '1px dashed #CBD5E1' }}>
                             <div style={{ width: 54, height: 54, borderRadius: '50%', background: 'rgba(14, 136, 184, 0.1)', color: 'var(--firstloop-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', fontSize: '1.4rem' }}>

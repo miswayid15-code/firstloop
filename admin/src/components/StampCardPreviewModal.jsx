@@ -1,15 +1,31 @@
-import React, { useRef, useState } from 'react'
+import React, { useRef, useState, useEffect } from 'react'
 import html2canvas from 'html2canvas'
 import logo from '../assets/img/firstloop-favicon.png'
 import flLogo from '../assets/img/firstloop-favicon.png'
 import qrImg from '../assets/img/qr-img.png'
 import { QRCodeCanvas } from 'qrcode.react'
 
+import { toast } from 'react-hot-toast'
 import {
     getRelativeImagePath,
     formatImageUrl,
-    getCardStyle
+    getCardStyle,
+    captureCardCanvas,
+    waitForCardAssets,
+    cleanPhoneForWhatsApp,
+    fetchCustomerStampLevelsApi
 } from '../services/cardService.js'
+
+const formatExpiryDate = (val) => {
+    if (!val) return null
+    try {
+        const d = new Date(val)
+        if (isNaN(d.getTime())) return String(val)
+        return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+    } catch {
+        return String(val)
+    }
+}
 
 export default function StampCardPreviewModal({
     isOpen = true,
@@ -19,21 +35,96 @@ export default function StampCardPreviewModal({
 }) {
     const cardRef = useRef(null)
     const [downloading, setDownloading] = useState(false)
+    const [sharing, setSharing] = useState(false)
+    const [customerPhone, setCustomerPhone] = useState('')
+    const [customerCountryCode, setCustomerCountryCode] = useState('')
+    const [fullCardData, setFullCardData] = useState(null)
+
+    useEffect(() => {
+        if (card) {
+            setCustomerPhone(
+                card.customerPhone ||
+                card.customer_phone ||
+                card.phone ||
+                card.mobile ||
+                card.Customer?.phone ||
+                card.customer?.phone ||
+                ''
+            )
+            setCustomerCountryCode(
+                card.customerCountryCode ||
+                card.customer_country_code ||
+                card.country_code ||
+                card.Customer?.country_code ||
+                card.customer?.country_code ||
+                ''
+            )
+        }
+    }, [card, isOpen])
+
+    // Load full details if card summary was passed without levels
+    useEffect(() => {
+        if (!card?.id || !isOpen) {
+            setFullCardData(null)
+            return
+        }
+
+        const hasLevels = (card.levelRewards && card.levelRewards.length > 0) ||
+            (card.StampLevels && card.StampLevels.length > 0) ||
+            (card.stamp_levels && card.stamp_levels.length > 0)
+
+        if (hasLevels && card.bgColor) {
+            setFullCardData(card)
+            return
+        }
+
+        let isMounted = true
+        fetchCustomerStampLevelsApi(card.id, 1, card.customer_id || card.cus_id)
+            .then((data) => {
+                if (isMounted && data) {
+                    setFullCardData({
+                        ...data,
+                        ...card,
+                        bgColor: data.bgColor || card.bgColor,
+                        bgImage: data.bgImage || card.bgImage,
+                        textColor: data.textColor || card.textColor,
+                        borderColor: data.borderColor || card.borderColor,
+                        stampBgColor: data.stampBgColor || card.stampBgColor,
+                        stampBorderColor: data.stampBorderColor || card.stampBorderColor,
+                        stampTextColor: data.stampTextColor || card.stampTextColor,
+                        levelRewards: data.levelRewards?.length ? data.levelRewards : (card.levelRewards || []),
+                        CustomerStampLevels: data.CustomerStampLevels?.length ? data.CustomerStampLevels : (card.CustomerStampLevels || []),
+                        customerPhone: card.customerPhone || card.phone || data.customer_phone,
+                        customerCountryCode: card.customerCountryCode || card.country_code || data.customer_country_code,
+                        cardholderName: card.cardholderName || card.customer_name || data.cardholderName,
+                        expires_at: data.expires_at || card.expires_at || null,
+                        expiry: data.expires_at || card.expires_at || card.expiry || null
+                    })
+                }
+            })
+            .catch((err) => {
+                console.warn('Error fetching full card in StampCardPreviewModal:', err)
+            })
+
+        return () => { isMounted = false }
+    }, [card?.id, card?.customer_id, isOpen])
 
     if (!isOpen || !card) return null
+
+    const displayCard = fullCardData || card
+
+    // Clean phone number for WhatsApp API
+    const cleanPhone = (phone, countryCode = '') => {
+        return cleanPhoneForWhatsApp(phone, countryCode)
+    }
+
 
     // High quality canvas download
     const handleDownload = async () => {
         if (!cardRef.current) return
         try {
             setDownloading(true)
-            const canvas = await html2canvas(cardRef.current, {
-                scale: 3,
-                useCORS: true,
-                allowTaint: true,
-                backgroundColor: null,
-                logging: false
-            })
+            const canvas = await captureCardCanvas(cardRef.current)
             const image = canvas.toDataURL('image/png')
             const rawName = card.title || card.name || 'stamp-card'
             const fileName = rawName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'stamp-card'
@@ -50,31 +141,119 @@ export default function StampCardPreviewModal({
         }
     }
 
-    // WhatsApp Share Link
-    const getWhatsAppShareUrl = () => {
-        const brand = card.brandName || card.brand_name || fallbackBrandName
-        const title = card.title || 'Digital Stamp Card'
+    // Share Card Image directly to WhatsApp (Identical to CardPreview flow)
+    const handleSendToWhatsApp = async () => {
+        if (!cardRef.current) {
+            toast.error('Card preview element not found')
+            return
+        }
 
-        const total = Number(card.total_stamps || card.number_of_stamps || 8)
-        const shareUrl = card.id ? `${window.location.origin}/card-preview/${card.id}?type=1` : window.location.href
-        const message = `🎉 *${brand}* - ${title}\n⭐ Collect ${total} stamps to claim special rewards!\n\n👉 *View Card:* ${shareUrl}`
-        return `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`
+        const activeCard = displayCard
+        const brand = activeCard.brandName || activeCard.brand_name || fallbackBrandName
+        const title = activeCard.title || activeCard.name || 'Digital Stamp Card'
+        const total = Number(activeCard.total_stamps || activeCard.number_of_stamps || activeCard.total || 8)
+        const shareUrl = activeCard.id ? `${window.location.origin}/card-preview/${activeCard.id}?type=1&cus_id=${activeCard.customer_id || activeCard.cus_id || ''}&phone=${encodeURIComponent(customerPhone || '')}&country_code=${encodeURIComponent(customerCountryCode || '')}&customer_name=${encodeURIComponent(activeCard.cardholderName || activeCard.customer_name || '')}` : window.location.href
+        const expiryFormatted = formatExpiryDate(activeCard.expires_at || activeCard.expiry)
+        const expiryLine = expiryFormatted ? `\n⏳ *Expires On:* ${expiryFormatted}` : ''
+        const descToSend = `🎉 *${brand}* - ${title}\n⭐ Collect ${total} stamps to claim special rewards!${expiryLine}\n\n👉 *View Card:* ${shareUrl}`
+
+        const rawName = activeCard.title || activeCard.name || 'stamp-card'
+        const safeName = rawName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'stamp-card'
+        const fileName = `${safeName}.png`
+
+        const targetPhone = cleanPhone(customerPhone, customerCountryCode)
+
+        setSharing(true)
+        const toastId = toast.loading('Capturing card image for WhatsApp...')
+
+        try {
+            await waitForCardAssets(cardRef.current)
+            const canvas = await captureCardCanvas(cardRef.current)
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'))
+
+            if (!blob) {
+                throw new Error('Failed to generate image blob from card')
+            }
+
+            const file = new File([blob], fileName, { type: 'image/png' })
+            const blobUrl = URL.createObjectURL(blob)
+
+            // Web Share API if no target phone and file sharing is supported
+            if (!targetPhone && typeof navigator !== 'undefined' && typeof navigator.share === 'function' && typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })) {
+                toast.dismiss(toastId)
+                try {
+                    await navigator.share({
+                        files: [file],
+                        title: `${brand} - ${title}`,
+                        text: descToSend
+                    })
+                    toast.success('Card image shared successfully! 🎉')
+                    return
+                } catch (shareErr) {
+                    if (shareErr.name === 'AbortError') return
+                    console.warn('Web Share API error, falling back:', shareErr)
+                }
+            }
+
+            toast.dismiss(toastId)
+
+            // Copy image to clipboard for easy Ctrl+V in WhatsApp Web
+            let copiedToClipboard = false
+            try {
+                if (navigator.clipboard && window.ClipboardItem) {
+                    await navigator.clipboard.write([
+                        new ClipboardItem({ 'image/png': blob })
+                    ])
+                    copiedToClipboard = true
+                }
+            } catch (clipErr) {
+                console.warn('Clipboard write image not supported:', clipErr)
+            }
+
+            // Automatically download card image file for attaching
+            const dlLink = document.createElement('a')
+            dlLink.href = blobUrl
+            dlLink.download = fileName
+            document.body.appendChild(dlLink)
+            dlLink.click()
+            document.body.removeChild(dlLink)
+
+            // Open WhatsApp
+            const waUrl = targetPhone
+                ? `https://api.whatsapp.com/send?phone=${targetPhone}&text=${encodeURIComponent(descToSend)}`
+                : `https://api.whatsapp.com/send?text=${encodeURIComponent(descToSend)}`
+
+            window.open(waUrl, '_blank')
+
+            if (copiedToClipboard) {
+                toast.success('Card image copied to clipboard! In WhatsApp, press Ctrl+V to paste and send.', { duration: 6000 })
+            } else {
+                toast.success('Card image downloaded! Attach it directly in WhatsApp.', { duration: 6000 })
+            }
+        } catch (error) {
+            console.error('Error capturing or sharing card image:', error)
+            toast.dismiss(toastId)
+            toast.error('Failed to capture card image: ' + (error.message || 'Unknown error'))
+        } finally {
+            setSharing(false)
+        }
     }
 
+    const activeCard = displayCard
     const hasCustomer = Boolean(
-        card.card_number ||
-        card.customer_id ||
-        card.cus_id ||
-        card.customer_name ||
-        card.customer ||
-        card.qr_token
+        activeCard.card_number ||
+        activeCard.customer_id ||
+        activeCard.cus_id ||
+        activeCard.customer_name ||
+        activeCard.customer ||
+        activeCard.qr_token
     )
 
-    const totalStamps = Number(card.total_stamps || card.number_of_stamps || 8)
-    const brandName = card.brandName || card.brand_name || fallbackBrandName
-    const cardholder = card.cardholderName || card.customer_name || (hasCustomer ? 'Customer' : '')
-    const cardNo = card.card_number || null
-    const brandLogo = card.brandLogo || card.brand_image ? formatImageUrl(card.brandLogo || card.brand_image) : logo
+    const totalStamps = Number(activeCard.total_stamps || activeCard.number_of_stamps || 8)
+    const brandName = activeCard.brandName || activeCard.brand_name || fallbackBrandName
+    const cardholder = activeCard.cardholderName || activeCard.customer_name || (hasCustomer ? 'Customer' : '')
+    const cardNo = activeCard.card_number || null
+    const brandLogo = activeCard.brandLogo || activeCard.brand_image ? formatImageUrl(activeCard.brandLogo || activeCard.brand_image) : logo
 
     return (
         <div
@@ -120,6 +299,12 @@ export default function StampCardPreviewModal({
                                     {cardNo}
                                 </span>
                             )}
+                            {(activeCard.expires_at || activeCard.expiry) && (
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(217, 119, 6, 0.1)', border: '1px solid rgba(217, 119, 6, 0.25)', padding: '2px 8px', borderRadius: 6, color: '#B45309', fontSize: '0.72rem', fontWeight: 700 }}>
+                                    <i className="far fa-calendar-alt" style={{ fontSize: '0.68rem' }} />
+                                    Expires: {formatExpiryDate(activeCard.expires_at || activeCard.expiry)}
+                                </span>
+                            )}
                         </div>
                         <p style={{ fontSize: '0.8rem', color: '#64748B', margin: '4px 0 0 0' }}>
                             Live render of the digital stamp pass for customers
@@ -144,8 +329,8 @@ export default function StampCardPreviewModal({
                             width: '100%',
                             maxWidth: 380,
                             borderRadius: 20,
-                            ...getCardStyle(card, '#0E88B8'),
-                            color: card.textColor || card.text_color || '#FFFFFF',
+                            ...getCardStyle(activeCard, '#0E88B8'),
+                            color: activeCard.textColor || activeCard.text_color || '#FFFFFF',
                             padding: 20,
                             boxShadow: '0 16px 36px -8px rgba(0,0,0,0.25)',
                             position: 'relative',
@@ -168,7 +353,7 @@ export default function StampCardPreviewModal({
 
                                     {/* Card Title */}
                                     <div style={{ fontSize: '0.85rem', opacity: 0.95, marginBottom: 4, lineHeight: 1.35 }}>
-                                        <strong>{card.title || 'Stamp Pass'}</strong>
+                                        <strong>{activeCard.title || 'Stamp Pass'}</strong>
                                     </div>
 
                                     {/* Cardholder Name with User Icon */}
@@ -183,65 +368,27 @@ export default function StampCardPreviewModal({
                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 6, maxWidth: 220 }}>
                                         {Array.from({ length: totalStamps }).map((_, i) => {
                                             const stampNum = i + 1
-                                            const levels = card.CustomerStampLevels || card.levelRewards || card.stamp_levels || []
+                                            const levels = activeCard.CustomerStampLevels || activeCard.levelRewards || activeCard.stamp_levels || []
                                             const rewardItem = Array.isArray(levels) ? (levels.find(l => Number(l.stamp_number) === stampNum) || levels[i]) : null
                                             let iconMarkup = stampNum
 
+                                            const rType = rewardItem
+                                                ? (rewardItem.type || (rewardItem.reward_type === '2' ? 'Discount' : (rewardItem.reward_type === '3' ? 'Paid' : 'Free')))
+                                                : null
+
                                             if (rewardItem) {
-                                                const rType = rewardItem.type || (rewardItem.reward_type === '2' ? 'Discount' : (rewardItem.reward_type === '3' ? 'Paid' : 'Free'))
                                                 if (rType === 'Free') {
-                                                    iconMarkup = (
-                                                        <i
-                                                            className={`fas ${rewardItem.icon || 'fa-gift'}`}
-                                                            style={{
-                                                                fontSize: '0.82rem',
-                                                                display: 'inline-flex',
-                                                                alignItems: 'center',
-                                                                justifyContent: 'center',
-                                                                lineHeight: 1,
-                                                                verticalAlign: '0',
-                                                                margin: 0,
-                                                                padding: 0
-                                                            }}
-                                                        />
-                                                    )
+                                                    iconMarkup = <i className="fas fa-gift" style={{ fontSize: '0.85rem', lineHeight: 1 }} />
                                                 } else if (rType === 'Discount') {
-                                                    const disc = Number(rewardItem.discount ?? rewardItem.discountVal ?? (parseInt(rewardItem.reward_text) || 0))
-                                                    iconMarkup = (
-                                                        <span
-                                                            style={{
-                                                                fontSize: '0.62rem',
-                                                                fontWeight: 800,
-                                                                display: 'inline-flex',
-                                                                alignItems: 'center',
-                                                                justifyContent: 'center',
-                                                                lineHeight: 1,
-                                                                verticalAlign: '0',
-                                                                margin: 0,
-                                                                padding: 0
-                                                            }}
-                                                        >
-                                                            {disc}%
-                                                        </span>
-                                                    )
+                                                    iconMarkup = <i className="fas fa-percent" style={{ fontSize: '0.82rem', lineHeight: 1 }} />
                                                 } else if (rType === 'Paid') {
-                                                    iconMarkup = (
-                                                        <i
-                                                            className={`fas ${rewardItem.icon || 'fa-tag'}`}
-                                                            style={{
-                                                                fontSize: '0.82rem',
-                                                                display: 'inline-flex',
-                                                                alignItems: 'center',
-                                                                justifyContent: 'center',
-                                                                lineHeight: 1,
-                                                                verticalAlign: '0',
-                                                                margin: 0,
-                                                                padding: 0
-                                                            }}
-                                                        />
-                                                    )
+                                                    const paidIcon = rewardItem.icon || 'fa-tag'
+                                                    iconMarkup = <i className={`fas ${paidIcon}`} style={{ fontSize: '0.82rem', lineHeight: 1 }} />
                                                 }
-                                            } else {
+                                            }
+
+                                            // If no special reward was resolved, fallback to stamp number
+                                            if (typeof iconMarkup === 'number') {
                                                 iconMarkup = (
                                                     <span
                                                         style={{
@@ -261,16 +408,19 @@ export default function StampCardPreviewModal({
                                                 )
                                             }
 
+                                            const hasFreeStamp = rewardItem && (rType === 'Discount' || rType === 'Paid') && (Number(rewardItem.free_stamp) === 1 || rewardItem.free_stamp === true || rewardItem.free_stamp === '1')
+
                                             return (
                                                 <div
                                                     key={i}
+                                                    title={hasFreeStamp ? `${rewardItem.reward || (rType === 'Discount' ? `${rewardItem.discount ?? rewardItem.discountVal}% Off` : 'Paid Perk')} Free: ${rewardItem.free_text || 'Free Item'}` : undefined}
                                                     style={{
                                                         width: 36,
                                                         height: 36,
-                                                        borderRadius: `${card.stamp_radius ?? card.stampRadius ?? 50}%`,
-                                                        border: `2px solid ${card.stampBorderColor || card.stamp_border_color || '#FFFFFF'}`,
-                                                        background: card.stampBgColor || card.stamp_background || 'rgba(255, 255, 255, 0.3)',
-                                                        color: card.stampTextColor || card.stamp_text_color || 'inherit',
+                                                        borderRadius: `${activeCard.stamp_radius ?? activeCard.stampRadius ?? 50}%`,
+                                                        border: `2px solid ${activeCard.stampBorderColor || activeCard.stamp_border_color || '#FFFFFF'}`,
+                                                        background: activeCard.stampBgColor || activeCard.stamp_background || 'rgba(255, 255, 255, 0.3)',
+                                                        color: activeCard.stampTextColor || activeCard.stamp_text_color || 'inherit',
                                                         display: 'flex',
                                                         alignItems: 'center',
                                                         justifyContent: 'center',
@@ -278,21 +428,54 @@ export default function StampCardPreviewModal({
                                                         fontSize: '0.85rem',
                                                         fontWeight: 800,
                                                         flexShrink: 0,
-                                                        boxSizing: 'border-box'
+                                                        boxSizing: 'border-box',
+                                                        position: 'relative'
                                                     }}
                                                 >
                                                     {iconMarkup}
+                                                    {hasFreeStamp && (
+                                                        <span
+                                                            title={rewardItem.free_text ? `Free Perk: ${rewardItem.free_text}` : 'Free Perk Included'}
+                                                            style={{
+                                                                position: 'absolute',
+                                                                top: -4,
+                                                                right: -4,
+                                                                width: 15,
+                                                                height: 15,
+                                                                borderRadius: '50%',
+                                                                background: '#10B981',
+                                                                color: '#FFFFFF',
+                                                                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.35)',
+                                                                border: '1.5px solid #FFFFFF',
+                                                                zIndex: 4,
+                                                                pointerEvents: 'none',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                fontSize: '0.45rem',
+                                                                lineHeight: 1
+                                                            }}
+                                                        >
+                                                            <i className="fas fa-gift" style={{ lineHeight: 1, fontSize: '0.45rem' }} />
+                                                        </span>
+                                                    )}
                                                 </div>
                                             )
                                         })}
                                     </div>
+                                    {(activeCard.expires_at || activeCard.expiry) && (
+                                        <div style={{ fontSize: '0.68rem', opacity: 0.9, fontWeight: 700, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                            <i className="far fa-calendar-alt" style={{ fontSize: '0.62rem' }} />
+                                            <span>Expires: {formatExpiryDate(activeCard.expires_at || activeCard.expiry)}</span>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Right Side: QR CODE */}
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                    {hasCustomer && (card.qr_token || card.qrImg) ? (
+                                    {hasCustomer && (activeCard.qr_token || activeCard.qrImg) ? (
                                         <QRCodeCanvas
-                                            value={card.qr_token || card.qrImg}
+                                            value={activeCard.qr_token || activeCard.qrImg}
                                             size={92}
                                             style={{
                                                 width: 92,
@@ -330,12 +513,108 @@ export default function StampCardPreviewModal({
                     </div>
                 </div>
 
+                {/* WhatsApp Recipient Phone & Country Code Inputs */}
+                <div style={{ padding: '12px 20px', background: '#F8FAFC', borderTop: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#1E293B', display: 'flex', alignItems: 'center', gap: 6, margin: 0 }}>
+                            <i className="fab fa-whatsapp" style={{ color: '#25D366', fontSize: '1rem' }} />
+                            <span>Recipient WhatsApp Number</span>
+                        </label>
+                        {cardholder && (
+                            <span style={{ fontSize: '0.72rem', color: '#64748B' }}>
+                                Customer: <strong style={{ color: '#0F172A' }}>{cardholder}</strong>
+                            </span>
+                        )}
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <div style={{ width: 85, flexShrink: 0 }}>
+                            <input
+                                type="text"
+                                className="form-control"
+                                placeholder="+91"
+                                value={customerCountryCode ? (String(customerCountryCode).startsWith('+') ? customerCountryCode : `+${customerCountryCode}`) : ''}
+                                onChange={(e) => setCustomerCountryCode(e.target.value.replace(/[^\d+]/g, ''))}
+                                style={{
+                                    fontSize: '0.82rem',
+                                    borderRadius: 8,
+                                    border: '1.5px solid #CBD5E1',
+                                    background: '#FFFFFF',
+                                    color: '#0F172A',
+                                    height: 34,
+                                    fontWeight: 700,
+                                    textAlign: 'center'
+                                }}
+                                title="Country Code"
+                            />
+                        </div>
+                        <div style={{ position: 'relative', flex: 1, display: 'flex', alignItems: 'center' }}>
+                            <i className="fas fa-phone-alt" style={{ position: 'absolute', left: 12, color: '#94A3B8', fontSize: '0.75rem' }} />
+                            <input
+                                type="text"
+                                className="form-control"
+                                placeholder="Phone number (e.g. 8608862409)"
+                                value={customerPhone}
+                                onChange={(e) => setCustomerPhone(e.target.value)}
+                                style={{
+                                    paddingLeft: 32,
+                                    fontSize: '0.82rem',
+                                    borderRadius: 8,
+                                    border: '1.5px solid #CBD5E1',
+                                    background: '#FFFFFF',
+                                    color: '#0F172A',
+                                    height: 34
+                                }}
+                            />
+                        </div>
+                    </div>
+
+                    {/* WhatsApp Target Number Badge */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, marginTop: 2 }}>
+                        {cleanPhone(customerPhone, customerCountryCode) ? (
+                            <span style={{ fontSize: '0.72rem', background: 'rgba(37, 211, 102, 0.12)', color: '#047857', border: '1px solid rgba(37, 211, 102, 0.3)', padding: '2px 8px', borderRadius: 6, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                <i className="fab fa-whatsapp" style={{ fontSize: '0.75rem' }} />
+                                WhatsApp Target: +{cleanPhone(customerPhone, customerCountryCode)}
+                            </span>
+                        ) : (
+                            <span style={{ fontSize: '0.72rem', color: '#94A3B8', fontStyle: 'italic' }}>
+                                No recipient phone number specified
+                            </span>
+                        )}
+
+                        {activeCard.id && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const url = `/card-preview/${activeCard.id}?type=1&cus_id=${activeCard.customer_id || activeCard.cus_id || ''}&phone=${encodeURIComponent(customerPhone || '')}&country_code=${encodeURIComponent(customerCountryCode || '')}&customer_name=${encodeURIComponent(cardholder || '')}`
+                                    window.open(url, '_blank')
+                                }}
+                                style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: '#0E88B8',
+                                    fontSize: '0.72rem',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    padding: 0,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 3
+                                }}
+                            >
+                                <span>Full Preview</span>
+                                <i className="fas fa-external-link-alt" style={{ fontSize: '0.65rem' }} />
+                            </button>
+                        )}
+                    </div>
+                </div>
+
                 {/* Modal Action Bar */}
                 <div style={{ padding: '16px 20px', background: '#FFFFFF', borderTop: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                    <a
-                        href={getWhatsAppShareUrl()}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                    <button
+                        type="button"
+                        onClick={handleSendToWhatsApp}
+                        disabled={sharing}
                         className="btn"
                         style={{
                             flex: 1,
@@ -349,14 +628,29 @@ export default function StampCardPreviewModal({
                             alignItems: 'center',
                             justifyContent: 'center',
                             gap: 8,
-                            textDecoration: 'none',
                             border: 'none',
-                            boxShadow: '0 4px 12px rgba(37, 211, 102, 0.25)'
+                            cursor: sharing ? 'not-allowed' : 'pointer',
+                            opacity: sharing ? 0.75 : 1,
+                            boxShadow: '0 4px 12px rgba(37, 211, 102, 0.25)',
+                            transition: 'all 0.15s ease'
                         }}
                     >
-                        <i className="fab fa-whatsapp" style={{ fontSize: '1.1rem' }} />
-                        <span>Share to WhatsApp</span>
-                    </a>
+                        {sharing ? (
+                            <>
+                                <i className="fas fa-spinner fa-spin" />
+                                <span>Capturing &amp; Sharing...</span>
+                            </>
+                        ) : (
+                            <>
+                                <i className="fab fa-whatsapp" style={{ fontSize: '1.1rem' }} />
+                                <span>
+                                    {cleanPhone(customerPhone, customerCountryCode)
+                                        ? `Share to WhatsApp (+${cleanPhone(customerPhone, customerCountryCode)})`
+                                        : 'Share to WhatsApp'}
+                                </span>
+                            </>
+                        )}
+                    </button>
 
                     <button
                         type="button"
@@ -377,7 +671,7 @@ export default function StampCardPreviewModal({
                         }}
                     >
                         <i className={`fas ${downloading ? 'fa-spinner fa-spin' : 'fa-download'}`} style={{ fontSize: '0.95rem' }} />
-                        <span>{downloading ? 'Downloading...' : `Download ${card.title || card.name || 'Stamp Card'}`}</span>
+                        <span>{downloading ? 'Downloading...' : `Download ${activeCard.title || activeCard.name || 'Stamp Card'}`}</span>
                     </button>
                 </div>
             </div>

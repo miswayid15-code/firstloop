@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink, useNavigate, useOutletContext } from 'react-router-dom'
 import { toast } from "react-hot-toast"
 import API from '../../api.js'
 import QrScannerModal from './components/QrScannerModal.jsx'
@@ -117,6 +117,8 @@ const getPaymentLabel = (type) => {
 
 export default function ReceptionistDashboard() {
     const navigate = useNavigate()
+    const outletCtx = useOutletContext() || {}
+    const isAccountActive = outletCtx.isAccountActive !== undefined ? outletCtx.isAccountActive : true
     const [dashboard, setDashboard] = useState({})
     const [loading, setLoading] = useState(false)
     const [receptionist, setReceptionist] = useState(getStoredReceptionist)
@@ -192,10 +194,10 @@ export default function ReceptionistDashboard() {
                         {(receptionist?.user_branch || receptionist?.branch_name || receptionist?.user_branch_name || dashboard?.branch_name) && (
                             <span
                                 className="badge"
-                                onClick={() => {
+                                onClick={isAccountActive ? () => {
                                     const bId = receptionist?.user_branch_id || receptionist?.branch_id || dashboard?.branch_id || localStorage.getItem("rec_branch_id");
                                     if (bId) navigate(`/receptionist/view-fl-branch/${bId}`);
-                                }}
+                                } : undefined}
                                 style={{
                                     background: '#F1F5F9',
                                     color: '#64748B',
@@ -203,9 +205,9 @@ export default function ReceptionistDashboard() {
                                     padding: '3px 8px',
                                     borderRadius: 6,
                                     fontSize: '0.72rem',
-                                    cursor: (receptionist?.user_branch_id || receptionist?.branch_id || dashboard?.branch_id || localStorage.getItem("rec_branch_id")) ? 'pointer' : 'default'
+                                    cursor: isAccountActive && (receptionist?.user_branch_id || receptionist?.branch_id || dashboard?.branch_id || localStorage.getItem("rec_branch_id")) ? 'pointer' : 'default'
                                 }}
-                                title="View Branch Profile"
+                                title={isAccountActive ? "View Branch Profile" : undefined}
                             >
                                 <i className="fas fa-map-marker-alt" style={{ marginRight: 4, color: 'var(--firstloop-primary)' }} />
                                 {receptionist?.user_branch || receptionist?.branch_name || receptionist?.user_branch_name || dashboard?.branch_name}
@@ -227,25 +229,29 @@ export default function ReceptionistDashboard() {
                         <span className="d-none d-sm-inline">Refresh</span>
                     </button>
 
-                    <button
-                        type="button"
-                        className="btn firstloop-btn-primary"
-                        onClick={() => setQrModalOpen(true)}
-                        style={{ padding: '10px 18px', borderRadius: 12, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 8 }}
-                    >
-                        <i className="fas fa-qrcode" style={{ fontSize: '1.1rem' }} />
-                        <span>open qr scanner</span>
-                    </button>
+                    {isAccountActive && (
+                        <>
+                            <button
+                                type="button"
+                                className="btn firstloop-btn-primary"
+                                onClick={() => setQrModalOpen(true)}
+                                style={{ padding: '10px 18px', borderRadius: 12, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 8 }}
+                            >
+                                <i className="fas fa-qrcode" style={{ fontSize: '1.1rem' }} />
+                                <span>open qr scanner</span>
+                            </button>
 
-                    <button
-                        type="button"
-                        className="btn firstloop-btn-secondary"
-                        onClick={() => navigate('/receptionist/customers')}
-                        style={{ padding: '10px 18px', borderRadius: 12, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 8 }}
-                    >
-                        <i className="fas fa-phone-alt" />
-                        <span>Phone Search</span>
-                    </button>
+                            <button
+                                type="button"
+                                className="btn firstloop-btn-secondary"
+                                onClick={() => navigate('/receptionist/customers')}
+                                style={{ padding: '10px 18px', borderRadius: 12, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 8 }}
+                            >
+                               <i className="fas fa-user"></i>
+                                <span>Customer Search</span>
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
 
@@ -254,18 +260,18 @@ export default function ReceptionistDashboard() {
                 {/* 1. Branch Customer */}
                 <div
                     className="card"
-                    onClick={() => navigate('/receptionist/customers')}
+                    onClick={isAccountActive ? () => navigate('/receptionist/customers') : undefined}
                     style={{
                         borderRadius: 18,
                         padding: 22,
                         background: '#FFFFFF',
                         border: '1px solid rgba(14, 136, 184, 0.15)',
                         boxShadow: '0 8px 24px -4px rgba(14, 136, 184, 0.08)',
-                        cursor: 'pointer',
+                        cursor: isAccountActive ? 'pointer' : 'default',
                         transition: 'transform 0.15s ease, box-shadow 0.15s ease'
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-                    onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                    onMouseEnter={(e) => { if (isAccountActive) e.currentTarget.style.transform = 'translateY(-2px)' }}
+                    onMouseLeave={(e) => { if (isAccountActive) e.currentTarget.style.transform = 'translateY(0)' }}
                 >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                         <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
@@ -278,26 +284,28 @@ export default function ReceptionistDashboard() {
                     <h3 style={{ fontSize: '2rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
                         {loading ? <i className="fas fa-spinner fa-spin" style={{ fontSize: '1.4rem' }} /> : (dashboard?.total_cus ?? 0)}
                     </h3>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--firstloop-primary)', fontWeight: 700, marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <span>View Customer List &rarr;</span>
-                    </div>
+                    {isAccountActive && (
+                        <div style={{ fontSize: '0.78rem', color: 'var(--firstloop-primary)', fontWeight: 700, marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <span>View Customer List &rarr;</span>
+                        </div>
+                    )}
                 </div>
 
                 {/* 2. Linked Customer */}
                 <div
                     className="card"
-                    onClick={() => navigate('/receptionist/customers')}
+                    onClick={isAccountActive ? () => navigate('/receptionist/customers') : undefined}
                     style={{
                         borderRadius: 18,
                         padding: 22,
                         background: '#FFFFFF',
                         border: '1px solid rgba(16, 185, 129, 0.15)',
                         boxShadow: '0 8px 24px -4px rgba(16, 185, 129, 0.08)',
-                        cursor: 'pointer',
+                        cursor: isAccountActive ? 'pointer' : 'default',
                         transition: 'transform 0.15s ease, box-shadow 0.15s ease'
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-                    onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                    onMouseEnter={(e) => { if (isAccountActive) e.currentTarget.style.transform = 'translateY(-2px)' }}
+                    onMouseLeave={(e) => { if (isAccountActive) e.currentTarget.style.transform = 'translateY(0)' }}
                 >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                         <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
@@ -310,26 +318,28 @@ export default function ReceptionistDashboard() {
                     <h3 style={{ fontSize: '2rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
                         {loading ? <i className="fas fa-spinner fa-spin" style={{ fontSize: '1.4rem' }} /> : (dashboard?.total_linked_customer ?? 0)}
                     </h3>
-                    <div style={{ fontSize: '0.78rem', color: '#059669', fontWeight: 700, marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <span>View Linked Customers &rarr;</span>
-                    </div>
+                    {isAccountActive && (
+                        <div style={{ fontSize: '0.78rem', color: '#059669', fontWeight: 700, marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <span>View Linked Customers &rarr;</span>
+                        </div>
+                    )}
                 </div>
 
                 {/* 3. Available Stamp Card */}
                 <div
                     className="card"
-                    onClick={() => navigate('/receptionist/customers')}
+                    onClick={isAccountActive ? () => navigate('/receptionist/customers') : undefined}
                     style={{
                         borderRadius: 18,
                         padding: 22,
                         background: '#FFFFFF',
                         border: '1px solid rgba(2, 132, 199, 0.15)',
                         boxShadow: '0 8px 24px -4px rgba(2, 132, 199, 0.08)',
-                        cursor: 'pointer',
+                        cursor: isAccountActive ? 'pointer' : 'default',
                         transition: 'transform 0.15s ease, box-shadow 0.15s ease'
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-                    onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                    onMouseEnter={(e) => { if (isAccountActive) e.currentTarget.style.transform = 'translateY(-2px)' }}
+                    onMouseLeave={(e) => { if (isAccountActive) e.currentTarget.style.transform = 'translateY(0)' }}
                 >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                         <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
@@ -342,13 +352,15 @@ export default function ReceptionistDashboard() {
                     <h3 style={{ fontSize: '2rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
                         {loading ? <i className="fas fa-spinner fa-spin" style={{ fontSize: '1.4rem' }} /> : (dashboard?.total_available_stamp_card ?? 0)}
                     </h3>
-                    <div style={{ fontSize: '0.78rem', color: '#0284C7', fontWeight: 700, marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <span>
-                            {dashboard?.total_stamp_card !== undefined && dashboard?.total_stamp_card !== null
-                                ? `${dashboard.total_stamp_card} Cards Assigned • Issue / Check-In →`
-                                : 'Issue / Check-In Stamps →'}
-                        </span>
-                    </div>
+                    {isAccountActive && (
+                        <div style={{ fontSize: '0.78rem', color: '#0284C7', fontWeight: 700, marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <span>
+                                {dashboard?.total_stamp_card !== undefined && dashboard?.total_stamp_card !== null
+                                    ? `${dashboard.total_stamp_card} Cards Assigned • Issue / Check-In →`
+                                    : 'Issue / Check-In Stamps →'}
+                            </span>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -375,32 +387,34 @@ export default function ReceptionistDashboard() {
                         </p>
                     </div>
 
-                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                        <button
-                            type="button"
-                            className="btn"
-                            onClick={() => navigate(`/receptionist/add-card-customer/${br_id}`)}
-                            style={{ padding: '10px 18px', borderRadius: 10, background: 'rgba(255, 255, 255, 0.15)', color: '#FFFFFF', fontWeight: 800, fontSize: '0.85rem', border: '1px solid rgba(255, 255, 255, 0.3)' }}
-                        >
-                            <i className="fas fa-plus-circle" style={{ marginRight: 6 }} /> Issue Card
-                        </button>
-                        <button
-                            type="button"
-                            className="btn"
-                            onClick={() => navigate('/receptionist/customers')}
-                            style={{ padding: '10px 18px', borderRadius: 10, background: '#FFFFFF', color: '#0F172A', fontWeight: 800, fontSize: '0.85rem' }}
-                        >
-                            <i className="fas fa-search" style={{ marginRight: 6 }} /> Phone Search Entry
-                        </button>
-                        <button
-                            type="button"
-                            className="btn firstloop-btn-primary"
-                            onClick={() => setQrModalOpen(true)}
-                            style={{ padding: '10px 18px', borderRadius: 10, fontWeight: 800, fontSize: '0.85rem' }}
-                        >
-                            <i className="fas fa-qrcode" style={{ marginRight: 6 }} /> open qr scanner
-                        </button>
-                    </div>
+                    {isAccountActive && (
+                        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                            <button
+                                type="button"
+                                className="btn"
+                                onClick={() => navigate(`/receptionist/add-card-customer/${br_id}`)}
+                                style={{ padding: '10px 18px', borderRadius: 10, background: 'rgba(255, 255, 255, 0.15)', color: '#FFFFFF', fontWeight: 800, fontSize: '0.85rem', border: '1px solid rgba(255, 255, 255, 0.3)' }}
+                            >
+                                <i className="fas fa-plus-circle" style={{ marginRight: 6 }} /> Issue Card
+                            </button>
+                            <button
+                                type="button"
+                                className="btn"
+                                onClick={() => navigate('/receptionist/customers')}
+                                style={{ padding: '10px 18px', borderRadius: 10, background: '#FFFFFF', color: '#0F172A', fontWeight: 800, fontSize: '0.85rem' }}
+                            >
+                                <i className="fas fa-search" style={{ marginRight: 6 }} /> Phone Search Entry
+                            </button>
+                            <button
+                                type="button"
+                                className="btn firstloop-btn-primary"
+                                onClick={() => setQrModalOpen(true)}
+                                style={{ padding: '10px 18px', borderRadius: 10, fontWeight: 800, fontSize: '0.85rem' }}
+                            >
+                                <i className="fas fa-qrcode" style={{ marginRight: 6 }} /> open qr scanner
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -453,11 +467,11 @@ export default function ReceptionistDashboard() {
                                                 </div>
                                             </td>
                                             <td
-                                                onClick={() => navigate('/receptionist/customers')}
-                                                style={{ padding: '14px 18px', cursor: 'pointer' }}
-                                                title="View in Customers List"
+                                                onClick={isAccountActive ? () => navigate('/receptionist/customers') : undefined}
+                                                style={{ padding: '14px 18px', cursor: isAccountActive ? 'pointer' : 'default' }}
+                                                title={isAccountActive ? "View in Customers List" : undefined}
                                             >
-                                                <strong style={{ fontSize: '0.88rem', color: 'var(--firstloop-primary)', display: 'block' }}>
+                                                <strong style={{ fontSize: '0.88rem', color: isAccountActive ? 'var(--firstloop-primary)' : 'inherit', display: 'block' }}>
                                                     {log.name || 'Customer'}
                                                 </strong>
                                                 <small style={{ color: 'var(--text-muted)' }}>{phoneFormatted}</small>
@@ -466,12 +480,12 @@ export default function ReceptionistDashboard() {
                                                 {isStamp ? (
                                                     <span
                                                         className="badge"
-                                                        onClick={(e) => {
+                                                        onClick={isAccountActive ? (e) => {
                                                             e.stopPropagation()
                                                             setSearchModalOpen(true)
-                                                        }}
-                                                        style={{ background: 'var(--firstloop-primary-light)', color: 'var(--firstloop-primary)', fontWeight: 700, padding: '6px 10px', borderRadius: 8, cursor: 'pointer' }}
-                                                        title="Check-in or add stamp"
+                                                        } : undefined}
+                                                        style={{ background: 'var(--firstloop-primary-light)', color: 'var(--firstloop-primary)', fontWeight: 700, padding: '6px 10px', borderRadius: 8, cursor: isAccountActive ? 'pointer' : 'default' }}
+                                                        title={isAccountActive ? "Check-in or add stamp" : undefined}
                                                     >
                                                         <i className="fas fa-stamp" style={{ marginRight: 4 }} />
                                                         {log.card_name || 'Stamp Card'}
@@ -479,12 +493,12 @@ export default function ReceptionistDashboard() {
                                                 ) : (
                                                     <span
                                                         className="badge"
-                                                        onClick={(e) => {
+                                                        onClick={isAccountActive ? (e) => {
                                                             e.stopPropagation()
                                                             setSearchModalOpen(true)
-                                                        }}
-                                                        style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#D97706', fontWeight: 700, padding: '6px 10px', borderRadius: 8, cursor: 'pointer' }}
-                                                        title="Check-in member"
+                                                        } : undefined}
+                                                        style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#D97706', fontWeight: 700, padding: '6px 10px', borderRadius: 8, cursor: isAccountActive ? 'pointer' : 'default' }}
+                                                        title={isAccountActive ? "Check-in member" : undefined}
                                                     >
                                                         <i className="fas fa-crown" style={{ marginRight: 4 }} />
                                                         {log.card_name || 'VIP Membership'}

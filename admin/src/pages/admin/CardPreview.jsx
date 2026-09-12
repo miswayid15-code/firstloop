@@ -4,7 +4,7 @@ import html2canvas from 'html2canvas'
 import { toBlob } from 'html-to-image'
 import { toast } from 'react-hot-toast'
 import CustomerCard from '../../components/CustomerCard.jsx'
-import { fetchCustomerStampLevelsApi } from '../../services/cardService.js'
+import { fetchCustomerStampLevelsApi, waitForCardAssets, captureCardCanvas, cleanPhoneForWhatsApp } from '../../services/cardService.js'
 import API from '../../api.js'
 
 
@@ -51,16 +51,20 @@ export default function CardPreview() {
     |--------------------------------------------------------------------------
     */
     const cleanPhone = (phone, countryCode = '') => {
-        if (!phone) return ''
-        const p = String(phone).trim()
-        const cc = String(countryCode || '').replace(/\D/g, '')
-        let digits = p.replace(/\D/g, '')
-        if (!digits) return ''
-        if (cc && !digits.startsWith(cc)) {
-            digits = `${cc}${digits}`
-        }
-        return digits
+        return cleanPhoneForWhatsApp(phone, countryCode)
     }
+
+    const formatExpiryDate = (val) => {
+        if (!val) return null
+        try {
+            const d = new Date(val)
+            if (isNaN(d.getTime())) return String(val)
+            return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+        } catch {
+            return String(val)
+        }
+    }
+
 
     /*
     |--------------------------------------------------------------------------
@@ -112,21 +116,26 @@ export default function CardPreview() {
         const qPhone = searchParams.get('phone') || searchParams.get('customer_phone') || searchParams.get('mobile') || searchParams.get('cus_phone')
         const qCc = searchParams.get('country_code') || searchParams.get('cc')
         const qName = searchParams.get('customer_name') || searchParams.get('cus_name')
+
         if (qPhone) {
             setCustomerPhone(qPhone)
-            if (qCc) setCustomerCountryCode(qCc)
-            if (qName) setCustomerName(qName)
-            return
-        }
-
-        if (cardData?.customer_phone) {
+        } else if (cardData?.customer_phone) {
             setCustomerPhone(cardData.customer_phone)
-            if (cardData.customer_country_code) setCustomerCountryCode(cardData.customer_country_code)
-            if (cardData.customer_name) setCustomerName(cardData.customer_name)
-            return
         }
 
-        if (effectiveCusId && hasStaffToken) {
+        if (qCc) {
+            setCustomerCountryCode(qCc)
+        } else if (cardData?.customer_country_code) {
+            setCustomerCountryCode(cardData.customer_country_code)
+        }
+
+        if (qName) {
+            setCustomerName(qName)
+        } else if (cardData?.customer_name) {
+            setCustomerName(cardData.customer_name)
+        }
+
+        if (!qPhone && !cardData?.customer_phone && effectiveCusId && hasStaffToken) {
             let isMounted = true
             API.post(
                 '/firstloop/customer/get-customer-details',
@@ -191,6 +200,8 @@ export default function CardPreview() {
                 discountVal: discountVal,
                 discount: discountVal,
                 validity: validity,
+                expires_at: searchParams.get('expires_at') || searchParams.get('expiry') || null,
+                expiry: searchParams.get('expires_at') || searchParams.get('expiry') || null,
                 description: description,
                 card_type: cardType,
                 type: cardType,
@@ -277,13 +288,7 @@ export default function CardPreview() {
         if (!cardRef.current || !cardData) return
         try {
             setDownloading(true)
-            const canvas = await html2canvas(cardRef.current, {
-                scale: 3,
-                useCORS: true,
-                allowTaint: true,
-                backgroundColor: null,
-                logging: false
-            })
+            const canvas = await captureCardCanvas(cardRef.current)
             const image = canvas.toDataURL('image/png')
             const rawName = cardData.title || cardData.name || (cardType === 2 ? 'membership-pass' : 'stamp-card')
             const fileName = rawName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'card-pass'
@@ -436,27 +441,29 @@ export default function CardPreview() {
     const title = card?.title || card?.name || (cardType === 2 ? 'Membership Pass' : 'Stamp Card')
     const defaultDesc = card?.description || card?.descption || card?.reward_text || card?.reward || (cardType === 2 ? 'Enjoy exclusive perks and privileges with our digital membership pass!' : 'Collect stamps and unlock exciting rewards on every visit!')
     const recipient = customerName ? customerName : 'Valued Customer'
+    const expiryFormatted = formatExpiryDate(card?.expires_at || card?.expiry)
+    const expirySuffix = expiryFormatted ? ` (Valid till ${expiryFormatted})` : ''
 
     const messageTemplates = [
         {
             id: 'default',
             label: '📋 Default Card Description',
-            getText: () => defaultDesc
+            getText: () => `${defaultDesc}${expiryFormatted ? `\n⏳ *Expires On:* ${expiryFormatted}` : ''}`
         },
         {
             id: 'welcome',
             label: '🎉 Welcome & Card Invitation',
-            getText: () => `🎉 Hello ${recipient}! Here is your digital ${cardType === 2 ? 'membership pass' : 'stamp pass'} for *${brand}* - ${title}. Collect stamps & unlock exciting rewards!`
+            getText: () => `🎉 Hello ${recipient}! Here is your digital ${cardType === 2 ? 'membership pass' : 'stamp pass'} for *${brand}* - ${title}${expirySuffix}. Collect stamps & unlock exciting rewards!`
         },
         {
             id: 'reward',
             label: '🎁 Special Reward & Perks Alert',
-            getText: () => `🎁 Special Perk from *${brand}*! Check your digital card and enjoy exclusive rewards on your visits.`
+            getText: () => `🎁 Special Perk from *${brand}*! Check your digital card and enjoy exclusive rewards on your visits.${expiryFormatted ? ` Valid till ${expiryFormatted}.` : ''}`
         },
         {
             id: 'reminder',
             label: '⭐ Visit & Stamp Reminder',
-            getText: () => `⭐ Don't forget to present your digital pass at *${brand}* during your next visit to collect your stamps and claim your rewards!`
+            getText: () => `⭐ Don't forget to present your digital pass at *${brand}* during your next visit to collect your stamps and claim your rewards!${expiryFormatted ? ` Card valid till ${expiryFormatted}.` : ''}`
         },
         {
             id: 'custom',
@@ -501,6 +508,9 @@ export default function CardPreview() {
         const toastId = toast.loading('Capturing loyalty card image...')
 
         try {
+            // Wait for fonts and images to be fully loaded
+            await waitForCardAssets(cardEl)
+
             // 1. Capture DOM element to Blob using html-to-image, with html2canvas fallback
             let blob = null
             try {
@@ -515,13 +525,7 @@ export default function CardPreview() {
             }
 
             if (!blob) {
-                const canvas = await html2canvas(cardEl, {
-                    scale: 2,
-                    useCORS: true,
-                    allowTaint: true,
-                    backgroundColor: null,
-                    logging: false
-                })
+                const canvas = await captureCardCanvas(cardEl)
                 blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'))
             }
 
@@ -625,7 +629,7 @@ export default function CardPreview() {
         >
             {/* TOP BAR: BACK NAVIGATION BUTTON (ONLY IF STAFF TOKEN EXISTS) */}
             {hasStaffToken && (
-                <div style={{ width: '100%', maxWidth: 420, display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
+                <div style={{ width: '100%', maxWidth: 380, display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
                     <button
                         type="button"
                         onClick={handleBack}
@@ -667,8 +671,15 @@ export default function CardPreview() {
                 cardType={cardType}
             />
 
+            {(card?.expires_at || card?.expiry) && (
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(217, 119, 6, 0.1)', border: '1px solid rgba(217, 119, 6, 0.25)', padding: '5px 14px', borderRadius: 8, color: '#B45309', fontSize: '0.8rem', fontWeight: 700 }}>
+                    <i className="far fa-calendar-alt" />
+                    <span>Expires: {formatExpiryDate(card.expires_at || card.expiry)}</span>
+                </div>
+            )}
+
             {/* ACTION SECTION: WHATSAPP (FOR STAFF/ADMIN/MERCHANT/RECEPTIONIST) & DOWNLOAD */}
-            <div style={{ width: '100%', maxWidth: 420, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ width: '100%', maxWidth: 380, display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {hasStaffToken && (
                     <div
                         style={{
@@ -705,31 +716,72 @@ export default function CardPreview() {
                                     </span>
                                 )}
                             </div>
-                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                                <i className="fas fa-phone-alt" style={{ position: 'absolute', left: 12, color: '#94A3B8', fontSize: '0.8rem' }} />
-                                <input
-                                    type="text"
-                                    className="form-control"
-                                    placeholder="Enter phone with country code (e.g. 919876543210)"
-                                    value={customerPhone}
-                                    onChange={(e) => setCustomerPhone(e.target.value)}
-                                    style={{
-                                        paddingLeft: 34,
-                                        fontSize: '0.84rem',
-                                        borderRadius: 10,
-                                        border: '1.5px solid #CBD5E1',
-                                        background: '#FFFFFF',
-                                        color: '#0F172A',
-                                        height: 38
-                                    }}
-                                />
-                            </div>
-                            {customerName && (
-                                <div style={{ fontSize: '0.74rem', color: '#64748B', display: 'flex', alignItems: 'center', gap: 4 }}>
-                                    <i className="fas fa-user-check" style={{ color: '#0E88B8', fontSize: '0.75rem' }} />
-                                    <span>Customer: <strong style={{ color: '#1E293B' }}>{customerName}</strong></span>
+                            {/* Dual Inputs for Country Code and Phone Number */}
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                <div style={{ width: 90, flexShrink: 0 }}>
+                                    <input
+                                        type="text"
+                                        className="form-control"
+                                        placeholder="+91"
+                                        value={customerCountryCode ? (String(customerCountryCode).startsWith('+') ? customerCountryCode : `+${customerCountryCode}`) : ''}
+                                        onChange={(e) => {
+                                            const val = e.target.value.replace(/[^\d+]/g, '')
+                                            setCustomerCountryCode(val)
+                                        }}
+                                        style={{
+                                            fontSize: '0.84rem',
+                                            borderRadius: 10,
+                                            border: '1.5px solid #CBD5E1',
+                                            background: '#FFFFFF',
+                                            color: '#0F172A',
+                                            height: 38,
+                                            fontWeight: 700,
+                                            textAlign: 'center'
+                                        }}
+                                        title="Country Calling Code"
+                                    />
                                 </div>
-                            )}
+                                <div style={{ position: 'relative', flex: 1, display: 'flex', alignItems: 'center' }}>
+                                    <i className="fas fa-phone-alt" style={{ position: 'absolute', left: 12, color: '#94A3B8', fontSize: '0.8rem' }} />
+                                    <input
+                                        type="text"
+                                        className="form-control"
+                                        placeholder="Phone Number (e.g. 8608862409)"
+                                        value={customerPhone}
+                                        onChange={(e) => setCustomerPhone(e.target.value)}
+                                        style={{
+                                            paddingLeft: 34,
+                                            fontSize: '0.84rem',
+                                            borderRadius: 10,
+                                            border: '1.5px solid #CBD5E1',
+                                            background: '#FFFFFF',
+                                            color: '#0F172A',
+                                            height: 38
+                                        }}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Preview of resolved international number & customer name */}
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6, marginTop: 2 }}>
+                                {customerName ? (
+                                    <div style={{ fontSize: '0.74rem', color: '#64748B', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                        <i className="fas fa-user-check" style={{ color: '#0E88B8', fontSize: '0.75rem' }} />
+                                        <span>Customer: <strong style={{ color: '#1E293B' }}>{customerName}</strong></span>
+                                    </div>
+                                ) : <div />}
+
+                                {targetPhone ? (
+                                    <span style={{ fontSize: '0.72rem', background: 'rgba(37, 211, 102, 0.12)', color: '#047857', border: '1px solid rgba(37, 211, 102, 0.3)', padding: '2px 8px', borderRadius: 6, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                        <i className="fab fa-whatsapp" style={{ fontSize: '0.75rem' }} />
+                                        WhatsApp: +{targetPhone}
+                                    </span>
+                                ) : (
+                                    <span style={{ fontSize: '0.72rem', color: '#94A3B8', fontStyle: 'italic' }}>
+                                        No phone number set
+                                    </span>
+                                )}
+                            </div>
                         </div>
 
                         {/* DESCRIPTION / MESSAGE BOX WITH DROPDOWN TEMPLATES */}

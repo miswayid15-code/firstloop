@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { Html5Qrcode } from 'html5-qrcode'
 import { toast } from 'react-hot-toast'
 import API from '../../../api.js'
@@ -6,7 +7,21 @@ import CustomerCard from '../../../components/CustomerCard.jsx'
 import CustomerCardHistory from '../../../components/CustomerCardHistory.jsx'
 import { fetchCustomerStampLevelsApi } from '../../../services/cardService.js'
 
+const formatExpiryDate = (val) => {
+    if (!val) return null
+    try {
+        const d = new Date(val)
+        if (isNaN(d.getTime())) return String(val)
+        return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+    } catch {
+        return String(val)
+    }
+}
+
 export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = '' }) {
+    const navigate = useNavigate()
+    const location = useLocation()
+    const isMerchant = location.pathname.includes('/merchant')
     let receptionist = {}
     try {
         const rawReceptionist = localStorage.getItem("receptionist_data")
@@ -125,8 +140,11 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
         try {
             const data = await fetchCustomerStampLevelsApi(cardId, cardType, customerId)
             if (data) {
+                const totalStamps = Number(data.total_stamps || 8)
+                const collected = Number(data.current_stamp ?? data.collected ?? 0)
+                const isCompleted = Number(data.is_completed) === 1 || collected >= totalStamps
+                const amt = isCompleted ? '0.00' : Number(data?.overAll_amt ?? data?.current_amt ?? 0).toFixed(2)
                 setSelectedCardDetails(data)
-                const amt = Number(data?.overAll_amt ?? data?.current_amt ?? 0).toFixed(2)
                 setPaymentAmount(amt)
             }
         } catch (err) {
@@ -322,6 +340,11 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
                     const newStamps = currentCollected + 1
                     toast.success(res.data.message || "Stamp payment entry logged successfully! 🚀")
 
+                    const activeReward = selectedCardDetails?.CustomerStampLevels?.[currentCollected] || selectedCardDetails?.levelRewards?.[currentCollected] || selectedCardDetails?.stamp_levels?.[currentCollected]
+                    const earnedFreePerk = (Number(selectedCardDetails?.free_stamp) === 1 || Number(activeReward?.free_stamp) === 1 || Boolean(selectedCardDetails?.free_text) || Boolean(activeReward?.free_text))
+                        ? (selectedCardDetails?.free_text || activeReward?.free_text || 'Free Perk')
+                        : null
+
                     const receipt = {
                         receiptId: res.data.receipt_id || `RCP-${Date.now().toString().slice(-6)}`,
                         customerName: matchedCustomer.name || 'Customer',
@@ -333,6 +356,7 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
                         totalStamps: totalStamps,
                         paymentMethod: paymentMethod,
                         paymentAmount: `$${parseFloat(paymentAmount).toFixed(2)}`,
+                        freePerk: earnedFreePerk,
                         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                     }
 
@@ -384,13 +408,27 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
     const isStampCard = Number(selectedCard?.card_type) === 1
     const totalStamps = Number(selectedCardDetails?.total_stamps || selectedCardDetails?.number_of_stamps || selectedCard?.total_stamps || 8)
     const collectedStamps = Number(selectedCardDetails?.current_stamp ?? selectedCardDetails?.current_stamps ?? selectedCard?.current_stamp ?? selectedCard?.collected ?? 0)
-    const isCompleted = isStampCard && collectedStamps >= totalStamps
+    const isCardDone = Number(selectedCardDetails?.is_completed) === 1 || Number(selectedCard?.is_completed) === 1 || collectedStamps >= totalStamps
+    const isCompleted = isStampCard && isCardDone
     const remainingStamps = Math.max(0, totalStamps - collectedStamps)
+
+    const handleAddNewCard = () => {
+        const bId = branchId || receptionist?.user_branch_id || ''
+        const emailQuery = matchedCustomer?.email ? `?email=${encodeURIComponent(matchedCustomer.email)}` : ''
+        if (onClose) onClose()
+        if (isMerchant) {
+            navigate(`/merchant/add-card-customer/${bId}${emailQuery}`)
+        } else {
+            navigate(`/receptionist/add-card-customer/${bId}${emailQuery}`)
+        }
+    }
 
     // Merge card data with customer details to ensure full preview display
     const cardForPreview = {
         ...(selectedCard || {}),
         ...(selectedCardDetails || {}),
+        expires_at: selectedCardDetails?.expires_at || selectedCard?.expires_at || null,
+        expiry: selectedCardDetails?.expires_at || selectedCard?.expires_at || selectedCardDetails?.expiry || selectedCard?.expiry || null,
         customer_name: matchedCustomer?.name || selectedCardDetails?.customer_name || selectedCard?.customer_name || 'Customer',
         name: matchedCustomer?.name || selectedCardDetails?.name || selectedCard?.name || 'Customer'
     }
@@ -469,6 +507,26 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        {matchedCustomer && selectedCard && (isCompleted || remainingStamps <= 4 || Number(selectedCard?.is_completed) === 1) && (
+                            <button
+                                type="button"
+                                className="btn btn-sm btn-primary"
+                                onClick={handleAddNewCard}
+                                style={{
+                                    borderRadius: 10,
+                                    fontWeight: 700,
+                                    fontSize: '0.82rem',
+                                    padding: '7px 14px',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 6
+                                }}
+                            >
+                                <i className="fas fa-plus-circle" />
+                                <span>Add New Card</span>
+                            </button>
+                        )}
+
                         {matchedCustomer && selectedCard && (
                             <button
                                 type="button"
@@ -572,6 +630,7 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
                                             <span style={{ fontSize: '0.8rem', color: '#047857' }}>
                                                 Receipt #{lastReceipt.receiptId} • {lastReceipt.paymentAmount} ({lastReceipt.paymentMethod})
                                                 {lastReceipt.newStamps !== undefined && ` • Updated Progress: ${lastReceipt.newStamps}/${lastReceipt.totalStamps} Stamps`}
+                                                {lastReceipt.freePerk && ` • 🎁 Unlocked Free Perk: ${lastReceipt.freePerk}`}
                                             </span>
                                         </div>
                                     </div>
@@ -776,6 +835,38 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
                                                             </span>
                                                         )}
                                                     </div>
+
+                                                    {(card.expires_at || card.expiry) && (
+                                                        <div style={{ fontSize: '0.68rem', color: '#B45309', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                                                            <i className="far fa-calendar-alt" />
+                                                            <span>Expires: {formatExpiryDate(card.expires_at || card.expiry)}</span>
+                                                        </div>
+                                                    )}
+
+                                                    {isCardDone && (
+                                                        <div style={{ marginTop: 6, display: 'flex', justifyContent: 'flex-end' }}>
+                                                            <button
+                                                                type="button"
+                                                                className="btn btn-xs btn-outline-primary"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation()
+                                                                    handleAddNewCard()
+                                                                }}
+                                                                style={{
+                                                                    fontSize: '0.72rem',
+                                                                    padding: '3px 8px',
+                                                                    borderRadius: 6,
+                                                                    fontWeight: 700,
+                                                                    display: 'inline-flex',
+                                                                    alignItems: 'center',
+                                                                    gap: 4
+                                                                }}
+                                                            >
+                                                                <i className="fas fa-plus-circle" />
+                                                                <span>Add New Card</span>
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )
                                         })}
@@ -817,9 +908,17 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
                                         }}
                                     >
                                         <div>
-                                            <span style={{ fontSize: '0.75rem', fontFamily: 'monospace', fontWeight: 700, color: '#0369A1' }}>
-                                                CARD-{selectedCard.card_number || selectedCard.id}
-                                            </span>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                                <span style={{ fontSize: '0.75rem', fontFamily: 'monospace', fontWeight: 700, color: '#0369A1' }}>
+                                                    CARD-{selectedCard.card_number || selectedCard.id}
+                                                </span>
+                                                {(selectedCard.expires_at || selectedCardDetails?.expires_at || selectedCard.expiry) && (
+                                                    <span style={{ fontSize: '0.72rem', color: '#B45309', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(217, 119, 6, 0.1)', border: '1px solid rgba(217, 119, 6, 0.25)', padding: '2px 8px', borderRadius: 6 }}>
+                                                        <i className="far fa-calendar-alt" />
+                                                        Expires: {formatExpiryDate(selectedCard.expires_at || selectedCardDetails?.expires_at || selectedCard.expiry)}
+                                                    </span>
+                                                )}
+                                            </div>
                                             <div style={{ fontSize: '0.86rem', fontWeight: 800, color: '#0F172A', marginTop: 2 }}>
                                                 {isCompleted
                                                     ? '🎉 Card Fully Completed'
@@ -915,28 +1014,59 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
                                                                     const isPaid = levelData?.status !== undefined
                                                                         ? Number(levelData.status) === 1
                                                                         : (isCompleted || idx < collectedStamps)
+                                                                    const hasFree = Number(levelData?.free_stamp) === 1 || levelData?.free_stamp === true || levelData?.free_stamp === '1' || Boolean(levelData?.free_text)
+                                                                    const freePerkText = levelData?.free_text || ''
 
                                                                     return (
                                                                         <div
                                                                             key={idx}
-                                                                            title={`Stamp ${idx + 1}: ${isPaid ? 'Paid / Collected' : 'Pending / Not Paid'}`}
-                                                                            style={{
-                                                                                width: 34,
-                                                                                height: 34,
-                                                                                borderRadius: `${selectedCardDetails?.stamp_radius ?? 50}%`,
-                                                                                background: isPaid ? 'var(--firstloop-gradient-primary, linear-gradient(135deg, #0E88B8 0%, #0284C7 100%))' : '#FFFFFF',
-                                                                                color: isPaid ? '#FFFFFF' : '#94A3B8',
-                                                                                border: isPaid ? 'none' : '2px dashed #CBD5E1',
-                                                                                display: 'flex',
-                                                                                alignItems: 'center',
-                                                                                justifyContent: 'center',
-                                                                                fontWeight: 800,
-                                                                                fontSize: '0.8rem',
-                                                                                boxShadow: isPaid ? '0 2px 6px rgba(14, 136, 184, 0.25)' : 'none',
-                                                                                transition: 'all 0.2s ease'
-                                                                            }}
+                                                                            style={{ position: 'relative' }}
                                                                         >
-                                                                            {isPaid ? <i className="fas fa-check" /> : idx + 1}
+                                                                            <div
+                                                                                title={`Stamp ${idx + 1}: ${isPaid ? 'Paid / Collected' : 'Pending / Not Paid'}${levelData?.reward ? ` • ${levelData.reward}` : ''}${hasFree ? ` (Free: ${freePerkText || 'Free Perk'})` : ''}`}
+                                                                                style={{
+                                                                                    width: 34,
+                                                                                    height: 34,
+                                                                                    borderRadius: `${selectedCardDetails?.stamp_radius ?? 50}%`,
+                                                                                    background: isPaid ? 'var(--firstloop-gradient-primary, linear-gradient(135deg, #0E88B8 0%, #0284C7 100%))' : '#FFFFFF',
+                                                                                    color: isPaid ? '#FFFFFF' : '#94A3B8',
+                                                                                    border: isPaid ? 'none' : '2px dashed #CBD5E1',
+                                                                                    display: 'flex',
+                                                                                    alignItems: 'center',
+                                                                                    justifyContent: 'center',
+                                                                                    fontWeight: 800,
+                                                                                    fontSize: '0.8rem',
+                                                                                    boxShadow: isPaid ? '0 2px 6px rgba(14, 136, 184, 0.25)' : 'none',
+                                                                                    transition: 'all 0.2s ease'
+                                                                                }}
+                                                                            >
+                                                                                {isPaid ? <i className="fas fa-check" /> : idx + 1}
+                                                                            </div>
+                                                                            {hasFree && (
+                                                                                <span
+                                                                                    title={freePerkText ? `Free Perk: ${freePerkText}` : 'Free Bonus Perk'}
+                                                                                    style={{
+                                                                                        position: 'absolute',
+                                                                                        top: -4,
+                                                                                        right: -4,
+                                                                                        width: 15,
+                                                                                        height: 15,
+                                                                                        borderRadius: '50%',
+                                                                                        background: '#10B981',
+                                                                                        color: '#FFFFFF',
+                                                                                        border: '1.5px solid #FFFFFF',
+                                                                                        display: 'flex',
+                                                                                        alignItems: 'center',
+                                                                                        justifyContent: 'center',
+                                                                                        fontSize: '0.45rem',
+                                                                                        boxShadow: '0 2px 4px rgba(0,0,0,0.25)',
+                                                                                        pointerEvents: 'none',
+                                                                                        zIndex: 2
+                                                                                    }}
+                                                                                >
+                                                                                    <i className="fas fa-gift" />
+                                                                                </span>
+                                                                            )}
                                                                         </div>
                                                                     )
                                                                 })}
@@ -952,52 +1082,108 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
                                                                 <h5 style={{ fontWeight: 800, color: '#065F46', margin: '0 0 4px', fontSize: '1rem' }}>
                                                                     Stamp Card Fully Completed!
                                                                 </h5>
-                                                                <p style={{ fontSize: '0.82rem', color: '#047857', margin: 0 }}>
+                                                                <p style={{ fontSize: '0.82rem', color: '#047857', margin: '0 0 14px 0' }}>
                                                                     All {totalStamps} stamps collected. Customer has unlocked all reward perks!
                                                                 </p>
+                                                                <div>
+                                                                    <button
+                                                                        type="button"
+                                                                        className="btn btn-primary"
+                                                                        onClick={handleAddNewCard}
+                                                                        style={{
+                                                                            borderRadius: 12,
+                                                                            fontWeight: 800,
+                                                                            fontSize: '0.88rem',
+                                                                            padding: '9px 20px',
+                                                                            display: 'inline-flex',
+                                                                            alignItems: 'center',
+                                                                            gap: 8,
+                                                                            boxShadow: '0 4px 14px rgba(14, 136, 184, 0.35)'
+                                                                        }}
+                                                                    >
+                                                                        <i className="fas fa-plus-circle" />
+                                                                        <span>Add New Card for Customer</span>
+                                                                    </button>
+                                                                </div>
                                                             </div>
                                                         ) : (
                                                             <>
                                                                 {/* Current Stamp Perk & Payable Amount */}
-                                                                <div
-                                                                    style={{
-                                                                        background: '#F8FAFC',
-                                                                        borderRadius: 14,
-                                                                        padding: '14px 16px',
-                                                                        border: '1px solid #E2E8F0',
-                                                                        marginBottom: 16,
-                                                                        display: 'flex',
-                                                                        flexDirection: 'column',
-                                                                        gap: 10
-                                                                    }}
-                                                                >
-                                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                                                        <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)' }}>
-                                                                            Current Stamp Perk:
-                                                                        </span>
-                                                                        <span
-                                                                            className="badge"
+                                                                {(() => {
+                                                                    const currentStampIdx = collectedStamps
+                                                                    const activeLevel = selectedCardDetails?.CustomerStampLevels?.[currentStampIdx] || selectedCardDetails?.levelRewards?.[currentStampIdx] || selectedCardDetails?.stamp_levels?.[currentStampIdx]
+                                                                    const hasFreeBonus = (Number(selectedCardDetails?.free_stamp) === 1 || Number(activeLevel?.free_stamp) === 1 || Boolean(selectedCardDetails?.free_text) || Boolean(activeLevel?.free_text))
+                                                                    const freeBonusText = selectedCardDetails?.free_text || activeLevel?.free_text || ''
+
+                                                                    return (
+                                                                        <div
                                                                             style={{
-                                                                                background: '#F59E0B',
-                                                                                color: '#FFF',
-                                                                                fontWeight: 800,
-                                                                                padding: '4px 12px',
-                                                                                borderRadius: 6,
-                                                                                fontSize: '0.78rem'
+                                                                                background: '#F8FAFC',
+                                                                                borderRadius: 14,
+                                                                                padding: '14px 16px',
+                                                                                border: '1px solid #E2E8F0',
+                                                                                marginBottom: 16,
+                                                                                display: 'flex',
+                                                                                flexDirection: 'column',
+                                                                                gap: 10
                                                                             }}
                                                                         >
-                                                                            <i className="fas fa-tag" style={{ marginRight: 5 }} />
-                                                                            {selectedCardDetails?.descption || 'Paid Perk'}
-                                                                        </span>
-                                                                    </div>
+                                                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                                                                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)' }}>
+                                                                                    Current Stamp Perk:
+                                                                                </span>
+                                                                                <span
+                                                                                    className="badge"
+                                                                                    style={{
+                                                                                        background: '#F59E0B',
+                                                                                        color: '#FFF',
+                                                                                        fontWeight: 800,
+                                                                                        padding: '4px 12px',
+                                                                                        borderRadius: 6,
+                                                                                        fontSize: '0.78rem'
+                                                                                    }}
+                                                                                >
+                                                                                    <i className="fas fa-tag" style={{ marginRight: 5 }} />
+                                                                                    {selectedCardDetails?.descption || 'Paid Perk'}
+                                                                                </span>
+                                                                            </div>
 
-                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #E2E8F0', paddingTop: 8 }}>
-                                                                        <span style={{ color: 'var(--text-secondary)', fontWeight: 700, fontSize: '0.85rem' }}>Payable Amount:</span>
-                                                                        <strong style={{ color: 'var(--firstloop-primary, #0E88B8)', fontWeight: 800, fontSize: '1.05rem' }}>
-                                                                            {Number(selectedCardDetails?.overAll_amt ?? selectedCardDetails?.current_amt ?? paymentAmount ?? 0).toFixed(2)}
-                                                                        </strong>
-                                                                    </div>
-                                                                </div>
+                                                                            {hasFreeBonus && (
+                                                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px dashed #E2E8F0', paddingTop: 8 }}>
+                                                                                    <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#059669', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                                                                                        <i className="fas fa-gift text-success" />
+                                                                                        <span>Bonus Free Perk:</span>
+                                                                                    </span>
+                                                                                    <span
+                                                                                        className="badge"
+                                                                                        style={{
+                                                                                            background: 'rgba(16, 185, 129, 0.15)',
+                                                                                            color: '#059669',
+                                                                                            border: '1px solid rgba(16, 185, 129, 0.3)',
+                                                                                            fontWeight: 800,
+                                                                                            padding: '4px 12px',
+                                                                                            borderRadius: 6,
+                                                                                            fontSize: '0.78rem',
+                                                                                            display: 'inline-flex',
+                                                                                            alignItems: 'center',
+                                                                                            gap: 5
+                                                                                        }}
+                                                                                    >
+                                                                                        <i className="fas fa-gift" />
+                                                                                        <span>Free: {freeBonusText || 'Free Bonus Item'}</span>
+                                                                                    </span>
+                                                                                </div>
+                                                                            )}
+
+                                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #E2E8F0', paddingTop: 8 }}>
+                                                                                <span style={{ color: 'var(--text-secondary)', fontWeight: 700, fontSize: '0.85rem' }}>Payable Amount:</span>
+                                                                                <strong style={{ color: 'var(--firstloop-primary, #0E88B8)', fontWeight: 800, fontSize: '1.05rem' }}>
+                                                                                    {Number(selectedCardDetails?.overAll_amt ?? selectedCardDetails?.current_amt ?? paymentAmount ?? 0).toFixed(2)}
+                                                                                </strong>
+                                                                            </div>
+                                                                        </div>
+                                                                    )
+                                                                })()}
 
                                                                 {/* Payment Method Selector */}
                                                                 <div className="form-group mb-3">

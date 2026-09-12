@@ -11,6 +11,18 @@ import CustomerCardHistory from '../../components/CustomerCardHistory.jsx'
 import StampCardPreviewModal from '../../components/StampCardPreviewModal.jsx'
 import MembershipCardPreviewModal from '../../components/MembershipCardPreviewModal.jsx'
 
+// --- Expiry Date Formatter Helper ---
+const formatExpiryDate = (val) => {
+    if (!val) return null
+    try {
+        const d = new Date(val)
+        if (isNaN(d.getTime())) return String(val)
+        return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+    } catch {
+        return String(val)
+    }
+}
+
 // --- QR Code Component Supporting Live Tokens or Default Static QR ---
 const RealQRCode = ({ token, size = 80 }) => {
     if (token) {
@@ -95,14 +107,17 @@ export default function FpCustomerDetails() {
                     const branchTitle = sc.Branch?.name || sc.branch_name || sc.branchName || (sc.branch_id ? `Branch #${sc.branch_id}` : 'Main Branch')
                     const historyLogs = stampLevels
                         .filter(lvl => Number(lvl.status) === 1)
-                        .map((lvl, idx) => ({
-                            date: sc.issued_at ? new Date(sc.issued_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Logged',
-                            branch: branchTitle,
-                            event: `Stamp #${lvl.stamp_number || idx + 1} Earned ${lvl.reward_text ? `(${lvl.reward_text})` : ''}`,
-                            balance: `${lvl.stamp_number || idx + 1} / ${total} Stamps`,
-                            operator: 'Receptionist / Staff',
-                            amt: Number(lvl.amt || 0).toFixed(2)
-                        }))
+                        .map((lvl, idx) => {
+                            const freeTextNotice = (Number(lvl.free_stamp) === 1 && lvl.free_text) ? ` Free: ${lvl.free_text}` : ''
+                            return {
+                                date: lvl.updated_at ? new Date(lvl.updated_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : (sc.issued_at ? new Date(sc.issued_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Logged'),
+                                branch: branchTitle,
+                                event: `Stamp #${lvl.stamp_number || idx + 1} Earned ${lvl.reward_text ? `(${lvl.reward_text})` : ''}${freeTextNotice}`,
+                                balance: `${lvl.stamp_number || idx + 1} / ${total} Stamps`,
+                                operator: 'Receptionist / Staff',
+                                amt: Number(lvl.amt || 0).toFixed(2)
+                            }
+                        })
 
                     return {
                         ...sc,
@@ -110,24 +125,35 @@ export default function FpCustomerDetails() {
                         branchId: String(sc.Branch?.id || sc.branch_id || sc.branchId || ''),
                         branchName: branchTitle,
                         title: sc.title || 'Stamp Card',
-                        brandName: sc.brand_name || 'Brand',
-                        brandLogo: sc.brand_image ? formatImageUrl(sc.brand_image) : null,
-                        bgImage: sc.background_image ? formatImageUrl(sc.background_image) : null,
-                        bgColor: sc.background_color || '#0E88B8',
-                        textColor: sc.text_color || '#FFFFFF',
-                        borderColor: sc.border_color || '#00A6D6',
-                        stampBgColor: sc.stamp_background || 'rgba(255, 255, 255, 0.3)',
-                        stampBorderColor: sc.stamp_border_color || '#FFFFFF',
-                        stampTextColor: sc.stamp_text_color || '#FFFFFF',
-                        stamp_radius: Number(sc.stamp_radius ?? 50),
+                        brandName: sc.brand_name || sc.brandName || 'Brand',
+                        brandLogo: sc.brand_image ? formatImageUrl(sc.brand_image) : (sc.brandLogo ? formatImageUrl(sc.brandLogo) : null),
+                        bgImage: sc.background_image ? formatImageUrl(sc.background_image) : (sc.bgImage ? formatImageUrl(sc.bgImage) : null),
+                        bgColor: sc.background_color || sc.bgColor || '#0E88B8',
+                        textColor: sc.text_color || sc.textColor || '#FFFFFF',
+                        borderColor: sc.border_color || sc.borderColor || '#00A6D6',
+                        stampBgColor: sc.stamp_background || sc.stampBgColor || 'rgba(255, 255, 255, 0.3)',
+                        stampBorderColor: sc.stamp_border_color || sc.stampBorderColor || '#FFFFFF',
+                        stampTextColor: sc.stamp_text_color || sc.stampTextColor || '#FFFFFF',
+                        stamp_radius: Number(sc.stamp_radius ?? sc.stampRadius ?? 50),
                         collected,
                         total,
+                        total_stamps: total,
+                        number_of_stamps: total,
                         is_completed: isCompleted ? 1 : 0,
                         usageNote: sc.usageNote || usageNote,
                         cardholderName: sc.Customer?.name || cusInfo.name || 'Customer',
+                        customer_name: sc.Customer?.name || cusInfo.name || 'Customer',
+                        customer_id: cusInfo.id || id,
+                        customerPhone: cusInfo.phone || '',
+                        customerCountryCode: cusInfo.country_code || '',
+                        phone: cusInfo.phone || '',
+                        country_code: cusInfo.country_code || '',
                         qrImg: sc.qr_token,
                         card_number: sc.card_number,
                         CustomerStampLevels: stampLevels,
+                        stamp_levels: stampLevels,
+                        expires_at: sc.expires_at || sc.expiry || null,
+                        expiry: sc.expires_at || sc.expiry || null,
                         history: sc.history && sc.history.length > 0 ? sc.history : historyLogs,
                         totalVisits: collected
                     }
@@ -146,6 +172,12 @@ export default function FpCustomerDetails() {
                         name: mc.title || mc.name || 'Membership Pass',
                         title: mc.title || mc.name || 'Membership Pass',
                         cardholderName: mc.Customer?.name || cusInfo.name || 'Member',
+                        customer_name: mc.Customer?.name || cusInfo.name || 'Member',
+                        customer_id: cusInfo.id || id,
+                        customerPhone: cusInfo.phone || '',
+                        customerCountryCode: cusInfo.country_code || '',
+                        phone: cusInfo.phone || '',
+                        country_code: cusInfo.country_code || '',
                         brandName: mc.brand_name || 'Brand',
                         brandLogo: mc.brand_image ? formatImageUrl(mc.brand_image) : null,
                         bgImage: mc.background_image ? formatImageUrl(mc.background_image) : null,
@@ -153,6 +185,8 @@ export default function FpCustomerDetails() {
                         textColor: mc.text_color || '#FFFFFF',
                         borderColor: mc.border_color || '#F59E0B',
                         validThru: validThru,
+                        expires_at: mc.expires_at || mc.expiry || null,
+                        expiry: mc.expires_at || mc.expiry || null,
                         expiryDate: expiryStr,
                         expiryNotice: mc.expires_at ? `Expires on ${expiryStr}` : 'Active Pass',
                         tier: mc.tier || 'VIP',
@@ -192,6 +226,8 @@ export default function FpCustomerDetails() {
                     name: cusInfo.name || 'Customer',
                     email: cusInfo.email || '-',
                     phone: cusInfo.phone ? `${cusInfo.country_code ? `+${cusInfo.country_code} ` : ''}${cusInfo.phone}` : '-',
+                    rawPhone: cusInfo.phone || '',
+                    country_code: cusInfo.country_code || '',
                     avatar: cusInfo.profile_image ? formatImageUrl(cusInfo.profile_image) : null,
                     joinedDate: cusInfo.created_at ? new Date(cusInfo.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Registered Member',
                     totalSpendAllBranches: `${Number(raw.total_spend || 0).toFixed(2)}`,
@@ -615,10 +651,10 @@ export default function FpCustomerDetails() {
                                 <strong style={{ fontSize: '1.2rem', color: 'var(--firstloop-primary)' }}>{(customer.stampCards || []).length} Cards</strong>
                             </div>
 
-                            <div style={{ padding: 10, background: 'rgba(245, 158, 11, 0.1)', borderRadius: 10, border: '1px solid rgba(245,158,11,0.2)', textAlign: 'center' }}>
+                            {/* <div style={{ padding: 10, background: 'rgba(245, 158, 11, 0.1)', borderRadius: 10, border: '1px solid rgba(245,158,11,0.2)', textAlign: 'center' }}>
                                 <small style={{ fontSize: '0.68rem', color: '#D97706', fontWeight: 700, display: 'block' }}>MEMBERSHIP PASSES</small>
                                 <strong style={{ fontSize: '1.2rem', color: '#D97706' }}>{(customer.membershipCards || []).length} Passes</strong>
-                            </div>
+                            </div> */}
                         </div>
                     </div>
                 </div>
@@ -731,13 +767,13 @@ export default function FpCustomerDetails() {
                                             maxWidth: 380,
                                             borderRadius: 20,
                                             ...getCardStyle(card),
-                                            color: card.textColor || '#FFFFFF',
-                                            padding: 15,
-                                            boxShadow: '0 14px 30px -6px rgba(0,0,0,0.22)',
+                                            color: card.textColor || card.text_color || '#FFFFFF',
+                                            padding: 20,
+                                            boxShadow: '0 16px 36px -8px rgba(0,0,0,0.25)',
                                             position: 'relative',
                                             cursor: 'pointer',
                                             transition: 'transform 0.2s ease',
-                                            minHeight: 220
+                                            minHeight: 230
                                         }}
                                         className="card-hover-effect"
                                     >
@@ -768,7 +804,7 @@ export default function FpCustomerDetails() {
 
                                                     {/* Fixed 36px Sized Stamp Circles Grid */}
                                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 6, maxWidth: 220 }}>
-                                                        {Array.from({ length: card.total }).map((_, i) => {
+                                                        {Array.from({ length: card.total || card.total_stamps || 8 }).map((_, i) => {
                                                             const stampNum = i + 1
                                                             const levels = card.CustomerStampLevels || card.levelRewards || card.stamp_levels || []
                                                             const rewardItem = Array.isArray(levels)
@@ -777,8 +813,11 @@ export default function FpCustomerDetails() {
 
                                                             let iconMarkup = i + 1
 
+                                                            const rType = rewardItem
+                                                                ? (rewardItem.type || (rewardItem.reward_type === '2' || Number(rewardItem.reward_type) === 2 ? 'Discount' : (rewardItem.reward_type === '3' || Number(rewardItem.reward_type) === 3 ? 'Paid' : 'Free')))
+                                                                : null
+
                                                             if (rewardItem) {
-                                                                const rType = rewardItem.type || (rewardItem.reward_type === '2' ? 'Discount' : (rewardItem.reward_type === '3' ? 'Paid' : 'Free'))
                                                                 if (rType === 'Free') {
                                                                     iconMarkup = (
                                                                         <i
@@ -851,35 +890,72 @@ export default function FpCustomerDetails() {
                                                                 )
                                                             }
 
+                                                            const hasFreeStamp = rewardItem && (rType === 'Discount' || rType === 'Paid') && (Number(rewardItem.free_stamp) === 1 || rewardItem.free_stamp === true || rewardItem.free_stamp === '1')
+
                                                             return (
                                                                 <div
                                                                     key={i}
+                                                                    title={hasFreeStamp ? `${rewardItem.reward || (rType === 'Discount' ? `${rewardItem.discount ?? rewardItem.discountVal}% Off` : 'Paid Perk')} Free: ${rewardItem.free_text || 'Free Item'}` : (rewardItem?.reward_text ? `Stamp #${stampNum}: ${rewardItem.reward_text}` : `Stamp #${stampNum}`)}
                                                                     style={{
                                                                         width: 36,
                                                                         height: 36,
-                                                                        borderRadius: `${card.stamp_radius ?? 50}%`,
-                                                                        border: `2px solid ${card.stampBorderColor || '#FFFFFF'}`,
-                                                                        background: card.stampBgColor || 'rgba(255, 255, 255, 0.3)',
-                                                                        color: card.stampTextColor || 'inherit',
+                                                                        borderRadius: `${card.stamp_radius ?? card.stampRadius ?? 50}%`,
+                                                                        border: `2px solid ${card.stampBorderColor || card.stamp_border_color || '#FFFFFF'}`,
+                                                                        background: card.stampBgColor || card.stamp_background || 'rgba(255, 255, 255, 0.3)',
+                                                                        color: card.stampTextColor || card.stamp_text_color || 'inherit',
                                                                         display: 'flex',
                                                                         alignItems: 'center',
                                                                         justifyContent: 'center',
                                                                         textAlign: 'center',
+                                                                        fontSize: '0.85rem',
+                                                                        fontWeight: 800,
                                                                         flexShrink: 0,
-                                                                        boxSizing: 'border-box'
+                                                                        boxSizing: 'border-box',
+                                                                        position: 'relative'
                                                                     }}
-                                                                    title={rewardItem?.reward_text ? `Stamp #${stampNum}: ${rewardItem.reward_text}` : `Stamp #${stampNum}`}
                                                                 >
                                                                     {iconMarkup}
+                                                                    {hasFreeStamp && (
+                                                                        <span
+                                                                            title={rewardItem.free_text ? `Free Perk: ${rewardItem.free_text}` : 'Free Perk Included'}
+                                                                            style={{
+                                                                                position: 'absolute',
+                                                                                top: -4,
+                                                                                right: -4,
+                                                                                width: 15,
+                                                                                height: 15,
+                                                                                borderRadius: '50%',
+                                                                                background: '#10B981',
+                                                                                color: '#FFFFFF',
+                                                                                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.35)',
+                                                                                border: '1.5px solid #FFFFFF',
+                                                                                zIndex: 4,
+                                                                                pointerEvents: 'none',
+                                                                                display: 'flex',
+                                                                                alignItems: 'center',
+                                                                                justifyContent: 'center',
+                                                                                fontSize: '0.45rem',
+                                                                                lineHeight: 1
+                                                                            }}
+                                                                        >
+                                                                            <i className="fas fa-gift" style={{ lineHeight: 1, fontSize: '0.45rem' }} />
+                                                                        </span>
+                                                                    )}
                                                                 </div>
                                                             )
                                                         })}
                                                     </div>
+                                                    {(card.expires_at || card.expiry) && (
+                                                        <div style={{ fontSize: '0.68rem', opacity: 0.9, fontWeight: 700, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                            <i className="far fa-calendar-alt" style={{ fontSize: '0.62rem' }} />
+                                                            <span>Expires: {formatExpiryDate(card.expires_at || card.expiry)}</span>
+                                                        </div>
+                                                    )}
                                                 </div>
 
                                                 {/* RIGHT SIDE: QR CODE */}
                                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                                    <RealQRCode token={card.qrImg || card.card_number} size={86} />
+                                                    <RealQRCode token={card.qrImg || card.card_number} size={92} />
                                                     <small style={{ fontSize: '0.6rem', fontWeight: 700, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.5px', opacity: 0.9 }}>
                                                         SCAN TO STAMP
                                                     </small>
@@ -887,10 +963,10 @@ export default function FpCustomerDetails() {
                                             </div>
 
                                             {/* BOTTOM RIGHT ALIGNED POWERED BY BADGE WITH FIRSTLOOP LOGO */}
-                                            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 5, fontSize: '0.65rem', opacity: 0.9, fontWeight: 600, marginTop: 10 }}>
-                                                <span>powered by</span>
-                                                <img src={flLogo} alt="FirstLoop" style={{ height: 14, objectFit: 'contain' }} />
-                                                <strong style={{ color: 'inherit' }}>firstloop.co.in</strong>
+                                            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 5, fontSize: '0.65rem', opacity: 0.9, fontWeight: 600, marginTop: 10, lineHeight: 1 }}>
+                                                <span style={{ lineHeight: 1, display: 'inline-flex', alignItems: 'center' }}>powered by</span>
+                                                <img src={flLogo} alt="FirstLoop" style={{ height: 13, width: 'auto', display: 'inline-block', verticalAlign: 'middle', objectFit: 'contain', margin: '0 1px' }} />
+                                                <strong style={{ color: 'inherit', lineHeight: 1, display: 'inline-flex', alignItems: 'center' }}>firstloop.co.in</strong>
                                             </div>
                                         </div>
                                     </div>
@@ -900,13 +976,38 @@ export default function FpCustomerDetails() {
                                         <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
                                             <i className="fas fa-info-circle" style={{ color: 'var(--firstloop-primary)', marginRight: 6 }} />
                                             {card.usageNote}
+                                            {(card.expires_at || card.expiry) && (
+                                                <span style={{ display: 'block', marginTop: 3, color: '#B45309', fontWeight: 700, fontSize: '0.74rem' }}>
+                                                    <i className="far fa-calendar-alt" style={{ marginRight: 4 }} />
+                                                    Expires: {formatExpiryDate(card.expires_at || card.expiry)}
+                                                </span>
+                                            )}
                                         </div>
 
                                         <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                                            {/* <button
+                                                type="button"
+                                                className="btn"
+                                                title={`Send to WhatsApp (${customer?.phone || ''})`}
+                                                onClick={() => {
+                                                    const targetUrl = `/card-preview/${card.id}?type=1&cus_id=${customer?.id || ''}&phone=${encodeURIComponent(customer?.rawPhone || '')}&country_code=${encodeURIComponent(customer?.country_code || '')}&customer_name=${encodeURIComponent(customer?.name || '')}`
+                                                    window.open(targetUrl, '_blank')
+                                                }}
+                                                style={{ padding: '6px 10px', fontSize: '0.78rem', borderRadius: 8, background: '#25D366', color: '#FFFFFF', fontWeight: 700, border: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, cursor: 'pointer', boxShadow: '0 2px 5px rgba(37, 211, 102, 0.3)' }}
+                                            >
+                                                <i className="fab fa-whatsapp" />
+                                                <span>Send</span>
+                                            </button> */}
                                             <button
                                                 type="button"
                                                 className="btn firstloop-btn-secondary"
-                                                onClick={() => setPreviewModalCard({ ...card, type: 'stamp' })}
+                                                onClick={() => setPreviewModalCard({
+                                                    ...card,
+                                                    type: 'stamp',
+                                                    customerPhone: customer?.rawPhone || card.customerPhone,
+                                                    customerCountryCode: customer?.country_code || card.customerCountryCode,
+                                                    cardholderName: customer?.name || card.cardholderName
+                                                })}
                                                 style={{ padding: '6px 12px', fontSize: '0.78rem', borderRadius: 8, display: 'inline-flex', alignItems: 'center', gap: 4 }}
                                             >
                                                 <i className="fas fa-eye" />
@@ -990,8 +1091,8 @@ export default function FpCustomerDetails() {
             </div>
 
             {/* 2. MEMBERSHIP CARDS SECTION */}
-            <div className="card" style={{ padding: 20 }}>
-                {/* Header with Search Bar */}
+            {/* <div className="card" style={{ padding: 20 }}>
+              
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 14, marginBottom: 18 }}>
                     <div>
                         <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-primary)' }}>
@@ -1003,7 +1104,7 @@ export default function FpCustomerDetails() {
                         </span>
                     </div>
 
-                    {/* Membership Pass Search Input */}
+                
                     <div style={{ position: 'relative', width: 280, maxWidth: '100%' }}>
                         <i className="fas fa-search" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.82rem' }} />
                         <input
@@ -1031,7 +1132,7 @@ export default function FpCustomerDetails() {
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 380px))', gap: 24 }}>
                             {paginatedMemberships.map((mem) => (
                                 <div key={mem.id} style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 380, width: '100%' }}>
-                                    {/* Branch & Card Number Header Badge */}
+                                   
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, fontSize: '0.75rem', fontWeight: 700, padding: '0 2px' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#D97706' }}>
                                             <i className="fas fa-store" />
@@ -1045,7 +1146,7 @@ export default function FpCustomerDetails() {
                                         )}
                                     </div>
 
-                                    {/* DIGITAL MEMBERSHIP PASS CANVAS WITH LARGE MIDDLE QR CODE */}
+                                    
                                     <div
                                         onClick={() => setHistoryModalCard({ ...mem, type: 'membership' })}
                                         style={{
@@ -1053,18 +1154,18 @@ export default function FpCustomerDetails() {
                                             maxWidth: 380,
                                             borderRadius: 20,
                                             ...getCardStyle(mem),
-                                            color: mem.textColor || '#FFFFFF',
-                                            padding: 15,
-                                            boxShadow: '0 14px 30px -6px rgba(0,0,0,0.22)',
+                                            color: mem.textColor || mem.text_color || '#FFFFFF',
+                                            padding: 20,
+                                            boxShadow: '0 16px 36px -8px rgba(0,0,0,0.25)',
                                             position: 'relative',
                                             cursor: 'pointer',
                                             transition: 'transform 0.2s ease',
-                                            minHeight: 210
+                                            minHeight: 230
                                         }}
                                         className="card-hover-effect"
                                     >
                                         <div style={{ position: 'relative', zIndex: 2 }}>
-                                            {/* Header Row */}
+                                            
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                                                     <div style={{ width: 34, height: 34, borderRadius: 10, background: '#FFFFFF', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}>
@@ -1076,7 +1177,7 @@ export default function FpCustomerDetails() {
                                                 </div>
                                             </div>
 
-                                            {/* Middle Section: Left Info + Right Large Middle QR Code */}
+                                         
                                             <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 10 }}>
                                                 <div style={{ flex: 1, minWidth: 0 }}>
                                                     <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'inherit' }}>
@@ -1092,12 +1193,12 @@ export default function FpCustomerDetails() {
                                                             Valid Thru
                                                         </small>
                                                         <div style={{ fontSize: '0.88rem', fontWeight: 800, color: 'inherit' }}>
-                                                            {mem.expires_at || '03/25'}
+                                                            {formatExpiryDate(mem.expires_at) || mem.expiryDate || mem.validThru || '12 Months'}
                                                         </div>
                                                     </div>
                                                 </div>
 
-                                                {/* Large Centered Middle QR Code */}
+                                               
                                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                                     <RealQRCode token={mem.qrImg || mem.card_number} size={92} />
                                                     <small style={{ fontSize: '0.6rem', fontWeight: 700, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.5px', opacity: 0.9 }}>
@@ -1106,16 +1207,16 @@ export default function FpCustomerDetails() {
                                                 </div>
                                             </div>
 
-                                            {/* Bottom Right Logo Badge */}
-                                            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 5, fontSize: '0.65rem', opacity: 0.9, fontWeight: 600, marginTop: 6 }}>
-                                                <span>powered by</span>
-                                                <img src={flLogo} alt="FirstLoop" style={{ height: 14, objectFit: 'contain' }} />
-                                                <strong style={{ color: 'inherit' }}>firstloop.co.in</strong>
+                                            
+                                            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 5, fontSize: '0.65rem', opacity: 0.9, fontWeight: 600, marginTop: 10, lineHeight: 1 }}>
+                                                <span style={{ lineHeight: 1, display: 'inline-flex', alignItems: 'center' }}>powered by</span>
+                                                <img src={flLogo} alt="FirstLoop" style={{ height: 13, width: 'auto', display: 'inline-block', verticalAlign: 'middle', objectFit: 'contain', margin: '0 1px' }} />
+                                                <strong style={{ color: 'inherit', lineHeight: 1, display: 'inline-flex', alignItems: 'center' }}>firstloop.co.in</strong>
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* Expiry Notice & Action Bar */}
+                                    
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FFFBEB', padding: '10px 14px', borderRadius: 10, border: '1px solid #FDE68A', maxWidth: 380, width: '100%' }}>
                                         <div style={{ fontSize: '0.78rem', color: '#B45309', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
                                             <i className="fas fa-exclamation-circle" style={{ color: '#D97706' }} />
@@ -1125,8 +1226,27 @@ export default function FpCustomerDetails() {
                                         <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                                             <button
                                                 type="button"
+                                                className="btn"
+                                                title={`Send to WhatsApp (${customer?.phone || ''})`}
+                                                onClick={() => {
+                                                    const targetUrl = `/card-preview/${mem.id}?type=2&cus_id=${customer?.id || ''}&phone=${encodeURIComponent(customer?.rawPhone || '')}&country_code=${encodeURIComponent(customer?.country_code || '')}&customer_name=${encodeURIComponent(customer?.name || '')}`
+                                                    window.open(targetUrl, '_blank')
+                                                }}
+                                                style={{ padding: '6px 10px', fontSize: '0.78rem', borderRadius: 8, background: '#25D366', color: '#FFFFFF', fontWeight: 700, border: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, cursor: 'pointer', boxShadow: '0 2px 5px rgba(37, 211, 102, 0.3)' }}
+                                            >
+                                                <i className="fab fa-whatsapp" />
+                                                <span>Send</span>
+                                            </button>
+                                            <button
+                                                type="button"
                                                 className="btn firstloop-btn-secondary"
-                                                onClick={() => setPreviewModalCard({ ...mem, type: 'membership' })}
+                                                onClick={() => setPreviewModalCard({
+                                                    ...mem,
+                                                    type: 'membership',
+                                                    customerPhone: customer?.rawPhone || mem.customerPhone,
+                                                    customerCountryCode: customer?.country_code || mem.customerCountryCode,
+                                                    cardholderName: customer?.name || mem.cardholderName
+                                                })}
                                                 style={{ padding: '6px 12px', fontSize: '0.78rem', borderRadius: 8, display: 'inline-flex', alignItems: 'center', gap: 4 }}
                                             >
                                                 <i className="fas fa-eye" />
@@ -1147,7 +1267,6 @@ export default function FpCustomerDetails() {
                             ))}
                         </div>
 
-                        {/* Membership Passes Pagination Controls */}
                         {totalMembershipPages > 1 && (
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginTop: 24, paddingTop: 16, borderTop: '1px solid #E2E8F0' }}>
                                 <small style={{ color: 'var(--text-muted)', fontSize: '0.78rem', fontWeight: 600 }}>
@@ -1207,7 +1326,7 @@ export default function FpCustomerDetails() {
                         {membershipSearch ? `No membership passes match "${membershipSearch}".` : 'No membership passes found for the selected branch.'}
                     </div>
                 )}
-            </div>
+            </div> */}
 
             {/* CUSTOMER CARD HISTORY MODAL */}
             {historyModalCard && (

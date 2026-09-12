@@ -284,102 +284,102 @@ exports.dashboard = async (req, res) => {
                 merchant_id: merchant_id
             }
         });
-const today_report_data = await CustomerCard.findAll({
-    where: {
-        branch_id: {
-            [Op.in]: branchIds
-        }
-    },
-
-    attributes: [
-        "id",
-        "card_type",
-        "title",
-        "branch_id"
-    ],
-
-    include: [
-        {
-            model: Customer,
-            as: "Customer",
-            attributes: [
-                "name",
-                "email",
-                "phone",
-                "country_code"
-            ]
-        },
-
-        {
-            model: Branch,
-            as: "Branch",
-            attributes: [
-                "name"
-            ]
-        },
-
-        {
-            model: CustomerStampLevel,
-            as: "CustomerStampLevels",
-            attributes: [
-                "payment_type",
-                "paid_amt",
-                "paid_date"
-            ],
+        const today_report_data = await CustomerCard.findAll({
             where: {
-                status: 1
+                branch_id: {
+                    [Op.in]: branchIds
+                }
             },
-            required: true
-        }
-    ],
 
-    order: [
-        [
-            { model: CustomerStampLevel, as: "CustomerStampLevels" },
-            "paid_date",
-            "DESC"
-        ]
-    ]
-});
+            attributes: [
+                "id",
+                "card_type",
+                "title",
+                "branch_id"
+            ],
 
+            include: [
+                {
+                    model: Customer,
+                    as: "Customer",
+                    attributes: [
+                        "name",
+                        "email",
+                        "phone",
+                        "country_code"
+                    ]
+                },
 
-// =====================================================
-// FLATTEN ALL STAMP ENTRIES
-// THEN SORT BY PAID DATE
-// THEN TAKE ONLY LATEST 10
-// =====================================================
+                {
+                    model: Branch,
+                    as: "Branch",
+                    attributes: [
+                        "name"
+                    ]
+                },
 
-const today_report = today_report_data
-    .flatMap(card => {
+                {
+                    model: CustomerStampLevel,
+                    as: "CustomerStampLevels",
+                    attributes: [
+                        "payment_type",
+                        "paid_amt",
+                        "paid_date"
+                    ],
+                    where: {
+                        status: 1
+                    },
+                    required: true
+                }
+            ],
 
-        const stampLevels = card.CustomerStampLevels || [];
-
-        return stampLevels.map(stampLevel => {
-
-            return {
-                branch_id: card.branch_id,
-                branch_name: card.Branch?.name || null,
-
-                name: card.Customer?.name || null,
-                email: card.Customer?.email || null,
-                phone: card.Customer?.phone || null,
-                country_code: card.Customer?.country_code || null,
-
-                payment_type: stampLevel.payment_type || null,
-                time: stampLevel.paid_date || null,
-                amount: stampLevel.paid_amt || 0,
-
-                card_type: card.card_type,
-                card_name: card.title
-            };
-
+            order: [
+                [
+                    { model: CustomerStampLevel, as: "CustomerStampLevels" },
+                    "paid_date",
+                    "DESC"
+                ]
+            ]
         });
 
-    })
-    .sort((a, b) => {
-        return new Date(b.time) - new Date(a.time);
-    })
-    .slice(0, 10);
+
+        // =====================================================
+        // FLATTEN ALL STAMP ENTRIES
+        // THEN SORT BY PAID DATE
+        // THEN TAKE ONLY LATEST 10
+        // =====================================================
+
+        const today_report = today_report_data
+            .flatMap(card => {
+
+                const stampLevels = card.CustomerStampLevels || [];
+
+                return stampLevels.map(stampLevel => {
+
+                    return {
+                        branch_id: card.branch_id,
+                        branch_name: card.Branch?.name || null,
+
+                        name: card.Customer?.name || null,
+                        email: card.Customer?.email || null,
+                        phone: card.Customer?.phone || null,
+                        country_code: card.Customer?.country_code || null,
+
+                        payment_type: stampLevel.payment_type || null,
+                        time: stampLevel.paid_date || null,
+                        amount: stampLevel.paid_amt || 0,
+
+                        card_type: card.card_type,
+                        card_name: card.title
+                    };
+
+                });
+
+            })
+            .sort((a, b) => {
+                return new Date(b.time) - new Date(a.time);
+            })
+            .slice(0, 10);
         // ---------------------------------------
         // RESPONSE
         // ---------------------------------------
@@ -623,6 +623,7 @@ exports.stamp_card = async (req, res) => {
             stamp_border_color,
             stamp_text_color,
             stamp_levels,
+            month
 
         } = req.body;
 
@@ -809,6 +810,8 @@ exports.stamp_card = async (req, res) => {
                 level.discount = 0;
                 level.amt = 0;
                 level.icon = level.icon || null;
+                level.free_stamp = 0;
+                level.free_text = null;
             }
 
             // -----------------------------------
@@ -840,6 +843,8 @@ exports.stamp_card = async (req, res) => {
                         ? Number(level.amt)
                         : 0;
                 level.icon = level.icon || null;
+                level.free_stamp = level.free_stamp || 0;
+                level.free_text = level.free_text || null;
             }
 
             // -----------------------------------
@@ -878,6 +883,8 @@ exports.stamp_card = async (req, res) => {
                         : 0;
 
                 level.icon = level.icon || null;
+                level.free_stamp = level.free_stamp || 0;
+                level.free_text = level.free_text || null;
             }
         }
 
@@ -925,6 +932,7 @@ exports.stamp_card = async (req, res) => {
 
             stamp_text_color:
                 stamp_text_color || null,
+                month:month||0,
 
             status: 1
         };
@@ -980,7 +988,8 @@ exports.stamp_card = async (req, res) => {
                 level.amt || 0,
             discount: level.discount || 0,
             icon: level.icon || null,
-
+            free_stamp: level.free_stamp || 0,
+            free_text: level.free_text || null,
             status: 1
         }));
 
@@ -1056,6 +1065,8 @@ exports.fetch_stamp_card = async (req, res) => {
                         "stamp_number",
                         "reward_type",
                         "reward_text",
+                        "free_stamp",
+                        "free_text",
                         "icon",
                         "amt",
                         "discount",
@@ -1176,6 +1187,8 @@ exports.fetch_branch_stamp_card = async (req, res) => {
                         "stamp_number",
                         "reward_type",
                         "reward_text",
+                        "free_stamp",
+                        "free_text",
                         "icon",
                         "discount",
                         "category_id",
@@ -1292,6 +1305,8 @@ exports.fetch_stamp_id = async (req, res) => {
                         "stamp_number",
                         "reward_type",
                         "reward_text",
+                        "free_stamp",
+                        "free_text",
                         "icon",
                         "amt",
                         "category_id",

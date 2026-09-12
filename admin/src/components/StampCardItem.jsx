@@ -93,9 +93,12 @@ export default function StampCardItem({
                                         }
                                     }
 
+                                    const hasFreeStamp = rewardItem && (rewardItem.type === 'Discount' || rewardItem.type === 'Paid') && (Number(rewardItem.free_stamp) === 1 || rewardItem.free_stamp === true || rewardItem.free_stamp === '1')
+
                                     return (
                                         <div
                                             key={i}
+                                            title={hasFreeStamp ? `${rewardItem.reward || (rewardItem.type === 'Discount' ? `${rewardItem.discount ?? rewardItem.discountVal}% Off` : 'Paid Perk')} Free: ${rewardItem.free_text || 'Free Item'}` : undefined}
                                             style={{
                                                 width: 36,
                                                 height: 36,
@@ -108,10 +111,37 @@ export default function StampCardItem({
                                                 justifyContent: 'center',
                                                 fontSize: '0.85rem',
                                                 fontWeight: 800,
-                                                flexShrink: 0
+                                                flexShrink: 0,
+                                                position: 'relative'
                                             }}
                                         >
                                             {iconMarkup}
+                                            {hasFreeStamp && (
+                                                <span
+                                                    title={rewardItem.free_text ? `Free Perk: ${rewardItem.free_text}` : 'Free Perk Included'}
+                                                    style={{
+                                                        position: 'absolute',
+                                                        top: -4,
+                                                        right: -4,
+                                                        width: 15,
+                                                        height: 15,
+                                                        borderRadius: '50%',
+                                                        background: '#10B981',
+                                                        color: '#FFFFFF',
+                                                        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.35)',
+                                                        border: '1.5px solid #FFFFFF',
+                                                        zIndex: 4,
+                                                        pointerEvents: 'none',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        fontSize: '0.45rem',
+                                                        lineHeight: 1
+                                                    }}
+                                                >
+                                                    <i className="fas fa-gift" style={{ lineHeight: 1, fontSize: '0.45rem' }} />
+                                                </span>
+                                            )}
                                         </div>
                                     )
                                 })}

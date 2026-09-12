@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import axios from 'axios'
 import API from '../api.js'
@@ -77,9 +78,10 @@ const AddCardCustomer = ({
     branch = null,
     onAddSuccess
 }) => {
-    const [email, setEmail] = useState("");
+    const [searchParams] = useSearchParams();
+    const [email, setEmail] = useState(searchParams?.get("email") || "");
     const [customerName, setCustomerName] = useState("");
-    const [phone, setPhone] = useState("");
+    const [phone, setPhone] = useState(searchParams?.get("phone") || "");
     const [customerStatus, setCustomerStatus] = useState("New Customer");
     const [isSearching, setIsSearching] = useState(false);
     const [emailChecked, setEmailChecked] = useState(false);
@@ -127,6 +129,20 @@ const AddCardCustomer = ({
             return null;
         }
     };
+
+    // Auto lookup when email is passed in URL query
+    useEffect(() => {
+        const paramEmail = searchParams?.get("email");
+        if (paramEmail && paramEmail.trim()) {
+            const clean = paramEmail.trim().toLowerCase();
+            setEmail(clean);
+            fetchCheckCustomer(clean);
+        }
+        const paramPhone = searchParams?.get("phone");
+        if (paramPhone && paramPhone.trim()) {
+            setPhone(paramPhone.trim());
+        }
+    }, [searchParams]);
 
     useEffect(() => {
         if (cardType === "stamp") {

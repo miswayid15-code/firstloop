@@ -1,12 +1,16 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import API from '../../api.js'
+import { checkAccountStatusApi } from '../../services/accountStatusService.js'
+import AccountRestrictedSupportModal from '../../components/AccountRestrictedSupportModal.jsx'
 
 export default function ReceptionistLayout() {
     const navigate = useNavigate()
     const location = useLocation()
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+    const [accountStatus, setAccountStatus] = useState(null)
+    const [supportModalOpen, setSupportModalOpen] = useState(false)
 
     let receptionist = {}
     try {
@@ -18,9 +22,34 @@ export default function ReceptionistLayout() {
         if (!receptionist.user_repId && localStorage.getItem("rec_user_repId")) {
             receptionist.user_repId = localStorage.getItem("rec_user_repId")
         }
+        if (!receptionist.user_id && localStorage.getItem("rec_user_id")) {
+            receptionist.user_id = localStorage.getItem("rec_user_id")
+        }
     } catch (e) {
         console.error("Error parsing receptionist_data:", e)
     }
+
+    const recId = receptionist.user_id || receptionist.id || receptionist.user_repId || localStorage.getItem("rec_user_id") || localStorage.getItem("rec_user_repId")
+
+    useEffect(() => {
+        let isMounted = true
+        const checkStatus = async () => {
+            if (!recId) return
+            const res = await checkAccountStatusApi(2, recId)
+            if (isMounted) {
+                setAccountStatus(res)
+                if (!res.isActive) {
+                    if (location.pathname !== '/receptionist/dashboard') {
+                        toast.error(res.message || "Account is inactive or deleted. Restricted to dashboard.", { id: 'rec-inactive-toast' })
+                        navigate('/receptionist/dashboard', { replace: true })
+                    }
+                }
+            }
+        }
+
+        checkStatus()
+        return () => { isMounted = false }
+    }, [location.pathname, recId])
 
     const handleLogout = async () => {
 
@@ -59,11 +88,17 @@ export default function ReceptionistLayout() {
         }
     }
 
-    const navLinks = [
+    const isAccountActive = accountStatus ? accountStatus.isActive : true
+
+    const allNavLinks = [
         { to: '/receptionist/dashboard', icon: 'fa-chart-line', label: 'Dashboard' },
         { to: '/receptionist/customers', icon: 'fa-users', label: 'Customers' },
         // { to: '/receptionist/checkin', icon: 'fa-qrcode', label: 'Check-In & Pay' }
     ]
+
+    const navLinks = isAccountActive
+        ? allNavLinks
+        : allNavLinks.filter(item => item.to === '/receptionist/dashboard')
 
     return (
         <div style={{ minHeight: '100vh', background: '#F8FAFC' }}>
@@ -237,7 +272,97 @@ export default function ReceptionistLayout() {
 
             {/* Main Content View */}
             <main style={{ maxWidth: 1400, margin: '0 auto', padding: '16px 14px 80px' }}>
-                <Outlet />
+                {!isAccountActive && (
+                    <div
+                        style={{
+                            background: 'linear-gradient(135deg, #FEF2F2 0%, #FFF1F2 100%)',
+                            border: '1px solid #FCA5A5',
+                            borderLeft: '5px solid #EF4444',
+                            borderRadius: 14,
+                            padding: '16px 20px',
+                            marginBottom: 20,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: 16,
+                            flexWrap: 'wrap',
+                            boxShadow: '0 4px 14px rgba(239, 68, 68, 0.08)'
+                        }}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                            <div
+                                style={{
+                                    width: 42,
+                                    height: 42,
+                                    borderRadius: 10,
+                                    background: '#FEE2E2',
+                                    color: '#DC2626',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '1.25rem',
+                                    flexShrink: 0
+                                }}
+                            >
+                                <i className="fas fa-exclamation-triangle" />
+                            </div>
+                            <div>
+                                <h4 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 800, color: '#991B1B' }}>
+                                     Account Suspended
+                                </h4>
+                                <p style={{ margin: '4px 0 0', fontSize: '0.84rem', color: '#B91C1C', lineHeight: 1.4 }}>
+                                    {accountStatus?.message || "Your receptionist terminal has been marked inactive or deleted. Customer operations and terminal features are locked."}
+                                </p>
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                            <span
+                                style={{
+                                    background: '#DC2626',
+                                    color: '#FFFFFF',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 800,
+                                    padding: '6px 14px',
+                                    borderRadius: 8,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.5px'
+                                }}
+                            >
+                               RESTRICTED
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => setSupportModalOpen(true)}
+                                style={{
+                                    background: '#991B1B',
+                                    color: '#FFFFFF',
+                                    border: 'none',
+                                    borderRadius: 8,
+                                    padding: '6px 14px',
+                                    fontSize: '0.8rem',
+                                    fontWeight: 800,
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 6,
+                                    boxShadow: '0 2px 8px rgba(153, 27, 27, 0.3)'
+                                }}
+                            >
+                                <i className="fas fa-headset" />
+                                <span>Contact Support</span>
+                            </button>
+                        </div>
+                    </div>
+                )}
+                <Outlet context={{ isAccountActive, accountMessage: accountStatus?.message, openSupportModal: () => setSupportModalOpen(true) }} />
+
+                {/* Support Popup Modal */}
+                <AccountRestrictedSupportModal
+                    isOpen={supportModalOpen}
+                    onClose={() => setSupportModalOpen(false)}
+                    userType={2}
+                    accountMessage={accountStatus?.message}
+                />
             </main>
 
             {/* FLOATING MOBILE BOTTOM NAVIGATION BAR FOR RECEPTIONIST */}

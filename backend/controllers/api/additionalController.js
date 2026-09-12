@@ -1,4 +1,4 @@
-const { Banner, Receptionist, Merchant, OtpVerify, CustomerOtpVerify, Customer, AppSetting, Notification, Support, RefreshToken } = require('../../models');
+const { Banner, Receptionist, Merchant, OtpVerify, CustomerOtpVerify, Customer, AppSetting, Notification, Support, RefreshToken, SalePerson } = require('../../models');
 const { sendOtp } = require('../../helpers/sendOtp');
 const CommonMailTemplate = require('../../helpers/CommonMailTemplate');
 const sendMail = require('../../helpers/sendMail');
@@ -744,7 +744,7 @@ exports.check_delete_account = async (req, res) => {
             });
         }
 
-        if (![1, 2, 3].includes(Number(user_type))) {
+        if (![1, 2, 3, 4].includes(Number(user_type))) {
             return res.status(400).json({
                 status: 0,
                 message: "Invalid user type."
@@ -768,6 +768,11 @@ exports.check_delete_account = async (req, res) => {
 
             case 3:
                 user = await Customer.findOne({
+                    where: { id }
+                });
+                break;
+            case 4:
+                user = await SalePerson.findOne({
                     where: { id }
                 });
                 break;
@@ -805,7 +810,122 @@ exports.check_delete_account = async (req, res) => {
     }
 };
 
+exports.check_status_account = async (req, res) => {
+    try {
+        const { user_type, id } = req.body;
 
+        if (!user_type || !id) {
+            return res.status(400).json({
+                status: 0,
+                message: "User type and ID are required."
+            });
+        }
+
+        if (![1, 2, 3, 4].includes(Number(user_type))) {
+            return res.status(400).json({
+                status: 0,
+                message: "Invalid user type."
+            });
+        }
+
+        let user = null;
+
+        switch (Number(user_type)) {
+            case 1:
+                user = await Merchant.findOne({
+                    where: { id }
+                });
+                break;
+
+            case 2:
+                user = await Receptionist.findOne({
+                    where: { id }
+                });
+                break;
+
+            case 3:
+                user = await Customer.findOne({
+                    where: { id }
+                });
+                break;
+
+            case 4:
+                user = await SalePerson.findOne({
+                    where: { id }
+                });
+                break;
+        }
+
+        if (!user) {
+            return res.status(404).json({
+                status: 0,
+                message: "User not found."
+            });
+        }
+
+        // 0 = not deleted, 1 = active
+        let is_deleted = Number(user.del_status) === 0;
+        let is_status = Number(user.status) === 1;
+
+        let message = "This account is active.";
+
+        // User account status
+        if (!is_deleted) {
+            message = "This account has been deleted.";
+        } else if (!is_status) {
+            message = "This account is inactive.";
+        }
+
+        // ---------------------------------------
+        // Receptionist -> Check Merchant Account
+        // ---------------------------------------
+        if (Number(user_type) === 2 && user.merchant_id) {
+
+            const merchant = await Merchant.findOne({
+                where: {
+                    id: user.merchant_id
+                }
+            });
+
+            if (merchant) {
+
+                const merchant_is_deleted =
+                    Number(merchant.del_status) !== 0;
+
+                const merchant_is_status =
+                    Number(merchant.status) === 1;
+
+                // Merchant deleted
+                if (merchant_is_deleted) {
+                    is_deleted = false;
+                    message = "This account is inactive because the merchant account has been deleted.";
+                }
+
+                // Merchant inactive
+                else if (!merchant_is_status) {
+                    is_status = false;
+                    message = "This account is inactive because the merchant account is inactive.";
+                }
+            }
+        }
+
+        return res.status(200).json({
+            status: 1,
+            is_deleted,
+            is_status,
+            message
+        });
+
+    } catch (err) {
+        console.error("CHECK ACCOUNT ERROR:", err);
+
+        return res.status(500).json({
+            status: 0,
+            message: "Something went wrong.",
+            error: err.message
+        });
+    }
+};
 exports.refreshAccessToken = async (req, res) => {
     try {
 

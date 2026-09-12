@@ -164,6 +164,7 @@ export default function StampCardBuilderModal({
         brandLogo: fallbackBrandLogo,
         brandLogoFile: null,
         total_stamps: 8,
+        month: 12,
         reward: 'Free Gift or Beverage',
         bgColor: '#0E88B8',
         bgImage: null,
@@ -186,6 +187,8 @@ export default function StampCardBuilderModal({
             icon: 'fa-gift',
             amt: 0,
             discount: 0,
+            free_stamp: 0,
+            free_text: ''
         }))
     })
     const [isSubmitting, setIsSubmitting] = useState(false)
@@ -200,7 +203,7 @@ export default function StampCardBuilderModal({
     const fetchCardDesignsFromApi = async () => {
         try {
             const response = await API.post('admin/card-design/list')
-            console.log("response",response)
+            console.log("response", response)
 
             if (response?.data && (response.data.status === 1 || response.data.status === '1' || response.data.success)) {
                 const rawList = response.data.data || response.data.card_designs || response.data.designs || []
@@ -240,7 +243,7 @@ export default function StampCardBuilderModal({
                     const parsed = JSON.parse(rawMerchant)
                     localMerchantId = parsed?.id || parsed?.merchant_id || parsed?.mer_id
                 }
-            } catch (e) {}
+            } catch (e) { }
 
             // Get merchant ID
             const targetMerchantId =
@@ -254,10 +257,32 @@ export default function StampCardBuilderModal({
 
             // Build FormData payload
             const formData = new FormData();
-            
+
             // If editing an existing card, include the card ID
             if (stampForm.id) {
                 formData.append('id', Number(stampForm.id));
+            }
+
+            // Validation: Month validity
+            const validMonth = Number(stampForm.month) || 12;
+            if (validMonth <= 0) {
+                toast.error('Please enter a valid validity duration (in months)');
+                setIsSubmitting(false);
+                return;
+            }
+
+            // Validation: Stamp Levels amounts for Paid & Discount
+            for (let i = 0; i < (stampForm.levelRewards || []).length; i++) {
+                const lvl = stampForm.levelRewards[i];
+                const isPaidOrDiscount = lvl.type === 'Paid' || lvl.type === 'Discount';
+                if (isPaidOrDiscount) {
+                    const numAmt = Number(lvl.amt);
+                    if (!lvl.amt || isNaN(numAmt) || numAmt <= 0) {
+                        toast.error(`Please enter an amount greater than 0 for Stamp #${i + 1} (${lvl.type} reward)`);
+                        setIsSubmitting(false);
+                        return;
+                    }
+                }
             }
 
             // Core required fields
@@ -267,6 +292,7 @@ export default function StampCardBuilderModal({
 
             formData.append('brand_name', stampForm.brandName || 'Elite Branch');
             formData.append('number_of_stamps', Number(stampForm.total_stamps || 8));
+            formData.append('month', validMonth);
 
             // Brand image / logo:
             // 1) If user picked a new file, append File object as 'brand_image'
@@ -310,14 +336,20 @@ export default function StampCardBuilderModal({
             const levelsPayload = (stampForm.levelRewards || []).map((lvl, idx) => {
                 const isPaid = lvl.type === 'Paid';
                 const isDiscount = lvl.type === 'Discount';
+                const isRewardType2or3 = isDiscount || isPaid;
                 const disc = Number(lvl.discount ?? lvl.discountVal ?? (isDiscount ? 10 : 0));
+                const hasFree = isRewardType2or3 && Number(lvl.free_stamp) === 1 ? 1 : 0;
+                const freeTxt = hasFree === 1 ? String(lvl.free_text || '').trim() : '';
+
                 const levelItem = {
                     stamp_number: idx + 1,
                     reward_type: isDiscount ? '2' : (isPaid ? '3' : '1'),
-                    amt: Number(lvl.amt || 0),
+                    amt: (isPaid || isDiscount) ? Number(lvl.amt || 0) : 0,
                     reward_text: lvl.reward || (isDiscount ? `${disc}% Off` : `Stamp #${idx + 1}`),
                     discount: isDiscount ? disc : 0,
-                    icon: lvl.icon || (isDiscount ? 'fa-percent' : (isPaid ? 'fa-tag' : 'fa-gift'))
+                    icon: lvl.icon || (isDiscount ? 'fa-percent' : (isPaid ? 'fa-tag' : 'fa-gift')),
+                    free_stamp: hasFree,
+                    free_text: freeTxt
                 };
                 if (isPaid && catId) {
                     levelItem.category_id = Number(catId);
@@ -384,11 +416,45 @@ export default function StampCardBuilderModal({
                 ? cardData.branch_ids.map(Number)
                 : (cardData.branch_id ? [Number(cardData.branch_id)] : (branches || []).map(b => Number(b.id || b)).filter(Boolean))
 
-            const rawLevels = Array.isArray(cardData.StampLevels)
+            const rawLevels = Array.isArray(cardData.StampLevels) && cardData.StampLevels.length > 0
                 ? cardData.StampLevels
-                : (Array.isArray(cardData.levelRewards)
+                : (Array.isArray(cardData.levelRewards) && cardData.levelRewards.length > 0
                     ? cardData.levelRewards
                     : (Array.isArray(cardData.stamp_levels) ? cardData.stamp_levels : []))
+
+            const originalStampLevels = Array.isArray(cardData.StampLevels)
+                ? cardData.StampLevels
+                : (Array.isArray(cardData.stamp_levels) ? cardData.stamp_levels : (Array.isArray(cardData.CustomerStampLevels) ? cardData.CustomerStampLevels : []))
+
+            const actualCard = cardData.card || cardData.data || cardData;
+            let valMonth = 12;
+            const rawMonth =
+                actualCard.month ??
+                actualCard.validity_months ??
+                actualCard.validityMonths ??
+                actualCard.totalMonth ??
+                actualCard.total_month ??
+                actualCard.total_months ??
+                actualCard.validity ??
+                actualCard.duration ??
+                actualCard.months ??
+                actualCard.raw?.month ??
+                cardData.month ??
+                cardData.validity_months ??
+                cardData.validityMonths ??
+                cardData.totalMonth ??
+                cardData.total_month;
+
+            if (rawMonth !== undefined && rawMonth !== null && rawMonth !== '') {
+                const str = String(rawMonth).trim().toLowerCase();
+                if (str.includes('year')) {
+                    const num = parseFloat(str);
+                    if (!isNaN(num) && num > 0) valMonth = Math.round(num * 12);
+                } else {
+                    const parsed = parseInt(str.replace(/\D/g, ''), 10);
+                    if (!isNaN(parsed) && parsed > 0) valMonth = parsed;
+                }
+            }
 
             setStampForm({
                 id: cardData.id || null,
@@ -397,6 +463,7 @@ export default function StampCardBuilderModal({
                 brandLogo: cardData.brandLogo || cardData.brand_image || fallbackBrandLogo,
                 brandLogoFile: null,
                 total_stamps: count,
+                month: valMonth,
                 reward: cardData.reward || '',
                 bgColor: cardData.bgColor || cardData.background_color || '#0E88B8',
                 bgImage: cardData.bgImage || cardData.background_image || null,
@@ -412,33 +479,55 @@ export default function StampCardBuilderModal({
                 category_id: cardData.category_id || cardData.cat_id || merchantData?.cat_id || null,
                 Category: cardData.Category || merchantData?.Category || null,
                 levelRewards: Array.from({ length: count }).map((_, i) => {
-                    const r = rawLevels[i];
-                    if (!r) {
+                    const stampNum = i + 1;
+                    const r = (Array.isArray(rawLevels) ? rawLevels : []).find(lvl => Number(lvl.stamp_number || lvl.stamp) === stampNum) || rawLevels[i];
+                    const orig = (Array.isArray(originalStampLevels) ? originalStampLevels : []).find(sl => Number(sl.stamp_number || sl.stamp) === stampNum) || originalStampLevels[i] || {};
+
+                    if (!r && !orig.id && !orig.stamp_number) {
                         return {
-                            stamp: i + 1,
+                            stamp: stampNum,
                             reward: '',
                             type: 'Free',
                             discountVal: 0,
                             discount: 0,
                             icon: 'fa-gift',
                             amt: 0,
-                            category_id: null
+                            category_id: null,
+                            free_stamp: 0,
+                            free_text: ''
                         };
                     }
-                    const rawType = String(r.reward_type ?? r.type ?? '').trim().toLowerCase();
+                    const itemData = r || orig;
+                    const rawType = String(itemData.reward_type ?? itemData.type ?? orig.reward_type ?? orig.type ?? '').trim().toLowerCase();
                     const isDiscount = rawType === '2' || rawType === 'discount';
                     const isPaid = rawType === '3' || rawType === 'paid';
                     const rType = isDiscount ? 'Discount' : (isPaid ? 'Paid' : 'Free');
-                    const disc = parseFloat(r.discount ?? r.discountVal ?? (isDiscount ? (parseFloat(r.reward_text) || 0) : 0)) || 0;
+                    const disc = parseFloat(itemData.discount ?? itemData.discountVal ?? orig.discount ?? (isDiscount ? (parseFloat(itemData.reward_text || orig.reward_text) || 0) : 0)) || 0;
+
+                    const rawFreeStamp = itemData.free_stamp ?? orig.free_stamp ?? itemData.is_free ?? orig.is_free ?? itemData.free ?? orig.free;
+                    const hasFree = (isDiscount || isPaid) && (Number(rawFreeStamp) === 1 || rawFreeStamp === true || rawFreeStamp === '1') ? 1 : 0;
+                    const freeTxt = itemData.free_text ?? orig.free_text ?? itemData.free_reward ?? orig.free_reward ?? '';
+
+                    // Amount resolution: Only Free is 0. Paid and Discount should not default to 0!
+                    const rawAmt = itemData.amt ?? orig.amt;
+                    let initialAmt = 0;
+                    if (rType === 'Free') {
+                        initialAmt = 0;
+                    } else {
+                        initialAmt = (rawAmt !== undefined && rawAmt !== null && rawAmt !== '' && Number(rawAmt) > 0) ? rawAmt : '';
+                    }
+
                     return {
-                        stamp: Number(r.stamp_number || r.stamp) || i + 1,
-                        reward: r.reward || r.reward_text || (isDiscount ? `${disc}% Discount` : ''),
+                        stamp: stampNum,
+                        reward: itemData.reward || itemData.reward_text || orig.reward_text || (isDiscount ? `${disc}% Discount` : ''),
                         type: rType,
                         discountVal: disc,
                         discount: disc,
-                        icon: isDiscount ? 'fa-percent' : (isPaid ? (r.icon || 'fa-tag') : 'fa-gift'),
-                        amt: Number(r.amt || 0),
-                        category_id: r.category_id || null
+                        icon: isDiscount ? 'fa-percent' : (isPaid ? (itemData.icon || orig.icon || 'fa-tag') : 'fa-gift'),
+                        amt: initialAmt,
+                        category_id: itemData.category_id || orig.category_id || null,
+                        free_stamp: hasFree,
+                        free_text: hasFree === 1 ? freeTxt : ''
                     };
                 })
             })
@@ -453,6 +542,7 @@ export default function StampCardBuilderModal({
                 brandLogo: fallbackBrandLogo,
                 brandLogoFile: null,
                 total_stamps: 8,
+                month: 12,
                 reward: 'Free Beverage or Meal Pass',
                 bgColor: '#0E88B8',
                 bgImage: initialDesign ? initialDesign.image : null,
@@ -474,7 +564,9 @@ export default function StampCardBuilderModal({
                     discountVal: 0,
                     discount: 0,
                     icon: 'fa-gift',
-                    amt: 0
+                    amt: 0,
+                    free_stamp: 0,
+                    free_text: ''
                 }))
             })
         }
@@ -639,7 +731,7 @@ export default function StampCardBuilderModal({
                                         />
                                     </div>
 
-                                    <div className="card-builder-form-trio">
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
                                         <div>
                                             <label style={{ fontSize: '0.8rem', fontWeight: 600, marginBottom: 4, display: 'block' }}>Brand Name</label>
                                             <input
@@ -667,7 +759,7 @@ export default function StampCardBuilderModal({
 
                                         <div>
                                             <label style={{ fontSize: '0.8rem', fontWeight: 600, marginBottom: 4, display: 'block' }}>
-                                                Number of Stamps (1-10 Max)
+                                                Number of Stamps (1-10)
                                             </label>
                                             <input
                                                 type="number"
@@ -675,16 +767,61 @@ export default function StampCardBuilderModal({
                                                 max="10"
                                                 className="form-control"
                                                 value={stampForm.total_stamps}
+                                                onWheel={(e) => { e.currentTarget.blur(); e.preventDefault(); }}
                                                 onChange={(e) => {
                                                     const count = Math.min(10, Math.max(1, Number(e.target.value) || 1))
                                                     setStampForm(prev => ({
                                                         ...prev,
                                                         total_stamps: count,
-                                                        levelRewards: Array.from({ length: count }).map((_, i) => prev.levelRewards[i] || { stamp: i + 1, reward: '', type: 'Free', discountVal: 0, icon: 'fa-gift', discount: 0 })
+                                                        levelRewards: Array.from({ length: count }).map((_, i) => prev.levelRewards[i] || { stamp: i + 1, reward: '', type: 'Free', discountVal: 0, icon: 'fa-gift', discount: 0, amt: 0, free_stamp: 0, free_text: '' })
                                                     }))
                                                 }}
                                                 style={{ height: 36, fontSize: '0.85rem' }}
                                             />
+                                        </div>
+
+                                        <div>
+                                            <label style={{ fontSize: '0.8rem', fontWeight: 600, marginBottom: 4, display: 'block' }}>
+                                                Validity (in Months)
+                                            </label>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    max="120"
+                                                    className="form-control"
+                                                    placeholder="12"
+                                                    value={stampForm.month}
+                                                    onWheel={(e) => { e.currentTarget.blur(); e.preventDefault(); }}
+                                                    onChange={(e) => setStampForm(prev => ({ ...prev, month: e.target.value }))}
+                                                    style={{ height: 36, fontSize: '0.85rem' }}
+                                                />
+                                                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', flexShrink: 0 }}>
+                                                    Months
+                                                </span>
+                                            </div>
+                                            <div style={{ display: 'flex', gap: 4, marginTop: 6 }}>
+                                                {[3, 6, 12, 24].map(m => (
+                                                    <button
+                                                        key={m}
+                                                        type="button"
+                                                        className="btn btn-sm"
+                                                        onClick={() => setStampForm(prev => ({ ...prev, month: m }))}
+                                                        style={{
+                                                            padding: '2px 7px',
+                                                            fontSize: '0.72rem',
+                                                            borderRadius: 5,
+                                                            background: String(stampForm.month) === String(m) ? 'var(--firstloop-primary, #0E88B8)' : '#E2E8F0',
+                                                            color: String(stampForm.month) === String(m) ? '#FFFFFF' : '#334155',
+                                                            fontWeight: 700,
+                                                            border: 'none',
+                                                            cursor: 'pointer'
+                                                        }}
+                                                    >
+                                                        {m}M
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -1083,14 +1220,30 @@ export default function StampCardBuilderModal({
                                                                 const prevDisc = parseFloat(updated[i]?.discount ?? updated[i]?.discountVal) || 0
                                                                 const newDisc = prevDisc > 0 ? prevDisc : 10
                                                                 const defaultLvlIcon = typeVal === 'Free' ? 'fa-gift' : (typeVal === 'Discount' ? 'fa-percent' : getCategoryDefaultIcon(categoryName))
+                                                                const isType2or3 = typeVal === 'Discount' || typeVal === 'Paid'
+
+                                                                // Amount resolution:
+                                                                // Only Free has amount 0. Paid and Discount should not default to 0.
+                                                                // Keep user-entered amount if > 0, otherwise empty string '' so user can enter it.
+                                                                let newAmt = 0
+                                                                if (typeVal === 'Free') {
+                                                                    newAmt = 0
+                                                                } else {
+                                                                    const currentAmt = updated[i]?.amt
+                                                                    newAmt = (currentAmt !== undefined && currentAmt !== null && currentAmt !== '' && Number(currentAmt) > 0) ? currentAmt : ''
+                                                                }
+
                                                                 updated[i] = {
                                                                     ...updated[i],
                                                                     stamp: i + 1,
                                                                     type: typeVal,
+                                                                    amt: newAmt,
                                                                     icon: updated[i]?.icon && updated[i]?.icon !== 'fa-gift' && updated[i]?.icon !== 'fa-percent' && updated[i]?.icon !== 'fa-tag' ? updated[i].icon : defaultLvlIcon,
                                                                     discountVal: typeVal === 'Discount' ? newDisc : 0,
                                                                     discount: typeVal === 'Discount' ? newDisc : 0,
-                                                                    reward: typeVal === 'Discount' ? `${newDisc}% Discount` : (typeVal === 'Paid' ? (updated[i]?.reward || 'Paid Perk') : (updated[i]?.reward || `Stamp #${i + 1}`))
+                                                                    reward: typeVal === 'Discount' ? `${newDisc}% Discount` : (typeVal === 'Paid' ? (updated[i]?.reward && !updated[i]?.reward.includes('Discount') && !updated[i]?.reward.includes('Stamp #') ? updated[i]?.reward : 'Paid Perk') : (updated[i]?.reward || `Stamp #${i + 1}`)),
+                                                                    free_stamp: isType2or3 ? (updated[i]?.free_stamp ?? 0) : 0,
+                                                                    free_text: isType2or3 ? (updated[i]?.free_text ?? '') : ''
                                                                 }
                                                                 return { ...prev, levelRewards: updated }
                                                             })
@@ -1112,6 +1265,10 @@ export default function StampCardBuilderModal({
                                                                 className="form-control"
                                                                 placeholder="0-100"
                                                                 value={reward.discount !== undefined && reward.discount !== null ? reward.discount : (reward.discountVal ?? '')}
+                                                                onWheel={(e) => {
+                                                                    e.currentTarget.blur()
+                                                                    e.preventDefault()
+                                                                }}
                                                                 onChange={(e) => {
                                                                     const val = e.target.value === '' ? '' : Math.min(100, Math.max(0, Number(e.target.value) || 0))
                                                                     setStampForm(prev => {
@@ -1210,20 +1367,144 @@ export default function StampCardBuilderModal({
                                                             min="0"
                                                             step="any"
                                                             className="form-control"
-                                                            placeholder="Spend Amt"
-                                                            value={reward.amt ?? ''}
+                                                            placeholder={reward.type === 'Free' ? '0 (Free)' : 'Enter Amount *'}
+                                                            title={reward.type === 'Free' ? 'Free reward amount is fixed at 0' : 'Enter amount required for this stamp level'}
+                                                            value={reward.type === 'Free' ? 0 : (reward.amt ?? '')}
+                                                            disabled={reward.type === 'Free'}
+                                                            readOnly={reward.type === 'Free'}
+                                                            onWheel={(e) => {
+                                                                e.currentTarget.blur()
+                                                                e.preventDefault()
+                                                            }}
                                                             onChange={(e) => {
-                                                                const val = e.target.value === '' ? '' : Number(e.target.value) || 0
+                                                                if (reward.type === 'Free') return
+                                                                const val = e.target.value
                                                                 setStampForm(prev => {
                                                                     const updated = [...prev.levelRewards]
                                                                     updated[i] = { ...updated[i], amt: val }
                                                                     return { ...prev, levelRewards: updated }
                                                                 })
                                                             }}
-                                                            style={{ height: 34, fontSize: '0.8rem' }}
+                                                            style={{
+                                                                height: 34,
+                                                                fontSize: '0.8rem',
+                                                                fontWeight: 600,
+                                                                background: reward.type === 'Free' ? '#F1F5F9' : '#FFFFFF',
+                                                                color: reward.type === 'Free' ? '#94A3B8' : 'var(--text-primary)',
+                                                                cursor: reward.type === 'Free' ? 'not-allowed' : 'text'
+                                                            }}
                                                         />
                                                     </div>
                                                 </div>
+
+                                                {/* Free Stamp & Free Text (Shown only for reward_type 2: Discount and 3: Paid) */}
+                                                {(reward.type === 'Discount' || reward.type === 'Paid') && (
+                                                    <div
+                                                        style={{
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: 10,
+                                                            padding: '7px 10px',
+                                                            background: Number(reward.free_stamp) === 1 ? '#F0FDF4' : '#FFFFFF',
+                                                            borderRadius: 8,
+                                                            border: Number(reward.free_stamp) === 1 ? '1.5px solid #86EFAC' : '1px dashed #CBD5E1',
+                                                            transition: 'all 0.2s ease',
+                                                            flexWrap: 'wrap'
+                                                        }}
+                                                    >
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                            <label
+                                                                htmlFor={`free-stamp-select-${i}`}
+                                                                style={{
+                                                                    fontSize: '0.76rem',
+                                                                    fontWeight: 700,
+                                                                    color: '#334155',
+                                                                    margin: 0,
+                                                                    whiteSpace: 'nowrap',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    gap: 5
+                                                                }}
+                                                            >
+                                                                <span
+                                                                    style={{
+                                                                        width: 18,
+                                                                        height: 18,
+                                                                        borderRadius: '50%',
+                                                                        background: Number(reward.free_stamp) === 1 ? '#10B981' : '#E2E8F0',
+                                                                        color: Number(reward.free_stamp) === 1 ? '#FFFFFF' : '#94A3B8',
+                                                                        display: 'inline-flex',
+                                                                        alignItems: 'center',
+                                                                        justifyContent: 'center',
+                                                                        fontSize: '0.55rem'
+                                                                    }}
+                                                                >
+                                                                    <i className="fas fa-gift" />
+                                                                </span>
+                                                                <span>Free Stamp:</span>
+                                                            </label>
+                                                            <select
+                                                                id={`free-stamp-select-${i}`}
+                                                                className="form-control"
+                                                                value={Number(reward.free_stamp) === 1 ? 1 : 0}
+                                                                onChange={(e) => {
+                                                                    const val = Number(e.target.value) === 1 ? 1 : 0
+                                                                    setStampForm(prev => {
+                                                                        const updated = [...prev.levelRewards]
+                                                                        updated[i] = {
+                                                                            ...updated[i],
+                                                                            free_stamp: val,
+                                                                            free_text: val === 1 ? (updated[i]?.free_text || '') : ''
+                                                                        }
+                                                                        return { ...prev, levelRewards: updated }
+                                                                    })
+                                                                }}
+                                                                style={{
+                                                                    width: 78,
+                                                                    height: 32,
+                                                                    fontSize: '0.78rem',
+                                                                    fontWeight: 700,
+                                                                    borderRadius: 8,
+                                                                    borderColor: Number(reward.free_stamp) === 1 ? '#10B981' : '#CBD5E1',
+                                                                    color: Number(reward.free_stamp) === 1 ? '#047857' : '#475569',
+                                                                    background: '#FFFFFF'
+                                                                }}
+                                                            >
+                                                                <option value={0}>No</option>
+                                                                <option value={1}>Yes</option>
+                                                            </select>
+                                                        </div>
+
+                                                        {/* If free_stamp is 1, show free_text field */}
+                                                        {Number(reward.free_stamp) === 1 && (
+                                                            <div style={{ flex: 1, minWidth: 160, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                                <span style={{ fontSize: '0.74rem', fontWeight: 600, color: '#047857', whiteSpace: 'nowrap' }}>
+                                                                    Free Text:
+                                                                </span>
+                                                                <input
+                                                                    type="text"
+                                                                    className="form-control"
+                                                                    placeholder="e.g. Free Cookie, Free Drink..."
+                                                                    value={reward.free_text || ''}
+                                                                    onChange={(e) => {
+                                                                        const textVal = e.target.value
+                                                                        setStampForm(prev => {
+                                                                            const updated = [...prev.levelRewards]
+                                                                            updated[i] = { ...updated[i], free_text: textVal }
+                                                                            return { ...prev, levelRewards: updated }
+                                                                        })
+                                                                    }}
+                                                                    style={{
+                                                                        height: 32,
+                                                                        fontSize: '0.78rem',
+                                                                        borderColor: '#86EFAC',
+                                                                        background: '#FFFFFF'
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
                                         )
                                     })}
@@ -1273,20 +1554,34 @@ export default function StampCardBuilderModal({
                                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10, maxWidth: 220 }}>
                                             {Array.from({ length: Number(stampForm.total_stamps) }).map((_, i) => {
                                                 const r = stampForm.levelRewards[i]
+                                                const isType2or3 = r && (r.type === 'Discount' || r.type === 'Paid')
+                                                const hasFreeStamp = isType2or3 && Number(r?.free_stamp) === 1
+
                                                 let iconMarkup = i + 1
+                                                let mainRewardLabel = `Stamp #${i + 1}`
+
                                                 if (r) {
                                                     if (r.type === 'Free') {
                                                         iconMarkup = <i className={`fas ${r.icon || 'fa-gift'}`} style={{ fontSize: '0.8rem' }} />
+                                                        mainRewardLabel = r.reward || 'Free Perk'
                                                     } else if (r.type === 'Discount') {
-                                                        iconMarkup = <span style={{ fontSize: '0.65rem', fontWeight: 800 }}>{r.discount ?? r.discountVal ?? 0}%</span>
+                                                        const disc = r.discount ?? r.discountVal ?? 0
+                                                        iconMarkup = <span style={{ fontSize: '0.62rem', fontWeight: 800 }}>{disc}%</span>
+                                                        mainRewardLabel = `${disc}% Discount`
                                                     } else if (r.type === 'Paid') {
                                                         iconMarkup = <i className={`fas ${r.icon || getCategoryDefaultIcon(categoryName)}`} style={{ fontSize: '0.8rem' }} />
+                                                        mainRewardLabel = r.reward || 'Paid Perk'
                                                     }
                                                 }
+
+                                                const tooltipText = hasFreeStamp
+                                                    ? `${mainRewardLabel} FREE: ${r.free_text || 'Free Perk'}`
+                                                    : mainRewardLabel
 
                                                 return (
                                                     <div
                                                         key={i}
+                                                        title={tooltipText}
                                                         style={{
                                                             width: 36,
                                                             height: 36,
@@ -1299,10 +1594,39 @@ export default function StampCardBuilderModal({
                                                             justifyContent: 'center',
                                                             fontSize: '0.85rem',
                                                             fontWeight: 800,
-                                                            flexShrink: 0
+                                                            flexShrink: 0,
+                                                            position: 'relative'
                                                         }}
                                                     >
                                                         {iconMarkup}
+
+                                                        {/* Small circular FREE symbol badge for reward_type 2 or 3 when free_stamp is 1 */}
+                                                        {hasFreeStamp && (
+                                                            <span
+                                                                title={r.free_text ? `Free Perk: ${r.free_text}` : 'Free Perk Included'}
+                                                                style={{
+                                                                    position: 'absolute',
+                                                                    top: -4,
+                                                                    right: -4,
+                                                                    width: 15,
+                                                                    height: 15,
+                                                                    borderRadius: '50%',
+                                                                    background: '#10B981',
+                                                                    color: '#FFFFFF',
+                                                                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.35)',
+                                                                    border: '1.5px solid #FFFFFF',
+                                                                    zIndex: 4,
+                                                                    pointerEvents: 'none',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center',
+                                                                    fontSize: '0.45rem',
+                                                                    lineHeight: 1
+                                                                }}
+                                                            >
+                                                                <i className="fas fa-gift" style={{ lineHeight: 1, fontSize: '0.45rem' }} />
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 )
                                             })}

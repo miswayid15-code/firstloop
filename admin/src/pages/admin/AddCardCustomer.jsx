@@ -160,6 +160,20 @@ export default function AddCardCustomer() {
         }
     };
 
+    // Auto lookup customer if email or phone is passed via URL query param
+    useEffect(() => {
+        const queryEmail = searchParams.get("email");
+        if (queryEmail && queryEmail.trim()) {
+            const clean = queryEmail.trim().toLowerCase();
+            setEmail(clean);
+            fetchCheckCustomer(clean);
+        }
+        const queryPhone = searchParams.get("phone");
+        if (queryPhone && queryPhone.trim()) {
+            setPhone(queryPhone.trim());
+        }
+    }, [searchParams]);
+
     const fetchStampCards = async (targetBranchId, fallbackName) => {
         const idToUse = targetBranchId || branchId;
         if (!idToUse) return;

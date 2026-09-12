@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import SalePersonHeader from '../../components/SalePersonHeader';
 import API from '../../api';
+import { checkAccountStatusApi } from '../../services/accountStatusService';
+import AccountRestrictedSupportModal from '../../components/AccountRestrictedSupportModal';
 
 export default function SalePersonDashboard() {
     const navigate = useNavigate();
@@ -10,11 +12,13 @@ export default function SalePersonDashboard() {
     const [merchant_list, setMerchant_list] = useState([]);
     const [search, setSearch] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
+    const [accountStatus, setAccountStatus] = useState(null);
+    const [supportModalOpen, setSupportModalOpen] = useState(false);
+
     useEffect(() => {
-
         fetchMerchants()
-
     }, [])
+
     useEffect(() => {
         const token = localStorage.getItem("sale_access_token");
         if (!token || token === "null" || token === "undefined") {
@@ -22,11 +26,21 @@ export default function SalePersonDashboard() {
             localStorage.removeItem("saleperson_data");
             navigate("/saleperson-login");
         }
-
     }, [navigate]);
 
-
     const salesPerson = JSON.parse(localStorage.getItem("saleperson_data")) || {};
+    const spId = salesPerson.id || salesPerson.user_id || salesPerson.sales_person_id;
+
+    useEffect(() => {
+        if (!spId) return;
+        let isMounted = true;
+        checkAccountStatusApi(4, spId).then(res => {
+            if (isMounted) setAccountStatus(res);
+        });
+        return () => { isMounted = false; };
+    }, [spId]);
+
+    const isAccountActive = accountStatus ? accountStatus.isActive : true;
 
     const filteredMerchants = (Array.isArray(merchant_list) ? merchant_list : []).filter((merchant) => {
         const searchValue = search.toLowerCase();
@@ -567,6 +581,89 @@ export default function SalePersonDashboard() {
                 <SalePersonHeader />
 
                 <div className="sp-dash-body">
+                    {!isAccountActive && (
+                        <div
+                            style={{
+                                background: 'linear-gradient(135deg, #FEF2F2 0%, #FFF1F2 100%)',
+                                border: '1px solid #FCA5A5',
+                                borderLeft: '5px solid #EF4444',
+                                borderRadius: 14,
+                                padding: '16px 20px',
+                                marginBottom: 24,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                gap: 16,
+                                flexWrap: 'wrap',
+                                boxShadow: '0 4px 14px rgba(239, 68, 68, 0.08)'
+                            }}
+                        >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                                <div
+                                    style={{
+                                        width: 42,
+                                        height: 42,
+                                        borderRadius: 10,
+                                        background: '#FEE2E2',
+                                        color: '#DC2626',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: '1.25rem',
+                                        flexShrink: 0
+                                    }}
+                                >
+                                    <i className="fas fa-exclamation-triangle" />
+                                </div>
+                                <div>
+                                    <h4 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 800, color: '#991B1B' }}>
+                                        Sales Partner Account Suspended / Inactive
+                                    </h4>
+                                    <p style={{ margin: '4px 0 0', fontSize: '0.84rem', color: '#B91C1C', lineHeight: 1.4 }}>
+                                        {accountStatus?.message || "Your sales partner account has been marked inactive or deleted. Merchant onboarding is locked."}
+                                    </p>
+                                </div>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                                <button
+                                    type="button"
+                                    onClick={() => setSupportModalOpen(true)}
+                                    style={{
+                                        background: '#991B1B',
+                                        color: '#FFFFFF',
+                                        border: 'none',
+                                        borderRadius: 8,
+                                        padding: '7px 14px',
+                                        fontSize: '0.8rem',
+                                        fontWeight: 800,
+                                        cursor: 'pointer',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: 6,
+                                        boxShadow: '0 2px 8px rgba(153, 27, 27, 0.3)'
+                                    }}
+                                >
+                                    <i className="fas fa-headset" />
+                                    <span>Contact Support</span>
+                                </button>
+                                <span
+                                    style={{
+                                        background: '#DC2626',
+                                        color: '#FFFFFF',
+                                        fontSize: '0.75rem',
+                                        fontWeight: 800,
+                                        padding: '6px 14px',
+                                        borderRadius: 8,
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.5px'
+                                    }}
+                                >
+                                    Read-Only Dashboard
+                                </span>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Welcome banner */}
                     <div className="sp-welcome-banner">
                         <div className="sp-banner-deco" />
@@ -651,9 +748,11 @@ export default function SalePersonDashboard() {
                                             }}
                                         />
                                     </div>
-                                    <button className="btn firstloop-btn-primary" onClick={() => navigate('/saleperson-add-merchant')} style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
-                                        <i className="fas fa-plus" style={{ marginRight: 6 }} /> Add Merchant
-                                    </button>
+                                    {isAccountActive && (
+                                        <button className="btn firstloop-btn-primary" onClick={() => navigate('/saleperson-add-merchant')} style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
+                                            <i className="fas fa-plus" style={{ marginRight: 6 }} /> Add Merchant
+                                        </button>
+                                    )}
                                 </div>
                             </div>
 
@@ -763,6 +862,13 @@ export default function SalePersonDashboard() {
                 <span>&copy; 2026 Minsway Solutions Pvt Ltd. All rights reserved.</span>
             </footer>                                       
             </div>
+
+            <AccountRestrictedSupportModal
+                isOpen={supportModalOpen}
+                onClose={() => setSupportModalOpen(false)}
+                userType={4}
+                accountMessage={accountStatus?.message}
+            />
         </>
     );
     

@@ -43,7 +43,18 @@ module.exports = (sequelize, DataTypes) => {
             // Free     -> NULL
             // Discount -> "10%", "20%", etc.
             // Paid     -> "Coffee", "Burger", "₹99 Coffee", etc.
+
             reward_text: {
+                type: DataTypes.STRING(255),
+                allowNull: true,
+            },
+
+            free_stamp: {
+                type: DataTypes.ENUM('0', '1'),
+                allowNull: false,
+                defaultValue: '0',
+            },
+            free_text: {
                 type: DataTypes.STRING(255),
                 allowNull: true,
             },
