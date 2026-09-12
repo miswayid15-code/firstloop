@@ -343,30 +343,40 @@ const CustomerCard = forwardRef(({ card, cardType: propCardType, canvasId, style
                             flexShrink: 0
                         }}
                     >
-                        {card.qrImg && typeof card.qrImg === 'string' && (card.qrImg.startsWith('http') || card.qrImg.startsWith('data:') || card.qrImg.includes('/')) ? (
-                            <img
-                                src={card.qrImg}
-                                alt="QR Code"
-                                crossOrigin="anonymous"
-                                style={{
-                                    width: 92,
-                                    height: 92,
-                                    objectFit: 'contain',
-                                    display: 'block'
-                                }}
-                            />
-                        ) : (
-                            <QRCodeCanvas
-                                value={card.qr_token || card.qrImg || 'firstloop'}
-                                size={92}
-                                style={{
-                                    width: 92,
-                                    height: 92,
-                                    objectFit: 'contain',
-                                    display: 'block'
-                                }}
-                            />
-                        )}
+                        <div
+                            style={{
+                                background: '#fff',
+                                padding: '4px',
+                                borderRadius: 4,
+                                zIndex: 999
+                            }}
+                        >
+                            {card.qrImg && typeof card.qrImg === 'string' && (card.qrImg.startsWith('http') || card.qrImg.startsWith('data:') || card.qrImg.includes('/')) ? (
+                                <img
+                                    src={card.qrImg}
+                                    alt="QR Code"
+                                    crossOrigin="anonymous"
+                                    style={{
+                                        width: 92,
+                                        height: 92,
+                                        objectFit: 'contain',
+                                        display: 'block'
+                                    }}
+                                />
+                            ) : (
+                                <QRCodeCanvas
+                                    value={card.qr_token || card.qrImg || 'firstloop'}
+                                    size={92}
+                                    style={{
+                                        width: 92,
+                                        height: 92,
+                                        objectFit: 'contain',
+                                        display: 'block'
+                                    }}
+                                />
+                            )}
+                        </div>
+
                         <small
                             style={{
                                 fontSize: '0.6rem',
