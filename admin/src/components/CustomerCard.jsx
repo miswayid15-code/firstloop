@@ -6,6 +6,7 @@ import {
     getCardStyle,
     formatValidity
 } from '../services/cardService.js'
+import CardIcon from './CardIcon.jsx'
 
 const formatExpiryDate = (val) => {
     if (!val) return null
@@ -161,7 +162,7 @@ const CustomerCard = forwardRef(({ card, cardType: propCardType, canvasId, style
                                         lineHeight: 1.35
                                     }}
                                 >
-                                    <i className="fas fa-user" style={{ fontSize: '0.75rem', lineHeight: 1, verticalAlign: '0' }} />
+                                    <CardIcon name="fa-user" style={{ fontSize: '0.75rem' }} />
                                     <span>{cardholder}</span>
                                 </div>
                             )}
@@ -196,17 +197,13 @@ const CustomerCard = forwardRef(({ card, cardType: propCardType, canvasId, style
 
                                         if (rewardItem && rType === 'Free') {
                                             iconMarkup = (
-                                                <i
-                                                    className={`fas ${rewardItem.icon || 'fa-gift'}`}
+                                                <CardIcon
+                                                    name={rewardItem.icon || 'fa-gift'}
                                                     style={{
                                                         fontSize: '0.82rem',
                                                         display: 'inline-flex',
                                                         alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        lineHeight: 1,
-                                                        verticalAlign: '0',
-                                                        margin: 0,
-                                                        padding: 0
+                                                        justifyContent: 'center'
                                                     }}
                                                 />
                                             )
@@ -231,17 +228,13 @@ const CustomerCard = forwardRef(({ card, cardType: propCardType, canvasId, style
                                             )
                                         } else if (rewardItem && rType === 'Paid') {
                                             iconMarkup = (
-                                                <i
-                                                    className={`fas ${rewardItem.icon || 'fa-tag'}`}
+                                                <CardIcon
+                                                    name={rewardItem.icon || 'fa-tag'}
                                                     style={{
                                                         fontSize: '0.82rem',
                                                         display: 'inline-flex',
                                                         alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        lineHeight: 1,
-                                                        verticalAlign: '0',
-                                                        margin: 0,
-                                                        padding: 0
+                                                        justifyContent: 'center'
                                                     }}
                                                 />
                                             )
@@ -313,7 +306,7 @@ const CustomerCard = forwardRef(({ card, cardType: propCardType, canvasId, style
                                                             lineHeight: 1
                                                         }}
                                                     >
-                                                        <i className="fas fa-gift" style={{ lineHeight: 1, fontSize: '0.45rem' }} />
+                                                        <CardIcon name="fa-gift" style={{ fontSize: '0.45rem', lineHeight: 1 }} />
                                                     </span>
                                                 )}
                                             </div>
@@ -322,7 +315,7 @@ const CustomerCard = forwardRef(({ card, cardType: propCardType, canvasId, style
                                 </div>
                                 {(card.expires_at || card.expiry) && (
                                     <div style={{ fontSize: '0.68rem', opacity: 0.9, fontWeight: 700, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
-                                        <i className="far fa-calendar-alt" style={{ fontSize: '0.62rem' }} />
+                                        <CardIcon name="fa-calendar-alt" style={{ fontSize: '0.62rem' }} />
                                         <span>Expires: {formatExpiryDate(card.expires_at || card.expiry)}</span>
                                     </div>
                                 )}

@@ -16,6 +16,7 @@ import {
     cleanPhoneForWhatsApp,
     fetchCustomerStampLevelsApi
 } from '../services/cardService.js'
+import CardIcon from './CardIcon.jsx'
 
 export default function MembershipCardPreviewModal({
     isOpen = true,
@@ -344,7 +345,7 @@ export default function MembershipCardPreviewModal({
                                     </div>
                                     {cardholder && (
                                         <div style={{ fontSize: '0.95rem', opacity: 0.95, marginTop: 4, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, lineHeight: 1.35 }}>
-                                            <i className="fas fa-user" style={{ fontSize: '0.75rem', lineHeight: 1, verticalAlign: '0' }} />
+                                            <CardIcon name="fa-user" style={{ fontSize: '0.75rem' }} />
                                             <span>{cardholder}</span>
                                         </div>
                                     )}
