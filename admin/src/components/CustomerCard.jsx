@@ -269,7 +269,7 @@ const CustomerCard = forwardRef(({ card, cardType: propCardType, canvasId, style
                                                     borderRadius: `${card.stamp_radius ?? card.stampRadius ?? 50}%`,
                                                     border: isStamped
                                                         ? '2px solid #FFFFFF'
-                                                        : `2px dashed ${card.stampBorderColor || card.stamp_border_color || 'rgba(255, 255, 255, 0.7)'}`,
+                                                        : `2px solid ${card.stampBorderColor || card.stamp_border_color || 'rgba(255, 255, 255, 0.7)'}`,
                                                     background: isStamped
                                                         ? 'linear-gradient(135deg, #10B981 0%, #059669 60%, #047857 100%)'
                                                         : (card.stampBgColor || card.stamp_background || 'rgba(255, 255, 255, 0.22)'),
@@ -295,7 +295,7 @@ const CustomerCard = forwardRef(({ card, cardType: propCardType, canvasId, style
                                                             width: '100%',
                                                             height: '100%',
                                                             borderRadius: 'inherit',
-                                                            border: '1px dashed rgba(255, 255, 255, 0.65)',
+                                                            border: '1px solid rgba(255, 255, 255, 0.65)',
                                                             display: 'flex',
                                                             alignItems: 'center',
                                                             justifyContent: 'center',
@@ -460,7 +460,7 @@ const CustomerCard = forwardRef(({ card, cardType: propCardType, canvasId, style
                             alignItems: 'center'
                         }}
                     >
-                        firstloop.co.in
+                        firstloop
                     </strong>
                 </div>
             </div>

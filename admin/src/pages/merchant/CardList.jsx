@@ -418,14 +418,14 @@ export default function CardList() {
 
                 const row = {
                     "S.No": idx + 1,
-                    "Card ID": card.id || '',
+                    // "Card ID": card.id || '',
                     "Card Title": card.title || 'Stamp Pass',
                     "Brand Name": card.brandName || merchantData?.bus_name || merchantData?.name || 'Merchant',
                     "Total Stamps": card.total_stamps || 8,
                     "Validity (Months)": card.month || card.validityMonths || 12,
-                    "Expiry Date": formatExpiryDate(card.expires_at || card.expiry),
-                    "Completion Reward": card.reward || 'Special Gift',
-                    "Active Members": card.active_members || 0,
+                    // "Expiry Date": formatExpiryDate(card.expires_at || card.expiry),
+                    // "Completion Reward": card.reward || 'Special Gift',
+                    // "Active Members": card.active_members || 0,
                     "Assigned Branches": branchNames,
                     "Card Background Color": card.bgColor || '#0E88B8',
                     "Card Text Color": card.textColor || '#FFFFFF',
@@ -653,7 +653,7 @@ export default function CardList() {
                             /* DETAILED TABLE LIST VIEW */
                             <div className="card" style={{ padding: 0, overflow: 'hidden', borderRadius: 16, border: '1px solid #E2E8F0', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', marginBottom: 20 }}>
                                 <div className="table-responsive">
-                                    <table className="table table-hover align-middle mb-0" style={{ minWidth: 960 }}>
+                                    <table className="table mb-0 align-middle table-hover" style={{ minWidth: 960 }}>
                                         <thead style={{ background: '#F8FAFC', borderBottom: '2px solid #E2E8F0' }}>
                                             <tr>
                                                 <th style={{ padding: '14px 18px', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
@@ -662,12 +662,12 @@ export default function CardList() {
                                                 <th style={{ padding: '14px 18px', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                                                     Stamps &amp; Validity
                                                 </th>
-                                                <th style={{ padding: '14px 18px', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                {/* <th style={{ padding: '14px 18px', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                                                     Expires On
-                                                </th>
-                                                <th style={{ padding: '14px 18px', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                </th> */}
+                                                {/* <th style={{ padding: '14px 18px', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                                                     Completion Reward
-                                                </th>
+                                                </th> */}
                                                 <th style={{ padding: '14px 18px', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                                                     Stamp Levels Breakdown
                                                 </th>
@@ -734,18 +734,18 @@ export default function CardList() {
                                                                 </small>
                                                             </div>
                                                         </td>
-                                                        <td style={{ padding: '14px 18px' }}>
+                                                        {/* <td style={{ padding: '14px 18px' }}>
                                                             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', color: '#0F172A', fontWeight: 700 }}>
                                                                 <i className="far fa-calendar-alt text-muted" />
                                                                 <span>{formatExpiryDate(card.expires_at || card.expiry)}</span>
                                                             </div>
-                                                        </td>
-                                                        <td style={{ padding: '14px 18px' }}>
+                                                        </td> */}
+                                                        {/* <td style={{ padding: '14px 18px' }}>
                                                             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#D97706', fontWeight: 700, fontSize: '0.84rem' }}>
                                                                 <i className="fas fa-trophy" />
                                                                 <span>{card.reward || 'Special Gift'}</span>
                                                             </div>
-                                                        </td>
+                                                        </td> */}
                                                         <td style={{ padding: '14px 18px', maxWidth: 280 }}>
                                                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                                                                 {levels.slice(0, 3).map((lvl, lIdx) => (

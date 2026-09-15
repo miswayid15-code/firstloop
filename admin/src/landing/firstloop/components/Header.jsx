@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-import { Menu, X, User } from 'lucide-react';
+import { Menu, X, User, LogIn } from 'lucide-react';
 import mainLogo from '../assets/mainlogo.png';
 
 export const Header = () => {
+  const navigate = useNavigate();
   const { navigateToSignup, currentUser, activeTab, setActiveTab } = useApp();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -78,7 +80,7 @@ export const Header = () => {
           </nav>
 
           {/* Right: Log In & Get Started CTA / User Profile */}
-          <div className="hidden sm:flex items-center gap-3 shrink-0">
+          <div className="hidden sm:flex items-center gap-2.5 shrink-0">
             {currentUser ? (
               <button
                 onClick={() => setActiveTab('dashboard')}
@@ -99,17 +101,32 @@ export const Header = () => {
                 </div>
               </button>
             ) : (
+              <>
+                <button
+                  onClick={() => navigate('/panel/merchant/login')}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold text-slate-700 hover:text-teal-700 hover:bg-slate-100 transition-all cursor-pointer border border-slate-200/80"
+                >
+                  <LogIn className="w-3.5 h-3.5" />
+                  <span>Login</span>
+                </button>
                 <button
                   onClick={() => navigateToSignup('growth', 'monthly')}
                   className="flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-bold text-white bg-gradient-to-r from-teal-600 to-sky-600 hover:from-teal-700 hover:to-sky-700 shadow-md shadow-teal-600/30 hover:-translate-y-0.5 transition-all cursor-pointer"
                 >
                   <span>Get Started</span>
                 </button>
+              </>
             )}
           </div>
 
           {/* Mobile Hamburger Toggle */}
           <div className="flex md:hidden items-center gap-2">
+            <button
+              onClick={() => navigate('/merchant/login')}
+              className="px-3 py-1.5 rounded-full text-xs font-bold text-slate-700 hover:bg-slate-100 border border-slate-200 cursor-pointer"
+            >
+              Login
+            </button>
             <button
               onClick={() => navigateToSignup('growth', 'monthly')}
               className="px-3.5 py-1.5 rounded-full text-xs font-bold text-white bg-teal-600 shadow-sm cursor-pointer"
@@ -163,12 +180,19 @@ export const Header = () => {
             >
               Plans
             </button>
-            <div className="pt-2 border-t border-slate-200/60">
+            <div className="pt-2 border-t border-slate-200/60 space-y-2">
+              <button
+                onClick={() => { navigate('/merchant/login'); setMobileMenuOpen(false); }}
+                className="w-full text-center py-2.5 rounded-full text-xs font-bold text-slate-800 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer flex items-center justify-center gap-2"
+              >
+                <LogIn className="w-4 h-4 text-teal-600" />
+                <span>Merchant Login</span>
+              </button>
               <button
                 onClick={() => { navigateToSignup('growth', 'monthly'); setMobileMenuOpen(false); }}
                 className="w-full text-center py-3 rounded-full text-xs font-bold text-white bg-gradient-to-r from-teal-600 to-sky-600 shadow-md cursor-pointer"
               >
-                Choose Plan
+                Get Started
               </button>
             </div>
           </div>

@@ -62,20 +62,20 @@ export default function ReceptionistCustomerList() {
     const availableBranches = useMemo(() => {
         const branchMap = new Map()
 
-        ;(customers || []).forEach(cus => {
-            if (cus.branch_name) {
-                const key = String(cus.branch_id || cus.branch_name).trim()
-                if (key) branchMap.set(key, cus.branch_name)
-            }
-            if (Array.isArray(cus.cards)) {
-                cus.cards.forEach(card => {
-                    if (card.branch_name) {
-                        const key = String(card.branch_id || card.branch_name).trim()
-                        if (key) branchMap.set(key, card.branch_name)
-                    }
-                })
-            }
-        })
+            ; (customers || []).forEach(cus => {
+                if (cus.branch_name) {
+                    const key = String(cus.branch_id || cus.branch_name).trim()
+                    if (key) branchMap.set(key, cus.branch_name)
+                }
+                if (Array.isArray(cus.cards)) {
+                    cus.cards.forEach(card => {
+                        if (card.branch_name) {
+                            const key = String(card.branch_id || card.branch_name).trim()
+                            if (key) branchMap.set(key, card.branch_name)
+                        }
+                    })
+                }
+            })
 
         // Include receptionist's active branch if available
         const recBranchName = receptionist?.user_branch || receptionist?.branch_name || receptionist?.user_branch_name
@@ -185,6 +185,24 @@ export default function ReceptionistCustomerList() {
                     >
                         <i className="fas fa-qrcode" />
                         <span>Qr Scanner</span>
+                    </button>
+                    <button
+                        type="button"
+                        className="btn firstloop-btn-primary"
+                        onClick={() => navigate(`/receptionist/add-card-customer/${branchId}`)}
+                        style={{
+                            padding: '9px 18px',
+                            borderRadius: 10,
+                            fontWeight: 800,
+                            fontSize: '0.85rem',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 8,
+                            boxShadow: '0 4px 14px rgba(14, 136, 184, 0.25)'
+                        }}
+                    >
+                        <i className="fas fa-plus" />
+                        <span>Add Customer</span>
                     </button>
                 </div>
             </div>
@@ -361,343 +379,343 @@ export default function ReceptionistCustomerList() {
                                     const joinDate = cus.created_at ? new Date(cus.created_at).toLocaleDateString() : null
                                     const isExpanded = !!expandedRows[cus.id]
 
-                                     // Sort cards so that is_branch: 1 cards or selected branch cards appear first
-                                     const sortedStampCards = [...stampCards].sort((a, b) => {
-                                         if (selectedBranch !== 'all') {
-                                             const aMatch = String(a.branch_id || '') === String(selectedBranch) || String(a.branch_name || '').toLowerCase() === String(selectedBranch).toLowerCase()
-                                             const bMatch = String(b.branch_id || '') === String(selectedBranch) || String(b.branch_name || '').toLowerCase() === String(selectedBranch).toLowerCase()
-                                             if (aMatch !== bMatch) return (bMatch ? 1 : 0) - (aMatch ? 1 : 0)
-                                         }
-                                         const aBranch = Number(a.is_branch) === 1 ? 1 : 0
-                                         const bBranch = Number(b.is_branch) === 1 ? 1 : 0
-                                         return bBranch - aBranch
-                                     })
+                                    // Sort cards so that is_branch: 1 cards or selected branch cards appear first
+                                    const sortedStampCards = [...stampCards].sort((a, b) => {
+                                        if (selectedBranch !== 'all') {
+                                            const aMatch = String(a.branch_id || '') === String(selectedBranch) || String(a.branch_name || '').toLowerCase() === String(selectedBranch).toLowerCase()
+                                            const bMatch = String(b.branch_id || '') === String(selectedBranch) || String(b.branch_name || '').toLowerCase() === String(selectedBranch).toLowerCase()
+                                            if (aMatch !== bMatch) return (bMatch ? 1 : 0) - (aMatch ? 1 : 0)
+                                        }
+                                        const aBranch = Number(a.is_branch) === 1 ? 1 : 0
+                                        const bBranch = Number(b.is_branch) === 1 ? 1 : 0
+                                        return bBranch - aBranch
+                                    })
 
-                                     // If not expanded, show only top 1 card; if expanded, show all
-                                     const cardsToDisplay = isExpanded ? sortedStampCards : sortedStampCards.slice(0, 1)
+                                    // If not expanded, show only top 1 card; if expanded, show all
+                                    const cardsToDisplay = isExpanded ? sortedStampCards : sortedStampCards.slice(0, 1)
 
-                                     return (
-                                         <tr key={cus.id}>
-                                             {/* Customer Info */}
-                                             <td style={{ padding: '14px 18px', verticalAlign: 'top' }}>
-                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                                     {profileImg ? (
-                                                         <img
-                                                             src={profileImg}
-                                                             alt={cus.name || 'Customer'}
-                                                             style={{
-                                                                 width: 40,
-                                                                 height: 40,
-                                                                 borderRadius: '50%',
-                                                                 objectFit: 'cover',
-                                                                 border: '2px solid var(--firstloop-primary, #0E88B8)',
-                                                                 flexShrink: 0
-                                                             }}
-                                                         />
-                                                     ) : (
-                                                         <div
-                                                             style={{
-                                                                 width: 40,
-                                                                 height: 40,
-                                                                 borderRadius: '50%',
-                                                                 background: 'var(--firstloop-primary-light, #E6F2FA)',
-                                                                 color: 'var(--firstloop-primary, #0E88B8)',
-                                                                 display: 'flex',
-                                                                 alignItems: 'center',
-                                                                 justifyContent: 'center',
-                                                                 fontWeight: 700,
-                                                                 fontSize: '0.9rem',
-                                                                 flexShrink: 0,
-                                                                 border: '2px solid var(--firstloop-primary, #0E88B8)'
-                                                             }}
-                                                         >
-                                                             {cus.name ? cus.name.charAt(0).toUpperCase() : 'C'}
-                                                         </div>
-                                                     )}
+                                    return (
+                                        <tr key={cus.id}>
+                                            {/* Customer Info */}
+                                            <td style={{ padding: '14px 18px', verticalAlign: 'top' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                                    {profileImg ? (
+                                                        <img
+                                                            src={profileImg}
+                                                            alt={cus.name || 'Customer'}
+                                                            style={{
+                                                                width: 40,
+                                                                height: 40,
+                                                                borderRadius: '50%',
+                                                                objectFit: 'cover',
+                                                                border: '2px solid var(--firstloop-primary, #0E88B8)',
+                                                                flexShrink: 0
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        <div
+                                                            style={{
+                                                                width: 40,
+                                                                height: 40,
+                                                                borderRadius: '50%',
+                                                                background: 'var(--firstloop-primary-light, #E6F2FA)',
+                                                                color: 'var(--firstloop-primary, #0E88B8)',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                fontWeight: 700,
+                                                                fontSize: '0.9rem',
+                                                                flexShrink: 0,
+                                                                border: '2px solid var(--firstloop-primary, #0E88B8)'
+                                                            }}
+                                                        >
+                                                            {cus.name ? cus.name.charAt(0).toUpperCase() : 'C'}
+                                                        </div>
+                                                    )}
 
-                                                     <div>
-                                                         <strong style={{ fontSize: '0.9rem', color: 'var(--text-primary)', display: 'block' }}>
-                                                             {cus.name || 'Customer'}
-                                                         </strong>
-                                                         {joinDate && (
-                                                             <small style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                                                                 Joined: {joinDate}
-                                                             </small>
-                                                         )}
-                                                     </div>
-                                                 </div>
-                                             </td>
+                                                    <div>
+                                                        <strong style={{ fontSize: '0.9rem', color: 'var(--text-primary)', display: 'block' }}>
+                                                            {cus.name || 'Customer'}
+                                                        </strong>
+                                                        {joinDate && (
+                                                            <small style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                                                                Joined: {joinDate}
+                                                            </small>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </td>
 
-                                             {/* Contact Details */}
-                                             <td style={{ padding: '14px 18px', verticalAlign: 'top' }}>
-                                                 <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                                         <i className="fas fa-envelope" style={{ color: 'var(--firstloop-primary, #0E88B8)', width: 14, textAlign: 'center' }} />
-                                                         <span style={{ wordBreak: 'break-all' }}>{cus.email || '-'}</span>
-                                                     </div>
-                                                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                                         <i className="fas fa-phone" style={{ color: 'var(--firstloop-primary, #0E88B8)', width: 14, textAlign: 'center' }} />
-                                                         <span>{cus.country_code ? `+${cus.country_code} ` : ''}{cus.phone || '-'}</span>
-                                                     </div>
-                                                 </div>
-                                             </td>
+                                            {/* Contact Details */}
+                                            <td style={{ padding: '14px 18px', verticalAlign: 'top' }}>
+                                                <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                        <i className="fas fa-envelope" style={{ color: 'var(--firstloop-primary, #0E88B8)', width: 14, textAlign: 'center' }} />
+                                                        <span style={{ wordBreak: 'break-all' }}>{cus.email || '-'}</span>
+                                                    </div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                        <i className="fas fa-phone" style={{ color: 'var(--firstloop-primary, #0E88B8)', width: 14, textAlign: 'center' }} />
+                                                        <span>{cus.country_code ? `+${cus.country_code} ` : ''}{cus.phone || '-'}</span>
+                                                    </div>
+                                                </div>
+                                            </td>
 
-                                             {/* Assigned Stamp Cards */}
-                                             <td style={{ padding: '14px 18px', verticalAlign: 'top' }}>
-                                                 {stampCards.length === 0 ? (
-                                                     <div style={{
-                                                         display: 'inline-flex',
-                                                         alignItems: 'center',
-                                                         gap: 6,
-                                                         padding: '6px 12px',
-                                                         borderRadius: 8,
-                                                         background: '#F8FAFC',
-                                                         border: '1px dashed #CBD5E1',
-                                                         color: 'var(--text-muted, #94A3B8)',
-                                                         fontSize: '0.78rem'
-                                                     }}>
-                                                         <i className="fas fa-stamp" style={{ opacity: 0.5 }} />
-                                                         <span>No stamp cards</span>
-                                                     </div>
-                                                 ) : (
-                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 260, maxWidth: 420 }}>
-                                                         {/* Header summary when multiple cards */}
-                                                         {stampCards.length > 1 && (
-                                                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
-                                                                 <span style={{
-                                                                     fontSize: '0.72rem',
-                                                                     fontWeight: 700,
-                                                                     color: 'var(--firstloop-primary, #0E88B8)',
-                                                                     background: 'var(--firstloop-primary-light, #E6F2FA)',
-                                                                     padding: '2px 8px',
-                                                                     borderRadius: 12,
-                                                                     display: 'inline-flex',
-                                                                     alignItems: 'center',
-                                                                     gap: 4
-                                                                 }}>
-                                                                     <i className="fas fa-layer-group" style={{ fontSize: '0.65rem' }} />
-                                                                     {stampCards.length} Stamp Cards
-                                                                 </span>
+                                            {/* Assigned Stamp Cards */}
+                                            <td style={{ padding: '14px 18px', verticalAlign: 'top' }}>
+                                                {stampCards.length === 0 ? (
+                                                    <div style={{
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        gap: 6,
+                                                        padding: '6px 12px',
+                                                        borderRadius: 8,
+                                                        background: '#F8FAFC',
+                                                        border: '1px dashed #CBD5E1',
+                                                        color: 'var(--text-muted, #94A3B8)',
+                                                        fontSize: '0.78rem'
+                                                    }}>
+                                                        <i className="fas fa-stamp" style={{ opacity: 0.5 }} />
+                                                        <span>No stamp cards</span>
+                                                    </div>
+                                                ) : (
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 260, maxWidth: 420 }}>
+                                                        {/* Header summary when multiple cards */}
+                                                        {stampCards.length > 1 && (
+                                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+                                                                <span style={{
+                                                                    fontSize: '0.72rem',
+                                                                    fontWeight: 700,
+                                                                    color: 'var(--firstloop-primary, #0E88B8)',
+                                                                    background: 'var(--firstloop-primary-light, #E6F2FA)',
+                                                                    padding: '2px 8px',
+                                                                    borderRadius: 12,
+                                                                    display: 'inline-flex',
+                                                                    alignItems: 'center',
+                                                                    gap: 4
+                                                                }}>
+                                                                    <i className="fas fa-layer-group" style={{ fontSize: '0.65rem' }} />
+                                                                    {stampCards.length} Stamp Cards
+                                                                </span>
 
-                                                                 <button
-                                                                     type="button"
-                                                                     onClick={() => toggleExpandRow(cus.id)}
-                                                                     style={{
-                                                                         background: 'transparent',
-                                                                         border: 'none',
-                                                                         padding: '2px 6px',
-                                                                         fontSize: '0.73rem',
-                                                                         fontWeight: 700,
-                                                                         color: 'var(--firstloop-primary, #0E88B8)',
-                                                                         cursor: 'pointer',
-                                                                         display: 'inline-flex',
-                                                                         alignItems: 'center',
-                                                                         gap: 4
-                                                                     }}
-                                                                 >
-                                                                     {isExpanded ? (
-                                                                         <>
-                                                                             <i className="fas fa-chevron-up" style={{ fontSize: '0.65rem' }} />
-                                                                             Show less
-                                                                         </>
-                                                                     ) : (
-                                                                         <>
-                                                                             <i className="fas fa-chevron-down" style={{ fontSize: '0.65rem' }} />
-                                                                             View all ({stampCards.length})
-                                                                         </>
-                                                                     )}
-                                                                 </button>
-                                                             </div>
-                                                         )}
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => toggleExpandRow(cus.id)}
+                                                                    style={{
+                                                                        background: 'transparent',
+                                                                        border: 'none',
+                                                                        padding: '2px 6px',
+                                                                        fontSize: '0.73rem',
+                                                                        fontWeight: 700,
+                                                                        color: 'var(--firstloop-primary, #0E88B8)',
+                                                                        cursor: 'pointer',
+                                                                        display: 'inline-flex',
+                                                                        alignItems: 'center',
+                                                                        gap: 4
+                                                                    }}
+                                                                >
+                                                                    {isExpanded ? (
+                                                                        <>
+                                                                            <i className="fas fa-chevron-up" style={{ fontSize: '0.65rem' }} />
+                                                                            Show less
+                                                                        </>
+                                                                    ) : (
+                                                                        <>
+                                                                            <i className="fas fa-chevron-down" style={{ fontSize: '0.65rem' }} />
+                                                                            View all ({stampCards.length})
+                                                                        </>
+                                                                    )}
+                                                                </button>
+                                                            </div>
+                                                        )}
 
-                                                         {/* Scrollable Container if expanded with many cards */}
-                                                         <div
-                                                             style={{
-                                                                 display: 'flex',
-                                                                 flexDirection: 'column',
-                                                                 gap: 6,
-                                                                 maxHeight: isExpanded ? 240 : 'none',
-                                                                 overflowY: isExpanded ? 'auto' : 'visible',
-                                                                 paddingRight: isExpanded ? 4 : 0
-                                                             }}
-                                                         >
-                                                             {cardsToDisplay.map((sc, idx) => {
-                                                                 // If is_branch is 1 use Color 1 (Cyan/Primary); if not 1 use Color 2 (Purple/Violet)
-                                                                 const isCurrentBranch = Number(sc.is_branch) === 1
-                                                                 const collected = sc.current_stamp ?? sc.collected_stamps ?? sc.stamps ?? 0
-                                                                 const total = sc.number_of_stamps ?? sc.total_stamps ?? 8
+                                                        {/* Scrollable Container if expanded with many cards */}
+                                                        <div
+                                                            style={{
+                                                                display: 'flex',
+                                                                flexDirection: 'column',
+                                                                gap: 6,
+                                                                maxHeight: isExpanded ? 240 : 'none',
+                                                                overflowY: isExpanded ? 'auto' : 'visible',
+                                                                paddingRight: isExpanded ? 4 : 0
+                                                            }}
+                                                        >
+                                                            {cardsToDisplay.map((sc, idx) => {
+                                                                // If is_branch is 1 use Color 1 (Cyan/Primary); if not 1 use Color 2 (Purple/Violet)
+                                                                const isCurrentBranch = Number(sc.is_branch) === 1
+                                                                const collected = sc.current_stamp ?? sc.collected_stamps ?? sc.stamps ?? 0
+                                                                const total = sc.number_of_stamps ?? sc.total_stamps ?? 8
 
-                                                                 const cardBg = isCurrentBranch ? '#F0F9FF' : '#FAF5FF'
-                                                                 const cardBorder = isCurrentBranch ? '1.5px solid var(--firstloop-primary, #0E88B8)' : '1.5px solid #8B5CF6'
-                                                                 const badgeBg = isCurrentBranch ? 'var(--firstloop-primary, #0E88B8)' : '#7C3AED'
-                                                                 const stampIconColor = isCurrentBranch ? 'var(--firstloop-primary, #0E88B8)' : '#7C3AED'
+                                                                const cardBg = isCurrentBranch ? '#F0F9FF' : '#FAF5FF'
+                                                                const cardBorder = isCurrentBranch ? '1.5px solid var(--firstloop-primary, #0E88B8)' : '1.5px solid #8B5CF6'
+                                                                const badgeBg = isCurrentBranch ? 'var(--firstloop-primary, #0E88B8)' : '#7C3AED'
+                                                                const stampIconColor = isCurrentBranch ? 'var(--firstloop-primary, #0E88B8)' : '#7C3AED'
 
-                                                                 return (
-                                                                     <div
-                                                                         key={sc.id || idx}
-                                                                         style={{
-                                                                             padding: '8px 10px',
-                                                                             borderRadius: 8,
-                                                                             background: cardBg,
-                                                                             border: cardBorder,
-                                                                             transition: 'all 0.15s ease',
-                                                                             display: 'flex',
-                                                                             flexDirection: 'column',
-                                                                             gap: 4,
-                                                                             boxShadow: isCurrentBranch
-                                                                                 ? '0 2px 6px rgba(14, 136, 184, 0.08)'
-                                                                                 : '0 2px 6px rgba(139, 92, 246, 0.08)'
-                                                                         }}
-                                                                     >
-                                                                         {/* Card Title & Branch Badge Row */}
-                                                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                                                                             <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, flex: 1 }}>
-                                                                                 <i className="fas fa-stamp" style={{ fontSize: '0.75rem', color: stampIconColor, flexShrink: 0 }} />
-                                                                                 <span
-                                                                                     title={sc.title || 'Stamp Card'}
-                                                                                     style={{
-                                                                                         fontWeight: 700,
-                                                                                         fontSize: '0.8rem',
-                                                                                         color: 'var(--text-primary, #0F172A)',
-                                                                                         whiteSpace: 'nowrap',
-                                                                                         overflow: 'hidden',
-                                                                                         textOverflow: 'ellipsis'
-                                                                                     }}
-                                                                                 >
-                                                                                     {sc.title || 'Stamp Card'}
-                                                                                 </span>
-                                                                             </div>
+                                                                return (
+                                                                    <div
+                                                                        key={sc.id || idx}
+                                                                        style={{
+                                                                            padding: '8px 10px',
+                                                                            borderRadius: 8,
+                                                                            background: cardBg,
+                                                                            border: cardBorder,
+                                                                            transition: 'all 0.15s ease',
+                                                                            display: 'flex',
+                                                                            flexDirection: 'column',
+                                                                            gap: 4,
+                                                                            boxShadow: isCurrentBranch
+                                                                                ? '0 2px 6px rgba(14, 136, 184, 0.08)'
+                                                                                : '0 2px 6px rgba(139, 92, 246, 0.08)'
+                                                                        }}
+                                                                    >
+                                                                        {/* Card Title & Branch Badge Row */}
+                                                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                                                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, flex: 1 }}>
+                                                                                <i className="fas fa-stamp" style={{ fontSize: '0.75rem', color: stampIconColor, flexShrink: 0 }} />
+                                                                                <span
+                                                                                    title={sc.title || 'Stamp Card'}
+                                                                                    style={{
+                                                                                        fontWeight: 700,
+                                                                                        fontSize: '0.8rem',
+                                                                                        color: 'var(--text-primary, #0F172A)',
+                                                                                        whiteSpace: 'nowrap',
+                                                                                        overflow: 'hidden',
+                                                                                        textOverflow: 'ellipsis'
+                                                                                    }}
+                                                                                >
+                                                                                    {sc.title || 'Stamp Card'}
+                                                                                </span>
+                                                                            </div>
 
-                                                                             {sc.branch_name && (
-                                                                                 <span
-                                                                                     title={`Branch: ${sc.branch_name} (${isCurrentBranch ? 'This Branch' : 'Other Branch'})`}
-                                                                                     style={{
-                                                                                         display: 'inline-flex',
-                                                                                         alignItems: 'center',
-                                                                                         gap: 4,
-                                                                                         padding: '2px 7px',
-                                                                                         borderRadius: 6,
-                                                                                         background: badgeBg,
-                                                                                         color: '#FFFFFF',
-                                                                                         border: `1px solid ${badgeBg}`,
-                                                                                         fontSize: '0.68rem',
-                                                                                         fontWeight: 700,
-                                                                                         whiteSpace: 'nowrap',
-                                                                                         flexShrink: 0
-                                                                                     }}
-                                                                                 >
-                                                                                     <i className={isCurrentBranch ? "fas fa-store" : "fas fa-map-marker-alt"} style={{ fontSize: '0.62rem' }} />
-                                                                                     {sc.branch_name}
-                                                                                 </span>
-                                                                             )}
-                                                                         </div>
+                                                                            {sc.branch_name && (
+                                                                                <span
+                                                                                    title={`Branch: ${sc.branch_name} (${isCurrentBranch ? 'This Branch' : 'Other Branch'})`}
+                                                                                    style={{
+                                                                                        display: 'inline-flex',
+                                                                                        alignItems: 'center',
+                                                                                        gap: 4,
+                                                                                        padding: '2px 7px',
+                                                                                        borderRadius: 6,
+                                                                                        background: badgeBg,
+                                                                                        color: '#FFFFFF',
+                                                                                        border: `1px solid ${badgeBg}`,
+                                                                                        fontSize: '0.68rem',
+                                                                                        fontWeight: 700,
+                                                                                        whiteSpace: 'nowrap',
+                                                                                        flexShrink: 0
+                                                                                    }}
+                                                                                >
+                                                                                    <i className={isCurrentBranch ? "fas fa-store" : "fas fa-map-marker-alt"} style={{ fontSize: '0.62rem' }} />
+                                                                                    {sc.branch_name}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
 
-                                                                         {/* Card Number & Stamps Meta Row */}
-                                                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, marginTop: 1 }}>
-                                                                             {sc.card_number ? (
-                                                                                 <div
-                                                                                     onClick={() => {
-                                                                                         navigator.clipboard.writeText(sc.card_number)
-                                                                                         toast.success(`Copied: ${sc.card_number}`)
-                                                                                     }}
-                                                                                     title="Click to copy Card Number"
-                                                                                     style={{
-                                                                                         display: 'inline-flex',
-                                                                                         alignItems: 'center',
-                                                                                         gap: 4,
-                                                                                         cursor: 'pointer',
-                                                                                         fontSize: '0.68rem',
-                                                                                         fontFamily: 'monospace',
-                                                                                         fontWeight: 600,
-                                                                                         color: 'var(--text-muted, #64748B)',
-                                                                                         background: '#FFFFFF',
-                                                                                         border: '1px solid #E2E8F0',
-                                                                                         borderRadius: 4,
-                                                                                         padding: '1px 5px'
-                                                                                     }}
-                                                                                 >
-                                                                                     <span>#{sc.card_number}</span>
-                                                                                     <i className="far fa-copy" style={{ fontSize: '0.6rem', opacity: 0.7 }} />
-                                                                                 </div>
-                                                                             ) : <span />}
+                                                                        {/* Card Number & Stamps Meta Row */}
+                                                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, marginTop: 1 }}>
+                                                                            {sc.card_number ? (
+                                                                                <div
+                                                                                    onClick={() => {
+                                                                                        navigator.clipboard.writeText(sc.card_number)
+                                                                                        toast.success(`Copied: ${sc.card_number}`)
+                                                                                    }}
+                                                                                    title="Click to copy Card Number"
+                                                                                    style={{
+                                                                                        display: 'inline-flex',
+                                                                                        alignItems: 'center',
+                                                                                        gap: 4,
+                                                                                        cursor: 'pointer',
+                                                                                        fontSize: '0.68rem',
+                                                                                        fontFamily: 'monospace',
+                                                                                        fontWeight: 600,
+                                                                                        color: 'var(--text-muted, #64748B)',
+                                                                                        background: '#FFFFFF',
+                                                                                        border: '1px solid #E2E8F0',
+                                                                                        borderRadius: 4,
+                                                                                        padding: '1px 5px'
+                                                                                    }}
+                                                                                >
+                                                                                    <span>#{sc.card_number}</span>
+                                                                                    <i className="far fa-copy" style={{ fontSize: '0.6rem', opacity: 0.7 }} />
+                                                                                </div>
+                                                                            ) : <span />}
 
-                                                                             <span
-                                                                                 style={{
-                                                                                     fontSize: '0.68rem',
-                                                                                     fontWeight: 700,
-                                                                                     color: '#047857',
-                                                                                     background: '#ECFDF5',
-                                                                                     border: '1px solid #A7F3D0',
-                                                                                     padding: '1px 6px',
-                                                                                     borderRadius: 4,
-                                                                                     display: 'inline-flex',
-                                                                                     alignItems: 'center',
-                                                                                     gap: 3
-                                                                                 }}
-                                                                             >
-                                                                                 <i className="fas fa-check-circle" style={{ fontSize: '0.6rem' }} />
-                                                                                 {collected} / {total} stamps
-                                                                             </span>
-                                                                         </div>
-                                                                     </div>
-                                                                 )
-                                                             })}
-                                                         </div>
+                                                                            <span
+                                                                                style={{
+                                                                                    fontSize: '0.68rem',
+                                                                                    fontWeight: 700,
+                                                                                    color: '#047857',
+                                                                                    background: '#ECFDF5',
+                                                                                    border: '1px solid #A7F3D0',
+                                                                                    padding: '1px 6px',
+                                                                                    borderRadius: 4,
+                                                                                    display: 'inline-flex',
+                                                                                    alignItems: 'center',
+                                                                                    gap: 3
+                                                                                }}
+                                                                            >
+                                                                                <i className="fas fa-check-circle" style={{ fontSize: '0.6rem' }} />
+                                                                                {collected} / {total} stamps
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                )
+                                                            })}
+                                                        </div>
 
-                                                         {/* Toggle button below cards when multiple and not expanded */}
-                                                         {stampCards.length > 1 && !isExpanded && (
-                                                             <button
-                                                                 type="button"
-                                                                 onClick={() => toggleExpandRow(cus.id)}
-                                                                 style={{
-                                                                     background: 'rgba(14, 136, 184, 0.08)',
-                                                                     border: '1px dashed rgba(14, 136, 184, 0.3)',
-                                                                     borderRadius: 6,
-                                                                     padding: '4px 8px',
-                                                                     color: 'var(--firstloop-primary, #0E88B8)',
-                                                                     fontSize: '0.73rem',
-                                                                     fontWeight: 700,
-                                                                     cursor: 'pointer',
-                                                                     display: 'inline-flex',
-                                                                     alignItems: 'center',
-                                                                     justifyContent: 'center',
-                                                                     gap: 5,
-                                                                     width: '100%'
-                                                                 }}
-                                                             >
-                                                                 <i className="fas fa-layer-group" style={{ fontSize: '0.68rem' }} />
-                                                                 <span>+{stampCards.length - 1} more card{stampCards.length - 1 > 1 ? 's' : ''} (click to view)</span>
-                                                             </button>
-                                                         )}
+                                                        {/* Toggle button below cards when multiple and not expanded */}
+                                                        {stampCards.length > 1 && !isExpanded && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => toggleExpandRow(cus.id)}
+                                                                style={{
+                                                                    background: 'rgba(14, 136, 184, 0.08)',
+                                                                    border: '1px dashed rgba(14, 136, 184, 0.3)',
+                                                                    borderRadius: 6,
+                                                                    padding: '4px 8px',
+                                                                    color: 'var(--firstloop-primary, #0E88B8)',
+                                                                    fontSize: '0.73rem',
+                                                                    fontWeight: 700,
+                                                                    cursor: 'pointer',
+                                                                    display: 'inline-flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center',
+                                                                    gap: 5,
+                                                                    width: '100%'
+                                                                }}
+                                                            >
+                                                                <i className="fas fa-layer-group" style={{ fontSize: '0.68rem' }} />
+                                                                <span>+{stampCards.length - 1} more card{stampCards.length - 1 > 1 ? 's' : ''} (click to view)</span>
+                                                            </button>
+                                                        )}
 
-                                                         {/* Collapse button below cards when expanded */}
-                                                         {stampCards.length > 1 && isExpanded && (
-                                                             <button
-                                                                 type="button"
-                                                                 onClick={() => toggleExpandRow(cus.id)}
-                                                                 style={{
-                                                                     background: '#F1F5F9',
-                                                                     border: '1px solid #CBD5E1',
-                                                                     borderRadius: 6,
-                                                                     padding: '3px 8px',
-                                                                     color: '#64748B',
-                                                                     fontSize: '0.72rem',
-                                                                     fontWeight: 700,
-                                                                     cursor: 'pointer',
-                                                                     display: 'inline-flex',
-                                                                     alignItems: 'center',
-                                                                     justifyContent: 'center',
-                                                                     gap: 4,
-                                                                     width: '100%'
-                                                                 }}
-                                                             >
-                                                                 <i className="fas fa-chevron-up" style={{ fontSize: '0.65rem' }} />
-                                                                 <span>Show less</span>
-                                                             </button>
-                                                         )}
-                                                     </div>
-                                                 )}
-                                             </td>
+                                                        {/* Collapse button below cards when expanded */}
+                                                        {stampCards.length > 1 && isExpanded && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => toggleExpandRow(cus.id)}
+                                                                style={{
+                                                                    background: '#F1F5F9',
+                                                                    border: '1px solid #CBD5E1',
+                                                                    borderRadius: 6,
+                                                                    padding: '3px 8px',
+                                                                    color: '#64748B',
+                                                                    fontSize: '0.72rem',
+                                                                    fontWeight: 700,
+                                                                    cursor: 'pointer',
+                                                                    display: 'inline-flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center',
+                                                                    gap: 4,
+                                                                    width: '100%'
+                                                                }}
+                                                            >
+                                                                <i className="fas fa-chevron-up" style={{ fontSize: '0.65rem' }} />
+                                                                <span>Show less</span>
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </td>
 
                                             {/* Actions */}
                                             <td style={{ padding: '14px 18px', textAlign: 'right', verticalAlign: 'top' }}>
@@ -862,6 +880,7 @@ export default function ReceptionistCustomerList() {
                 isOpen={qrModalOpen}
                 onClose={() => setQrModalOpen(false)}
                 onSuccess={() => fetchCustomers()}
+                branchId={receptionist?.user_branch_id || receptionist?.branch_id || ''}
             />
 
             {/* Phone/Customer Search Check-In Popup Modal */}

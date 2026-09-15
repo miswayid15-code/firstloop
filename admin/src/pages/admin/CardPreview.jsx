@@ -669,7 +669,7 @@ export default function CardPreview() {
             )}
 
             {/* ACTION SECTION: WHATSAPP (FOR STAFF/ADMIN/MERCHANT/RECEPTIONIST) & DOWNLOAD */}
-            <div style={{ width: '100%', maxWidth: 380, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ width: '100%', maxWidth: 580, display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {hasStaffToken && (
                     <div
                         style={{

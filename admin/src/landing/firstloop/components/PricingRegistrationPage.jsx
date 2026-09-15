@@ -199,7 +199,7 @@ export const PricingRegistrationPage = () => {
         document.documentElement.setAttribute('data-theme', 'firstloop');
         document.body.setAttribute('data-theme', 'firstloop');
 
-        toast.success(data.message || 'Registration successful!');
+        toast.success('Successfully registered! We will contact you soon.');
 
         if (registerMerchant) {
           registerMerchant({
@@ -208,9 +208,13 @@ export const PricingRegistrationPage = () => {
           });
         }
         setRegistrationSuccess(true);
-
-        // Immediate redirect to merchant dashboard
-        navigate('/merchant/dashboard');
+        setFormData({
+          fullName: '',
+          email: '',
+          phone: '',
+          countryCode: '+91',
+          password: ''
+        });
       } else {
         const errMsg = data.message || 'Registration failed';
         toast.error(errMsg);
@@ -458,19 +462,12 @@ export const PricingRegistrationPage = () => {
                   </div>
                   <h3 className="text-2xl font-black text-slate-900">Registration Successful!</h3>
                   <p className="text-sm text-slate-600 max-w-md mx-auto">
-                    Welcome to First Loop! Redirecting to your merchant dashboard...
+                    Thank you for signing up. Our team will contact you soon.
                   </p>
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
                     <button
-                      onClick={() => navigate('/merchant/dashboard')}
-                      className="px-8 py-3.5 rounded-full bg-gradient-to-r from-teal-600 to-sky-600 hover:from-teal-700 hover:to-sky-700 text-white font-extrabold text-xs uppercase tracking-wider transition-all shadow-lg shadow-teal-600/30 cursor-pointer flex items-center gap-2"
-                    >
-                      <Sparkles className="w-4 h-4" />
-                      <span>Go to Merchant Dashboard</span>
-                    </button>
-                    <button
                       onClick={() => setActiveTab('home')}
-                      className="px-6 py-3.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-xs uppercase tracking-wider transition-all cursor-pointer"
+                      className="px-8 py-3.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-md"
                     >
                       Return to Homepage
                     </button>

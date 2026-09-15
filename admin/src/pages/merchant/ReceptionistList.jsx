@@ -700,7 +700,7 @@ export default function ReceptionistList() {
                                                 <div>
                                                     <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.85rem", color: "var(--text-primary)", fontWeight: 600 }}>
                                                         <i className="fas fa-phone" style={{ fontSize: "0.75rem", color: "#059669" }} />
-                                                        {item.country_code && item.phone ? `+${item.country_code} ${item.phone}` : "-"}
+                                                        {item.country_code && item.phone ? `${item.country_code} ${item.phone}` : "-"}
                                                     </div>
                                                     {item.email && (
                                                         <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.78rem", color: "var(--text-muted)", marginTop: 3 }}>

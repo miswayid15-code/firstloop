@@ -293,7 +293,7 @@ export const LandingSections = () => {
       {/* SECTION 6: Final CTA Section */}
       <section className="py-20 hero-navy-bg text-white">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
-          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight">
+          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-white">
             Starting with First Loop is easy and fast
           </h2>
           <p className="text-lg text-slate-200 max-w-2xl mx-auto font-normal">

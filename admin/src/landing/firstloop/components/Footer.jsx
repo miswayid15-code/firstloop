@@ -1,9 +1,11 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Heart } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import mainLogo from '../assets/mainlogo.png';
 
 export const Footer = () => {
+  const navigate = useNavigate();
   const { setActiveTab, navigateToLegal, navigateToSignup } = useApp();
 
   return (
@@ -23,6 +25,10 @@ export const Footer = () => {
                 alt="First Loop Logo" 
                 className="h-12 sm:h-14 w-auto object-contain hover:scale-105 transition-transform" 
               />
+                     <div className="flex items-center text-lg sm:text-xl font-black tracking-tight">
+              <span className="text-slate-950">First</span>
+              <span className="text-teal-600">Loop</span>
+            </div>
             </div>
             <p className="text-xs text-slate-400 leading-relaxed">
               Create and manage digital stamp cards in Apple Wallet & Google Wallet.
@@ -36,7 +42,15 @@ export const Footer = () => {
               <li><a href="#pricing" onClick={() => setActiveTab('home')} className="hover:text-teal-400 transition-colors">Pricing Plans</a></li>
               <li><a href="#dashboard-showcase" onClick={() => setActiveTab('home')} className="hover:text-teal-400 transition-colors">Dashboard Showcase</a></li>
               <li><button onClick={() => navigateToSignup('growth', 'monthly')} className="hover:text-teal-400 transition-colors text-left cursor-pointer">Plans</button></li>
-              {/* <li><button onClick={() => setActiveTab('dashboard')} className="hover:text-teal-400 transition-colors text-left cursor-pointer">Sample Card Design</button></li> */}
+              {/* <li>
+                <button 
+                  onClick={() => navigate('/merchant/login')} 
+                  className="hover:text-teal-400 transition-colors text-left cursor-pointer text-teal-400 font-bold flex items-center gap-1.5"
+                >
+                  <span>Merchant Login</span>
+                  <span>&rarr;</span>
+                </button>
+              </li> */}
             </ul>
           </div>
 
@@ -100,6 +114,13 @@ export const Footer = () => {
               className="text-slate-400 hover:text-teal-400 transition-colors cursor-pointer"
             >
               Privacy Policy
+            </button>
+            <span className="text-slate-700">•</span>
+            <button 
+              onClick={() => navigate('/panel/merchant/login')}
+              className="text-slate-400 hover:text-teal-400 transition-colors cursor-pointer font-semibold"
+            >
+              Merchant Login
             </button>
           </div>
         </div>

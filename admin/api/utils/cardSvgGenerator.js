@@ -272,7 +272,7 @@ export async function generateCardPngBuffer(card) {
             <g transform="translate(${width - 44}, ${height - 24})">
                 <text x="0" y="0" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" 
                       font-size="19" font-weight="600" fill="${textColor}" opacity="0.9" text-anchor="end">
-                    powered by ${flLogoBase64 ? ' ' : ''}<tspan font-weight="800">firstloop.co.in</tspan>
+                    powered by ${flLogoBase64 ? ' ' : ''}<tspan font-weight="800">firstloop</tspan>
                 </text>
             </g>
         </g>

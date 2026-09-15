@@ -35,7 +35,12 @@ export default function AddCardCustomer() {
     const [branch, setBranch] = useState(null);
     const [branchLoading, setBranchLoading] = useState(false);
 
-    // Customer Form State
+    // Customer Search & Form State
+    const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || searchParams.get("email") || searchParams.get("phone") || "");
+    const [searchResults, setSearchResults] = useState([]);
+    const [searchPerformed, setSearchPerformed] = useState(false);
+    const [selectedCustomerObj, setSelectedCustomerObj] = useState(null);
+
     const [email, setEmail] = useState(searchParams.get("email") || "");
     const [customerName, setCustomerName] = useState("");
     const [phone, setPhone] = useState("");
@@ -114,63 +119,103 @@ export default function AddCardCustomer() {
         }
     }, [cardType, stampCardsList, membershipCardsList]);
 
-    // Lookup customer logic
-    const fetchCheckCustomer = async (searchEmail) => {
-        const emailToLookup = (searchEmail || email).trim().toLowerCase();
-        if (!emailToLookup) return null;
+    // Lookup customer logic using search
+    const handleSearchCustomer = async (customTerm) => {
+        const q = (typeof customTerm === "string" ? customTerm : searchQuery).trim();
+        if (!q) {
+            toast.error("Please enter a customer name, email, or phone number to search");
+            return;
+        }
+
+        setIsSearching(true);
+        setSearchPerformed(true);
+        setSelectedCustomerObj(null);
 
         try {
-            const response = await API.post("firstloop/customer/check-customer", { email: emailToLookup });
-            if (response?.data?.status === 1) {
-                const cust = response.data.customer || response.data.data || {};
-                if (cust.name) setCustomerName(cust.name);
-                if (cust.id) setCustomerId(cust.id);
-                if (cust.phone) setPhone(String(cust.phone || ''));
-                const rawCC = cust.country_code ?? cust.countryCode;
-                if (rawCC != null && rawCC !== '') {
-                    const strCC = String(rawCC).trim();
-                    setCountryCode(strCC.startsWith("+") ? strCC : `+${strCC}`);
-                }
-                if (cust.email) setEmail(cust.email);
-                setPassword("");
+            const response = await API.post("firstloop/customer/check-customer", { search: q });
+            const resData = response?.data;
+            const custList = Array.isArray(resData?.data)
+                ? resData.data
+                : (resData?.customer ? [resData.customer] : (resData?.data ? [resData.data] : []));
 
-                setCustomerStatus("Existing Customer");
-                setEmailChecked(true);
-                toast.success(`Found customer profile: ${cust.name || emailToLookup}`);
-                return cust;
+            if (resData?.status === 1 && custList.length > 0) {
+                setSearchResults(custList);
+                toast.success(`Found ${custList.length} customer${custList.length > 1 ? 's' : ''}`);
             } else {
-                setCustomerStatus("New Customer");
-                setEmailChecked(true);
-                setCustomerId("");
-                setCustomerName("");
-                setPhone("");
-                setPassword("");
-                toast.success("Ready to register new customer profile");
-                return null;
+                setSearchResults([]);
+                toast("No matching customers found. You can register as a new customer.", { icon: "ℹ️" });
             }
         } catch (error) {
-            console.log("Error checking customer from API:", error);
-
-            setCustomerStatus("New Customer");
-            setEmailChecked(true);
-            setCustomerId("");
-            setPassword("");
-            toast.success("Ready to register as new customer");
-            return null;
+            console.error("Error checking customer from API:", error);
+            setSearchResults([]);
+            toast.error("Error searching for customer");
+        } finally {
+            setIsSearching(false);
         }
     };
 
-    // Auto lookup customer if email or phone is passed via URL query param
-    useEffect(() => {
-        const queryEmail = searchParams.get("email");
-        if (queryEmail && queryEmail.trim()) {
-            const clean = queryEmail.trim().toLowerCase();
-            setEmail(clean);
-            fetchCheckCustomer(clean);
+    const handleSelectCustomer = (cust) => {
+        if (!cust) return;
+        setSelectedCustomerObj(cust);
+        setCustomerId(cust.id || "");
+        setCustomerName(cust.name || "");
+        setEmail(cust.email || "");
+        setPhone(cust.phone ? String(cust.phone) : "");
+        const rawCC = cust.country_code ?? cust.countryCode;
+        if (rawCC != null && rawCC !== "") {
+            const strCC = String(rawCC).trim();
+            setCountryCode(strCC.startsWith("+") ? strCC : `+${strCC}`);
+        } else {
+            setCountryCode("+91");
         }
+        setPassword("");
+        setCustomerStatus("Existing Customer");
+        setEmailChecked(true);
+        toast.success(`Selected customer: ${cust.name || cust.email || cust.id}`);
+    };
+
+    const handleResetCustomer = () => {
+        setSelectedCustomerObj(null);
+        setCustomerId("");
+        setCustomerName("");
+        setEmail("");
+        setPhone("");
+        setPassword("");
+        setCustomerStatus("New Customer");
+        setEmailChecked(false);
+        setSearchResults([]);
+        setSearchPerformed(false);
+    };
+
+    const handleStartNewCustomer = () => {
+        setSelectedCustomerObj(null);
+        setCustomerId("");
+        setCustomerStatus("New Customer");
+        setEmailChecked(true);
+        setPassword("");
+
+        const q = searchQuery.trim();
+        if (q.includes("@")) {
+            setEmail(q.toLowerCase());
+        } else if (/^\d+$/.test(q)) {
+            setPhone(q);
+        } else if (q) {
+            setCustomerName(q);
+        }
+        toast.success("Ready to register new customer profile");
+    };
+
+    // Auto lookup customer if search, email, or phone is passed via URL query param
+    useEffect(() => {
+        const querySearch = searchParams.get("search");
+        const queryEmail = searchParams.get("email");
         const queryPhone = searchParams.get("phone");
-        if (queryPhone && queryPhone.trim()) {
-            setPhone(queryPhone.trim());
+        const term = querySearch || queryEmail || queryPhone;
+
+        if (term && term.trim()) {
+            const clean = term.trim();
+            setSearchQuery(clean);
+            handleSearchCustomer(clean);
         }
     }, [searchParams]);
 
@@ -208,78 +253,6 @@ export default function AddCardCustomer() {
         }
     };
 
-    // Trigger lookup from input button or Enter key
-const handleCheckEmail = async (customEmail) => {
-    const emailToLookup = (
-        typeof customEmail === "string" ? customEmail : email
-    ).trim().toLowerCase();
-
-    if (!emailToLookup) {
-        toast.error("Please enter a customer email address");
-        return;
-    }
-
-    // Basic email format validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    if (!emailRegex.test(emailToLookup)) {
-        toast.error(
-            "Please enter a valid email address (e.g. customer@gmail.com)"
-        );
-        return;
-    }
-
-    const [username, domain] = emailToLookup.split("@");
-
-    // Common email providers
-    const allowedDomains = [
-        "gmail.com",
-        "googlemail.com",
-        "zoho.com",
-        "zohomail.com",
-        "outlook.com",
-        "hotmail.com",
-        "live.com",
-        "yahoo.com",
-        "icloud.com"
-    ];
-
-    // If the domain looks like a common provider but is misspelled,
-    // reject it instead of treating it as a custom domain.
-    const commonProviders = [
-        "gmail",
-        "googlemail",
-        "zoho",
-        "zohomail",
-        "outlook",
-        "hotmail",
-        "live",
-        "yahoo",
-        "icloud"
-    ];
-
-    const domainName = domain.split(".")[0];
-
-    if (
-        commonProviders.includes(domainName) &&
-        !allowedDomains.includes(domain)
-    ) {
-        toast.error(`Please check the email domain spelling: ${domain}`);
-        return;
-    }
-
-    // Continue with valid email
-    setIsSearching(true);
-
-    try {
-        await fetchCheckCustomer(emailToLookup);
-    } catch (err) {
-        console.error("Lookup error:", err);
-    } finally {
-        setIsSearching(false);
-    }
-};
-
     // Quick fill from demo chip
     const handleSelectDemoProfile = (demo) => {
         setEmail(demo.email);
@@ -314,18 +287,15 @@ const handleCheckEmail = async (customEmail) => {
             toast.error("Customer name is required");
             return;
         }
-        if (!phone.trim()) {
-            toast.error("Customer phone number is required");
-            return;
-        }
+      
         if (!selectedCardId) {
             toast.error("Please select a card to issue");
             return;
         }
 
         const isNewCustomer = customerStatus === "New Customer" || !customerId;
-        if (isNewCustomer && !password.trim()) {
-            toast.error("Password is required for new customer");
+        if (isNewCustomer && !phone.trim()) {
+            toast.error("Phone number is required for new customer");
             return;
         }
 
@@ -503,12 +473,12 @@ const handleCheckEmail = async (customEmail) => {
                                         Step 1: Customer Profile
                                     </h3>
                                     <span style={{ fontSize: "0.78rem", color: "#64748B" }}>
-                                        Enter email to look up existing customer or register a new one
+                                        Search customer by name, email, or phone to find existing profile or register a new one
                                     </span>
                                 </div>
                             </div>
 
-                            {emailChecked && (
+                            {(selectedCustomerObj || emailChecked) && (
                                 <span
                                     style={{
                                         fontSize: "0.75rem",
@@ -528,15 +498,15 @@ const handleCheckEmail = async (customEmail) => {
                             )}
                         </div>
 
-                        {/* Customer Email & Search */}
-                        <div style={{ marginBottom: 14 }}>
+                        {/* Customer Search / Lookup Input */}
+                        <div style={{ marginBottom: 16 }}>
                             <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 600, color: "#475569", marginBottom: 6 }}>
-                                Customer Email Address <span style={{ color: "#EF4444" }}>*</span>
+                                Search / Lookup Customer
                             </label>
                             <div style={{ display: "flex", gap: 10 }}>
                                 <div style={{ position: "relative", flex: 1 }}>
                                     <i
-                                        className="fas fa-envelope"
+                                        className="fas fa-search"
                                         style={{
                                             position: "absolute",
                                             left: 14,
@@ -547,24 +517,18 @@ const handleCheckEmail = async (customEmail) => {
                                         }}
                                     />
                                     <input
-                                        type="email"
-                                        name="email"
-                                        id="customer-email-input"
-                                        autoComplete="email"
-                                        value={email}
-                                        onChange={(e) => {
-                                            const cleanValue = e.target.value.replace(/\s+/g, '');
-                                            setEmail(cleanValue);
-                                            setEmailChecked(false);
-                                        }}
+                                        type="text"
+                                        name="customer-search"
+                                        id="customer-search-input"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
                                         onKeyDown={(e) => {
                                             if (e.key === "Enter") {
                                                 e.preventDefault();
-                                                handleCheckEmail();
+                                                handleSearchCustomer();
                                             }
                                         }}
-                                        placeholder="e.g. customer@example.com"
-                                        required
+                                        placeholder="Search by name, email, or phone (e.g. minsway01@gmail.com, krj, 8608862409)..."
                                         style={{
                                             width: "100%",
                                             padding: "11px 14px 11px 40px",
@@ -580,18 +544,18 @@ const handleCheckEmail = async (customEmail) => {
                                 </div>
                                 <button
                                     type="button"
-                                    onClick={() => handleCheckEmail()}
-                                    disabled={isSearching || !email.trim()}
+                                    onClick={() => handleSearchCustomer()}
+                                    disabled={isSearching || !searchQuery.trim()}
                                     style={{
-                                        padding: "0 22px",
+                                        padding: "0 20px",
                                         borderRadius: 10,
                                         border: "none",
                                         background: "linear-gradient(135deg, #0E88B8 0%, #0284C7 100%)",
                                         color: "#FFFFFF",
                                         fontSize: "0.88rem",
                                         fontWeight: 700,
-                                        cursor: isSearching || !email.trim() ? "not-allowed" : "pointer",
-                                        opacity: isSearching || !email.trim() ? 0.65 : 1,
+                                        cursor: isSearching || !searchQuery.trim() ? "not-allowed" : "pointer",
+                                        opacity: isSearching || !searchQuery.trim() ? 0.65 : 1,
                                         display: "inline-flex",
                                         alignItems: "center",
                                         gap: 8,
@@ -610,10 +574,300 @@ const handleCheckEmail = async (customEmail) => {
                                         </>
                                     )}
                                 </button>
+                                <button
+                                    type="button"
+                                    onClick={handleStartNewCustomer}
+                                    title="Register a new customer profile"
+                                    style={{
+                                        padding: "0 14px",
+                                        borderRadius: 10,
+                                        border: "1px solid #CBD5E1",
+                                        backgroundColor: "#F8FAFC",
+                                        color: "#0E88B8",
+                                        fontSize: "0.84rem",
+                                        fontWeight: 700,
+                                        cursor: "pointer",
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        gap: 6,
+                                        flexShrink: 0
+                                    }}
+                                >
+                                    <i className="fas fa-user-plus"></i>
+                                    <span>+ New</span>
+                                </button>
                             </div>
                         </div>
 
+                        {/* SELECTABLE LIST OF MATCHING CUSTOMERS */}
+                        {!selectedCustomerObj && searchPerformed && searchResults.length > 0 && (
+                            <div style={{ marginBottom: 18, border: "1.5px solid #BAE6FD", borderRadius: 12, backgroundColor: "#F0F9FF", padding: 14 }}>
+                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                                    <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#0369A1", display: "flex", alignItems: "center", gap: 6 }}>
+                                        <i className="fas fa-users"></i>
+                                        Found {searchResults.length} Matching Customer{searchResults.length > 1 ? "s" : ""}:
+                                    </span>
+                                    <span style={{ fontSize: "0.74rem", color: "#0284C7" }}>
+                                        Click a customer below to select
+                                    </span>
+                                </div>
+                                <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 250, overflowY: "auto" }}>
+                                    {searchResults.map((cust) => (
+                                        <div
+                                            key={cust.id}
+                                            onClick={() => handleSelectCustomer(cust)}
+                                            style={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "space-between",
+                                                padding: "10px 14px",
+                                                backgroundColor: "#FFFFFF",
+                                                borderRadius: 10,
+                                                border: "1px solid #E0F2FE",
+                                                cursor: "pointer",
+                                                transition: "all 0.15s ease",
+                                                boxShadow: "0 1px 3px rgba(0,0,0,0.03)"
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.borderColor = "#0E88B8";
+                                                e.currentTarget.style.backgroundColor = "#F8FAFC";
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.borderColor = "#E0F2FE";
+                                                e.currentTarget.style.backgroundColor = "#FFFFFF";
+                                            }}
+                                        >
+                                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                                <div style={{
+                                                    width: 36,
+                                                    height: 36,
+                                                    borderRadius: "50%",
+                                                    backgroundColor: "#E0F2FE",
+                                                    color: "#0369A1",
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
+                                                    fontWeight: 800,
+                                                    fontSize: "0.88rem"
+                                                }}>
+                                                    {(cust.name || cust.email || "C").charAt(0).toUpperCase()}
+                                                </div>
+                                                <div>
+                                                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                                        <strong style={{ fontSize: "0.88rem", color: "#0F172A" }}>
+                                                            {cust.name || "Customer"}
+                                                        </strong>
+                                                        <span style={{ fontSize: "0.7rem", backgroundColor: "#F1F5F9", color: "#475569", padding: "1px 6px", borderRadius: 4, fontWeight: 700 }}>
+                                                            ID #{cust.id}
+                                                        </span>
+                                                    </div>
+                                                    <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 3, fontSize: "0.78rem", color: "#64748B" }}>
+                                                        {cust.email && (
+                                                            <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                                                                <i className="fas fa-envelope" style={{ fontSize: "0.7rem" }} />
+                                                                {cust.email}
+                                                            </span>
+                                                        )}
+                                                        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                                                            <i className="fas fa-phone-alt" style={{ fontSize: "0.7rem" }} />
+                                                            {cust.phone ? `${cust.country_code ? `+${cust.country_code} ` : ''}${cust.phone}` : <em style={{ color: "#94A3B8" }}>No phone</em>}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                className="btn btn-sm"
+                                                style={{
+                                                    backgroundColor: "#0E88B8",
+                                                    color: "#FFFFFF",
+                                                    borderRadius: 8,
+                                                    padding: "5px 12px",
+                                                    fontSize: "0.78rem",
+                                                    fontWeight: 700,
+                                                    border: "none",
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                    gap: 5
+                                                }}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleSelectCustomer(cust);
+                                                }}
+                                            >
+                                                <span>Select</span>
+                                                <i className="fas fa-arrow-right" style={{ fontSize: "0.7rem" }} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div style={{ marginTop: 10, textAlign: "right" }}>
+                                    <button
+                                        type="button"
+                                        onClick={handleStartNewCustomer}
+                                        style={{
+                                            background: "none",
+                                            border: "none",
+                                            color: "#0369A1",
+                                            fontSize: "0.78rem",
+                                            fontWeight: 700,
+                                            cursor: "pointer",
+                                            textDecoration: "underline",
+                                            padding: 0
+                                        }}
+                                    >
+                                        None of these? Register as a new customer instead →
+                                    </button>
+                                </div>
+                            </div>
+                        )}
 
+                        {/* NO CUSTOMERS FOUND STATE */}
+                        {!selectedCustomerObj && searchPerformed && searchResults.length === 0 && (
+                            <div style={{ marginBottom: 18, border: "1px dashed #CBD5E1", borderRadius: 12, backgroundColor: "#F8FAFC", padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+                                <div>
+                                    <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#334155" }}>
+                                        No existing customer found for "{searchQuery}"
+                                    </div>
+                                    <div style={{ fontSize: "0.78rem", color: "#64748B", marginTop: 2 }}>
+                                        You can register a new customer profile below.
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={handleStartNewCustomer}
+                                    style={{
+                                        backgroundColor: "#0E88B8",
+                                        color: "#FFFFFF",
+                                        borderRadius: 8,
+                                        padding: "6px 14px",
+                                        fontSize: "0.8rem",
+                                        fontWeight: 700,
+                                        border: "none",
+                                        cursor: "pointer",
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        gap: 6
+                                    }}
+                                >
+                                    <i className="fas fa-user-plus" />
+                                    <span>Register New Customer</span>
+                                </button>
+                            </div>
+                        )}
+
+                        {/* SELECTED CUSTOMER PROFILE BANNER */}
+                        {selectedCustomerObj && (
+                            <div style={{ marginBottom: 18, border: "1.5px solid #86EFAC", borderRadius: 12, backgroundColor: "#F0FDF4", padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                    <div style={{
+                                        width: 38,
+                                        height: 38,
+                                        borderRadius: "50%",
+                                        backgroundColor: "#DCFCE7",
+                                        color: "#15803D",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        fontSize: "1.1rem"
+                                    }}>
+                                        <i className="fas fa-check-circle"></i>
+                                    </div>
+                                    <div>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                            <strong style={{ fontSize: "0.92rem", color: "#14532D" }}>
+                                                {selectedCustomerObj.name || "Customer"}
+                                            </strong>
+                                            <span style={{ fontSize: "0.7rem", backgroundColor: "#DCFCE7", color: "#15803D", padding: "1px 6px", borderRadius: 4, fontWeight: 700 }}>
+                                                ID #{selectedCustomerObj.id}
+                                            </span>
+                                            <span style={{ fontSize: "0.7rem", backgroundColor: "#BBF7D0", color: "#166534", padding: "1px 6px", borderRadius: 4, fontWeight: 700 }}>
+                                                Existing Customer
+                                            </span>
+                                        </div>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 3, fontSize: "0.78rem", color: "#166534" }}>
+                                            {selectedCustomerObj.email && (
+                                                <span><i className="fas fa-envelope" style={{ marginRight: 4 }} />{selectedCustomerObj.email}</span>
+                                            )}
+                                            <span><i className="fas fa-phone-alt" style={{ marginRight: 4 }} />{selectedCustomerObj.phone ? `${selectedCustomerObj.country_code ? `+${selectedCustomerObj.country_code} ` : ''}${selectedCustomerObj.phone}` : 'No phone'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={handleResetCustomer}
+                                    style={{
+                                        backgroundColor: "#FFFFFF",
+                                        color: "#374151",
+                                        border: "1px solid #D1D5DB",
+                                        borderRadius: 8,
+                                        padding: "6px 12px",
+                                        fontSize: "0.78rem",
+                                        fontWeight: 700,
+                                        cursor: "pointer",
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        gap: 5
+                                    }}
+                                >
+                                    <i className="fas fa-exchange-alt" />
+                                    <span>Change Customer</span>
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Customer Email Address */}
+                        <div style={{ marginBottom: 14 }}>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 600, color: "#475569", margin: 0 }}>
+                                    Customer Email Address <span style={{ color: "#EF4444" }}>*</span>
+                                </label>
+                                {customerStatus === "Existing Customer" && (
+                                    <span style={{ fontSize: "0.7rem", color: "#64748B", fontWeight: 500 }}>
+                                        <i className="fas fa-lock" style={{ fontSize: "0.65rem", marginRight: 4 }}></i>Locked
+                                    </span>
+                                )}
+                            </div>
+                            <div style={{ position: "relative" }}>
+                                <i
+                                    className="fas fa-envelope"
+                                    style={{
+                                        position: "absolute",
+                                        left: 14,
+                                        top: "50%",
+                                        transform: "translateY(-50%)",
+                                        color: customerStatus === "Existing Customer" ? "#94A3B8" : "#0E88B8",
+                                        fontSize: "0.88rem"
+                                    }}
+                                />
+                                <input
+                                    type="email"
+                                    name="email"
+                                    id="customer-email-input"
+                                    autoComplete="email"
+                                    value={email}
+                                    readOnly={customerStatus === "Existing Customer"}
+                                    onChange={(e) => {
+                                        const cleanValue = e.target.value.replace(/\s+/g, '');
+                                        setEmail(cleanValue);
+                                    }}
+                                    placeholder={customerStatus === "Existing Customer" ? "Auto-filled from profile" : "e.g. customer@example.com"}
+                                    required
+                                    style={{
+                                        width: "100%",
+                                        padding: "10px 14px 10px 38px",
+                                        borderRadius: 10,
+                                        border: "1px solid #CBD5E1",
+                                        backgroundColor: customerStatus === "Existing Customer" ? "#F8FAFC" : "#FFFFFF",
+                                        color: customerStatus === "Existing Customer" ? "#475569" : "#1E293B",
+                                        cursor: customerStatus === "Existing Customer" ? "not-allowed" : "text",
+                                        fontSize: "0.88rem",
+                                        outline: "none",
+                                        boxSizing: "border-box"
+                                    }}
+                                />
+                            </div>
+                        </div>
 
                         {/* Customer Full Name & Phone Number */}
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, position: "relative", zIndex: 5 }}>
@@ -663,14 +917,20 @@ const handleCheckEmail = async (customEmail) => {
                             </div>
 
                             <div style={{ position: "relative", zIndex: 10 }}>
-                                {customerStatus === "Existing Customer" && (
+                                {customerStatus === "Existing Customer" && Boolean(selectedCustomerObj?.phone) ? (
                                     <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: -18, position: "relative", zIndex: 3 }}>
                                         <span style={{ fontSize: "0.7rem", color: "#64748B", fontWeight: 500 }}>
                                             <i className="fas fa-lock" style={{ fontSize: "0.65rem", marginRight: 4 }}></i>Locked
                                         </span>
                                     </div>
+                                ) : customerStatus === "Existing Customer" && (
+                                    <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: -18, position: "relative", zIndex: 3 }}>
+                                        <span style={{ fontSize: "0.7rem", color: "#0284C7", fontWeight: 600 }}>
+                                            <i className="fas fa-plus-circle" style={{ fontSize: "0.65rem", marginRight: 4 }}></i>Enter phone
+                                        </span>
+                                    </div>
                                 )}
-                                <div style={customerStatus === "Existing Customer" ? { pointerEvents: "none", opacity: 0.85 } : {}}>
+                                <div style={customerStatus === "Existing Customer" && Boolean(selectedCustomerObj?.phone) ? { pointerEvents: "none", opacity: 0.85 } : {}}>
                                     <PhoneNumberField
                                         value={phone}
                                         countryCode={countryCode}
@@ -687,7 +947,7 @@ const handleCheckEmail = async (customEmail) => {
                         </div>
 
                         {/* Password Field for New Customer */}
-                        {(customerStatus === "New Customer" || !customerId) && (
+                        {/* {(customerStatus === "New Customer" || !customerId) && (
                             <div style={{ marginTop: 16 }}>
                                 <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 600, color: "#475569", marginBottom: 6 }}>
                                     Account Password <span style={{ color: "#EF4444" }}>*</span>
@@ -743,7 +1003,7 @@ const handleCheckEmail = async (customEmail) => {
                                     </button>
                                 </div>
                             </div>
-                        )}
+                        )} */}
                     </div>
 
                     {/* CARD 2: CHOOSE CARD TYPE */}

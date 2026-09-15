@@ -1,50 +1,89 @@
-const { Merchant, Coupon, RefreshToken, Branch, Receptionist, MerchantFp, BranchTiming, UserNotificationToken, CouponApplied, Notification, Stampcard, StampLevel, MembershipCards, CustomerCard, Customer,
-    CustomerStampLevel, } = require('../../models');
+const {
+    Merchant,
+    Coupon,
+    RefreshToken,
+    Branch,
+    Receptionist,
+    MerchantFp,
+    BranchTiming,
+    UserNotificationToken,
+    CouponApplied,
+    Notification,
+    Stampcard,
+    StampLevel,
+    MembershipCards,
+    CustomerCard,
+    Customer,
+    CustomerStampLevel,
+} = require('../../models');
 const bcrypt = require('bcryptjs');
-const { parsePhoneNumber } = require('libphonenumber-js');
+const {
+    parsePhoneNumber
+} = require('libphonenumber-js');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const admin = require('../../config/firebase');
 const crypto = require('crypto');
 const sendMail = require('../../helpers/sendMail');
-const { otpTemplate } = require('../../helpers/mailTemplate');
+const {
+    otpTemplate
+} = require('../../helpers/mailTemplate');
 const ResetsTemplate = require('../../helpers/ResetsTemplate');
 const RegisterTemplate = require('../../helpers/RegisterTemplate');
 
 // const mapFiles = require('../../helpers/merchantFileMapper');
 const baseUrl = process.env.APP_URL;
-const { Op } = require('sequelize');
+const { Sequelize, Op } = require("sequelize");
 const fs = require('fs');
 const path = require('path');
-const { sendPushNotification } = require("../../helpers/notificationHelper");
+const {
+    sendPushNotification
+} = require("../../helpers/notificationHelper");
 
 
 
 exports.login = async (req, res) => {
     try {
-        const { rep_id, password } = req.body;
+        const {
+            rep_id,
+            password
+        } = req.body;
 
-        const receptionist = await Receptionist.findOne({ where: { rep_id } });
+        const receptionist = await Receptionist.findOne({
+            where: {
+                rep_id
+            }
+        });
 
         if (!receptionist) {
-            return res.json({ status: 0, message: "Invalid Reception Id" });
+            return res.json({
+                status: 0,
+                message: "Invalid Reception Id"
+            });
         }
 
         const match = await bcrypt.compare(password, receptionist.password);
 
         if (!match) {
-            return res.json({ status: 0, message: "Invalid password" });
+            return res.json({
+                status: 0,
+                message: "Invalid password"
+            });
         }
-        const branch = await Branch.findOne({ where: { id: receptionist.branch_id } });
+        const branch = await Branch.findOne({
+            where: {
+                id: receptionist.branch_id
+            }
+        });
 
-        const refreshToken = jwt.sign(
-            {
-                id: receptionist.id,
-                user_type: "receptionist",
-                token_type: "refresh",
-            },
-            process.env.JWT_REFRESH_SECRET,
-            { expiresIn: "30d" }
+        const refreshToken = jwt.sign({
+            id: receptionist.id,
+            user_type: "receptionist",
+            token_type: "refresh",
+        },
+            process.env.JWT_REFRESH_SECRET, {
+            expiresIn: "30d"
+        }
         );
 
         await RefreshToken.create({
@@ -56,15 +95,15 @@ exports.login = async (req, res) => {
         });
 
         // Access Token - 1 minute
-        const accessToken = jwt.sign(
-            {
-                id: receptionist.id,
-                rep_id: receptionist.rep_id,
-                user_type: "receptionist",
-                token_type: "access",
-            },
-            process.env.JWT_SECRET,
-            { expiresIn: "10d" }
+        const accessToken = jwt.sign({
+            id: receptionist.id,
+            rep_id: receptionist.rep_id,
+            user_type: "receptionist",
+            token_type: "access",
+        },
+            process.env.JWT_SECRET, {
+            expiresIn: "10d"
+        }
         );
 
         return res.json({
@@ -106,7 +145,10 @@ exports.logout = async (req, res) => {
         });
 
     } catch (err) {
-        return res.json({ status: 0, message: "Error" });
+        return res.json({
+            status: 0,
+            message: "Error"
+        });
     }
 };
 
@@ -249,13 +291,55 @@ exports.dashboard = async (req, res) => {
                 where: {
                     merchant_card_id: {
                         [Op.in]: linkedStampCardIds
-                    }
+                    },
+                    branch_id: branch_id
                 },
                 distinct: true,
                 col: "customer_id"
             });
 
         }
+
+
+
+        const repeat_customer_data = await CustomerCard.findAll({
+            where: {
+                branch_id: branch_id
+            },
+
+            attributes: [
+                "customer_id",
+                [
+                    Sequelize.fn(
+                        "COUNT",
+                        Sequelize.col("CustomerStampLevels.id")
+                    ),
+                    "transaction_count"
+                ]
+            ],
+
+            include: [{
+                model: CustomerStampLevel,
+                as: "CustomerStampLevels",
+                attributes: [],
+                where: {
+                    status: 1
+                },
+                required: true
+            }],
+
+            group: [
+                "CustomerCard.customer_id"
+            ],
+
+            having: Sequelize.literal(
+                'COUNT("CustomerStampLevels"."id") > 1'
+            ),
+
+            raw: true
+        });
+
+        const total_repeat_customer = repeat_customer_data.length;
 
         // ---------------------------------
         // TODAY REPORT
@@ -272,42 +356,40 @@ exports.dashboard = async (req, res) => {
                 "title"
             ],
 
-            include: [
-                {
-                    model: Customer,
-                    as: "Customer",
-                    attributes: [
-                        "name",
-                        "email",
-                        "phone",
-                        "country_code"
-                    ]
+            include: [{
+                model: Customer,
+                as: "Customer",
+                attributes: [
+                    "name",
+                    "email",
+                    "phone",
+                    "country_code"
+                ]
+            },
+            {
+                model: CustomerStampLevel,
+                as: "CustomerStampLevels",
+                attributes: [
+                    "payment_type",
+                    "paid_amt",
+                    "paid_date"
+                ],
+                where: {
+                    status: 1
                 },
-                {
-                    model: CustomerStampLevel,
-                    as: "CustomerStampLevels",
-                    attributes: [
-                        "payment_type",
-                        "paid_amt",
-                        "paid_date"
-                    ],
-                    where: {
-                        status: 1
-                    },
-                    required: true
-                }
-            ],
+                required: true
+            }],
 
             order: [
-                [
-                    { model: CustomerStampLevel, as: "CustomerStampLevels" },
+                [{
+                    model: CustomerStampLevel,
+                    as: "CustomerStampLevels"
+                },
                     "paid_date",
                     "DESC"
                 ]
             ]
         });
-
-
 
         const today_report = today_report_data
             .flatMap(card => {
@@ -354,12 +436,13 @@ exports.dashboard = async (req, res) => {
 
             total_linked_customer: total_linked_customer || 0,
 
+            total_repeat_customer: total_repeat_customer || 0,
+
             total_stamp_card: total_stamp_card || 0,
 
             total_membership_card: total_membership_card || 0,
 
-            total_available_stamp_card:
-                total_available_stamp_card || 0,
+            total_available_stamp_card: total_available_stamp_card || 0,
 
             today_report: today_report || []
         });
@@ -375,9 +458,13 @@ exports.dashboard = async (req, res) => {
         });
     }
 };
+
 exports.scan_qr = async (req, res) => {
     try {
-        const { qr_code } = req.body;
+        const {
+            qr_code,
+            br_id
+        } = req.body;
 
         // ---------------------------------
         // VALIDATE QR CODE
@@ -387,6 +474,17 @@ exports.scan_qr = async (req, res) => {
             return res.status(400).json({
                 status: 0,
                 message: "QR code is required"
+            });
+        }
+
+        // ---------------------------------
+        // VALIDATE BRANCH ID
+        // ---------------------------------
+
+        if (!br_id) {
+            return res.status(400).json({
+                status: 0,
+                message: "Branch ID is required"
             });
         }
 
@@ -402,6 +500,7 @@ exports.scan_qr = async (req, res) => {
             attributes: [
                 "id",
                 "customer_id",
+                "merchant_card_id",
                 "card_number",
                 "card_type",
                 "title",
@@ -419,6 +518,27 @@ exports.scan_qr = async (req, res) => {
             return res.status(404).json({
                 status: 0,
                 message: "Customer card not found"
+            });
+        }
+
+        // ---------------------------------
+        // FIND STAMP CARD
+        // ---------------------------------
+
+        const stamp_card = await Stampcard.findOne({
+            where: {
+                id: customer_card.merchant_card_id,
+
+                branch_ids: {
+                    [Op.contains]: [Number(br_id)]
+                }
+            }
+        });
+
+        if (!stamp_card) {
+            return res.status(404).json({
+                status: 0,
+                message: "This card is not available for this branch"
             });
         }
 
@@ -458,15 +578,21 @@ exports.scan_qr = async (req, res) => {
 
         const customerData = customer.toJSON();
 
-        customerData.profile_image = customerData.profile_image
-            ? baseUrl + '/' + customerData.profile_image
-            : null;
+        customerData.profile_image = customerData.profile_image ?
+            baseUrl + "/" + customerData.profile_image :
+            null;
 
         // ---------------------------------
         // CARD DATA
         // ---------------------------------
 
         customerData.cards = [customer_card.toJSON()];
+
+        // ---------------------------------
+        // STAMP CARD DATA
+        // ---------------------------------
+
+        customerData.stamp_card = stamp_card.toJSON();
 
         // ---------------------------------
         // RESPONSE
@@ -479,7 +605,6 @@ exports.scan_qr = async (req, res) => {
         });
 
     } catch (err) {
-
         console.log("scan_qr Error:", err);
 
         return res.status(500).json({
@@ -489,5 +614,3 @@ exports.scan_qr = async (req, res) => {
         });
     }
 };
-
-

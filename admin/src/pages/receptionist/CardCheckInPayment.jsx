@@ -157,7 +157,8 @@ export default function CardCheckInPayment() {
         setLoading(true)
         try {
             const response = await API.post('firstloop/reception/scan-qr', {
-                qr_code: scannedCode
+                qr_code: scannedCode,
+                br_id: effectiveBranchId
             })
 
             if (response?.data?.status == 1 && response.data.data) {
@@ -2917,9 +2918,9 @@ export default function CardCheckInPayment() {
                             <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#059669', fontWeight: 800, padding: '5px 12px', borderRadius: 8, fontSize: '0.78rem' }}>
                                 ENTRY SUCCESSFULLY UPDATED
                             </span>
-                            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '8px 0 0 0', color: 'var(--text-primary)' }}>
+                            {/* <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '8px 0 0 0', color: 'var(--text-primary)' }}>
                                 Receipt #{successReceiptModal.receiptId}
-                            </h3>
+                            </h3> */}
                         </div>
 
                         <div style={{ background: '#F8FAFC', borderRadius: 16, padding: 18, border: '1px solid #E2E8F0', marginBottom: 20, fontSize: '0.85rem' }}>

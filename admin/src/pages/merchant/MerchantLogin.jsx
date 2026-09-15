@@ -498,6 +498,33 @@ export default function MerchantLogin() {
                                     )}
                                 </button>
                             </form>
+
+                            {/* Sign Up Link */}
+                            <div style={{ marginTop: 22, textAlign: 'center', fontSize: '0.88rem', color: '#64748B' }}>
+                                Don't have an account?{' '}
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const isFirstLoop = window.location.hostname.includes('firstloop') || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+                                        if (isFirstLoop) {
+                                            navigate('/#pricing')
+                                        } else {
+                                            window.location.href = 'https://firstloop.co.in/#pricing'
+                                        }
+                                    }}
+                                    style={{
+                                        background: 'none',
+                                        border: 'none',
+                                        padding: 0,
+                                        color: '#0E88B8',
+                                        fontWeight: 800,
+                                        cursor: 'pointer',
+                                        textDecoration: 'underline'
+                                    }}
+                                >
+                                    Sign Up
+                                </button>
+                            </div>
                         </div>
                     </div>
 

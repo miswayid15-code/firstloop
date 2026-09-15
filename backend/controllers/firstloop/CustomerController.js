@@ -35,7 +35,7 @@ const QRCode = require('qrcode');
 // const mapFiles = require('../../helpers/merchantFileMapper');
 const baseUrl = process.env.APP_URL;
 
-const { Op } = require('sequelize');
+const { Op,Sequelize} = require('sequelize');
 const fs = require('fs');
 const path = require('path');
 const formatExpiry = (date) => {
@@ -51,23 +51,46 @@ const formatExpiry = (date) => {
 
     return `${day}/${month}/${year}`;
 };
+
+
 exports.check_customer = async (req, res) => {
     try {
-        const { email } = req.body;
+        const { search } = req.body;
 
-        // Validate email
-        if (!email || email.trim() === "") {
+        if (!search || search.trim() === "") {
             return res.status(400).json({
                 status: 0,
-                message: "Email is required"
+                message: "Search is required"
             });
         }
 
-        // Check customer
-        const customer = await Customer.findOne({
+        const searchValue = search.trim();
+
+        const customers = await Customer.findAll({
             where: {
-                email: email.trim(),
-                del_status: 0
+                del_status: 0,
+                [Op.or]: [
+                    {
+                        name: {
+                            [Op.like]: `%${searchValue}%`
+                        }
+                    },
+                    {
+                        email: {
+                            [Op.like]: `%${searchValue}%`
+                        }
+                    },
+                    Sequelize.where(
+                        Sequelize.fn(
+                            'CONCAT',
+                            Sequelize.col('country_code'),
+                            Sequelize.col('phone')
+                        ),
+                        {
+                            [Op.like]: `%${searchValue}%`
+                        }
+                    )
+                ]
             },
             attributes: [
                 'id',
@@ -75,20 +98,23 @@ exports.check_customer = async (req, res) => {
                 'email',
                 'phone',
                 'country_code',
+             
             ],
+            order: [['id', 'DESC']]
         });
 
-        if (!customer) {
+        if (customers.length === 0) {
             return res.status(200).json({
                 status: 0,
-                message: "Customer not found"
+                message: "Customer not found",
+                data: []
             });
         }
 
         return res.status(200).json({
             status: 1,
-            message: "Customer found",
-            data: customer
+            message: "Customers found",
+            data: customers
         });
 
     } catch (err) {
@@ -119,7 +145,6 @@ exports.Link_customer = async (req, res) => {
             email,
             phone,
             country_code,
-            password
         } = req.body;
 
 
@@ -187,13 +212,13 @@ exports.Link_customer = async (req, res) => {
 
         if (!customer_id) {
 
-            if (!name || !phone || !password) {
+            if (!name || !phone ) {
 
                 await transaction.rollback();
 
                 return res.status(400).json({
                     status: 0,
-                    message: 'Name, phone and password are required for new customer'
+                    message: 'Name and Phone Number are required for new customer'
                 });
             }
 
@@ -212,10 +237,7 @@ exports.Link_customer = async (req, res) => {
 
             } else {
 
-                const hashedPassword = await bcrypt.hash(
-                    password,
-                    10
-                );
+             
 
 
                 const newCustomer = await Customer.create({
@@ -227,8 +249,6 @@ exports.Link_customer = async (req, res) => {
                     phone: phone,
 
                     country_code: country_code || null,
-
-                    password: hashedPassword
 
                 }, {
                     transaction
@@ -317,7 +337,7 @@ exports.Link_customer = async (req, res) => {
         if (card_type === 1) {
 
             // Stamp Card
-
+// console.log("transaction",transaction)
             merchantCard = await Stampcard.findByPk(
                 cardId,
                 {
@@ -336,7 +356,7 @@ exports.Link_customer = async (req, res) => {
                 }
             );
         }
-        console.log("merchantCard:", merchantCard);
+        // console.log("merchantCard:", merchantCard);
 
 
         if (!merchantCard) {

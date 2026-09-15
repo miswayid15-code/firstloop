@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { Html5Qrcode } from 'html5-qrcode'
 import { toast } from 'react-hot-toast'
 import API from '../../../api.js'
@@ -69,6 +69,9 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
     } catch (e) {
         console.error("Error parsing receptionist_data:", e)
     }
+
+    const [searchParams] = useSearchParams()
+    const effectiveBranchId = branchId || searchParams.get('branchId') || receptionist?.user_branch_id || receptionist?.branch_id || ''
 
     const [scanning, setScanning] = useState(false)
     const [cameraError, setCameraError] = useState(null)
@@ -312,7 +315,8 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
 
         try {
             const response = await API.post('firstloop/reception/scan-qr', {
-                qr_code: rawCode
+                qr_code: rawCode,
+                br_id: effectiveBranchId
             })
 
             if (response?.data?.status == 1 && response.data.data) {
