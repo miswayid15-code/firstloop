@@ -1306,11 +1306,11 @@ export default function AddCardCustomer() {
                                                 transition: "all 0.15s"
                                             }}
                                         >
-                                            <div style={{ fontWeight: 700, fontSize: "0.85rem", color: "#1E293B" }}>
+                                            <div style={{ fontWeight: 700, fontSize: "0.85rem", color: "#1E293B", wordBreak: "break-word", lineHeight: 1.35 }}>
                                                 {card.title || card.name}
                                             </div>
-                                            <div style={{ fontSize: "0.74rem", color: "#64748B", marginTop: 2 }}>
-                                                {cardType === "stamp" ? `${card.total_stamps || 8} Stamps` : (card.tier || "VIP Tier")}
+                                            <div style={{ fontSize: "0.74rem", color: "#64748B", marginTop: 3, wordBreak: "break-word", lineHeight: 1.35 }}>
+                                                {cardType === "stamp" ? `${card.total_stamps || 8} Stamps${card.reward || card.reward_text ? ` • ${card.reward || card.reward_text}` : ''}${card.free_text ? ` • Free: ${card.free_text}` : ''}` : (card.tier || "VIP Tier")}
                                             </div>
                                         </div>
                                     );

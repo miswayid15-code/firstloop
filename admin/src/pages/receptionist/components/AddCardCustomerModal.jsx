@@ -1053,7 +1053,7 @@ export default function AddCardCustomerModal({
                                                                 ) : (
                                                                     <span><i className="fas fa-tag" style={{ marginRight: 3, color: '#D97706' }} />{card.tier || 'VIP'}</span>
                                                                 )}
-                                                                {card.reward && <span style={{ color: 'var(--firstloop-primary)', fontWeight: 700 }}>• {card.reward}</span>}
+                                                                {card.reward && <span style={{ color: 'var(--firstloop-primary)', fontWeight: 700, wordBreak: 'break-word', lineHeight: 1.3 }}>• {card.reward}</span>}
                                                             </div>
                                                         </div>
                                                     </div>

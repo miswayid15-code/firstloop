@@ -19,6 +19,14 @@ module.exports = (sequelize, DataTypes) => {
                     key: 'id',
                 },
             },
+            source_stamp_id: {
+                type: DataTypes.INTEGER,
+                allowNull: false,
+                references: {
+                    model: 'customer_stamp_levels',
+                    key: 'id',
+                },
+            },
 
             source_stamp_number: {
                 type: DataTypes.INTEGER,

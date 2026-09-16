@@ -336,45 +336,39 @@ exports.dashboard = async (req, res) => {
             total_linked_customer = linkedCustomerData.length;
         }
 
+// ---------------------------------
+// TOTAL REPEAT CUSTOMERS
+// Customer must have more than 1 card
+// ---------------------------------
 
-        const repeat_customer_data = await CustomerCard.findAll({
-            where: {
-                branch_id: branch_id
-            },
+const repeat_customer_data = await CustomerCard.findAll({
+    where: {
+        branch_id: branch_id
+    },
 
-            attributes: [
-                "customer_id",
-                [
-                    Sequelize.fn(
-                        "COUNT",
-                        Sequelize.col("CustomerStampLevels.id")
-                    ),
-                    "transaction_count"
-                ]
-            ],
-
-            include: [{
-                model: CustomerStampLevel,
-                as: "CustomerStampLevels",
-                attributes: [],
-                where: {
-                    status: 1
-                },
-                required: true
-            }],
-
-            group: [
-                "CustomerCard.customer_id"
-            ],
-
-            having: Sequelize.literal(
-                'COUNT("CustomerStampLevels"."id") > 1'
+    attributes: [
+        "customer_id",
+        [
+            Sequelize.fn(
+                "COUNT",
+                Sequelize.col("CustomerCard.id")
             ),
+            "card_count"
+        ]
+    ],
 
-            raw: true
-        });
+    group: [
+        "CustomerCard.customer_id"
+    ],
 
-        const total_repeat_customer = repeat_customer_data.length;
+    having: Sequelize.literal(
+        'COUNT("CustomerCard"."id") > 1'
+    ),
+
+    raw: true
+});
+
+const total_repeat_customer = repeat_customer_data.length;
 
         // ---------------------------------
         // TODAY REPORT

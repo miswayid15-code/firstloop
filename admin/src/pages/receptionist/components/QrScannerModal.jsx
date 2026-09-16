@@ -57,6 +57,32 @@ const getDiscountPercentage = (cardDetails, stampIndex = 0) => {
     return parseFloat(disc) || 0
 }
 
+export const getAvailableInheritedRewards = (activeLevel) => {
+    if (!activeLevel) return []
+
+    const rawInherited = Array.isArray(activeLevel.InheritedRewards)
+        ? activeLevel.InheritedRewards
+        : (Array.isArray(activeLevel.inherited_rewards) ? activeLevel.inherited_rewards : [])
+
+    const list = []
+
+    rawInherited.forEach((r, idx) => {
+        const hasFree = Number(r.free_stamp) === 1 || r.free_stamp === true || r.free_stamp === '1' || Boolean(r.free_text)
+        if (hasFree) {
+            const rewardId = Number(r.id || r.inherited_reward_id || 0)
+            list.push({
+                key: `inherited_${rewardId}_${idx}`,
+                id: rewardId,
+                inherited_reward_id: rewardId,
+                title: r.free_text || r.reward || r.reward_text || `Free Perk #${idx + 1}`,
+                isInherited: true
+            })
+        }
+    })
+
+    return list
+}
+
 export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = '' }) {
     const navigate = useNavigate()
     const location = useLocation()
@@ -89,6 +115,7 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
     const [savingCheckIn, setSavingCheckIn] = useState(false)
     const [lastReceipt, setLastReceipt] = useState(null)
     const [selectedStampIndex, setSelectedStampIndex] = useState(null)
+    const [inheritedRewardActions, setInheritedRewardActions] = useState({})
     const [historyModalOpen, setHistoryModalOpen] = useState(false)
     const [addCardModalOpen, setAddCardModalOpen] = useState(false)
     const [sharingWhatsApp, setSharingWhatsApp] = useState(false)
@@ -561,13 +588,37 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
                         ? Math.max(0, enteredAmt - (enteredAmt * discPercent) / 100)
                         : enteredAmt)
 
+                const rawInherited = Array.isArray(activeLevel?.InheritedRewards)
+                    ? activeLevel.InheritedRewards
+                    : (Array.isArray(activeLevel?.inherited_rewards) ? activeLevel.inherited_rewards : [])
+
+                const currentPerksList = []
+
+                rawInherited.forEach((r, idx) => {
+                    const hasFree = Number(r.free_stamp) === 1 || r.free_stamp === true || r.free_stamp === '1' || Boolean(r.free_text)
+                    if (hasFree) {
+                        const rewardId = Number(r.id || r.inherited_reward_id || 0)
+                        currentPerksList.push({
+                            id: rewardId,
+                            inherited_reward_id: rewardId,
+                            title: r.free_text || r.reward || r.reward_text || `Free Perk #${idx + 1}`
+                        })
+                    }
+                })
+
+                const inheritedRewardsPayload = currentPerksList.map(p => ({
+                    inherited_reward_id: Number(p.id || p.inherited_reward_id),
+                    action: inheritedRewardActions[p.id || p.inherited_reward_id] || 'use'
+                }))
+
                 const payload = {
                     cus_id: Number(matchedCustomer.id),
                     card_id: Number(selectedCard.id),
                     payment_type: paymentMethod === 'Online' ? 2 : 1,
                     amount: enteredAmt,
                     paid_amount: parseFloat(finalPaidAmt.toFixed(2)),
-                    stamp_level_id: stampLevelId
+                    stamp_level_id: stampLevelId,
+                    inherited_rewards: inheritedRewardsPayload
                 }
 
                 // If the stamp has already been processed (status = 1), pass that stamp's id to the API and treat it as an edit action
@@ -699,8 +750,27 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
     const discountAmountDeduction = currentRewardType === 'Discount' ? (enteredTransactionAmount * currentDiscountPercent) / 100 : 0
     const finalPayableAmount = currentRewardType === 'Free' ? 0 : Math.max(0, enteredTransactionAmount - discountAmountDeduction)
 
-    const hasFreeBonus = activeStampIdx >= 0 && (Number(activeLevel?.free_stamp) === 1 || Boolean(activeLevel?.free_text))
-    const freeBonusText = activeLevel?.free_text || ''
+    const availablePerks = getAvailableInheritedRewards(activeLevel)
+    const hasFreeBonus = availablePerks.length > 0 || (activeStampIdx >= 0 && (Number(activeLevel?.free_stamp) === 1 || Boolean(activeLevel?.free_text)))
+    const freeBonusText = (availablePerks.length > 0 ? availablePerks.map(p => p.title).join(', ') : '') || activeLevel?.free_text || ''
+
+    const handlePerkActionChange = (rewardId, action) => {
+        setInheritedRewardActions(prev => ({
+            ...prev,
+            [rewardId]: action
+        }))
+    }
+
+    const handleSetAllPerkActions = (action) => {
+        setInheritedRewardActions(prev => {
+            const next = { ...prev }
+            availablePerks.forEach(p => {
+                const pid = p.id || p.inherited_reward_id
+                next[pid] = action
+            })
+            return next
+        })
+    }
 
     const handleAddNewCard = () => {
         setAddCardModalOpen(true)
@@ -1034,7 +1104,8 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
                             </div>
 
                             {/* BRANCH SELECTOR: User can choose branch to see cards of that branch */}
-                            {customerBranches.length > 0 && (
+                            {/* BRANCH SELECTOR: User can choose branch to see cards of that branch */}
+                            {/* {customerBranches.length > 0 && (
                                 <div style={{ marginBottom: 18, background: '#F8FAFC', padding: '12px 16px', borderRadius: 14, border: '1px solid #E2E8F0' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
                                         <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-primary)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
@@ -1061,7 +1132,7 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
                                                 cursor: 'pointer'
                                             }}
                                         >
-                                            All Cards ({matchedCustomer.cards?.length || 0})
+                                            All Cards ({selectedCustomer.cards?.length || 0})
                                         </button>
 
                                         {customerBranches.map(b => {
@@ -1072,8 +1143,8 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
                                                     type="button"
                                                     onClick={() => {
                                                         setSelectedCustomerBranch(b.id)
-                                                        // Automatically select first card of this branch
-                                                        const matching = matchedCustomer.cards?.find(c =>
+                                                        
+                                                        const matching = selectedCustomer.cards?.find(c =>
                                                             String(c.branch_id || c.branch_name) === String(b.id) ||
                                                             c.branch_name === b.name
                                                         )
@@ -1103,7 +1174,7 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
                                         })}
                                     </div>
                                 </div>
-                            )}
+                            )} */}
 
                             {/* CARDS LIST FOR CHOSEN BRANCH */}
                             {branchCards.length > 1 && (
@@ -1274,9 +1345,9 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
                                     </div>
 
                                     {/* MAIN 2-COLUMN LAYOUT: LIVE PASS PREVIEW & CONTROLS */}
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 28, alignItems: 'start' }}>
-                                        {/* LEFT COLUMN: LIVE DIGITAL CUSTOMER PASS */}
-                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 380px) 1fr', gap: 24, alignItems: 'start' }}>
+                                        {/* LEFT COLUMN: LIVE DIGITAL CUSTOMER PASS (PREVIEW ONLY) */}
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'sticky', top: 12 }}>
                                             <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 12, letterSpacing: '0.5px' }}>
                                                 LIVE DIGITAL CUSTOMER PASS
                                             </span>
@@ -1344,6 +1415,198 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
                                                             )}
                                                         </button>
                                                     </div>
+
+                                                    {/* Left Column Stamp Perk Preview Details */}
+                                                    {isStampCard &&  activeStampIdx !== null && (
+                                                        <div style={{ width: '100%', maxWidth: 380, marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                                            {/* Current Stamp Perk */}
+                                                            <div
+                                                                style={{
+                                                                    background: '#F8FAFC',
+                                                                    borderRadius: 12,
+                                                                    padding: '12px 14px',
+                                                                    border: '1px solid #E2E8F0',
+                                                                    display: 'flex',
+                                                                    flexDirection: 'column',
+                                                                    gap: 6,
+                                                                    boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
+                                                                }}
+                                                            >
+                                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                                                                    <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'flex', alignItems: 'center', gap: 5 }}>
+                                                                        <i className={currentRewardType === 'Discount' ? 'fas fa-percent' : (currentRewardType === 'Paid' ? 'fas fa-tag' : 'fas fa-gift')} style={{ color: currentRewardType === 'Discount' ? '#0284C7' : (currentRewardType === 'Paid' ? '#F59E0B' : '#10B981') }} />
+                                                                        Current Stamp Perk
+                                                                    </span>
+                                                                    <span
+                                                                        style={{
+                                                                            fontSize: '0.72rem',
+                                                                            fontWeight: 700,
+                                                                            padding: '2px 8px',
+                                                                            borderRadius: 999,
+                                                                            background: currentRewardType === 'Discount' ? 'rgba(2, 132, 199, 0.12)' : (currentRewardType === 'Paid' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)'),
+                                                                            color: currentRewardType === 'Discount' ? '#0284C7' : (currentRewardType === 'Paid' ? '#B45309' : '#059669')
+                                                                        }}
+                                                                    >
+                                                                        {currentRewardType === 'Discount' ? 'Discount Perk' : (currentRewardType === 'Paid' ? 'Paid Perk' : 'Free Item')}
+                                                                    </span>
+                                                                </div>
+                                                                <div
+                                                                    style={{
+                                                                        fontSize: '0.86rem',
+                                                                        fontWeight: 700,
+                                                                        color: '#1E293B',
+                                                                        lineHeight: 1.45,
+                                                                        wordBreak: 'break-word',
+                                                                        backgroundColor: '#FFFFFF',
+                                                                        borderRadius: 8,
+                                                                        padding: '8px 12px',
+                                                                        border: '1px solid #E2E8F0',
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        gap: 8
+                                                                    }}
+                                                                >
+                                                                    <span style={{ flex: 1 }}>
+                                                                        {currentPerkText || (currentRewardType === 'Discount' ? 'Discount Perk' : (currentRewardType === 'Paid' ? 'Paid Perk' : 'Free Item'))}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Other details such as Free Stamp and Discount */}
+ {(
+    currentRewardType === 'Discount' &&
+    (
+        currentDiscountPercent > 0 ||
+        hasFreeBonus
+    )
+) && (
+    <div
+        style={{
+            background: '#F8FAFC',
+            borderRadius: 12,
+            padding: '12px 14px',
+            border: '1px solid #E2E8F0',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8,
+            boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
+        }}
+    >
+        <span
+            style={{
+                fontSize: '0.74rem',
+                fontWeight: 800,
+                color: 'var(--text-muted)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px'
+            }}
+        >
+            Other details such as Free Stamp and Discount:
+        </span>
+
+        {/* Discount */}
+        {currentDiscountPercent > 0 && (
+            <div
+                style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    fontSize: '0.82rem'
+                }}
+            >
+                <span
+                    style={{
+                        color: '#0284C7',
+                        fontWeight: 700,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 5
+                    }}
+                >
+                    <i className="fas fa-percent" />
+                    <span>Discount:</span>
+                </span>
+
+                <span
+                    style={{
+                        color: '#0284C7',
+                        fontWeight: 800
+                    }}
+                >
+                    {currentDiscountPercent}% (-{discountAmountDeduction.toFixed(2)})
+                </span>
+            </div>
+        )}
+
+        {/* Free Stamp */}
+        {hasFreeBonus && (
+            <div
+                style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 6,
+                    borderTop: currentDiscountPercent > 0
+                        ? '1px dashed #E2E8F0'
+                        : 'none',
+                    paddingTop: currentDiscountPercent > 0 ? 8 : 0
+                }}
+            >
+                <div
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        fontSize: '0.82rem'
+                    }}
+                >
+                    <span
+                        style={{
+                            color: '#059669',
+                            fontWeight: 700,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 5
+                        }}
+                    >
+                        <i className="fas fa-gift" />
+                        <span>Free Stamp Perk:</span>
+                    </span>
+                </div>
+
+                <div
+                    style={{
+                        background: 'rgba(16, 185, 129, 0.08)',
+                        color: '#047857',
+                        border: '1px solid rgba(16, 185, 129, 0.25)',
+                        fontWeight: 700,
+                        padding: '8px 12px',
+                        borderRadius: 8,
+                        fontSize: '0.84rem',
+                        lineHeight: 1.45,
+                        wordBreak: 'break-word',
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: 8
+                    }}
+                >
+                    <i
+                        className="fas fa-gift"
+                        style={{
+                            marginTop: 2,
+                            flexShrink: 0,
+                            color: '#10B981'
+                        }}
+                    />
+
+                    <span style={{ flex: 1 }}>
+                        {freeBonusText || 'Free Bonus Perk'}
+                    </span>
+                </div>
+            </div>
+        )}
+    </div>
+)}
+                                                        </div>
+                                                    )}
                                                 </>
                                             )}
                                         </div>
@@ -1672,42 +1935,147 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
                                                                     )}
                                                                 </div>
 
-                                                                {/* 2. Current Stamp Perk */}
-                                                                <div
-                                                                    style={{
-                                                                        background: '#F8FAFC',
-                                                                        borderRadius: 12,
-                                                                        padding: '12px 16px',
-                                                                        border: '1px solid #E2E8F0',
-                                                                        marginBottom: 12,
-                                                                        display: 'flex',
-                                                                        alignItems: 'center',
-                                                                        justifyContent: 'space-between',
-                                                                        flexWrap: 'wrap',
-                                                                        gap: 8
-                                                                    }}
-                                                                >
-                                                                    <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)' }}>
-                                                                        Current Stamp Perk:
-                                                                    </span>
-                                                                    <span
-                                                                        className="badge"
+                                                                {/* Free Stamp Perk Action Choice (Use Now or Move to Next Stamp) */}
+                                                                {availablePerks.length > 0 && (
+                                                                    <div
                                                                         style={{
-                                                                            background: currentRewardType === 'Discount' ? '#0284C7' : (currentRewardType === 'Paid' ? '#F59E0B' : '#10B981'),
-                                                                            color: '#FFF',
-                                                                            fontWeight: 800,
-                                                                            padding: '5px 12px',
-                                                                            borderRadius: 6,
-                                                                            fontSize: '0.8rem',
-                                                                            display: 'inline-flex',
-                                                                            alignItems: 'center',
-                                                                            gap: 6
+                                                                            background: 'linear-gradient(135deg, #F0FDF4 0%, #ECFDF5 100%)',
+                                                                            border: '1.5px solid #86EFAC',
+                                                                            borderRadius: 12,
+                                                                            padding: '12px 14px',
+                                                                            marginBottom: 12,
+                                                                            boxShadow: '0 2px 8px rgba(16, 185, 129, 0.08)'
                                                                         }}
                                                                     >
-                                                                        <i className={currentRewardType === 'Discount' ? 'fas fa-percent' : (currentRewardType === 'Paid' ? 'fas fa-tag' : 'fas fa-gift')} />
-                                                                        <span>{currentPerkText || (currentRewardType === 'Discount' ? 'Discount Perk' : (currentRewardType === 'Paid' ? 'Paid Perk' : 'Free Item'))}</span>
-                                                                    </span>
-                                                                </div>
+                                                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+                                                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                                                <div style={{ width: 26, height: 26, borderRadius: '50%', background: '#10B981', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.78rem', flexShrink: 0 }}>
+                                                                                    <i className="fas fa-gift" />
+                                                                                </div>
+                                                                                <div>
+                                                                                    <strong style={{ fontSize: '0.84rem', color: '#166534', display: 'block' }}>
+                                                                                        Free Stamp Perk Available
+                                                                                    </strong>
+                                                                                    <span style={{ fontSize: '0.73rem', color: '#15803D' }}>
+                                                                                        Would you like to use the free stamp perk now, or move it to the next stamp?
+                                                                                    </span>
+                                                                                </div>
+                                                                            </div>
+                                                                            {availablePerks.length > 1 && (
+                                                                                <div style={{ display: 'flex', gap: 6 }}>
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => handleSetAllPerkActions('use')}
+                                                                                        style={{
+                                                                                            background: '#ECFDF5',
+                                                                                            border: '1px solid #10B981',
+                                                                                            color: '#047857',
+                                                                                            padding: '3px 8px',
+                                                                                            borderRadius: 6,
+                                                                                            fontSize: '0.72rem',
+                                                                                            fontWeight: 700,
+                                                                                            cursor: 'pointer'
+                                                                                        }}
+                                                                                    >
+                                                                                        <i className="fas fa-check-double" style={{ marginRight: 4 }} />
+                                                                                        Use All
+                                                                                    </button>
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => handleSetAllPerkActions('move')}
+                                                                                        style={{
+                                                                                            background: '#F0F9FF',
+                                                                                            border: '1px solid #0EA5E9',
+                                                                                            color: '#0284C7',
+                                                                                            padding: '3px 8px',
+                                                                                            borderRadius: 6,
+                                                                                            fontSize: '0.72rem',
+                                                                                            fontWeight: 700,
+                                                                                            cursor: 'pointer'
+                                                                                        }}
+                                                                                    >
+                                                                                        <i className="fas fa-arrow-right" style={{ marginRight: 4 }} />
+                                                                                        Move All
+                                                                                    </button>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+
+                                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                                                            {availablePerks.map((perk) => {
+                                                                                const currentAction = inheritedRewardActions[perk.inherited_reward_id] || 'use'
+                                                                                return (
+                                                                                    <div
+                                                                                        key={perk.key}
+                                                                                        style={{
+                                                                                            background: '#FFFFFF',
+                                                                                            border: '1px solid #BBF7D0',
+                                                                                            borderRadius: 10,
+                                                                                            padding: '10px 12px'
+                                                                                        }}
+                                                                                    >
+                                                                                        <div style={{ marginBottom: 6 }}>
+                                                                                            <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#047857', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                                                                                                Stamp Free Perk
+                                                                                            </span>
+                                                                                            <div style={{ fontSize: '0.86rem', fontWeight: 700, color: '#1E293B', lineHeight: 1.4, wordBreak: 'break-word', marginTop: 2 }}>
+                                                                                                {perk.title}
+                                                                                            </div>
+                                                                                        </div>
+
+                                                                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                                                                                            <button
+                                                                                                type="button"
+                                                                                                onClick={() => handlePerkActionChange(perk.inherited_reward_id, 'use')}
+                                                                                                style={{
+                                                                                                    padding: '7px 10px',
+                                                                                                    borderRadius: 8,
+                                                                                                    fontSize: '0.78rem',
+                                                                                                    fontWeight: 700,
+                                                                                                    cursor: 'pointer',
+                                                                                                    display: 'flex',
+                                                                                                    alignItems: 'center',
+                                                                                                    justifyContent: 'center',
+                                                                                                    gap: 6,
+                                                                                                    border: currentAction === 'use' ? '2px solid #10B981' : '1px solid #CBD5E1',
+                                                                                                    background: currentAction === 'use' ? '#ECFDF5' : '#FFFFFF',
+                                                                                                    color: currentAction === 'use' ? '#047857' : '#64748B',
+                                                                                                    boxShadow: currentAction === 'use' ? '0 2px 6px rgba(16, 185, 129, 0.2)' : 'none'
+                                                                                                }}
+                                                                                            >
+                                                                                                <i className={`fas ${currentAction === 'use' ? 'fa-check-circle' : 'far fa-circle'}`} style={{ color: currentAction === 'use' ? '#10B981' : '#94A3B8' }} />
+                                                                                                <span>Use Perk Now</span>
+                                                                                            </button>
+
+                                                                                            <button
+                                                                                                type="button"
+                                                                                                onClick={() => handlePerkActionChange(perk.inherited_reward_id, 'move')}
+                                                                                                style={{
+                                                                                                    padding: '7px 10px',
+                                                                                                    borderRadius: 8,
+                                                                                                    fontSize: '0.78rem',
+                                                                                                    fontWeight: 700,
+                                                                                                    cursor: 'pointer',
+                                                                                                    display: 'flex',
+                                                                                                    alignItems: 'center',
+                                                                                                    justifyContent: 'center',
+                                                                                                    gap: 6,
+                                                                                                    border: currentAction === 'move' ? '2px solid #0E88B8' : '1px solid #CBD5E1',
+                                                                                                    background: currentAction === 'move' ? '#F0F9FF' : '#FFFFFF',
+                                                                                                    color: currentAction === 'move' ? '#0369A1' : '#64748B',
+                                                                                                    boxShadow: currentAction === 'move' ? '0 2px 6px rgba(14, 136, 184, 0.2)' : 'none'
+                                                                                                }}
+                                                                                            >
+                                                                                                <i className={`fas ${currentAction === 'move' ? 'fa-arrow-right' : 'far fa-circle'}`} style={{ color: currentAction === 'move' ? '#0E88B8' : '#94A3B8' }} />
+                                                                                                <span>Move to Next Stamp</span>
+                                                                                            </button>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                )
+                                                                            })}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
 
                                                                 {/* 3. Payable Amount */}
                                                                 <div
@@ -1741,72 +2109,7 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
                                                                     </strong>
                                                                 </div>
 
-                                                                {/* 4. Other details such as Free Stamp and Discount */}
-                                                                <div
-                                                                    style={{
-                                                                        background: '#F8FAFC',
-                                                                        borderRadius: 12,
-                                                                        padding: '12px 16px',
-                                                                        border: '1px solid #E2E8F0',
-                                                                        marginBottom: 14,
-                                                                        display: 'flex',
-                                                                        flexDirection: 'column',
-                                                                        gap: 8
-                                                                    }}
-                                                                >
-                                                                    <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                                                        Other details such as Free Stamp and Discount:
-                                                                    </span>
 
-                                                                    {/* Discount Detail */}
-                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem' }}>
-                                                                        <span style={{ color: currentRewardType === 'Discount' ? '#0284C7' : '#64748B', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                                                                            <i className="fas fa-percent" />
-                                                                            <span>Discount:</span>
-                                                                        </span>
-                                                                        {currentRewardType === 'Discount' && currentDiscountPercent > 0 ? (
-                                                                            <span style={{ color: '#0284C7', fontWeight: 800 }}>
-                                                                                {currentDiscountPercent}% (-{discountAmountDeduction.toFixed(2)})
-                                                                            </span>
-                                                                        ) : (
-                                                                            <span style={{ color: '#94A3B8', fontWeight: 600 }}>
-                                                                                No discount applicable
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
-
-                                                                    {/* Free Stamp / Bonus Perk Detail */}
-                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', borderTop: '1px dashed #E2E8F0', paddingTop: 8 }}>
-                                                                        <span style={{ color: hasFreeBonus ? '#059669' : '#64748B', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                                                                            <i className="fas fa-gift" />
-                                                                            <span>Free Stamp Perk:</span>
-                                                                        </span>
-                                                                        {hasFreeBonus ? (
-                                                                            <span
-                                                                                className="badge"
-                                                                                style={{
-                                                                                    background: 'rgba(16, 185, 129, 0.15)',
-                                                                                    color: '#059669',
-                                                                                    border: '1px solid rgba(16, 185, 129, 0.3)',
-                                                                                    fontWeight: 800,
-                                                                                    padding: '3px 8px',
-                                                                                    borderRadius: 6,
-                                                                                    fontSize: '0.76rem',
-                                                                                    display: 'inline-flex',
-                                                                                    alignItems: 'center',
-                                                                                    gap: 4
-                                                                                }}
-                                                                            >
-                                                                                <i className="fas fa-gift" />
-                                                                                <span>Free: {freeBonusText || 'Free Bonus Perk'}</span>
-                                                                            </span>
-                                                                        ) : (
-                                                                            <span style={{ color: '#94A3B8', fontWeight: 600 }}>
-                                                                                None
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
 
                                                                 {/* 5. Select Payment Method */}
                                                                 <div className="form-group mb-3">

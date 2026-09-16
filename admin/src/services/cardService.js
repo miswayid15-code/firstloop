@@ -364,9 +364,16 @@ export const fetchStampCardsApi = async ({ merchantId, branchId, fallbackBrandNa
                             const isPaid = rawType === '3' || rawType === 'paid';
                             const rType = isDiscount ? 'Discount' : (isPaid ? 'Paid' : 'Free');
                             const disc = parseFloat(lvl.discount ?? lvl.discountVal ?? (isDiscount ? (parseFloat(lvl.reward_text) || 0) : 0)) || 0;
-                            const inheritedRewards = Array.isArray(lvl.InheritedRewards)
+                            const rawInherited = Array.isArray(lvl.InheritedRewards)
                                 ? lvl.InheritedRewards
                                 : (Array.isArray(lvl.inherited_rewards) ? lvl.inherited_rewards : []);
+                            const inheritedRewards = rawInherited.map(r => ({
+                                ...r,
+                                id: Number(r.id || r.inherited_reward_id || 0),
+                                inherited_reward_id: Number(r.id || r.inherited_reward_id || 0),
+                                free_stamp: Number(r.free_stamp) === 1 || r.free_stamp === true || r.free_stamp === '1' ? 1 : 0,
+                                free_text: r.free_text || ''
+                            }));
                             const hasFree = inheritedRewards.length > 0
                                 ? inheritedRewards.some(r => Number(r.free_stamp) === 1 || r.free_stamp === true || r.free_stamp === '1')
                                 : (Number(lvl.free_stamp) === 1 || lvl.free_stamp === true || lvl.free_stamp === '1');
@@ -525,9 +532,16 @@ export const fetchCustomerStampLevelsApi = async (cardId, cardType, cusId) => {
                             : 'Free';
 
                     // Parse InheritedRewards if available (supports 0, 1, or more items)
-                    const inheritedRewards = Array.isArray(lvl.InheritedRewards)
+                    const rawInherited = Array.isArray(lvl.InheritedRewards)
                         ? lvl.InheritedRewards
                         : (Array.isArray(lvl.inherited_rewards) ? lvl.inherited_rewards : []);
+                    const inheritedRewards = rawInherited.map(r => ({
+                        ...r,
+                        id: Number(r.id || r.inherited_reward_id || 0),
+                        inherited_reward_id: Number(r.id || r.inherited_reward_id || 0),
+                        free_stamp: Number(r.free_stamp) === 1 || r.free_stamp === true || r.free_stamp === '1' ? 1 : 0,
+                        free_text: r.free_text || ''
+                    }));
 
                     const hasInheritedFree = inheritedRewards.length > 0
                         ? inheritedRewards.some(r => Number(r.free_stamp) === 1 || r.free_stamp === true || r.free_stamp === '1')
@@ -949,4 +963,35 @@ export const formatExpiryDate = (val) => {
     } catch {
         return String(val);
     }
+};
+
+/**
+ * Extracts free perks from an active level's InheritedRewards list.
+ * Only returns actual inherited perks (using their inherited reward id).
+ * Does NOT synthesize stamp level id.
+ */
+export const getAvailableInheritedRewards = (activeLevel) => {
+    if (!activeLevel) return [];
+
+    const rawInherited = Array.isArray(activeLevel.InheritedRewards)
+        ? activeLevel.InheritedRewards
+        : (Array.isArray(activeLevel.inherited_rewards) ? activeLevel.inherited_rewards : []);
+
+    const list = [];
+
+    rawInherited.forEach((r, idx) => {
+        const hasFree = Number(r.free_stamp) === 1 || r.free_stamp === true || r.free_stamp === '1' || Boolean(r.free_text);
+        if (hasFree) {
+            const rewardId = Number(r.id || r.inherited_reward_id || 0);
+            list.push({
+                key: `inherited_${rewardId}_${idx}`,
+                id: rewardId,
+                inherited_reward_id: rewardId,
+                title: r.free_text || r.reward || r.reward_text || `Free Perk #${idx + 1}`,
+                isInherited: true
+            });
+        }
+    });
+
+    return list;
 };

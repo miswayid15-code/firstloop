@@ -14,7 +14,10 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false,
       },
-
+      source_stamp_id: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+      },
       source_stamp_number: {
         type: Sequelize.INTEGER,
         allowNull: false,
