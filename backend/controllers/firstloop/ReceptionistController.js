@@ -114,6 +114,7 @@ exports.login = async (req, res) => {
             user_name: receptionist.name,
             user_branch: branch.name,
             user_branch_id: branch.id,
+            user_branch_code: branch.country_iso,
             access_token: accessToken,
             refresh_token: refreshToken,
 
@@ -251,6 +252,22 @@ exports.dashboard = async (req, res) => {
             col: "customer_id"
         });
 
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
+
+        const endOfToday = new Date();
+        endOfToday.setHours(23, 59, 59, 999);
+
+        const today_total_cus = await CustomerCard.count({
+            where: {
+                branch_id: branch_id,
+                created_at: {
+                    [Op.between]: [startOfToday, endOfToday]
+                }
+            },
+            distinct: true,
+            col: "customer_id"
+        });
         // ---------------------------------
         // TOTAL STAMP CARDS
         // ---------------------------------
@@ -283,23 +300,41 @@ exports.dashboard = async (req, res) => {
         // TOTAL LINKED CUSTOMERS
         // ---------------------------------
 
+        // ---------------------------------
+        // TOTAL LINKED CUSTOMERS
+        // Customer must have more than 1 card
+        // ---------------------------------
+
         let total_linked_customer = 0;
 
         if (linkedStampCardIds.length > 0) {
 
-            total_linked_customer = await CustomerCard.count({
+            const linkedCustomerData = await CustomerCard.findAll({
                 where: {
                     merchant_card_id: {
                         [Op.in]: linkedStampCardIds
                     },
                     branch_id: branch_id
                 },
-                distinct: true,
-                col: "customer_id"
+                attributes: [
+                    "customer_id",
+                    [
+                        Sequelize.fn(
+                            "COUNT",
+                            Sequelize.col("CustomerCard.id")
+                        ),
+                        "card_count"
+                    ]
+                ],
+                group: ["CustomerCard.customer_id"],
+                having: Sequelize.literal(
+                    'COUNT("CustomerCard"."id") > 1'
+                ),
+                raw: true
             });
 
+            total_linked_customer = linkedCustomerData.length;
         }
-
 
 
         const repeat_customer_data = await CustomerCard.findAll({
@@ -433,6 +468,7 @@ exports.dashboard = async (req, res) => {
             branch_name: branch.name,
 
             total_cus: total_cus || 0,
+            today_total_cus: today_total_cus || 0,
 
             total_linked_customer: total_linked_customer || 0,
 

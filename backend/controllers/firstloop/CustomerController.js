@@ -17,6 +17,7 @@ const {
     CustomerCard,
     CustomerStampLevel,
     MembershipCards,
+    CustomerStampInheritedReward,
     db,
     sequelize
 } = require('../../models');
@@ -35,7 +36,7 @@ const QRCode = require('qrcode');
 // const mapFiles = require('../../helpers/merchantFileMapper');
 const baseUrl = process.env.APP_URL;
 
-const { Op,Sequelize} = require('sequelize');
+const { Op, Sequelize } = require('sequelize');
 const fs = require('fs');
 const path = require('path');
 const formatExpiry = (date) => {
@@ -98,7 +99,7 @@ exports.check_customer = async (req, res) => {
                 'email',
                 'phone',
                 'country_code',
-             
+
             ],
             order: [['id', 'DESC']]
         });
@@ -212,7 +213,7 @@ exports.Link_customer = async (req, res) => {
 
         if (!customer_id) {
 
-            if (!name || !phone ) {
+            if (!name || !phone) {
 
                 await transaction.rollback();
 
@@ -237,7 +238,7 @@ exports.Link_customer = async (req, res) => {
 
             } else {
 
-             
+
 
 
                 const newCustomer = await Customer.create({
@@ -337,7 +338,7 @@ exports.Link_customer = async (req, res) => {
         if (card_type === 1) {
 
             // Stamp Card
-// console.log("transaction",transaction)
+            // console.log("transaction",transaction)
             merchantCard = await Stampcard.findByPk(
                 cardId,
                 {
@@ -595,73 +596,77 @@ exports.Link_customer = async (req, res) => {
 
         if (card_type === 1) {
 
-            const stampLevels =
-                await StampLevel.findAll({
-
-                    where: {
-
-                        merchant_card_id: cardId,
-
-                        status: 1
-                    },
-
-                    order: [
-                        ['stamp_number', 'ASC']
-                    ],
-
-                    transaction
-                });
-
+            const stampLevels = await StampLevel.findAll({
+                where: {
+                    merchant_card_id: cardId,
+                    status: 1
+                },
+                order: [
+                    ['stamp_number', 'ASC']
+                ],
+                transaction
+            });
 
             if (stampLevels.length > 0) {
 
-                const customerStampLevels =
-                    stampLevels.map(level => ({
+                // ---------------------------------------------
+                // CREATE CUSTOMER STAMP LEVELS
+                // ---------------------------------------------
 
-                        customer_card_id:
-                            newCustomerCard.id,
+                const customerStampLevels = stampLevels.map(level => ({
+                    customer_card_id: newCustomerCard.id,
 
-                        stamp_number:
-                            level.stamp_number,
+                    stamp_number: level.stamp_number,
 
-                        // amt:
-                        //     level.amt,
+                    discount: level.discount || 0,
 
-                        discount:
-                            level.discount,
+                    reward_type: level.reward_type,
 
-                        reward_type:
-                            level.reward_type,
+                    reward_text: level.reward_text || null,
 
-                        reward_text:
-                            level.reward_text || null,
+                    icon: level.icon || null,
 
-                        free_stamp:
-                            level.free_stamp || 0,
-
-                        free_text:
-                            level.free_text || null,
-
-                        icon:
-                            level.icon || null,
-
-                        // category_id:
-                        //     level.category_id || null,
-
-                        status:
-                            0
-                    }));
-
+                    status: 0
+                }));
 
                 await CustomerStampLevel.bulkCreate(
-
                     customerStampLevels,
-
                     {
                         transaction
                     }
-
                 );
+
+                // ---------------------------------------------
+                // CREATE CUSTOMER INHERITED FREE REWARDS
+                // ---------------------------------------------
+
+                const inheritedRewards = stampLevels
+                    .filter(level => Number(level.free_stamp) === 1)
+                    .map(level => ({
+                        customer_card_id: newCustomerCard.id,
+
+                        source_stamp_number: level.stamp_number,
+
+                        target_stamp_number: level.stamp_number,
+
+                        inherited_from: [level.stamp_number],
+
+                        free_stamp: 1,
+
+                        free_text: level.free_text || null,
+
+                        status: 0
+                    }));
+
+                if (inheritedRewards.length > 0) {
+
+                    await CustomerStampInheritedReward.bulkCreate(
+                        inheritedRewards,
+                        {
+                            transaction
+                        }
+                    );
+                }
             }
         }
 
@@ -920,11 +925,26 @@ exports.fetch_card = async (req, res) => {
                                 "discount",
                                 "reward_type",
                                 "reward_text",
-                                "free_stamp",
-                                "free_text",
                                 "icon",
                                 "category_id",
                                 "status"
+                            ],
+
+                            include: [
+                                {
+                                    model: CustomerStampInheritedReward,
+                                    as: "InheritedRewards",
+                                    required: false,
+
+                                    attributes: [
+                                        "free_stamp",
+                                        "free_text"
+                                    ],
+
+                                    where: {
+                                        customer_card_id: customerCardId
+                                    }
+                                }
                             ]
                         }
                     ]
@@ -1911,18 +1931,21 @@ exports.stamp_paid = async (req, res) => {
 
     try {
         const {
-            id,                 // Existing stamp level ID for edit
+            id,
             cus_id,
             card_id,
             payment_type,
             amount,
             paid_amount,
-            stamp_level_id
+            stamp_level_id,
+
+            // Multiple inherited rewards
+            inherited_rewards = []
         } = req.body;
 
-        // ---------------------------------------
-        // 1. REQUIRED FIELDS
-        // ---------------------------------------
+        // =========================================================
+        // 1. REQUIRED CUSTOMER / CARD
+        // =========================================================
 
         if (!cus_id || !card_id) {
             await transaction.rollback();
@@ -1933,8 +1956,318 @@ exports.stamp_paid = async (req, res) => {
             });
         }
 
-        // For create, stamp_level_id is required.
-        // For edit, id is required.
+        const customerId = Number(cus_id);
+        const cardId = Number(card_id);
+
+        if (!Number.isInteger(customerId) || !Number.isInteger(cardId)) {
+            await transaction.rollback();
+
+            return res.status(400).json({
+                status: 0,
+                message: "Invalid customer ID or card ID"
+            });
+        }
+
+        // =========================================================
+        // 2. FIND CUSTOMER CARD
+        // =========================================================
+
+        const customer_card = await CustomerCard.findOne({
+            where: {
+                id: cardId,
+                customer_id: customerId
+            },
+            transaction,
+            lock: transaction.LOCK.UPDATE
+        });
+
+        if (!customer_card) {
+            await transaction.rollback();
+
+            return res.status(404).json({
+                status: 0,
+                message: "Customer card not found"
+            });
+        }
+
+        // =========================================================
+        // 3. INHERITED REWARD ACTIONS
+        // =========================================================
+        //
+        // Example:
+        //
+        // inherited_rewards: [
+        //   {
+        //     inherited_reward_id: 15,
+        //     action: "move",
+        //     target_stamp_number: 6
+        //   },
+        //   {
+        //     inherited_reward_id: 16,
+        //     action: "use"
+        //   }
+        // ]
+        //
+        // =========================================================
+
+        if (
+            Array.isArray(inherited_rewards) &&
+            inherited_rewards.length > 0
+        ) {
+            const inheritedResults = [];
+
+            for (const rewardAction of inherited_rewards) {
+
+                const {
+                    inherited_reward_id,
+                    action,
+                    target_stamp_number
+                } = rewardAction;
+
+                // ---------------------------------------------
+                // Validate ID
+                // ---------------------------------------------
+
+                if (!inherited_reward_id) {
+                    await transaction.rollback();
+
+                    return res.status(400).json({
+                        status: 0,
+                        message:
+                            "Inherited reward ID is required"
+                    });
+                }
+
+                // ---------------------------------------------
+                // Validate action
+                // ---------------------------------------------
+
+                if (!["move", "use"].includes(action)) {
+                    await transaction.rollback();
+
+                    return res.status(400).json({
+                        status: 0,
+                        message:
+                            "Invalid inherited reward action. Use move or use"
+                    });
+                }
+
+                // ---------------------------------------------
+                // Find available reward
+                // ---------------------------------------------
+
+                const inheritedReward =
+                    await CustomerStampInheritedReward.findOne({
+                        where: {
+                            id: Number(inherited_reward_id),
+                            customer_card_id: cardId,
+                            status: 0
+                        },
+                        transaction,
+                        lock: transaction.LOCK.UPDATE
+                    });
+
+                if (!inheritedReward) {
+                    await transaction.rollback();
+
+                    return res.status(404).json({
+                        status: 0,
+                        message:
+                            `Available inherited reward ${inherited_reward_id} not found`
+                    });
+                }
+
+                // =================================================
+                // MOVE REWARD
+                // =================================================
+
+                if (action === "move") {
+
+                    if (
+                        target_stamp_number === undefined ||
+                        target_stamp_number === null ||
+                        target_stamp_number === ""
+                    ) {
+                        await transaction.rollback();
+
+                        return res.status(400).json({
+                            status: 0,
+                            message:
+                                `Target stamp number is required for inherited reward ${inherited_reward_id}`
+                        });
+                    }
+
+                    const targetStamp =
+                        Number(target_stamp_number);
+
+                    if (
+                        !Number.isInteger(targetStamp) ||
+                        targetStamp < 1
+                    ) {
+                        await transaction.rollback();
+
+                        return res.status(400).json({
+                            status: 0,
+                            message:
+                                `Invalid target stamp number for inherited reward ${inherited_reward_id}`
+                        });
+                    }
+
+                    // ---------------------------------------------
+                    // Check target stamp exists
+                    // ---------------------------------------------
+
+                    const targetLevel =
+                        await CustomerStampLevel.findOne({
+                            where: {
+                                customer_card_id: cardId,
+                                stamp_number: targetStamp
+                            },
+                            transaction
+                        });
+
+                    if (!targetLevel) {
+                        await transaction.rollback();
+
+                        return res.status(404).json({
+                            status: 0,
+                            message:
+                                `Target stamp ${targetStamp} not found`
+                        });
+                    }
+
+                    // ---------------------------------------------
+                    // Existing movement history
+                    // ---------------------------------------------
+
+                    let inheritedFrom =
+                        Array.isArray(
+                            inheritedReward.inherited_from
+                        )
+                            ? [...inheritedReward.inherited_from]
+                            : [];
+
+                    // ---------------------------------------------
+                    // Add target to history
+                    // ---------------------------------------------
+
+                    if (!inheritedFrom.includes(targetStamp)) {
+                        inheritedFrom.push(targetStamp);
+                    }
+
+                    // ---------------------------------------------
+                    // Update target
+                    // ---------------------------------------------
+
+                    await inheritedReward.update(
+                        {
+                            target_stamp_number:
+                                targetStamp,
+
+                            inherited_from:
+                                inheritedFrom
+                        },
+                        {
+                            transaction
+                        }
+                    );
+
+                    inheritedResults.push({
+                        id: inheritedReward.id,
+
+                        action: "move",
+
+                        source_stamp_number:
+                            inheritedReward.source_stamp_number,
+
+                        target_stamp_number:
+                            targetStamp,
+
+                        inherited_from:
+                            inheritedFrom,
+
+                        free_stamp:
+                            Number(
+                                inheritedReward.free_stamp
+                            ),
+
+                        free_text:
+                            inheritedReward.free_text,
+
+                        status: 0
+                    });
+                }
+
+                // =================================================
+                // USE REWARD
+                // =================================================
+
+                if (action === "use") {
+
+                    await inheritedReward.update(
+                        {
+                            status: 1
+                        },
+                        {
+                            transaction
+                        }
+                    );
+
+                    inheritedResults.push({
+                        id: inheritedReward.id,
+
+                        action: "use",
+
+                        source_stamp_number:
+                            inheritedReward.source_stamp_number,
+
+                        target_stamp_number:
+                            inheritedReward.target_stamp_number,
+
+                        inherited_from:
+                            inheritedReward.inherited_from,
+
+                        free_stamp:
+                            Number(
+                                inheritedReward.free_stamp
+                            ),
+
+                        free_text:
+                            inheritedReward.free_text,
+
+                        status: 1
+                    });
+                }
+            }
+
+            // ---------------------------------------------
+            // If this request ONLY handles inherited rewards
+            // ---------------------------------------------
+
+            if (
+                !stamp_level_id &&
+                !id &&
+                payment_type === undefined
+            ) {
+                await transaction.commit();
+
+                return res.status(200).json({
+                    status: 1,
+                    message:
+                        "Inherited rewards updated successfully",
+
+                    data: {
+                        inherited_rewards:
+                            inheritedResults
+                    }
+                });
+            }
+        }
+
+        // =========================================================
+        // 4. NORMAL STAMP PAYMENT
+        // =========================================================
+
         if (!id && !stamp_level_id) {
             await transaction.rollback();
 
@@ -1944,7 +2277,11 @@ exports.stamp_paid = async (req, res) => {
             });
         }
 
-        if (amount === undefined || amount === null || amount === '') {
+        if (
+            amount === undefined ||
+            amount === null ||
+            amount === ""
+        ) {
             await transaction.rollback();
 
             return res.status(400).json({
@@ -1953,7 +2290,11 @@ exports.stamp_paid = async (req, res) => {
             });
         }
 
-        if (paid_amount === undefined || paid_amount === null || paid_amount === '') {
+        if (
+            paid_amount === undefined ||
+            paid_amount === null ||
+            paid_amount === ""
+        ) {
             await transaction.rollback();
 
             return res.status(400).json({
@@ -1976,15 +2317,18 @@ exports.stamp_paid = async (req, res) => {
 
             return res.status(400).json({
                 status: 0,
-                message: "Invalid payment type. Use 1 for Cash or 2 for Online"
+                message:
+                    "Invalid payment type. Use 1 for Cash or 2 for Online"
             });
         }
 
-        // ---------------------------------------
-        // 2. USER
-        // ---------------------------------------
+        // =========================================================
+        // 5. USER
+        // =========================================================
 
-        const user = req.merchant || req.receptionist;
+        const user =
+            req.merchant ||
+            req.receptionist;
 
         if (!user) {
             await transaction.rollback();
@@ -1995,22 +2339,24 @@ exports.stamp_paid = async (req, res) => {
             });
         }
 
-        const userType = req.merchant
-            ? 'merchant'
-            : 'receptionist';
+        const userType =
+            req.merchant
+                ? "merchant"
+                : "receptionist";
 
         const user_id = user.id;
 
-        const customerId = Number(cus_id);
-        const cardId = Number(card_id);
+        // =========================================================
+        // 6. AMOUNTS
+        // =========================================================
+
         const Amount = Number(amount);
         const paidAmount = Number(paid_amount);
 
-        // ---------------------------------------
-        // 3. VALIDATE AMOUNTS
-        // ---------------------------------------
-
-        if (!Number.isFinite(Amount) || Amount < 0) {
+        if (
+            !Number.isFinite(Amount) ||
+            Amount < 0
+        ) {
             await transaction.rollback();
 
             return res.status(400).json({
@@ -2019,7 +2365,10 @@ exports.stamp_paid = async (req, res) => {
             });
         }
 
-        if (!Number.isFinite(paidAmount) || paidAmount < 0) {
+        if (
+            !Number.isFinite(paidAmount) ||
+            paidAmount < 0
+        ) {
             await transaction.rollback();
 
             return res.status(400).json({
@@ -2028,57 +2377,41 @@ exports.stamp_paid = async (req, res) => {
             });
         }
 
-        // ---------------------------------------
-        // 4. FIND CUSTOMER CARD
-        // ---------------------------------------
-
-        const customer_card = await CustomerCard.findOne({
-            where: {
-                id: cardId,
-                customer_id: customerId
-            },
-            transaction,
-            lock: transaction.LOCK.UPDATE
-        });
-
-        if (!customer_card) {
-            await transaction.rollback();
-
-            return res.status(404).json({
-                status: 0,
-                message: "Customer card not found"
-            });
-        }
-
-        // ---------------------------------------
-        // 5. VALIDATE CARD TYPE
-        // ---------------------------------------
+        // =========================================================
+        // 7. CARD TYPE
+        // =========================================================
 
         if (Number(customer_card.card_type) !== 1) {
             await transaction.rollback();
 
             return res.status(400).json({
                 status: 0,
-                message: "This action is only available for stamp cards"
+                message:
+                    "This action is only available for stamp cards"
             });
         }
 
-        // ---------------------------------------
-        // 6. FIND STAMP LEVEL
-        // ---------------------------------------
+        // =========================================================
+        // 8. FIND STAMP LEVEL
+        // =========================================================
 
         let stamp_level;
 
+        // =========================================================
         // EDIT MODE
+        // =========================================================
+
         if (id) {
-            stamp_level = await CustomerStampLevel.findOne({
-                where: {
-                    id: Number(id),
-                    customer_card_id: cardId
-                },
-                transaction,
-                lock: transaction.LOCK.UPDATE
-            });
+
+            stamp_level =
+                await CustomerStampLevel.findOne({
+                    where: {
+                        id: Number(id),
+                        customer_card_id: cardId
+                    },
+                    transaction,
+                    lock: transaction.LOCK.UPDATE
+                });
 
             if (!stamp_level) {
                 await transaction.rollback();
@@ -2088,69 +2421,79 @@ exports.stamp_paid = async (req, res) => {
                     message: "Stamp level not found"
                 });
             }
-
-            console.log(
-                "EDIT STAMP LEVEL:",
-                stamp_level.toJSON()
-            );
         }
 
+        // =========================================================
         // CREATE MODE
+        // =========================================================
+
         else {
-            if (Number(customer_card.is_completed) !== 0) {
+
+            if (
+                Number(
+                    customer_card.is_completed || 0
+                ) === 1
+            ) {
                 await transaction.rollback();
 
                 return res.status(400).json({
                     status: 400,
-                    message: "The stamp card is already completed"
+                    message:
+                        "The stamp card is already completed"
                 });
             }
 
-            const currentStamp = Number(
-                customer_card.current_stamp || 0
-            );
+            const currentStamp =
+                Number(
+                    customer_card.current_stamp || 0
+                );
 
-            const nextStamp = currentStamp + 1;
+            const nextStamp =
+                currentStamp + 1;
 
-            stamp_level = await CustomerStampLevel.findOne({
-                where: {
-                    id: Number(stamp_level_id),
-                    customer_card_id: cardId,
-                    stamp_number: nextStamp,
-                    status: 0
-                },
-                transaction,
-                lock: transaction.LOCK.UPDATE
-            });
+            stamp_level =
+                await CustomerStampLevel.findOne({
+                    where: {
+                        id: Number(stamp_level_id),
+
+                        customer_card_id:
+                            cardId,
+
+                        stamp_number:
+                            nextStamp,
+
+                        status: 0
+                    },
+
+                    transaction,
+
+                    lock:
+                        transaction.LOCK.UPDATE
+                });
 
             if (!stamp_level) {
                 await transaction.rollback();
 
                 return res.status(404).json({
                     status: 0,
-                    message: `Stamp level ${currentStamp} is already completed`
+                    message:
+                        `Stamp level ${nextStamp} is already completed`
                 });
             }
-
-            console.log(
-                "CREATE STAMP LEVEL:",
-                stamp_level.toJSON()
-            );
         }
 
-        // ---------------------------------------
-        // 7. REWARD TYPE
-        // ---------------------------------------
+        // =========================================================
+        // 9. REWARD TYPE
+        // =========================================================
 
-        const rewardType = String(
-            stamp_level.reward_type
-        );
+        const rewardType =
+            String(stamp_level.reward_type);
 
-        // 1 = Free
-        // 2 = Discount
-        // 3 = Paid
-
-        if (!['1', '2', '3'].includes(rewardType)) {
+        if (
+            !["1", "2", "3"].includes(
+                rewardType
+            )
+        ) {
             await transaction.rollback();
 
             return res.status(400).json({
@@ -2159,13 +2502,14 @@ exports.stamp_paid = async (req, res) => {
             });
         }
 
-        // ---------------------------------------
-        // 8. CALCULATE PAYABLE AMOUNT
-        // ---------------------------------------
+        // =========================================================
+        // 10. DISCOUNT
+        // =========================================================
 
-        const discount = Number(
-            stamp_level.discount || 0
-        );
+        const discount =
+            Number(
+                stamp_level.discount || 0
+            );
 
         if (
             !Number.isFinite(discount) ||
@@ -2176,180 +2520,347 @@ exports.stamp_paid = async (req, res) => {
 
             return res.status(400).json({
                 status: 0,
-                message: "Invalid discount percentage"
+                message:
+                    "Invalid discount percentage"
             });
         }
+
+        // =========================================================
+        // 11. CALCULATE FINAL AMOUNT
+        // =========================================================
 
         let finalAmount = 0;
 
         // FREE
-        if (rewardType === '1') {
+        if (rewardType === "1") {
+
             finalAmount = 0;
 
-            if (Amount !== 0 || paidAmount !== 0) {
+            if (
+                Amount !== 0 ||
+                paidAmount !== 0
+            ) {
                 await transaction.rollback();
 
                 return res.status(400).json({
                     status: 0,
-                    message: "Free stamp does not require payment"
+                    message:
+                        "Free stamp does not require payment"
                 });
             }
         }
 
         // DISCOUNT
-        else if (rewardType === '2') {
-            finalAmount = Amount - (
-                Amount * discount / 100
-            );
+        else if (rewardType === "2") {
 
-            finalAmount = Number(
-                finalAmount.toFixed(2)
-            );
+            finalAmount =
+                Amount -
+                (
+                    Amount *
+                    discount /
+                    100
+                );
+
+            finalAmount =
+                Number(
+                    finalAmount.toFixed(2)
+                );
 
             if (
-                Number(paidAmount.toFixed(2)) !== finalAmount
+                Number(
+                    paidAmount.toFixed(2)
+                ) !== finalAmount
             ) {
                 await transaction.rollback();
 
                 return res.status(400).json({
                     status: 0,
-                    message: `Invalid paid amount. Required amount is ${finalAmount.toFixed(2)}`
+                    message:
+                        `Invalid paid amount. Required amount is ${finalAmount.toFixed(2)}`
                 });
             }
         }
 
         // PAID
-        else if (rewardType === '3') {
-            finalAmount = Number(
-                Amount.toFixed(2)
-            );
+        else if (rewardType === "3") {
+
+            finalAmount =
+                Number(
+                    Amount.toFixed(2)
+                );
 
             if (
-                Number(paidAmount.toFixed(2)) !== finalAmount
+                Number(
+                    paidAmount.toFixed(2)
+                ) !== finalAmount
             ) {
                 await transaction.rollback();
 
                 return res.status(400).json({
                     status: 0,
-                    message: `Invalid paid amount. Required amount is ${finalAmount.toFixed(2)}`
+                    message:
+                        `Invalid paid amount. Required amount is ${finalAmount.toFixed(2)}`
                 });
             }
         }
 
-        // ---------------------------------------
-        // 9. UPDATE / CREATE STAMP
-        // ---------------------------------------
+        // =========================================================
+        // 12. EDIT EXISTING STAMP
+        // =========================================================
 
         if (id) {
-            // -----------------------------------
-            // EDIT MODE
-            // -----------------------------------
 
             await stamp_level.update(
                 {
-                    amt: Number(Amount.toFixed(2)),
-                    paid_amt: Number(paidAmount.toFixed(2)),
-                    payment_type: String(payment_type),
-                    payment_status: 1,
-                    paid_date: new Date(),
-                    role: userType,
-                    role_id: user_id
+                    amt:
+                        Number(
+                            Amount.toFixed(2)
+                        ),
+
+                    paid_amt:
+                        Number(
+                            paidAmount.toFixed(2)
+                        ),
+
+                    payment_type:
+                        String(payment_type),
+
+                    payment_status:
+                        1,
+
+                    paid_date:
+                        new Date(),
+
+                    role:
+                        userType,
+
+                    role_id:
+                        user_id
                 },
                 {
                     transaction
                 }
             );
-        } else {
-            // -----------------------------------
-            // CREATE MODE
-            // -----------------------------------
+        }
 
-            const currentStamp = Number(
-                customer_card.current_stamp || 0
-            );
+        // =========================================================
+        // 13. COMPLETE NEXT STAMP
+        // =========================================================
 
-            const updatedStamp = currentStamp + 1;
+        else {
 
-            const totalStamps = Number(
-                customer_card.number_of_stamps || 0
-            );
+            const currentStamp =
+                Number(
+                    customer_card.current_stamp || 0
+                );
+
+            const updatedStamp =
+                currentStamp + 1;
+
+            const totalStamps =
+                Number(
+                    customer_card.number_of_stamps || 0
+                );
 
             const isCompleted =
                 totalStamps > 0 &&
                 updatedStamp >= totalStamps;
 
+            // ---------------------------------------------
+            // Update Customer Card
+            // ---------------------------------------------
+
             await customer_card.update(
                 {
-                    current_stamp: updatedStamp,
-                    is_completed: isCompleted ? 1 : 0
+                    current_stamp:
+                        updatedStamp,
+
+                    is_completed:
+                        isCompleted
+                            ? 1
+                            : 0
                 },
                 {
                     transaction
                 }
             );
+
+            // ---------------------------------------------
+            // Complete Stamp Level
+            // ---------------------------------------------
 
             await stamp_level.update(
                 {
-                    status: 1,
-                    amt: Number(Amount.toFixed(2)),
-                    paid_amt: Number(paidAmount.toFixed(2)),
-                    payment_type: String(payment_type),
-                    payment_status: 1,
-                    paid_date: new Date(),
-                    role: userType,
-                    role_id: user_id
+                    status:
+                        1,
+
+                    amt:
+                        Number(
+                            Amount.toFixed(2)
+                        ),
+
+                    paid_amt:
+                        Number(
+                            paidAmount.toFixed(2)
+                        ),
+
+                    payment_type:
+                        String(payment_type),
+
+                    payment_status:
+                        1,
+
+                    paid_date:
+                        new Date(),
+
+                    role:
+                        userType,
+
+                    role_id:
+                        user_id
                 },
                 {
                     transaction
                 }
             );
+
+            // =================================================
+            // 14. CREATE INHERITED FREE REWARD
+            // =================================================
+            //
+            // IMPORTANT:
+            //
+            // free_stamp/free_text are taken from StampLevel.
+            //
+            // They are NOT stored in CustomerStampLevel.
+            //
+            // =================================================
+
+            const merchantStampLevel =
+                await StampLevel.findOne({
+                    where: {
+                        merchant_card_id:
+                            customer_card.merchant_card_id,
+
+                        stamp_number:
+                            stamp_level.stamp_number,
+
+                        status: 1
+                    },
+                    transaction
+                });
+
+            if (
+                merchantStampLevel &&
+                Number(
+                    merchantStampLevel.free_stamp
+                ) === 1
+            ) {
+
+                await CustomerStampInheritedReward.create(
+                    {
+                        customer_card_id:
+                            cardId,
+
+                        source_stamp_number:
+                            Number(
+                                stamp_level.stamp_number
+                            ),
+
+                        target_stamp_number:
+                            Number(
+                                stamp_level.stamp_number
+                            ),
+
+                        inherited_from: [
+                            Number(
+                                stamp_level.stamp_number
+                            )
+                        ],
+
+                        free_stamp:
+                            1,
+
+                        free_text:
+                            merchantStampLevel.free_text ||
+                            null,
+
+                        status:
+                            0
+                    },
+                    {
+                        transaction
+                    }
+                );
+            }
         }
 
-        // ---------------------------------------
-        // 10. COMMIT
-        // ---------------------------------------
+        // =========================================================
+        // 15. COMMIT
+        // =========================================================
 
         await transaction.commit();
 
-        // ---------------------------------------
-        // 11. RESPONSE
-        // ---------------------------------------
-
-        const currentStampAfterUpdate = Number(
-            customer_card.current_stamp || 0
-        );
+        // =========================================================
+        // 16. RESPONSE
+        // =========================================================
 
         return res.status(200).json({
             status: 1,
-            message: id
-                ? "Stamp payment updated successfully"
-                : "Paid stamp processed successfully",
+
+            message:
+                id
+                    ? "Stamp payment updated successfully"
+                    : "Paid stamp processed successfully",
 
             data: {
-                id: stamp_level.id,
-                card_id: customer_card.id,
-                customer_id: customer_card.customer_id,
-                stamp_level_id: stamp_level.id,
-                stamp_number: stamp_level.stamp_number,
-                reward_type: Number(stamp_level.reward_type),
+                id:
+                    stamp_level.id,
 
-                // Transaction amount entered
-                amount: Number(Amount.toFixed(2)),
+                card_id:
+                    customer_card.id,
 
-                // Final amount after discount
-                paid_amount: Number(paidAmount.toFixed(2)),
+                customer_id:
+                    customer_card.customer_id,
 
-                payment_type: Number(payment_type),
+                stamp_level_id:
+                    stamp_level.id,
 
-                current_stamp: currentStampAfterUpdate,
+                stamp_number:
+                    stamp_level.stamp_number,
 
-                is_completed: Number(
-                    customer_card.is_completed || 0
-                )
+                reward_type:
+                    Number(
+                        stamp_level.reward_type
+                    ),
+
+                amount:
+                    Number(
+                        Amount.toFixed(2)
+                    ),
+
+                paid_amount:
+                    Number(
+                        paidAmount.toFixed(2)
+                    ),
+
+                payment_type:
+                    Number(payment_type),
+
+                current_stamp:
+                    Number(
+                        customer_card.current_stamp || 0
+                    ),
+
+                is_completed:
+                    Number(
+                        customer_card.is_completed || 0
+                    )
             }
         });
 
     } catch (err) {
+
         try {
             await transaction.rollback();
         } catch (rollbackError) {

@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast'
 import API from '../../../api.js'
 import CustomerCard from '../../../components/CustomerCard.jsx'
 import CustomerCardHistory from '../../../components/CustomerCardHistory.jsx'
+import AddCardCustomerModal from './AddCardCustomerModal.jsx'
 import {
     fetchCustomerStampLevelsApi,
     formatExpiryDate,
@@ -88,6 +89,7 @@ export default function CustomerSearchModal({
     const [paymentAmount, setPaymentAmount] = useState('0.00')
     const [submittingCheckIn, setSubmittingCheckIn] = useState(false)
     const [historyModalOpen, setHistoryModalOpen] = useState(false)
+    const [addCardModalOpen, setAddCardModalOpen] = useState(false)
     const [lastReceipt, setLastReceipt] = useState(null)
     const [selectedStampIndex, setSelectedStampIndex] = useState(null)
     const [sharingWhatsApp, setSharingWhatsApp] = useState(false)
@@ -104,11 +106,14 @@ export default function CustomerSearchModal({
             })
             if (res?.data?.status == 1 && Array.isArray(res.data.data)) {
                 setCustomers(res.data.data)
+                return res.data.data
             } else {
                 setCustomers([])
+                return []
             }
         } catch (err) {
             console.error("Error loading customers for search modal:", err)
+            return []
         } finally {
             setLoadingCustomers(false)
         }
@@ -134,20 +139,27 @@ export default function CustomerSearchModal({
 
     useEffect(() => {
         if (isOpen) {
-            fetchCustomers()
             setLastReceipt(null)
             setSelectedStampIndex(null)
-            if (initialCustomer) {
-                selectCustomer(initialCustomer)
-            } else if (initialQuery) {
-                setSearchQuery(initialQuery)
-                setSelectedCustomer(null)
-                setSelectedCard(null)
-            } else {
-                setSelectedCustomer(null)
-                setSelectedCard(null)
-                setSearchQuery('')
-            }
+            fetchCustomers().then((list) => {
+                const custList = Array.isArray(list) ? list : []
+                if (initialCustomer) {
+                    const found = custList.find(c =>
+                        (initialCustomer.id && String(c.id) === String(initialCustomer.id)) ||
+                        (initialCustomer.email && c.email && c.email.toLowerCase() === initialCustomer.email.toLowerCase()) ||
+                        (initialCustomer.phone && String(c.phone).replace(/\D/g, '') === String(initialCustomer.phone).replace(/\D/g, ''))
+                    )
+                    selectCustomer(found || initialCustomer)
+                } else if (initialQuery) {
+                    setSearchQuery(initialQuery)
+                    setSelectedCustomer(null)
+                    setSelectedCard(null)
+                } else {
+                    setSelectedCustomer(null)
+                    setSelectedCard(null)
+                    setSearchQuery('')
+                }
+            })
         } else {
             setSelectedCustomer(null)
             setSelectedCard(null)
@@ -651,14 +663,16 @@ export default function CustomerSearchModal({
         ''
 
     const handleAddNewCard = () => {
-        const bId = effectiveBranchId || branchId || receptionist?.user_branch_id || ''
-        const emailQuery = selectedCustomer?.email ? `?email=${encodeURIComponent(selectedCustomer.email)}` : ''
-        if (onClose) onClose()
-        if (isMerchant) {
-            navigate(`/merchant/add-card-customer/${bId}${emailQuery}`)
-        } else {
-            navigate(`/receptionist/add-card-customer/${bId}${emailQuery}`)
+        setAddCardModalOpen(true)
+    }
+
+    const handleAddCardModalSuccess = async (resData, customerInfo) => {
+        setAddCardModalOpen(false)
+        await fetchCustomers()
+        if (customerInfo) {
+            selectCustomer(customerInfo)
         }
+        if (onSuccess) onSuccess()
     }
 
     // Merge card data with customer details to ensure full preview display
@@ -2089,6 +2103,15 @@ export default function CustomerSearchModal({
                 onClose={() => setHistoryModalOpen(false)}
                 cardId={selectedCard?.id}
                 card={selectedCard}
+            />
+
+            {/* ADD CARD TO CUSTOMER POPUP MODAL */}
+            <AddCardCustomerModal
+                isOpen={addCardModalOpen}
+                onClose={() => setAddCardModalOpen(false)}
+                initialCustomer={selectedCustomer}
+                branchId={effectiveBranchId}
+                onSuccess={handleAddCardModalSuccess}
             />
         </div>
     )

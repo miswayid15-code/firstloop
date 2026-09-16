@@ -5,6 +5,7 @@ import { toast } from 'react-hot-toast'
 import API from '../../../api.js'
 import CustomerCard from '../../../components/CustomerCard.jsx'
 import CustomerCardHistory from '../../../components/CustomerCardHistory.jsx'
+import AddCardCustomerModal from './AddCardCustomerModal.jsx'
 import {
     fetchCustomerStampLevelsApi,
     formatExpiryDate,
@@ -89,6 +90,7 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
     const [lastReceipt, setLastReceipt] = useState(null)
     const [selectedStampIndex, setSelectedStampIndex] = useState(null)
     const [historyModalOpen, setHistoryModalOpen] = useState(false)
+    const [addCardModalOpen, setAddCardModalOpen] = useState(false)
     const [sharingWhatsApp, setSharingWhatsApp] = useState(false)
 
     const scannerRef = useRef(null)
@@ -701,14 +703,13 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
     const freeBonusText = activeLevel?.free_text || ''
 
     const handleAddNewCard = () => {
-        const bId = branchId || receptionist?.user_branch_id || ''
-        const emailQuery = matchedCustomer?.email ? `?email=${encodeURIComponent(matchedCustomer.email)}` : ''
+        setAddCardModalOpen(true)
+    }
+
+    const handleAddCardModalSuccess = async (resData, customerInfo) => {
+        setAddCardModalOpen(false)
         if (onClose) onClose()
-        if (isMerchant) {
-            navigate(`/merchant/add-card-customer/${bId}${emailQuery}`)
-        } else {
-            navigate(`/receptionist/add-card-customer/${bId}${emailQuery}`)
-        }
+        if (onSuccess) onSuccess(customerInfo)
     }
 
     // Merge card data with customer details to ensure full preview display
@@ -2147,6 +2148,15 @@ export default function QrScannerModal({ isOpen, onClose, onSuccess, branchId = 
                 onClose={() => setHistoryModalOpen(false)}
                 cardId={selectedCard?.id}
                 card={selectedCard}
+            />
+
+            {/* ADD CARD TO CUSTOMER POPUP MODAL */}
+            <AddCardCustomerModal
+                isOpen={addCardModalOpen}
+                onClose={() => setAddCardModalOpen(false)}
+                initialCustomer={matchedCustomer}
+                branchId={branchId}
+                onSuccess={handleAddCardModalSuccess}
             />
         </div>
     )

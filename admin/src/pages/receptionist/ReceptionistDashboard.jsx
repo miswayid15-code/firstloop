@@ -248,7 +248,7 @@ export default function ReceptionistDashboard() {
                                 onClick={() => navigate('/receptionist/customers')}
                                 style={{ padding: '10px 18px', borderRadius: 12, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 8 }}
                             >
-                               <i className="fas fa-user"></i>
+                                <i className="fas fa-user"></i>
                                 <span>Customer Search</span>
                             </button>
                         </>
@@ -257,7 +257,7 @@ export default function ReceptionistDashboard() {
             </div>
 
             {/* KEY STATISTICS OVERVIEW CARDS */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20, marginBottom: 28 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20, marginBottom: 28, alignItems: 'stretch' }}>
                 {/* 1. Total Customers & Repeat Customers */}
                 <div
                     className="card"
@@ -266,48 +266,126 @@ export default function ReceptionistDashboard() {
                         borderRadius: 18,
                         padding: 22,
                         background: '#FFFFFF',
-                        border: '1px solid rgba(14, 136, 184, 0.15)',
+                        border: '1px solid rgba(14, 136, 184, 0.16)',
                         boxShadow: '0 8px 24px -4px rgba(14, 136, 184, 0.08)',
                         cursor: isAccountActive ? 'pointer' : 'default',
-                        transition: 'transform 0.15s ease, box-shadow 0.15s ease'
-                    }}
-                    onMouseEnter={(e) => { if (isAccountActive) e.currentTarget.style.transform = 'translateY(-2px)' }}
-                    onMouseLeave={(e) => { if (isAccountActive) e.currentTarget.style.transform = 'translateY(0)' }}
-                >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                        <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                            TOTAL CUSTOMERS
-                        </span>
-                        <div style={{ width: 42, height: 42, borderRadius: 12, background: 'var(--firstloop-primary-light)', color: 'var(--firstloop-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', fontWeight: 800 }}>
-                            <i className="fas fa-users" />
-                        </div>
-                    </div>
-                    <h3 style={{ fontSize: '2.2rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)', lineHeight: 1.1 }}>
-                        {loading ? <i className="fas fa-spinner fa-spin" style={{ fontSize: '1.4rem' }} /> : (dashboard?.total_cus ?? 0)}
-                    </h3>
-
-                    {/* Repeat Customers sub-metric */}
-                    <div style={{
+                        transition: 'transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease',
                         display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        marginTop: 14,
-                        padding: '8px 12px',
-                        borderRadius: 10,
-                        background: 'rgba(14, 136, 184, 0.06)',
-                        border: '1px solid rgba(14, 136, 184, 0.12)'
-                    }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <i className="fas fa-redo-alt" style={{ fontSize: '0.75rem', color: 'var(--firstloop-primary)' }} />
-                            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0F5673' }}>Repeat Customers</span>
+                        flexDirection: 'column',
+                        height: '100%',
+                        justifyContent: 'space-between'
+                    }}
+                    onMouseEnter={(e) => {
+                        if (isAccountActive) {
+                            e.currentTarget.style.transform = 'translateY(-3px)'
+                            e.currentTarget.style.boxShadow = '0 12px 28px -4px rgba(14, 136, 184, 0.16)'
+                            e.currentTarget.style.borderColor = 'rgba(14, 136, 184, 0.35)'
+                        }
+                    }}
+                    onMouseLeave={(e) => {
+                        if (isAccountActive) {
+                            e.currentTarget.style.transform = 'translateY(0)'
+                            e.currentTarget.style.boxShadow = '0 8px 24px -4px rgba(14, 136, 184, 0.08)'
+                            e.currentTarget.style.borderColor = 'rgba(14, 136, 184, 0.16)'
+                        }
+                    }}
+                >
+                    <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                            <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                TOTAL CUSTOMERS
+                            </span>
+                            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--firstloop-primary-light)', color: 'var(--firstloop-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', fontWeight: 800 }}>
+                                <i className="fas fa-users" />
+                            </div>
                         </div>
-                        <span style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--firstloop-primary)' }}>
-                            {loading ? '-' : (dashboard?.total_repeat_customer ?? 0)}
-                        </span>
+                        <h3 style={{ fontSize: '2.2rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)', lineHeight: 1.1 }}>
+                            {loading ? <i className="fas fa-spinner fa-spin" style={{ fontSize: '1.4rem' }} /> : (dashboard?.total_cus ?? 0)}
+                        </h3>
+
+                        {/* Sub-metrics: New Today & Repeat */}
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                            gap: 10,
+                            marginTop: 16
+                        }}>
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    padding: '8px 12px',
+                                    borderRadius: 10,
+                                    background: 'rgba(16, 185, 129, 0.08)',
+                                    border: '1px solid rgba(16, 185, 129, 0.18)',
+                                    minWidth: 0,
+                                    boxSizing: 'border-box'
+                                }}
+                            >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                                    <i
+                                        className="fas fa-user-plus"
+                                        style={{
+                                            fontSize: '0.75rem',
+                                            color: '#059669',
+                                            flexShrink: 0
+                                        }}
+                                    />
+                                    <span
+                                        style={{
+                                            fontSize: '0.78rem',
+                                            fontWeight: 700,
+                                            color: '#047857',
+                                            whiteSpace: 'nowrap',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis'
+                                        }}
+                                    >
+                                        New Today
+                                    </span>
+                                </div>
+                                <span
+                                    style={{
+                                        fontSize: '1rem',
+                                        fontWeight: 800,
+                                        color: '#059669',
+                                        flexShrink: 0,
+                                        marginLeft: 6
+                                    }}
+                                >
+                                    {loading ? '-' : (dashboard?.today_total_cus ?? 0)}
+                                </span>
+                            </div>
+
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    padding: '8px 12px',
+                                    borderRadius: 10,
+                                    background: 'rgba(14, 136, 184, 0.06)',
+                                    border: '1px solid rgba(14, 136, 184, 0.14)',
+                                    minWidth: 0,
+                                    boxSizing: 'border-box'
+                                }}
+                            >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                                    <i className="fas fa-redo-alt" style={{ fontSize: '0.75rem', color: 'var(--firstloop-primary)', flexShrink: 0 }} />
+                                    <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#0F5673', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                        Repeat
+                                    </span>
+                                </div>
+                                <span style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--firstloop-primary)', flexShrink: 0, marginLeft: 6 }}>
+                                    {loading ? '-' : (dashboard?.total_repeat_customer ?? 0)}
+                                </span>
+                            </div>
+                        </div>
                     </div>
 
                     {isAccountActive && (
-                        <div style={{ fontSize: '0.78rem', color: 'var(--firstloop-primary)', fontWeight: 700, marginTop: 10, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--firstloop-primary)', fontWeight: 700, marginTop: 14, display: 'flex', alignItems: 'center', gap: 4 }}>
                             <span>View Customer List &rarr;</span>
                         </div>
                     )}
@@ -321,48 +399,73 @@ export default function ReceptionistDashboard() {
                         borderRadius: 18,
                         padding: 22,
                         background: '#FFFFFF',
-                        border: '1px solid rgba(16, 185, 129, 0.15)',
+                        border: '1px solid rgba(16, 185, 129, 0.18)',
                         boxShadow: '0 8px 24px -4px rgba(16, 185, 129, 0.08)',
                         cursor: isAccountActive ? 'pointer' : 'default',
-                        transition: 'transform 0.15s ease, box-shadow 0.15s ease'
-                    }}
-                    onMouseEnter={(e) => { if (isAccountActive) e.currentTarget.style.transform = 'translateY(-2px)' }}
-                    onMouseLeave={(e) => { if (isAccountActive) e.currentTarget.style.transform = 'translateY(0)' }}
-                >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                        <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                            CROSS-BRANCH CUSTOMERS
-                        </span>
-                        <div style={{ width: 42, height: 42, borderRadius: 12, background: 'rgba(16, 185, 129, 0.12)', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', fontWeight: 800 }}>
-                            <i className="fas fa-user-check" />
-                        </div>
-                    </div>
-                    <h3 style={{ fontSize: '2.2rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)', lineHeight: 1.1 }}>
-                        {loading ? <i className="fas fa-spinner fa-spin" style={{ fontSize: '1.4rem' }} /> : (dashboard?.total_linked_customer ?? 0)}
-                    </h3>
-
-                    {/* Linked Customers alias note */}
-                    <div style={{
+                        transition: 'transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease',
                         display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        marginTop: 14,
-                        padding: '8px 12px',
-                        borderRadius: 10,
-                        background: 'rgba(16, 185, 129, 0.06)',
-                        border: '1px solid rgba(16, 185, 129, 0.15)'
-                    }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <i className="fas fa-link" style={{ fontSize: '0.75rem', color: '#059669' }} />
-                            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#065F46' }}>Linked Customers</span>
+                        flexDirection: 'column',
+                        height: '100%',
+                        justifyContent: 'space-between'
+                    }}
+                    onMouseEnter={(e) => {
+                        if (isAccountActive) {
+                            e.currentTarget.style.transform = 'translateY(-3px)'
+                            e.currentTarget.style.boxShadow = '0 12px 28px -4px rgba(16, 185, 129, 0.16)'
+                            e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.35)'
+                        }
+                    }}
+                    onMouseLeave={(e) => {
+                        if (isAccountActive) {
+                            e.currentTarget.style.transform = 'translateY(0)'
+                            e.currentTarget.style.boxShadow = '0 8px 24px -4px rgba(16, 185, 129, 0.08)'
+                            e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.18)'
+                        }
+                    }}
+                >
+                    <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                            <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                CROSS-BRANCH CUSTOMERS
+                            </span>
+                            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(16, 185, 129, 0.12)', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', fontWeight: 800 }}>
+                                <i className="fas fa-user-check" />
+                            </div>
                         </div>
-                        <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#059669', background: '#DCFCE7', padding: '2px 8px', borderRadius: 6 }}>
-                            Other Branches
-                        </span>
+                        <h3 style={{ fontSize: '2.2rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)', lineHeight: 1.1 }}>
+                            {loading ? <i className="fas fa-spinner fa-spin" style={{ fontSize: '1.4rem' }} /> : (dashboard?.total_linked_customer ?? 0)}
+                        </h3>
+
+                        {/* Linked Customers alias note */}
+                        <div style={{
+                            marginTop: 16
+                        }}>
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    padding: '8px 12px',
+                                    borderRadius: 10,
+                                    background: 'rgba(16, 185, 129, 0.06)',
+                                    border: '1px solid rgba(16, 185, 129, 0.16)',
+                                    minHeight: 38,
+                                    boxSizing: 'border-box'
+                                }}
+                            >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <i className="fas fa-link" style={{ fontSize: '0.75rem', color: '#059669' }} />
+                                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#065F46' }}>Linked Customers</span>
+                                </div>
+                                <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#059669', background: '#DCFCE7', padding: '3px 8px', borderRadius: 6, border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                                    Other Branches
+                                </span>
+                            </div>
+                        </div>
                     </div>
 
                     {isAccountActive && (
-                        <div style={{ fontSize: '0.78rem', color: '#059669', fontWeight: 700, marginTop: 10, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <div style={{ fontSize: '0.78rem', color: '#059669', fontWeight: 700, marginTop: 14, display: 'flex', alignItems: 'center', gap: 4 }}>
                             <span>View Cross-Branch Customers &rarr;</span>
                         </div>
                     )}
@@ -376,48 +479,73 @@ export default function ReceptionistDashboard() {
                         borderRadius: 18,
                         padding: 22,
                         background: '#FFFFFF',
-                        border: '1px solid rgba(2, 132, 199, 0.15)',
+                        border: '1px solid rgba(2, 132, 199, 0.18)',
                         boxShadow: '0 8px 24px -4px rgba(2, 132, 199, 0.08)',
                         cursor: isAccountActive ? 'pointer' : 'default',
-                        transition: 'transform 0.15s ease, box-shadow 0.15s ease'
-                    }}
-                    onMouseEnter={(e) => { if (isAccountActive) e.currentTarget.style.transform = 'translateY(-2px)' }}
-                    onMouseLeave={(e) => { if (isAccountActive) e.currentTarget.style.transform = 'translateY(0)' }}
-                >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                        <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                            TOTAL STAMP CARDS
-                        </span>
-                        <div style={{ width: 42, height: 42, borderRadius: 12, background: 'rgba(2, 132, 199, 0.12)', color: '#0284C7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', fontWeight: 800 }}>
-                            <i className="fas fa-stamp" />
-                        </div>
-                    </div>
-                    <h3 style={{ fontSize: '2.2rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)', lineHeight: 1.1 }}>
-                        {loading ? <i className="fas fa-spinner fa-spin" style={{ fontSize: '1.4rem' }} /> : (dashboard?.total_stamp_card ?? 0)}
-                    </h3>
-
-                    {/* Available Stamp Cards sub-metric */}
-                    <div style={{
+                        transition: 'transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease',
                         display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        marginTop: 14,
-                        padding: '8px 12px',
-                        borderRadius: 10,
-                        background: 'rgba(2, 132, 199, 0.06)',
-                        border: '1px solid rgba(2, 132, 199, 0.15)'
-                    }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <i className="fas fa-layer-group" style={{ fontSize: '0.75rem', color: '#0284C7' }} />
-                            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0369A1' }}>Available Cards</span>
+                        flexDirection: 'column',
+                        height: '100%',
+                        justifyContent: 'space-between'
+                    }}
+                    onMouseEnter={(e) => {
+                        if (isAccountActive) {
+                            e.currentTarget.style.transform = 'translateY(-3px)'
+                            e.currentTarget.style.boxShadow = '0 12px 28px -4px rgba(2, 132, 199, 0.16)'
+                            e.currentTarget.style.borderColor = 'rgba(2, 132, 199, 0.35)'
+                        }
+                    }}
+                    onMouseLeave={(e) => {
+                        if (isAccountActive) {
+                            e.currentTarget.style.transform = 'translateY(0)'
+                            e.currentTarget.style.boxShadow = '0 8px 24px -4px rgba(2, 132, 199, 0.08)'
+                            e.currentTarget.style.borderColor = 'rgba(2, 132, 199, 0.18)'
+                        }
+                    }}
+                >
+                    <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                            <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                TOTAL STAMP CARDS
+                            </span>
+                            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(2, 132, 199, 0.12)', color: '#0284C7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', fontWeight: 800 }}>
+                                <i className="fas fa-stamp" />
+                            </div>
                         </div>
-                        <span style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0284C7' }}>
-                            {loading ? '-' : (dashboard?.total_available_stamp_card ?? 0)}
-                        </span>
+                        <h3 style={{ fontSize: '2.2rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)', lineHeight: 1.1 }}>
+                            {loading ? <i className="fas fa-spinner fa-spin" style={{ fontSize: '1.4rem' }} /> : (dashboard?.total_stamp_card ?? 0)}
+                        </h3>
+
+                        {/* Available Stamp Cards sub-metric */}
+                        <div style={{
+                            marginTop: 16
+                        }}>
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    padding: '8px 12px',
+                                    borderRadius: 10,
+                                    background: 'rgba(2, 132, 199, 0.06)',
+                                    border: '1px solid rgba(2, 132, 199, 0.16)',
+                                    minHeight: 38,
+                                    boxSizing: 'border-box'
+                                }}
+                            >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <i className="fas fa-layer-group" style={{ fontSize: '0.75rem', color: '#0284C7' }} />
+                                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0369A1' }}>Available Cards</span>
+                                </div>
+                                <span style={{ fontSize: '1rem', fontWeight: 800, color: '#0284C7' }}>
+                                    {loading ? '-' : (dashboard?.total_available_stamp_card ?? 0)}
+                                </span>
+                            </div>
+                        </div>
                     </div>
 
                     {isAccountActive && (
-                        <div style={{ fontSize: '0.78rem', color: '#0284C7', fontWeight: 700, marginTop: 10, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <div style={{ fontSize: '0.78rem', color: '#0284C7', fontWeight: 700, marginTop: 14, display: 'flex', alignItems: 'center', gap: 4 }}>
                             <span>Issue / Check-In Stamps &rarr;</span>
                         </div>
                     )}

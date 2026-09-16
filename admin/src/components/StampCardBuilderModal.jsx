@@ -1703,11 +1703,74 @@ export default function StampCardBuilderModal({
                                 </div>
 
                                 {/* BOTTOM RIGHT ALIGNED POWERED BY BADGE WITH FIRSTLOOP LOGO */}
-                                <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 5, fontSize: '0.65rem', opacity: 0.9, fontWeight: 600, marginTop: 10, lineHeight: 1 }}>
-                                    <span style={{ lineHeight: 1, display: 'inline-flex', alignItems: 'center' }}>powered by</span>
-                                    <img src={flLogo} alt="FirstLoop" style={{ height: 13, width: 'auto', display: 'inline-block', verticalAlign: 'middle', objectFit: 'contain', margin: '0 1px' }} />
-                                    <strong style={{ color: 'inherit', lineHeight: 1, display: 'inline-flex', alignItems: 'center' }}>firstloop</strong>
-                                </div>
+<div
+    style={{
+        display: 'flex',
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+        marginTop: 10,
+        lineHeight: 1
+    }}
+>
+    <div
+        style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 5,
+            fontSize: '0.65rem',
+            fontWeight: 600,
+
+            // White glass pill
+            background: 'rgba(255, 255, 255, 0.72)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+
+            // Pill shape
+            padding: '5px 9px',
+            borderRadius: 999,
+
+            // Subtle border + shadow
+            border: '1px solid rgba(255, 255, 255, 0.85)',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.12)',
+
+            color: '#334155',
+            whiteSpace: 'nowrap'
+        }}
+    >
+        <span
+            style={{
+                lineHeight: 1,
+                display: 'inline-flex',
+                alignItems: 'center'
+            }}
+        >
+            powered by
+        </span>
+
+        <img
+            src={flLogo}
+            alt="FirstLoop"
+            style={{
+                height: 13,
+                width: 'auto',
+                display: 'inline-block',
+                objectFit: 'contain',
+                margin: '0 1px'
+            }}
+        />
+
+        <strong
+            style={{
+                color: '#0F172A',
+                lineHeight: 1,
+                display: 'inline-flex',
+                alignItems: 'center'
+            }}
+        >
+            firstloop
+        </strong>
+    </div>
+</div>
                             </div>
                         </div>
                     </div>

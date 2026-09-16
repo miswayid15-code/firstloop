@@ -23,10 +23,22 @@ export default function AddCardCustomer() {
     const location = useLocation();
     const { branchId: paramBranchId } = useParams();
     const [searchParams] = useSearchParams();
-    const branchId = paramBranchId || searchParams.get("branchId") || "";
 
     const isMerchantMode = location.pathname.startsWith("/merchant") || window.location.pathname.startsWith("/merchant");
     const isReceptionistMode = location.pathname.startsWith("/receptionist") || window.location.pathname.startsWith("/receptionist");
+
+    let receptionist = {};
+    try {
+        const rawReceptionist = localStorage.getItem("receptionist_data");
+        if (rawReceptionist && rawReceptionist !== "null" && rawReceptionist !== "undefined") {
+            receptionist = JSON.parse(rawReceptionist) || {};
+        }
+    } catch (e) {
+        console.error("Error parsing receptionist_data:", e);
+    }
+
+    const recBranchId = receptionist?.user_branch_id || receptionist?.branch_id || "";
+    const branchId = paramBranchId || searchParams.get("branchId") || (isReceptionistMode ? recBranchId : "");
 
     const backUrl = branchId
         ? (isMerchantMode ? `/merchant/branches/${branchId}` : (isReceptionistMode ? `/receptionist/dashboard` : `/view-fl-branch/${branchId}`))
@@ -45,12 +57,11 @@ export default function AddCardCustomer() {
     const [customerName, setCustomerName] = useState("");
     const [phone, setPhone] = useState("");
     const [customerId, setCustomerId] = useState("");
-    const [password, setPassword] = useState("");
-    const [showPassword, setShowPassword] = useState(false);
     const [countryCode, setCountryCode] = useState("+91");
     const [customerStatus, setCustomerStatus] = useState("New Customer");
     const [isSearching, setIsSearching] = useState(false);
     const [emailChecked, setEmailChecked] = useState(false);
+    const [isCreatingNewCustomer, setIsCreatingNewCustomer] = useState(false);
 
     // Card Selection State
     const [cardType, setCardType] = useState("stamp"); // 'stamp' or 'membership'
@@ -120,8 +131,8 @@ export default function AddCardCustomer() {
     }, [cardType, stampCardsList, membershipCardsList]);
 
     // Lookup customer logic using search
-    const handleSearchCustomer = async (customTerm) => {
-        const q = (typeof customTerm === "string" ? customTerm : searchQuery).trim();
+    const handleSearchCustomer = async (customQuery) => {
+        const q = (typeof customQuery === "string" ? customQuery : searchQuery).trim();
         if (!q) {
             toast.error("Please enter a customer name, email, or phone number to search");
             return;
@@ -130,6 +141,7 @@ export default function AddCardCustomer() {
         setIsSearching(true);
         setSearchPerformed(true);
         setSelectedCustomerObj(null);
+        setIsCreatingNewCustomer(false);
 
         try {
             const response = await API.post("firstloop/customer/check-customer", { search: q });
@@ -140,14 +152,24 @@ export default function AddCardCustomer() {
 
             if (resData?.status === 1 && custList.length > 0) {
                 setSearchResults(custList);
-                toast.success(`Found ${custList.length} customer${custList.length > 1 ? 's' : ''}`);
+                if (custList.length === 1) {
+                    handleSelectCustomer(custList[0]);
+                } else {
+                    toast.success(`Found ${custList.length} customer${custList.length > 1 ? 's' : ''}`);
+                }
             } else {
                 setSearchResults([]);
-                toast("No matching customers found. You can register as a new customer.", { icon: "ℹ️" });
+                setSelectedCustomerObj(null);
+                setIsCreatingNewCustomer(false);
+                setCustomerName("");
+                toast("No existing customer found. You can add as a new customer.", { icon: "ℹ️" });
             }
         } catch (error) {
             console.error("Error checking customer from API:", error);
             setSearchResults([]);
+            setSelectedCustomerObj(null);
+            setIsCreatingNewCustomer(false);
+            setCustomerName("");
             toast.error("Error searching for customer");
         } finally {
             setIsSearching(false);
@@ -157,6 +179,7 @@ export default function AddCardCustomer() {
     const handleSelectCustomer = (cust) => {
         if (!cust) return;
         setSelectedCustomerObj(cust);
+        setIsCreatingNewCustomer(false);
         setCustomerId(cust.id || "");
         setCustomerName(cust.name || "");
         setEmail(cust.email || "");
@@ -168,7 +191,6 @@ export default function AddCardCustomer() {
         } else {
             setCountryCode("+91");
         }
-        setPassword("");
         setCustomerStatus("Existing Customer");
         setEmailChecked(true);
         toast.success(`Selected customer: ${cust.name || cust.email || cust.id}`);
@@ -176,11 +198,11 @@ export default function AddCardCustomer() {
 
     const handleResetCustomer = () => {
         setSelectedCustomerObj(null);
+        setIsCreatingNewCustomer(false);
         setCustomerId("");
         setCustomerName("");
         setEmail("");
         setPhone("");
-        setPassword("");
         setCustomerStatus("New Customer");
         setEmailChecked(false);
         setSearchResults([]);
@@ -189,20 +211,25 @@ export default function AddCardCustomer() {
 
     const handleStartNewCustomer = () => {
         setSelectedCustomerObj(null);
+        setIsCreatingNewCustomer(true);
         setCustomerId("");
         setCustomerStatus("New Customer");
         setEmailChecked(true);
-        setPassword("");
 
         const q = searchQuery.trim();
         if (q.includes("@")) {
             setEmail(q.toLowerCase());
+            setPhone("");
+            setCustomerName("");
         } else if (/^\d+$/.test(q)) {
             setPhone(q);
-        } else if (q) {
-            setCustomerName(q);
+            setEmail("");
+            setCustomerName("");
+        } else {
+            setEmail("");
+            setPhone("");
+            setCustomerName("");
         }
-        toast.success("Ready to register new customer profile");
     };
 
     // Auto lookup customer if search, email, or phone is passed via URL query param
@@ -272,6 +299,11 @@ export default function AddCardCustomer() {
     const handleSubmit = async (e) => {
         e?.preventDefault();
 
+        if (!selectedCustomerObj && !isCreatingNewCustomer) {
+            toast.error("Please lookup an existing customer or click 'Add New Customer'");
+            return;
+        }
+
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         const cleanEmail = email.trim();
 
@@ -287,15 +319,12 @@ export default function AddCardCustomer() {
             toast.error("Customer name is required");
             return;
         }
-      
-        if (!selectedCardId) {
-            toast.error("Please select a card to issue");
+        if (!phone.trim()) {
+            toast.error("Customer phone number is required");
             return;
         }
-
-        const isNewCustomer = customerStatus === "New Customer" || !customerId;
-        if (isNewCustomer && !phone.trim()) {
-            toast.error("Phone number is required for new customer");
+        if (!selectedCardId) {
+            toast.error("Please select a loyalty card to issue");
             return;
         }
 
@@ -309,10 +338,9 @@ export default function AddCardCustomer() {
             br_id: branchNum || branchId || "main",
             cardId: cardIdNum,
             name: customerName.trim(),
-            email: email.trim(),
+            email: cleanEmail,
             phone: phone.trim(),
-            country_code: normalizedCountryCode,
-            ...(isNewCustomer ? { password: password.trim() } : {})
+            country_code: normalizedCountryCode
         };
 
         setIsSubmitting(true);
@@ -332,7 +360,30 @@ export default function AddCardCustomer() {
                 const typeNum = resData?.card_type || (cardType === "membership" ? 2 : 1);
                 const targetCusId = resData?.customer_id || customerId || (payload.cus_id || 1);
 
-                if (targetCardId) {
+                // Broadcast to sync with other open tabs (e.g. ReceptionistCustomerList)
+                try {
+                    const syncData = {
+                        timestamp: Date.now(),
+                        customerId: targetCusId,
+                        customerCardId: targetCardId,
+                        name: customerName.trim(),
+                        email: cleanEmail,
+                        phone: phone.trim(),
+                        branchId: branchNum || branchId
+                    };
+                    localStorage.setItem("dealora_customer_added", JSON.stringify(syncData));
+                } catch (syncErr) {
+                    console.error("Sync storage error:", syncErr);
+                }
+
+                if (isReceptionistMode) {
+                    const params = new URLSearchParams();
+                    params.set("autoCheckIn", "true");
+                    if (cleanEmail) params.set("email", cleanEmail);
+                    if (phone.trim()) params.set("phone", phone.trim());
+                    if (targetCusId) params.set("customerId", String(targetCusId));
+                    navigate(`/receptionist/customers?${params.toString()}`);
+                } else if (targetCardId) {
                     navigate(`/card-preview/${targetCardId}?type=${typeNum}&cus_id=${targetCusId}`);
                 } else {
                     navigate(`/view-fl-branch/${branchId}`);
@@ -347,7 +398,14 @@ export default function AddCardCustomer() {
                 const typeNum = resData?.card_type || (cardType === "membership" ? 2 : 1);
                 const targetCusId = resData?.customer_id || customerId || (payload.cus_id || 1);
 
-                if (targetCardId) {
+                if (isReceptionistMode) {
+                    const params = new URLSearchParams();
+                    params.set("autoCheckIn", "true");
+                    if (cleanEmail) params.set("email", cleanEmail);
+                    if (phone.trim()) params.set("phone", phone.trim());
+                    if (targetCusId) params.set("customerId", String(targetCusId));
+                    navigate(`/receptionist/customers?${params.toString()}`);
+                } else if (targetCardId) {
                     navigate(`/card-preview/${targetCardId}?type=${typeNum}&cus_id=${targetCusId}`);
                 }
             } else {
@@ -455,8 +513,62 @@ export default function AddCardCustomer() {
                 </div>
             </div>
 
+            <style>{`
+                .add-card-page-grid {
+                    display: grid;
+                    grid-template-columns: 1.5fr 1fr;
+                    gap: 24px;
+                    align-items: start;
+                }
+                .add-card-page-preview-col {
+                    position: sticky;
+                    top: 20px;
+                }
+                .add-card-page-search-wrap {
+                    display: flex;
+                    gap: 10px;
+                    flex-wrap: wrap;
+                }
+                .add-card-page-search-btns {
+                    display: flex;
+                    gap: 8px;
+                    align-items: center;
+                }
+
+                @media (max-width: 992px) {
+                    .add-card-page-grid {
+                        grid-template-columns: 1fr !important;
+                    }
+                    .add-card-page-preview-col {
+                        position: static !important;
+                        margin-top: 16px;
+                    }
+                }
+
+                @media (max-width: 640px) {
+                    .add-card-page-search-wrap {
+                        flex-direction: column !important;
+                        align-items: stretch !important;
+                    }
+                    .add-card-page-search-wrap > div:first-child {
+                        min-width: 100% !important;
+                        width: 100% !important;
+                    }
+                    .add-card-page-search-btns {
+                        width: 100% !important;
+                        display: flex !important;
+                    }
+                    .add-card-page-search-btns button {
+                        flex: 1 !important;
+                        justify-content: center !important;
+                        padding: 0 10px !important;
+                        font-size: 0.82rem !important;
+                    }
+                }
+            `}</style>
+
             {/* MAIN 2-COLUMN GRID (FORM ON LEFT, LIVE PREVIEW ON RIGHT) */}
-            <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: 24, alignItems: "start" }}>
+            <div className="add-card-page-grid">
 
                 {/* LEFT COLUMN: STEP-BY-STEP FORM */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -478,7 +590,7 @@ export default function AddCardCustomer() {
                                 </div>
                             </div>
 
-                            {(selectedCustomerObj || emailChecked) && (
+                            {selectedCustomerObj ? (
                                 <span
                                     style={{
                                         fontSize: "0.75rem",
@@ -488,124 +600,147 @@ export default function AddCardCustomer() {
                                         display: "inline-flex",
                                         alignItems: "center",
                                         gap: 5,
-                                        backgroundColor: customerStatus === "Existing Customer" ? "#DCFCE7" : "#E0E7FF",
-                                        color: customerStatus === "Existing Customer" ? "#15803D" : "#4338CA"
+                                        backgroundColor: "#DCFCE7",
+                                        color: "#15803D"
                                     }}
                                 >
-                                    <i className={customerStatus === "Existing Customer" ? "fas fa-check-circle" : "fas fa-user-plus"}></i>
-                                    {customerStatus}
+                                    <i className="fas fa-check-circle"></i>
+                                    Existing Customer (#{selectedCustomerObj.id})
                                 </span>
-                            )}
-                        </div>
-
-                        {/* Customer Search / Lookup Input */}
-                        <div style={{ marginBottom: 16 }}>
-                            <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 600, color: "#475569", marginBottom: 6 }}>
-                                Search / Lookup Customer
-                            </label>
-                            <div style={{ display: "flex", gap: 10 }}>
-                                <div style={{ position: "relative", flex: 1 }}>
-                                    <i
-                                        className="fas fa-search"
-                                        style={{
-                                            position: "absolute",
-                                            left: 14,
-                                            top: "50%",
-                                            transform: "translateY(-50%)",
-                                            color: "#94A3B8",
-                                            fontSize: "0.88rem"
-                                        }}
-                                    />
-                                    <input
-                                        type="text"
-                                        name="customer-search"
-                                        id="customer-search-input"
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === "Enter") {
-                                                e.preventDefault();
-                                                handleSearchCustomer();
-                                            }
-                                        }}
-                                        placeholder="Search by name, email, or phone (e.g. minsway01@gmail.com, krj, 8608862409)..."
-                                        style={{
-                                            width: "100%",
-                                            padding: "11px 14px 11px 40px",
-                                            borderRadius: 10,
-                                            border: "1px solid #CBD5E1",
-                                            backgroundColor: "#FFFFFF",
-                                            fontSize: "0.9rem",
-                                            color: "#1E293B",
-                                            outline: "none",
-                                            boxSizing: "border-box"
-                                        }}
-                                    />
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => handleSearchCustomer()}
-                                    disabled={isSearching || !searchQuery.trim()}
+                            ) : isCreatingNewCustomer ? (
+                                <span
                                     style={{
-                                        padding: "0 20px",
-                                        borderRadius: 10,
-                                        border: "none",
-                                        background: "linear-gradient(135deg, #0E88B8 0%, #0284C7 100%)",
-                                        color: "#FFFFFF",
-                                        fontSize: "0.88rem",
+                                        fontSize: "0.75rem",
                                         fontWeight: 700,
-                                        cursor: isSearching || !searchQuery.trim() ? "not-allowed" : "pointer",
-                                        opacity: isSearching || !searchQuery.trim() ? 0.65 : 1,
+                                        padding: "3px 10px",
+                                        borderRadius: 6,
                                         display: "inline-flex",
                                         alignItems: "center",
-                                        gap: 8,
-                                        flexShrink: 0
-                                    }}
-                                >
-                                    {isSearching ? (
-                                        <>
-                                            <i className="fas fa-circle-notch fa-spin"></i>
-                                            <span>Searching...</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <i className="fas fa-search"></i>
-                                            <span>Lookup</span>
-                                        </>
-                                    )}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={handleStartNewCustomer}
-                                    title="Register a new customer profile"
-                                    style={{
-                                        padding: "0 14px",
-                                        borderRadius: 10,
-                                        border: "1px solid #CBD5E1",
-                                        backgroundColor: "#F8FAFC",
-                                        color: "#0E88B8",
-                                        fontSize: "0.84rem",
-                                        fontWeight: 700,
-                                        cursor: "pointer",
-                                        display: "inline-flex",
-                                        alignItems: "center",
-                                        gap: 6,
-                                        flexShrink: 0
+                                        gap: 5,
+                                        backgroundColor: "#E0F2FE",
+                                        color: "#0369A1"
                                     }}
                                 >
                                     <i className="fas fa-user-plus"></i>
-                                    <span>+ New</span>
-                                </button>
-                            </div>
+                                    New Customer Profile
+                                </span>
+                            ) : null}
                         </div>
 
-                        {/* SELECTABLE LIST OF MATCHING CUSTOMERS */}
-                        {!selectedCustomerObj && searchPerformed && searchResults.length > 0 && (
+                        {/* Customer Search / Lookup & Add New Customer Bar */}
+                        {!selectedCustomerObj && (
+                            <div style={{ marginBottom: 16 }}>
+                                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 600, color: "#475569", marginBottom: 6 }}>
+                                    Search / Lookup Customer
+                                </label>
+                                <div className="add-card-page-search-wrap">
+                                    <div style={{ position: "relative", flex: 1, minWidth: 260 }}>
+                                        <i
+                                            className="fas fa-search"
+                                            style={{
+                                                position: "absolute",
+                                                left: 14,
+                                                top: "50%",
+                                                transform: "translateY(-50%)",
+                                                color: "#94A3B8",
+                                                fontSize: "0.88rem"
+                                            }}
+                                        />
+                                        <input
+                                            type="text"
+                                            name="customer-search"
+                                            id="customer-search-input"
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === "Enter") {
+                                                    e.preventDefault();
+                                                    handleSearchCustomer();
+                                                }
+                                            }}
+                                            placeholder="Search by name, email, or phone (e.g. 9876543210, john@example.com)..."
+                                            style={{
+                                                width: "100%",
+                                                padding: "11px 14px 11px 40px",
+                                                borderRadius: 10,
+                                                border: "1px solid #CBD5E1",
+                                                backgroundColor: "#FFFFFF",
+                                                fontSize: "0.9rem",
+                                                color: "#1E293B",
+                                                outline: "none",
+                                                boxSizing: "border-box"
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="add-card-page-search-btns">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleSearchCustomer()}
+                                            disabled={isSearching || !searchQuery.trim()}
+                                            style={{
+                                                padding: "0 20px",
+                                                height: 44,
+                                                borderRadius: 10,
+                                                border: "none",
+                                                background: "linear-gradient(135deg, #0E88B8 0%, #0284C7 100%)",
+                                                color: "#FFFFFF",
+                                                fontSize: "0.88rem",
+                                                fontWeight: 700,
+                                                cursor: isSearching || !searchQuery.trim() ? "not-allowed" : "pointer",
+                                                opacity: isSearching || !searchQuery.trim() ? 0.65 : 1,
+                                                display: "inline-flex",
+                                                alignItems: "center",
+                                                gap: 8,
+                                                flexShrink: 0
+                                            }}
+                                        >
+                                            {isSearching ? (
+                                                <>
+                                                    <i className="fas fa-circle-notch fa-spin"></i>
+                                                    <span>Searching...</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <i className="fas fa-search"></i>
+                                                    <span>Lookup</span>
+                                                </>
+                                            )}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={handleStartNewCustomer}
+                                            title="Register a new customer profile"
+                                            style={{
+                                                padding: "0 18px",
+                                                height: 44,
+                                                borderRadius: 10,
+                                                border: isCreatingNewCustomer ? "2px solid #0E88B8" : "1px solid #CBD5E1",
+                                                backgroundColor: isCreatingNewCustomer ? "rgba(14, 136, 184, 0.08)" : "#F8FAFC",
+                                                color: "#0E88B8",
+                                                fontSize: "0.86rem",
+                                                fontWeight: 700,
+                                                cursor: "pointer",
+                                                display: "inline-flex",
+                                                alignItems: "center",
+                                                gap: 6,
+                                                flexShrink: 0
+                                            }}
+                                        >
+                                            <i className="fas fa-user-plus"></i>
+                                            <span>Add New Customer</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* SELECTABLE LIST OF MULTIPLE MATCHING CUSTOMERS */}
+                        {!selectedCustomerObj && !isCreatingNewCustomer && searchPerformed && searchResults.length > 1 && (
                             <div style={{ marginBottom: 18, border: "1.5px solid #BAE6FD", borderRadius: 12, backgroundColor: "#F0F9FF", padding: 14 }}>
                                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                                     <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#0369A1", display: "flex", alignItems: "center", gap: 6 }}>
                                         <i className="fas fa-users"></i>
-                                        Found {searchResults.length} Matching Customer{searchResults.length > 1 ? "s" : ""}:
+                                        Found {searchResults.length} Matching Customers:
                                     </span>
                                     <span style={{ fontSize: "0.74rem", color: "#0284C7" }}>
                                         Click a customer below to select
@@ -701,36 +836,23 @@ export default function AddCardCustomer() {
                                         </div>
                                     ))}
                                 </div>
-                                <div style={{ marginTop: 10, textAlign: "right" }}>
-                                    <button
-                                        type="button"
-                                        onClick={handleStartNewCustomer}
-                                        style={{
-                                            background: "none",
-                                            border: "none",
-                                            color: "#0369A1",
-                                            fontSize: "0.78rem",
-                                            fontWeight: 700,
-                                            cursor: "pointer",
-                                            textDecoration: "underline",
-                                            padding: 0
-                                        }}
-                                    >
-                                        None of these? Register as a new customer instead →
-                                    </button>
-                                </div>
                             </div>
                         )}
 
                         {/* NO CUSTOMERS FOUND STATE */}
-                        {!selectedCustomerObj && searchPerformed && searchResults.length === 0 && (
-                            <div style={{ marginBottom: 18, border: "1px dashed #CBD5E1", borderRadius: 12, backgroundColor: "#F8FAFC", padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
-                                <div>
-                                    <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#334155" }}>
-                                        No existing customer found for "{searchQuery}"
+                        {!selectedCustomerObj && !isCreatingNewCustomer && searchPerformed && searchResults.length === 0 && (
+                            <div style={{ marginBottom: 18, border: "1px dashed #CBD5E1", borderRadius: 12, backgroundColor: "#F8FAFC", padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                    <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#F1F5F9", color: "#64748B", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.1rem" }}>
+                                        <i className="fas fa-user-slash" />
                                     </div>
-                                    <div style={{ fontSize: "0.78rem", color: "#64748B", marginTop: 2 }}>
-                                        You can register a new customer profile below.
+                                    <div>
+                                        <div style={{ fontSize: "0.88rem", fontWeight: 700, color: "#334155" }}>
+                                            No existing customer found for "{searchQuery}"
+                                        </div>
+                                        <div style={{ fontSize: "0.78rem", color: "#64748B", marginTop: 2 }}>
+                                            Click the button on the right to register as a new customer profile.
+                                        </div>
                                     </div>
                                 </div>
                                 <button
@@ -740,56 +862,60 @@ export default function AddCardCustomer() {
                                         backgroundColor: "#0E88B8",
                                         color: "#FFFFFF",
                                         borderRadius: 8,
-                                        padding: "6px 14px",
-                                        fontSize: "0.8rem",
+                                        padding: "8px 16px",
+                                        fontSize: "0.82rem",
                                         fontWeight: 700,
                                         border: "none",
                                         cursor: "pointer",
                                         display: "inline-flex",
                                         alignItems: "center",
-                                        gap: 6
+                                        gap: 6,
+                                        boxShadow: "0 2px 8px rgba(14, 136, 184, 0.25)"
                                     }}
                                 >
                                     <i className="fas fa-user-plus" />
-                                    <span>Register New Customer</span>
+                                    <span>Add New Customer</span>
                                 </button>
                             </div>
                         )}
 
-                        {/* SELECTED CUSTOMER PROFILE BANNER */}
+                        {/* SELECTED CUSTOMER PROFILE BANNER (SHOWN WHEN CUSTOMER EXISTS) */}
                         {selectedCustomerObj && (
-                            <div style={{ marginBottom: 18, border: "1.5px solid #86EFAC", borderRadius: 12, backgroundColor: "#F0FDF4", padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                            <div style={{ marginBottom: 18, border: "1.5px solid #86EFAC", borderRadius: 14, backgroundColor: "#F0FDF4", padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 14 }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                                     <div style={{
-                                        width: 38,
-                                        height: 38,
+                                        width: 44,
+                                        height: 44,
                                         borderRadius: "50%",
                                         backgroundColor: "#DCFCE7",
                                         color: "#15803D",
                                         display: "flex",
                                         alignItems: "center",
                                         justifyContent: "center",
-                                        fontSize: "1.1rem"
+                                        fontSize: "1.2rem",
+                                        fontWeight: 800
                                     }}>
-                                        <i className="fas fa-check-circle"></i>
+                                        {(selectedCustomerObj.name || selectedCustomerObj.email || "C").charAt(0).toUpperCase()}
                                     </div>
                                     <div>
-                                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                            <strong style={{ fontSize: "0.92rem", color: "#14532D" }}>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                                            <strong style={{ fontSize: "1rem", color: "#14532D" }}>
                                                 {selectedCustomerObj.name || "Customer"}
                                             </strong>
-                                            <span style={{ fontSize: "0.7rem", backgroundColor: "#DCFCE7", color: "#15803D", padding: "1px 6px", borderRadius: 4, fontWeight: 700 }}>
-                                                ID #{selectedCustomerObj.id}
-                                            </span>
-                                            <span style={{ fontSize: "0.7rem", backgroundColor: "#BBF7D0", color: "#166534", padding: "1px 6px", borderRadius: 4, fontWeight: 700 }}>
+                                            {selectedCustomerObj.id && (
+                                                <span style={{ fontSize: "0.72rem", backgroundColor: "#DCFCE7", color: "#15803D", padding: "2px 8px", borderRadius: 6, fontWeight: 700 }}>
+                                                    ID #{selectedCustomerObj.id}
+                                                </span>
+                                            )}
+                                            <span style={{ fontSize: "0.72rem", backgroundColor: "#BBF7D0", color: "#166534", padding: "2px 8px", borderRadius: 6, fontWeight: 700 }}>
                                                 Existing Customer
                                             </span>
                                         </div>
-                                        <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 3, fontSize: "0.78rem", color: "#166534" }}>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 4, fontSize: "0.82rem", color: "#166534", flexWrap: "wrap" }}>
                                             {selectedCustomerObj.email && (
-                                                <span><i className="fas fa-envelope" style={{ marginRight: 4 }} />{selectedCustomerObj.email}</span>
+                                                <span><i className="fas fa-envelope" style={{ marginRight: 6 }} />{selectedCustomerObj.email}</span>
                                             )}
-                                            <span><i className="fas fa-phone-alt" style={{ marginRight: 4 }} />{selectedCustomerObj.phone ? `${selectedCustomerObj.country_code ? `+${selectedCustomerObj.country_code} ` : ''}${selectedCustomerObj.phone}` : 'No phone'}</span>
+                                            <span><i className="fas fa-phone-alt" style={{ marginRight: 6 }} />{selectedCustomerObj.phone ? `${selectedCustomerObj.country_code ? `+${String(selectedCustomerObj.country_code).replace('+', '')} ` : ''}${selectedCustomerObj.phone}` : 'No phone'}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -799,15 +925,15 @@ export default function AddCardCustomer() {
                                     style={{
                                         backgroundColor: "#FFFFFF",
                                         color: "#374151",
-                                        border: "1px solid #D1D5DB",
-                                        borderRadius: 8,
-                                        padding: "6px 12px",
-                                        fontSize: "0.78rem",
+                                        border: "1px solid #CBD5E1",
+                                        borderRadius: 10,
+                                        padding: "8px 16px",
+                                        fontSize: "0.82rem",
                                         fontWeight: 700,
                                         cursor: "pointer",
                                         display: "inline-flex",
                                         alignItems: "center",
-                                        gap: 5
+                                        gap: 6
                                     }}
                                 >
                                     <i className="fas fa-exchange-alt" />
@@ -816,194 +942,138 @@ export default function AddCardCustomer() {
                             </div>
                         )}
 
-                        {/* Customer Email Address */}
-                        <div style={{ marginBottom: 14 }}>
-                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 600, color: "#475569", margin: 0 }}>
-                                    Customer Email Address <span style={{ color: "#EF4444" }}>*</span>
-                                </label>
-                                {customerStatus === "Existing Customer" && (
-                                    <span style={{ fontSize: "0.7rem", color: "#64748B", fontWeight: 500 }}>
-                                        <i className="fas fa-lock" style={{ fontSize: "0.65rem", marginRight: 4 }}></i>Locked
-                                    </span>
-                                )}
-                            </div>
-                            <div style={{ position: "relative" }}>
-                                <i
-                                    className="fas fa-envelope"
-                                    style={{
-                                        position: "absolute",
-                                        left: 14,
-                                        top: "50%",
-                                        transform: "translateY(-50%)",
-                                        color: customerStatus === "Existing Customer" ? "#94A3B8" : "#0E88B8",
-                                        fontSize: "0.88rem"
-                                    }}
-                                />
-                                <input
-                                    type="email"
-                                    name="email"
-                                    id="customer-email-input"
-                                    autoComplete="email"
-                                    value={email}
-                                    readOnly={customerStatus === "Existing Customer"}
-                                    onChange={(e) => {
-                                        const cleanValue = e.target.value.replace(/\s+/g, '');
-                                        setEmail(cleanValue);
-                                    }}
-                                    placeholder={customerStatus === "Existing Customer" ? "Auto-filled from profile" : "e.g. customer@example.com"}
-                                    required
-                                    style={{
-                                        width: "100%",
-                                        padding: "10px 14px 10px 38px",
-                                        borderRadius: 10,
-                                        border: "1px solid #CBD5E1",
-                                        backgroundColor: customerStatus === "Existing Customer" ? "#F8FAFC" : "#FFFFFF",
-                                        color: customerStatus === "Existing Customer" ? "#475569" : "#1E293B",
-                                        cursor: customerStatus === "Existing Customer" ? "not-allowed" : "text",
-                                        fontSize: "0.88rem",
-                                        outline: "none",
-                                        boxSizing: "border-box"
-                                    }}
-                                />
-                            </div>
-                        </div>
-
-                        {/* Customer Full Name & Phone Number */}
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, position: "relative", zIndex: 5 }}>
-                            <div>
-                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                                    <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 600, color: "#475569", margin: 0 }}>
-                                        Customer Full Name <span style={{ color: "#EF4444" }}>*</span>
-                                    </label>
-                                    {customerStatus === "Existing Customer" && (
-                                        <span style={{ fontSize: "0.7rem", color: "#64748B", fontWeight: 500 }}>
-                                            <i className="fas fa-lock" style={{ fontSize: "0.65rem", marginRight: 4 }}></i>Locked
-                                        </span>
-                                    )}
-                                </div>
-                                <div style={{ position: "relative" }}>
-                                    <i
-                                        className="fas fa-user"
-                                        style={{
-                                            position: "absolute",
-                                            left: 14,
-                                            top: "50%",
-                                            transform: "translateY(-50%)",
-                                            color: customerStatus === "Existing Customer" ? "#94A3B8" : "#0E88B8",
-                                            fontSize: "0.85rem"
-                                        }}
-                                    />
-                                    <input
-                                        type="text"
-                                        value={customerName}
-                                        onChange={(e) => setCustomerName(e.target.value)}
-                                        readOnly={customerStatus === "Existing Customer"}
-                                        placeholder={customerStatus === "Existing Customer" ? "Auto-filled from profile" : "e.g. Jane Doe"}
-                                        style={{
-                                            width: "100%",
-                                            padding: "10px 14px 10px 38px",
-                                            borderRadius: 10,
-                                            border: "1px solid #CBD5E1",
-                                            backgroundColor: customerStatus === "Existing Customer" ? "#F8FAFC" : "#FFFFFF",
-                                            color: customerStatus === "Existing Customer" ? "#475569" : "#1E293B",
-                                            cursor: customerStatus === "Existing Customer" ? "not-allowed" : "text",
-                                            fontSize: "0.88rem",
-                                            outline: "none",
-                                            boxSizing: "border-box"
-                                        }}
-                                    />
-                                </div>
-                            </div>
-
-                            <div style={{ position: "relative", zIndex: 10 }}>
-                                {customerStatus === "Existing Customer" && Boolean(selectedCustomerObj?.phone) ? (
-                                    <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: -18, position: "relative", zIndex: 3 }}>
-                                        <span style={{ fontSize: "0.7rem", color: "#64748B", fontWeight: 500 }}>
-                                            <i className="fas fa-lock" style={{ fontSize: "0.65rem", marginRight: 4 }}></i>Locked
-                                        </span>
+                        {/* NEW CUSTOMER CREATION FORM (ONLY SHOWN AFTER CLICKING 'ADD NEW CUSTOMER') */}
+                        {isCreatingNewCustomer && !selectedCustomerObj && (
+                            <div style={{
+                                border: "1.5px solid #BAE6FD",
+                                borderRadius: 14,
+                                backgroundColor: "#F0F9FF",
+                                padding: "18px 20px",
+                                marginBottom: 18
+                            }}>
+                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, borderBottom: "1px solid #E0F2FE", paddingBottom: 10 }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                        <div style={{ width: 30, height: 30, borderRadius: 8, background: "#0284C7", color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.85rem" }}>
+                                            <i className="fas fa-user-plus" />
+                                        </div>
+                                        <div>
+                                            <strong style={{ fontSize: "0.92rem", color: "#0369A1", display: "block" }}>
+                                                New Customer Registration
+                                            </strong>
+                                            <small style={{ color: "#64748B", fontSize: "0.75rem" }}>
+                                                Enter customer information to register profile and issue card
+                                            </small>
+                                        </div>
                                     </div>
-                                ) : customerStatus === "Existing Customer" && (
-                                    <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: -18, position: "relative", zIndex: 3 }}>
-                                        <span style={{ fontSize: "0.7rem", color: "#0284C7", fontWeight: 600 }}>
-                                            <i className="fas fa-plus-circle" style={{ fontSize: "0.65rem", marginRight: 4 }}></i>Enter phone
-                                        </span>
-                                    </div>
-                                )}
-                                <div style={customerStatus === "Existing Customer" && Boolean(selectedCustomerObj?.phone) ? { pointerEvents: "none", opacity: 0.85 } : {}}>
-                                    <PhoneNumberField
-                                        value={phone}
-                                        countryCode={countryCode}
-                                        required={true}
-                                        onChange={(value, newCountryCode) => {
-                                            setPhone(value || '');
-                                            if (newCountryCode) {
-                                                setCountryCode(newCountryCode);
-                                            }
-                                        }}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Password Field for New Customer */}
-                        {/* {(customerStatus === "New Customer" || !customerId) && (
-                            <div style={{ marginTop: 16 }}>
-                                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 600, color: "#475569", marginBottom: 6 }}>
-                                    Account Password <span style={{ color: "#EF4444" }}>*</span>
-                                    <span style={{ fontSize: "0.74rem", fontWeight: 400, color: "#64748B", marginLeft: 6 }}>
-                                        (Required to create customer wallet account)
-                                    </span>
-                                </label>
-                                <div style={{ position: "relative" }}>
-                                    <i
-                                        className="fas fa-lock"
-                                        style={{
-                                            position: "absolute",
-                                            left: 14,
-                                            top: "50%",
-                                            transform: "translateY(-50%)",
-                                            color: "#0E88B8",
-                                            fontSize: "0.85rem"
-                                        }}
-                                    />
-                                    <input
-                                        type={showPassword ? "text" : "password"}
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        placeholder="Set account password (e.g. 123456)"
-                                        style={{
-                                            width: "100%",
-                                            padding: "10px 42px 10px 38px",
-                                            borderRadius: 10,
-                                            border: "1px solid #CBD5E1",
-                                            backgroundColor: "#FFFFFF",
-                                            color: "#1E293B",
-                                            fontSize: "0.88rem",
-                                            outline: "none",
-                                            boxSizing: "border-box"
-                                        }}
-                                    />
                                     <button
                                         type="button"
-                                        onClick={() => setShowPassword(!showPassword)}
+                                        onClick={handleResetCustomer}
                                         style={{
-                                            position: "absolute",
-                                            right: 12,
-                                            top: "50%",
-                                            transform: "translateY(-50%)",
                                             background: "none",
                                             border: "none",
                                             color: "#64748B",
+                                            fontSize: "0.78rem",
+                                            fontWeight: 700,
                                             cursor: "pointer",
-                                            padding: 4
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            gap: 4
                                         }}
                                     >
-                                        <i className={`fas ${showPassword ? "fa-eye-slash" : "fa-eye"}`}></i>
+                                        <i className="fas fa-arrow-left" />
+                                        <span>Back to Search</span>
                                     </button>
                                 </div>
+
+                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                                    <div>
+                                        <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: 6 }}>
+                                            Customer Full Name <span style={{ color: "#EF4444" }}>*</span>
+                                        </label>
+                                        <div style={{ position: "relative" }}>
+                                            <i
+                                                className="fas fa-user"
+                                                style={{
+                                                    position: "absolute",
+                                                    left: 14,
+                                                    top: "50%",
+                                                    transform: "translateY(-50%)",
+                                                    color: "#0E88B8",
+                                                    fontSize: "0.85rem"
+                                                }}
+                                            />
+                                            <input
+                                                type="text"
+                                                value={customerName}
+                                                onChange={(e) => setCustomerName(e.target.value)}
+                                                placeholder="e.g. John Doe"
+                                                style={{
+                                                    width: "100%",
+                                                    padding: "10px 14px 10px 38px",
+                                                    borderRadius: 10,
+                                                    border: "1px solid #CBD5E1",
+                                                    backgroundColor: "#FFFFFF",
+                                                    color: "#1E293B",
+                                                    fontSize: "0.88rem",
+                                                    outline: "none",
+                                                    boxSizing: "border-box"
+                                                }}
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <PhoneNumberField
+                                            value={phone}
+                                            countryCode={countryCode}
+                                            required={true}
+                                            onChange={(value, newCountryCode) => {
+                                                setPhone(value || '');
+                                                if (newCountryCode) setCountryCode(newCountryCode);
+                                            }}
+                                        />
+                                    </div>
+
+                                    <div style={{ gridColumn: "1 / -1" }}>
+                                        <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: 6 }}>
+                                            Customer Email Address <span style={{ color: "#EF4444" }}>*</span>
+                                        </label>
+                                        <div style={{ position: "relative" }}>
+                                            <i
+                                                className="fas fa-envelope"
+                                                style={{
+                                                    position: "absolute",
+                                                    left: 14,
+                                                    top: "50%",
+                                                    transform: "translateY(-50%)",
+                                                    color: "#0E88B8",
+                                                    fontSize: "0.88rem"
+                                                }}
+                                            />
+                                            <input
+                                                type="email"
+                                                value={email}
+                                                onChange={(e) => setEmail(e.target.value.replace(/\s+/g, ''))}
+                                                placeholder="e.g. john@example.com"
+                                                style={{
+                                                    width: "100%",
+                                                    padding: "10px 14px 10px 38px",
+                                                    borderRadius: 10,
+                                                    border: "1px solid #CBD5E1",
+                                                    backgroundColor: "#FFFFFF",
+                                                    color: "#1E293B",
+                                                    fontSize: "0.88rem",
+                                                    outline: "none",
+                                                    boxSizing: "border-box"
+                                                }}
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                        )} */}
+                        )}
                     </div>
 
                     {/* CARD 2: CHOOSE CARD TYPE */}
@@ -1252,7 +1322,7 @@ export default function AddCardCustomer() {
                 </div>
 
                 {/* RIGHT COLUMN: STICKY LIVE DIGITAL WALLET PASS PREVIEW & ACTIONS */}
-                <div style={{ position: "sticky", top: 20 }}>
+                <div className="add-card-page-preview-col">
                     <div style={{ marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                         <h4 style={{ margin: 0, fontSize: "0.95rem", fontWeight: 800, color: "#1E293B", display: "flex", alignItems: "center", gap: 8 }}>
                             <i className="fas fa-mobile-alt" style={{ color: "#0E88B8" }}></i>

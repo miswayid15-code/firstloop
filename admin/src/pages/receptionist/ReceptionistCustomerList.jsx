@@ -1,10 +1,11 @@
-import { useState, useMemo, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useMemo, useEffect, useRef } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from "react-hot-toast"
 import API from '../../api.js'
 import { formatImageUrl } from '../../services/cardService.js'
 import QrScannerModal from './components/QrScannerModal.jsx'
 import CustomerSearchModal from './components/CustomerSearchModal.jsx'
+import AddCardCustomerModal from './components/AddCardCustomerModal.jsx'
 
 export default function ReceptionistCustomerList() {
     let receptionist = {}
@@ -18,6 +19,7 @@ export default function ReceptionistCustomerList() {
     }
 
     const navigate = useNavigate()
+    const [searchParams] = useSearchParams()
     const [customers, setCustomers] = useState([])
     const [search, setSearch] = useState('')
     const [selectedBranch, setSelectedBranch] = useState('all')
@@ -28,6 +30,17 @@ export default function ReceptionistCustomerList() {
     const [qrModalOpen, setQrModalOpen] = useState(false)
     const [searchModalOpen, setSearchModalOpen] = useState(false)
     const [selectedCustomerForCheckIn, setSelectedCustomerForCheckIn] = useState(null)
+
+    // Add Customer Tab States (On/Off & In-page Navigation)
+    const [activeTab, setActiveTab] = useState('list') // 'list' | 'add_customer'
+    const [isAddCustomerTabOpen, setIsAddCustomerTabOpen] = useState(false)
+    const [addCustomerSearch, setAddCustomerSearch] = useState('')
+    const [addCustomerInitialCustomer, setAddCustomerInitialCustomer] = useState(null)
+
+    // Backend Search States
+    const [backendSearchResults, setBackendSearchResults] = useState(null)
+    const [isSearchingBackend, setIsSearchingBackend] = useState(false)
+    const searchDebounceRef = useRef(null)
 
     // Pagination State
     const [currentPage, setCurrentPage] = useState(1)
@@ -42,13 +55,16 @@ export default function ReceptionistCustomerList() {
 
             if (res?.data?.status == 1 && res.data.data) {
                 setCustomers(res.data.data)
+                return res.data.data
             } else {
                 setCustomers([])
+                return []
             }
         } catch (error) {
             console.error('Error fetching customers:', error)
             toast.error("Failed to load customer list")
             setCustomers([])
+            return []
         } finally {
             setLoading(false)
         }
@@ -92,41 +108,126 @@ export default function ReceptionistCustomerList() {
             .sort((a, b) => a.name.localeCompare(b.name))
     }, [customers, receptionist])
 
+    // Automatic backend lookup when search input changes (debounced)
+    useEffect(() => {
+        const query = (search || '').trim()
+
+        if (!query) {
+            setBackendSearchResults(null)
+            setIsSearchingBackend(false)
+            if (searchDebounceRef.current) {
+                clearTimeout(searchDebounceRef.current)
+            }
+            return
+        }
+
+        setIsSearchingBackend(true)
+
+        if (searchDebounceRef.current) {
+            clearTimeout(searchDebounceRef.current)
+        }
+
+        searchDebounceRef.current = setTimeout(async () => {
+            try {
+                const response = await API.post('firstloop/customer/check-customer', { search: query })
+                const resData = response?.data
+                const custList = Array.isArray(resData?.data)
+                    ? resData.data
+                    : (resData?.customer ? [resData.customer] : (resData?.data ? [resData.data] : []))
+
+                if (resData?.status === 1 && custList.length > 0) {
+                    setBackendSearchResults(custList)
+                } else {
+                    setBackendSearchResults([])
+                }
+            } catch (err) {
+                console.error('Error in check-customer API search:', err)
+                setBackendSearchResults([])
+            } finally {
+                setIsSearchingBackend(false)
+            }
+        }, 350)
+
+        return () => {
+            if (searchDebounceRef.current) {
+                clearTimeout(searchDebounceRef.current)
+            }
+        }
+    }, [search])
+
     const filteredCustomers = useMemo(() => {
-        return (customers || []).filter(c => {
-            const name = (c.name || '').toLowerCase()
-            const email = (c.email || '').toLowerCase()
-            const phone = String(c.phone || '')
-            const searchLower = (search || '').toLowerCase().trim()
+        const searchLower = (search || '').trim().toLowerCase()
 
-            const matchesSearch = !searchLower ||
-                name.includes(searchLower) ||
-                email.includes(searchLower) ||
-                phone.includes(searchLower) ||
-                (Array.isArray(c.cards) && c.cards.some(card =>
-                    (card.title && card.title.toLowerCase().includes(searchLower)) ||
-                    (card.card_number && card.card_number.toLowerCase().includes(searchLower)) ||
-                    (card.branch_name && card.branch_name.toLowerCase().includes(searchLower))
-                ))
-
-            if (!matchesSearch) return false
-
-            // Branch filter
-            if (selectedBranch !== 'all') {
-                const matchesBranch =
+        // If search is empty, filter customers by selectedBranch
+        if (!searchLower) {
+            if (selectedBranch === 'all') return customers || []
+            return (customers || []).filter(c => {
+                return (
                     String(c.branch_id || '') === String(selectedBranch) ||
                     String(c.branch_name || '').toLowerCase() === String(selectedBranch).toLowerCase() ||
                     (Array.isArray(c.cards) && c.cards.some(card =>
                         String(card.branch_id || '') === String(selectedBranch) ||
                         String(card.branch_name || '').toLowerCase() === String(selectedBranch).toLowerCase()
                     ))
+                )
+            })
+        }
 
-                if (!matchesBranch) return false
+        let matched = []
+
+        // If backend search results exist, map/enrich them
+        if (Array.isArray(backendSearchResults)) {
+            backendSearchResults.forEach(apiCus => {
+                const branchMatch = (customers || []).find(bc =>
+                    (apiCus.id && String(bc.id) === String(apiCus.id)) ||
+                    (apiCus.email && bc.email && bc.email.toLowerCase() === apiCus.email.toLowerCase()) ||
+                    (apiCus.phone && String(bc.phone).replace(/\D/g, '') === String(apiCus.phone).replace(/\D/g, ''))
+                )
+                if (branchMatch) {
+                    matched.push(branchMatch)
+                } else {
+                    matched.push({
+                        ...apiCus,
+                        cards: [],
+                        is_filled: 0
+                    })
+                }
+            })
+        }
+
+        // Also check loaded branch customers for card title or card number matches
+        (customers || []).forEach(bc => {
+            if (!matched.some(m => String(m.id) === String(bc.id))) {
+                const name = (bc.name || '').toLowerCase()
+                const email = (bc.email || '').toLowerCase()
+                const phone = String(bc.phone || '')
+                const cardMatch = Array.isArray(bc.cards) && bc.cards.some(card =>
+                    (card.title && card.title.toLowerCase().includes(searchLower)) ||
+                    (card.card_number && card.card_number.toLowerCase().includes(searchLower)) ||
+                    (card.branch_name && card.branch_name.toLowerCase().includes(searchLower))
+                )
+                if (name.includes(searchLower) || email.includes(searchLower) || phone.includes(searchLower) || cardMatch) {
+                    matched.push(bc)
+                }
             }
-
-            return true
         })
-    }, [customers, search, selectedBranch])
+
+        // Filter by branch if selectedBranch is not 'all'
+        if (selectedBranch !== 'all') {
+            matched = matched.filter(c => {
+                return (
+                    String(c.branch_id || '') === String(selectedBranch) ||
+                    String(c.branch_name || '').toLowerCase() === String(selectedBranch).toLowerCase() ||
+                    (Array.isArray(c.cards) && c.cards.some(card =>
+                        String(card.branch_id || '') === String(selectedBranch) ||
+                        String(card.branch_name || '').toLowerCase() === String(selectedBranch).toLowerCase()
+                    ))
+                )
+            })
+        }
+
+        return matched
+    }, [customers, search, backendSearchResults, selectedBranch])
 
     const totalPages = useMemo(() => {
         return Math.max(1, Math.ceil(filteredCustomers.length / rowsPerPage))
@@ -145,7 +246,7 @@ export default function ReceptionistCustomerList() {
 
     const startEntry = filteredCustomers.length === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1
     const endEntry = Math.min(currentPage * rowsPerPage, filteredCustomers.length)
-    const branchId = receptionist?.user_branch_id || ''
+    const branchId = receptionist?.user_branch_id || receptionist?.branch_id || ''
 
     const toggleExpandRow = (cusId) => {
         setExpandedRows(prev => ({
@@ -153,6 +254,91 @@ export default function ReceptionistCustomerList() {
             [cusId]: !prev[cusId]
         }))
     }
+
+    // Open Add Customer tab within the current page
+    const handleOpenAddCustomerTab = (searchQuery = '', existingCustomer = null) => {
+        setAddCustomerSearch(searchQuery || '')
+        setAddCustomerInitialCustomer(existingCustomer || null)
+        setIsAddCustomerTabOpen(true)
+        setActiveTab('add_customer')
+    }
+
+    // Close Add Customer tab and return to Customer List
+    const handleCloseAddCustomerTab = () => {
+        setIsAddCustomerTabOpen(false)
+        setActiveTab('list')
+        setAddCustomerSearch('')
+        setAddCustomerInitialCustomer(null)
+    }
+
+    // Open Add Card in Add Customer tab for an existing customer
+    const handleAddCardForCustomer = (cus) => {
+        handleOpenAddCustomerTab(cus?.phone || cus?.email || '', cus)
+    }
+
+    // Cross-tab synchronization: Listen for customer created in separate tab
+    useEffect(() => {
+        const handleStorageSync = (e) => {
+            if (e.key === 'dealora_customer_added' && e.newValue) {
+                try {
+                    const data = JSON.parse(e.newValue)
+                    fetchCustomers().then((updatedList) => {
+                        const list = updatedList || []
+                        const matched = list.find(c =>
+                            (data.customerId && String(c.id) === String(data.customerId)) ||
+                            (data.email && c.email && c.email.toLowerCase() === data.email.toLowerCase()) ||
+                            (data.phone && String(c.phone).replace(/\D/g, '') === String(data.phone).replace(/\D/g, ''))
+                        )
+                        if (matched) {
+                            setSelectedCustomerForCheckIn(matched)
+                        } else {
+                            setSelectedCustomerForCheckIn({
+                                id: data.customerId,
+                                name: data.name,
+                                email: data.email,
+                                phone: data.phone
+                            })
+                        }
+                        setSearchModalOpen(true)
+                    })
+                } catch (err) {
+                    console.error('Error handling customer sync:', err)
+                }
+            }
+        }
+
+        window.addEventListener('storage', handleStorageSync)
+        return () => window.removeEventListener('storage', handleStorageSync)
+    }, [])
+
+    // Support auto-checkin query parameters from URL
+    useEffect(() => {
+        const autoCheckIn = searchParams.get('autoCheckIn') === 'true'
+        const paramEmail = searchParams.get('email')
+        const paramPhone = searchParams.get('phone')
+        const paramCusId = searchParams.get('customerId')
+
+        if (autoCheckIn && (paramEmail || paramPhone || paramCusId)) {
+            fetchCustomers().then((updatedList) => {
+                const list = updatedList || []
+                const matched = list.find(c =>
+                    (paramCusId && String(c.id) === String(paramCusId)) ||
+                    (paramEmail && c.email && c.email.toLowerCase() === paramEmail.toLowerCase()) ||
+                    (paramPhone && String(c.phone).replace(/\D/g, '') === String(paramPhone).replace(/\D/g, ''))
+                )
+                if (matched) {
+                    setSelectedCustomerForCheckIn(matched)
+                } else {
+                    setSelectedCustomerForCheckIn({
+                        id: paramCusId,
+                        email: paramEmail,
+                        phone: paramPhone
+                    })
+                }
+                setSearchModalOpen(true)
+            })
+        }
+    }, [searchParams])
 
     return (
         <div style={{ paddingBottom: 40 }}>
@@ -189,7 +375,7 @@ export default function ReceptionistCustomerList() {
                     <button
                         type="button"
                         className="btn firstloop-btn-primary"
-                        onClick={() => navigate(`/receptionist/add-card-customer/${branchId}`)}
+                        onClick={() => handleOpenAddCustomerTab('')}
                         style={{
                             padding: '9px 18px',
                             borderRadius: 10,
@@ -207,13 +393,175 @@ export default function ReceptionistCustomerList() {
                 </div>
             </div>
 
+            {/* In-Page Tab Navigation Bar */}
+            <div
+                style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    borderBottom: '2px solid #E2E8F0',
+                    marginBottom: 20,
+                    gap: 12,
+                    flexWrap: 'wrap'
+                }}
+            >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('list')}
+                        style={{
+                            background: activeTab === 'list' ? '#FFFFFF' : 'transparent',
+                            border: 'none',
+                            borderBottom: activeTab === 'list' ? '3px solid var(--firstloop-primary, #0E88B8)' : '3px solid transparent',
+                            padding: '12px 18px',
+                            fontWeight: activeTab === 'list' ? 800 : 600,
+                            color: activeTab === 'list' ? 'var(--firstloop-primary, #0E88B8)' : 'var(--text-muted, #64748B)',
+                            fontSize: '0.88rem',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 8,
+                            transition: 'all 0.15s ease',
+                            marginBottom: -2
+                        }}
+                    >
+                        <i className="fas fa-users" />
+                        <span>Customer List</span>
+                        <span
+                            style={{
+                                background: activeTab === 'list' ? 'var(--firstloop-primary-light, #E6F2FA)' : '#F1F5F9',
+                                color: activeTab === 'list' ? 'var(--firstloop-primary, #0E88B8)' : '#64748B',
+                                fontSize: '0.72rem',
+                                fontWeight: 800,
+                                padding: '2px 8px',
+                                borderRadius: 12
+                            }}
+                        >
+                            {filteredCustomers.length}
+                        </span>
+                    </button>
+
+                    {isAddCustomerTabOpen && (
+                        <div
+                            style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                borderBottom: activeTab === 'add_customer' ? '3px solid var(--firstloop-primary, #0E88B8)' : '3px solid transparent',
+                                marginBottom: -2
+                            }}
+                        >
+                            <button
+                                type="button"
+                                onClick={() => setActiveTab('add_customer')}
+                                style={{
+                                    background: activeTab === 'add_customer' ? '#FFFFFF' : 'transparent',
+                                    border: 'none',
+                                    padding: '12px 10px 12px 16px',
+                                    fontWeight: activeTab === 'add_customer' ? 800 : 600,
+                                    color: activeTab === 'add_customer' ? 'var(--firstloop-primary, #0E88B8)' : 'var(--text-muted, #64748B)',
+                                    fontSize: '0.88rem',
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 8,
+                                    transition: 'all 0.15s ease'
+                                }}
+                            >
+                                <i className="fas fa-user-plus" />
+                                <span>Add Customer</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleCloseAddCustomerTab}
+                                title="Close Add Customer Tab"
+                                style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: '#94A3B8',
+                                    cursor: 'pointer',
+                                    padding: '4px 8px',
+                                    marginRight: 6,
+                                    borderRadius: 6,
+                                    fontSize: '0.82rem',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    transition: 'all 0.15s ease'
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.color = '#EF4444'; e.currentTarget.style.background = '#FEE2E2' }}
+                                onMouseLeave={(e) => { e.currentTarget.style.color = '#94A3B8'; e.currentTarget.style.background = 'transparent' }}
+                            >
+                                <i className="fas fa-times" />
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+                {/* Return to Customer List if currently on Add Customer tab */}
+                {activeTab === 'add_customer' && (
+                    <button
+                        type="button"
+                        className="btn btn-sm btn-outline-secondary"
+                        onClick={() => setActiveTab('list')}
+                        style={{
+                            borderRadius: 8,
+                            fontSize: '0.8rem',
+                            fontWeight: 700,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            marginBottom: 8
+                        }}
+                    >
+                        <i className="fas fa-arrow-left" />
+                        <span>View Customer List</span>
+                    </button>
+                )}
+            </div>
+
+            {/* TAB CONTENT: Add Customer Tab */}
+            {activeTab === 'add_customer' && (
+                <div style={{ marginBottom: 30 }}>
+                    <AddCardCustomerModal
+                        isOpen={isAddCustomerTabOpen}
+                        asTab={true}
+                        onClose={handleCloseAddCustomerTab}
+                        branchId={branchId}
+                        initialCustomer={addCustomerInitialCustomer}
+                        initialSearch={addCustomerSearch}
+                        initialPhone={addCustomerSearch}
+                        onSuccess={(resData, customerForCheckIn) => {
+                            fetchCustomers().then(() => {
+                                handleCloseAddCustomerTab()
+                                if (customerForCheckIn) {
+                                    setSelectedCustomerForCheckIn(customerForCheckIn)
+                                    setSearchModalOpen(true)
+                                }
+                            })
+                        }}
+                    />
+                </div>
+            )}
+
+            {/* TAB CONTENT: Customer List Tab */}
+            {activeTab === 'list' && (
+                <>
             {/* Filter Bar */}
             <div className="mb-4 card" style={{ padding: 16, borderRadius: 14, background: '#FFFFFF', border: '1px solid #E2E8F0', boxShadow: '0 2px 10px rgba(0,0,0,0.03)' }}>
                 <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
                     {/* Search Input & Conditional Add Customer Button */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                         <div style={{ position: 'relative', width: 320 }}>
-                            <i className="fas fa-search" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                            <i
+                                className={isSearchingBackend ? "fas fa-spinner fa-spin" : "fas fa-search"}
+                                style={{
+                                    position: 'absolute',
+                                    left: 14,
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    color: isSearchingBackend ? 'var(--firstloop-primary, #0E88B8)' : 'var(--text-muted)'
+                                }}
+                            />
                             <input
                                 type="text"
                                 className="form-control"
@@ -228,11 +576,11 @@ export default function ReceptionistCustomerList() {
                         </div>
 
                         {/* Display Add Customer button ONLY when no customers are found */}
-                        {!loading && ((search.trim().length > 0 && filteredCustomers.length === 0) || (customers.length === 0)) && (
+                        {!loading && !isSearchingBackend && ((search.trim().length > 0 && filteredCustomers.length === 0) || (customers.length === 0)) && (
                             <button
                                 type="button"
                                 className="btn firstloop-btn-primary"
-                                onClick={() => navigate(`/receptionist/add-card-customer/${branchId}`)}
+                                onClick={() => handleOpenAddCustomerTab(search)}
                                 style={{
                                     height: 40,
                                     padding: '0 16px',
@@ -724,7 +1072,7 @@ export default function ReceptionistCustomerList() {
                                                         <button
                                                             type="button"
                                                             className="btn btn-sm"
-                                                            onClick={() => navigate(`/receptionist/add-card-customer/${branchId}?email=${encodeURIComponent(cus.email || '')}`)}
+                                                            onClick={() => handleAddCardForCustomer(cus)}
                                                             style={{
                                                                 background: 'rgba(14, 136, 184, 0.1)',
                                                                 color: 'var(--firstloop-primary, #0E88B8)',
@@ -771,8 +1119,52 @@ export default function ReceptionistCustomerList() {
                                 })
                             ) : (
                                 <tr>
-                                    <td colSpan={4} style={{ textAlign: 'center', padding: 36, color: 'var(--text-muted)' }}>
-                                        No branch customers found matching your criteria.
+                                    <td colSpan={4} style={{ textAlign: 'center', padding: '40px 16px', color: 'var(--text-muted)' }}>
+                                        {search.trim().length > 0 ? (
+                                            <div style={{ maxWidth: 420, margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+                                                <div style={{
+                                                    width: 52,
+                                                    height: 52,
+                                                    borderRadius: '50%',
+                                                    background: '#F1F5F9',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    color: '#64748B',
+                                                    fontSize: '1.35rem'
+                                                }}>
+                                                    <i className="fas fa-user-slash" />
+                                                </div>
+                                                <div>
+                                                    <h5 style={{ margin: '0 0 4px 0', fontWeight: 700, color: 'var(--text-primary)' }}>
+                                                        No customer found
+                                                    </h5>
+                                                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                                        No existing customer matched &quot;{search}&quot;. Click below to create a new customer profile.
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    className="btn firstloop-btn-primary"
+                                                    onClick={() => handleOpenAddCustomerTab(search)}
+                                                    style={{
+                                                        padding: '8px 20px',
+                                                        borderRadius: 10,
+                                                        fontWeight: 700,
+                                                        fontSize: '0.85rem',
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        gap: 8,
+                                                        marginTop: 4
+                                                    }}
+                                                >
+                                                    <i className="fas fa-user-plus" />
+                                                    <span>Add Customer</span>
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <span>No branch customers found matching your criteria.</span>
+                                        )}
                                     </td>
                                 </tr>
                             )}
@@ -874,6 +1266,8 @@ export default function ReceptionistCustomerList() {
                     </div>
                 )}
             </div>
+            </>
+            )}
 
             {/* QR Scanner Popup Modal */}
             <QrScannerModal

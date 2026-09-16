@@ -4,6 +4,7 @@ import { toast } from "react-hot-toast"
 import API from '../../api.js'
 import CustomerCard from '../../components/CustomerCard.jsx'
 import CustomerCardHistory from '../../components/CustomerCardHistory.jsx'
+import AddCardCustomerModal from './components/AddCardCustomerModal.jsx'
 import {
     fetchCustomerStampLevelsApi,
     formatExpiryDate,
@@ -116,6 +117,7 @@ export default function CardCheckInPayment() {
    
     const [savingEntry, setSavingEntry] = useState(false)
     const [historyModalOpen, setHistoryModalOpen] = useState(false)
+    const [addCardModalOpen, setAddCardModalOpen] = useState(false)
     const [successReceiptModal, setSuccessReceiptModal] = useState(null)
     const [paidCards, setPaidCards] = useState(new Set())
     const [selectedStampIndex, setSelectedStampIndex] = useState(null)
@@ -324,13 +326,26 @@ export default function CardCheckInPayment() {
         }
     }, [selectedCard?.id, selectedCard?.card_type, matchedCustomer?.id])
 
-    // Navigate to Add Card to Customer page
+    // Navigate or Open Add Card to Customer modal
     const handleNavigateToAddCustomer = () => {
         const branchId = effectiveBranchId || ''
         if (isMerchant) {
             navigate(`/merchant/add-card-customer/${branchId}`)
         } else {
-            navigate(`/receptionist/add-card-customer/${branchId}`)
+            setAddCardModalOpen(true)
+        }
+    }
+
+    const handleAddCardModalSuccess = async (resData, customerInfo) => {
+        setAddCardModalOpen(false)
+        if (customerInfo) {
+            setMatchedCustomer(customerInfo)
+            setSearchInput(customerInfo.phone || customerInfo.email || customerInfo.name)
+            if (Array.isArray(customerInfo.cards) && customerInfo.cards.length > 0) {
+                setSelectedCard(customerInfo.cards[0])
+            }
+            await fetchCustomers()
+            toast.success("Card issued! Ready for check-in.")
         }
     }
 
@@ -1582,7 +1597,7 @@ export default function CardCheckInPayment() {
                                                             if (isMerchant) {
                                                                 navigate(`/merchant/add-card-customer/${branchId}${emailQuery}`)
                                                             } else {
-                                                                navigate(`/receptionist/add-card-customer/${branchId}${emailQuery}`)
+                                                                setAddCardModalOpen(true)
                                                             }
                                                         }}
                                                         style={{
@@ -1698,7 +1713,7 @@ export default function CardCheckInPayment() {
                                             if (isMerchant) {
                                                 navigate(`/merchant/add-card-customer/${branchId}${emailQuery}`);
                                             } else {
-                                                navigate(`/receptionist/add-card-customer/${branchId}${emailQuery}`);
+                                                setAddCardModalOpen(true);
                                             }
                                         }}
                                         style={{
@@ -2380,7 +2395,7 @@ export default function CardCheckInPayment() {
                                                                     if (isMerchant) {
                                                                         navigate(`/merchant/add-card-customer/${branchId}${emailQuery}`);
                                                                     } else {
-                                                                        navigate(`/receptionist/add-card-customer/${branchId}${emailQuery}`);
+                                                                        setAddCardModalOpen(true);
                                                                     }
                                                                 }}
                                                                 style={{
@@ -3030,6 +3045,15 @@ export default function CardCheckInPayment() {
                 onClose={() => setHistoryModalOpen(false)}
                 cardId={selectedCard?.id}
                 card={selectedCard}
+            />
+
+            {/* ADD CARD TO CUSTOMER POPUP MODAL */}
+            <AddCardCustomerModal
+                isOpen={addCardModalOpen}
+                onClose={() => setAddCardModalOpen(false)}
+                initialCustomer={matchedCustomer}
+                branchId={effectiveBranchId}
+                onSuccess={handleAddCardModalSuccess}
             />
         </div>
     )

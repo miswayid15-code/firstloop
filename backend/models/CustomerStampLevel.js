@@ -121,6 +121,11 @@ module.exports = (sequelize, DataTypes) => {
             foreignKey: 'category_id',
             as: 'Category',
         });
+        CustomerStampLevel.hasMany(models.CustomerStampInheritedReward, {
+            foreignKey: 'target_stamp_number',
+            sourceKey: 'stamp_number',
+            as: 'InheritedRewards',
+        });
     };
 
     return CustomerStampLevel;
