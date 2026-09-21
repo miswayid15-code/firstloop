@@ -47,7 +47,7 @@ select option {
 .login-card {
   width: 100%;
   max-width: 460px;
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.91);
   backdrop-filter: blur(24px);
   border: var(--border-glass);
   border-radius: var(--border-radius-xl);
@@ -369,4 +369,4 @@ input:checked + .slider:before {
     display: none !important;
   }
 }
-
+
