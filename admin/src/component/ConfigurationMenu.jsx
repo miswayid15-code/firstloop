@@ -3,7 +3,7 @@ import React from 'react';
 export default function ConfigurationMenu() {
   return (
     <>
-      {/* Left Bar Color Setting trigger */}
+      {/* Left Bar Color Setting triggerc */}
       <div className="tf-left-bar">
         <a className="btn-setting-color" data-bs-toggle="offcanvas" href="#settingColorMenu">
           <svg className="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
