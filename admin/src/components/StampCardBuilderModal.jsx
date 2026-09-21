@@ -1504,30 +1504,53 @@ export default function StampCardBuilderModal({
 
                                                         {/* If free_stamp is 1, show free_text field */}
                                                         {Number(reward.free_stamp) === 1 && (
-                                                            <div style={{ flex: 1, minWidth: 160, display: 'flex', alignItems: 'center', gap: 6 }}>
-                                                                <span style={{ fontSize: '0.74rem', fontWeight: 600, color: '#047857', whiteSpace: 'nowrap' }}>
-                                                                    Free Text:
-                                                                </span>
-                                                                <input
-                                                                    type="text"
-                                                                    className="form-control"
-                                                                    placeholder="e.g. Free Cookie, Free Drink..."
-                                                                    value={reward.free_text || ''}
-                                                                    onChange={(e) => {
-                                                                        const textVal = e.target.value
-                                                                        setStampForm(prev => {
-                                                                            const updated = [...prev.levelRewards]
-                                                                            updated[i] = { ...updated[i], free_text: textVal }
-                                                                            return { ...prev, levelRewards: updated }
-                                                                        })
-                                                                    }}
-                                                                    style={{
-                                                                        height: 32,
-                                                                        fontSize: '0.78rem',
-                                                                        borderColor: '#86EFAC',
-                                                                        background: '#FFFFFF'
-                                                                    }}
-                                                                />
+                                                            <div style={{ flex: 1, minWidth: 180, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                                    <span style={{ fontSize: '0.74rem', fontWeight: 700, color: '#047857', whiteSpace: 'nowrap' }}>
+                                                                        Free Text:
+                                                                    </span>
+                                                                    <input
+                                                                        type="text"
+                                                                        className="form-control"
+                                                                        placeholder="e.g. 10min, Spa, Coffee..."
+                                                                        value={reward.free_text || ''}
+                                                                        maxLength={30}
+                                                                        onChange={(e) => {
+                                                                            const textVal = e.target.value
+                                                                            setStampForm(prev => {
+                                                                                const updated = [...prev.levelRewards]
+                                                                                updated[i] = { ...updated[i], free_text: textVal }
+                                                                                return { ...prev, levelRewards: updated }
+                                                                            })
+                                                                        }}
+                                                                        style={{
+                                                                            height: 32,
+                                                                            fontSize: '0.78rem',
+                                                                            borderColor: '#86EFAC',
+                                                                            background: '#FFFFFF'
+                                                                        }}
+                                                                    />
+                                                                    {reward.free_text && (
+                                                                        <span
+                                                                            className="badge"
+                                                                            title="Digital Pass Tag: First 3 letters shown on the stamp circle"
+                                                                            style={{
+                                                                                background: '#10B981',
+                                                                                color: '#FFFFFF',
+                                                                                fontSize: '0.68rem',
+                                                                                fontWeight: 800,
+                                                                                padding: '3px 6px',
+                                                                                borderRadius: 6,
+                                                                                whiteSpace: 'nowrap'
+                                                                            }}
+                                                                        >
+                                                                            Tag: {reward.free_text.trim().slice(0, 3).toUpperCase()}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                <small style={{ fontSize: '0.68rem', color: '#059669', lineHeight: 1.2 }}>
+                                                                    💡 Digital card circles will display the first 3 letters (e.g. <strong>{reward.free_text ? reward.free_text.trim().slice(0, 3).toUpperCase() : '10M'}</strong>). Full text appears on hover &amp; customer receipt.
+                                                                </small>
                                                             </div>
                                                         )}
                                                     </div>
@@ -1549,7 +1572,7 @@ export default function StampCardBuilderModal({
                         <div
                             style={{
                                 width: '100%',
-                                maxWidth: 370,
+                                maxWidth: 380,
                                 borderRadius: 20,
                                 ...getCardStyle(stampForm),
                                 color: stampForm.textColor || '#FFFFFF',
@@ -1557,7 +1580,7 @@ export default function StampCardBuilderModal({
                                 boxShadow: '0 16px 36px -8px rgba(0,0,0,0.25)',
                                 position: 'relative',
                                 transition: 'all 0.3s ease',
-                                minHeight: 240
+                                minHeight: 250
                             }}
                         >
                             <div style={{ position: 'relative', zIndex: 2 }}>
@@ -1578,7 +1601,7 @@ export default function StampCardBuilderModal({
                                         </div>
 
                                         {/* Stamp Circles Slot Canvas */}
-                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10, maxWidth: 220 }}>
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9, marginBottom: 10, maxWidth: 240 }}>
                                             {Array.from({ length: Number(stampForm.total_stamps) }).map((_, i) => {
                                                 const r = stampForm.levelRewards[i]
                                                 const isType2or3 = r && (r.type === 'Discount' || r.type === 'Paid')
@@ -1589,20 +1612,20 @@ export default function StampCardBuilderModal({
 
                                                 if (r) {
                                                     if (r.type === 'Free') {
-                                                        iconMarkup = <i className={`fas ${r.icon || 'fa-gift'}`} style={{ fontSize: '0.8rem' }} />
+                                                        iconMarkup = <i className={`fas ${r.icon || 'fa-gift'}`} style={{ fontSize: hasFreeStamp ? '0.74rem' : '0.82rem' }} />
                                                         mainRewardLabel = r.reward || 'Free Perk'
                                                     } else if (r.type === 'Discount') {
                                                         const disc = r.discount ?? r.discountVal ?? 0
-                                                        iconMarkup = <span style={{ fontSize: '0.62rem', fontWeight: 800 }}>{disc}%</span>
+                                                        iconMarkup = <span style={{ fontSize: hasFreeStamp ? '0.62rem' : '0.72rem', fontWeight: 800, lineHeight: 1 }}>{disc}%</span>
                                                         mainRewardLabel = `${disc}% Discount`
                                                     } else if (r.type === 'Paid') {
-                                                        iconMarkup = <i className={`fas ${r.icon || getCategoryDefaultIcon(categoryName)}`} style={{ fontSize: '0.8rem' }} />
+                                                        iconMarkup = <i className={`fas ${r.icon || getCategoryDefaultIcon(categoryName)}`} style={{ fontSize: hasFreeStamp ? '0.74rem' : '0.82rem' }} />
                                                         mainRewardLabel = r.reward || 'Paid Perk'
                                                     }
                                                 }
 
                                                 const tooltipText = hasFreeStamp
-                                                    ? `${mainRewardLabel} FREE: ${r.free_text || 'Free Perk'}`
+                                                    ? `${mainRewardLabel} • FREE: ${r.free_text || 'Free Perk'}`
                                                     : mainRewardLabel
 
                                                 return (
@@ -1610,49 +1633,53 @@ export default function StampCardBuilderModal({
                                                         key={i}
                                                         title={tooltipText}
                                                         style={{
-                                                            width: 36,
-                                                            height: 36,
+                                                            width: 42,
+                                                            height: 42,
                                                             borderRadius: `${stampForm.stampRadius ?? 50}%`,
                                                             border: `2px solid ${stampForm.stampBorderColor || '#FFFFFF'}`,
                                                             background: stampForm.stampBgColor || 'rgba(255, 255, 255, 0.3)',
                                                             color: stampForm.stampTextColor || 'inherit',
                                                             display: 'flex',
+                                                            flexDirection: 'column',
                                                             alignItems: 'center',
                                                             justifyContent: 'center',
                                                             fontSize: '0.85rem',
                                                             fontWeight: 800,
                                                             flexShrink: 0,
-                                                            position: 'relative'
+                                                            position: 'relative',
+                                                            overflow: 'hidden',
+                                                            boxSizing: 'border-box',
+                                                            padding: '2px'
                                                         }}
                                                     >
-                                                        {iconMarkup}
-
-                                                        {/* Small circular FREE symbol badge for reward_type 2 or 3 when free_stamp is 1 */}
-                                                        {hasFreeStamp && (
-                                                            <span
-                                                                title={r.free_text ? `Free Perk: ${r.free_text}` : 'Free Perk Included'}
-                                                                style={{
-                                                                    position: 'absolute',
-                                                                    top: -4,
-                                                                    right: -4,
-                                                                    width: 15,
-                                                                    height: 15,
-                                                                    borderRadius: '50%',
-                                                                    background: '#10B981',
-                                                                    color: '#FFFFFF',
-                                                                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.35)',
-                                                                    border: '1.5px solid #FFFFFF',
-                                                                    zIndex: 4,
-                                                                    pointerEvents: 'none',
-                                                                    display: 'flex',
-                                                                    alignItems: 'center',
-                                                                    justifyContent: 'center',
-                                                                    fontSize: '0.45rem',
-                                                                    lineHeight: 1
-                                                                }}
-                                                            >
-                                                                <i className="fas fa-gift" style={{ lineHeight: 1, fontSize: '0.45rem' }} />
-                                                            </span>
+                                                        {hasFreeStamp ? (
+                                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', lineHeight: 1 }}>
+                                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                                    {iconMarkup}
+                                                                </div>
+                                                                <span
+                                                                    style={{
+                                                                        fontSize: '0.46rem',
+                                                                        fontWeight: 900,
+                                                                        lineHeight: 1,
+                                                                        letterSpacing: '0.2px',
+                                                                        textTransform: 'uppercase',
+                                                                        background: 'rgba(16, 185, 129, 0.95)',
+                                                                        color: '#FFFFFF',
+                                                                        padding: '1px 3px',
+                                                                        borderRadius: 3,
+                                                                        marginTop: 2,
+                                                                        maxWidth: 32,
+                                                                        overflow: 'hidden',
+                                                                        whiteSpace: 'nowrap',
+                                                                        boxShadow: '0 1px 2px rgba(0,0,0,0.2)'
+                                                                    }}
+                                                                >
+                                                                    {String(r.free_text || 'FREE').trim().slice(0, 3)}
+                                                                </span>
+                                                            </div>
+                                                        ) : (
+                                                            iconMarkup
                                                         )}
                                                     </div>
                                                 )

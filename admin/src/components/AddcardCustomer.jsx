@@ -428,8 +428,8 @@ const AddCardCustomer = ({
                     >
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                                <i className="fas fa-user-circle" style={{ color: "#0E88B8", fontSize: "0.95rem" }}></i>
-                                <span style={{ fontWeight: 700, fontSize: "0.88rem", color: "#1E293B" }}>
+                                <i className="fas fa-user-circle" style={{ color: emailChecked ? "#10B981" : "#0E88B8", fontSize: "0.95rem" }}></i>
+                                <span style={{ fontWeight: 700, fontSize: "0.88rem", color: emailChecked ? "#065F46" : "#1E293B" }}>
                                     Step 1: Customer Profile
                                 </span>
                             </div>
@@ -447,7 +447,6 @@ const AddCardCustomer = ({
                                         color: customerStatus === "Existing Customer" ? "#15803D" : "#4338CA"
                                     }}
                                 >
-                                    <i className={customerStatus === "Existing Customer" ? "fas fa-check-circle" : "fas fa-user-plus"}></i>
                                     {customerStatus}
                                 </span>
                             )}
@@ -520,26 +519,25 @@ const AddCardCustomer = ({
                                     onClick={() => handleCheckEmail()}
                                     disabled={isSearching || !email.trim()}
                                     style={{
-                                        padding: "0 18px",
+                                        padding: "10px 18px",
                                         borderRadius: "10px",
                                         border: "none",
-                                        background: "linear-gradient(135deg, #0E88B8 0%, #0284C7 100%)",
+                                        backgroundColor: isSearching || !email.trim() ? "#94A3B8" : "#0E88B8",
                                         color: "#FFFFFF",
                                         fontSize: "0.85rem",
                                         fontWeight: 600,
                                         cursor: isSearching || !email.trim() ? "not-allowed" : "pointer",
-                                        opacity: isSearching || !email.trim() ? 0.65 : 1,
                                         display: "inline-flex",
                                         alignItems: "center",
                                         gap: "6px",
                                         flexShrink: 0,
-                                        transition: "all 0.2s"
+                                        transition: "background-color 0.2s"
                                     }}
                                 >
                                     {isSearching ? (
                                         <>
-                                            <i className="fas fa-circle-notch fa-spin"></i>
-                                            <span>Checking...</span>
+                                            <i className="fas fa-spinner fa-spin"></i>
+                                            <span>Looking up...</span>
                                         </>
                                     ) : (
                                         <>
@@ -551,114 +549,108 @@ const AddCardCustomer = ({
                             </div>
                         </div>
 
-
-
-                        {/* Name and Phone Fields (Always visible for editing or confirming) */}
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginTop: "2px" }}>
-                            <div>
-                                <label
+                        {/* Customer Name Field */}
+                        <div>
+                            <label
+                                style={{
+                                    display: "block",
+                                    fontSize: "0.8rem",
+                                    fontWeight: 600,
+                                    color: "#475569",
+                                    marginBottom: "6px"
+                                }}
+                            >
+                                Customer Name <span style={{ color: "#EF4444" }}>*</span>
+                            </label>
+                            <div style={{ position: "relative" }}>
+                                <i
+                                    className="fas fa-user"
                                     style={{
-                                        display: "block",
-                                        fontSize: "0.8rem",
-                                        fontWeight: 600,
-                                        color: "#475569",
-                                        marginBottom: "6px"
+                                        position: "absolute",
+                                        left: "14px",
+                                        top: "50%",
+                                        transform: "translateY(-50%)",
+                                        color: "#94A3B8",
+                                        fontSize: "0.85rem"
                                     }}
-                                >
-                                    Customer Full Name <span style={{ color: "#EF4444" }}>*</span>
-                                </label>
-                                <div style={{ position: "relative" }}>
-                                    <i
-                                        className="fas fa-user"
-                                        style={{
-                                            position: "absolute",
-                                            left: "14px",
-                                            top: "50%",
-                                            transform: "translateY(-50%)",
-                                            color: "#94A3B8",
-                                            fontSize: "0.82rem"
-                                        }}
-                                    ></i>
-                                    <input
-                                        type="text"
-                                        value={customerName}
-                                        onChange={(e) => setCustomerName(e.target.value)}
-                                        placeholder="e.g. Jane Doe"
-                                        style={{
-                                            width: "100%",
-                                            padding: "10px 14px 10px 36px",
-                                            borderRadius: "10px",
-                                            border: "1px solid #CBD5E1",
-                                            backgroundColor: "#FFFFFF",
-                                            fontSize: "0.88rem",
-                                            color: "#1E293B",
-                                            outline: "none",
-                                            boxSizing: "border-box"
-                                        }}
-                                    />
-                                </div>
+                                ></i>
+                                <input
+                                    type="text"
+                                    value={customerName}
+                                    onChange={(e) => setCustomerName(e.target.value)}
+                                    placeholder="e.g. Jane Doe"
+                                    style={{
+                                        width: "100%",
+                                        padding: "10px 14px 10px 38px",
+                                        borderRadius: "10px",
+                                        border: "1px solid #CBD5E1",
+                                        backgroundColor: "#FFFFFF",
+                                        fontSize: "0.88rem",
+                                        color: "#1E293B",
+                                        outline: "none",
+                                        boxSizing: "border-box"
+                                    }}
+                                    required
+                                />
                             </div>
+                        </div>
 
-                            <div>
-                                <label
+                        {/* Customer Phone Field */}
+                        <div>
+                            <label
+                                style={{
+                                    display: "block",
+                                    fontSize: "0.8rem",
+                                    fontWeight: 600,
+                                    color: "#475569",
+                                    marginBottom: "6px"
+                                }}
+                            >
+                                Phone Number
+                            </label>
+                            <div style={{ position: "relative" }}>
+                                <i
+                                    className="fas fa-phone"
                                     style={{
-                                        display: "block",
-                                        fontSize: "0.8rem",
-                                        fontWeight: 600,
-                                        color: "#475569",
-                                        marginBottom: "6px"
+                                        position: "absolute",
+                                        left: "14px",
+                                        top: "50%",
+                                        transform: "translateY(-50%)",
+                                        color: "#94A3B8",
+                                        fontSize: "0.85rem"
                                     }}
-                                >
-                                    Phone Number <span style={{ color: "#EF4444" }}>*</span>
-                                </label>
-                                <div style={{ position: "relative" }}>
-                                    <i
-                                        className="fas fa-phone"
-                                        style={{
-                                            position: "absolute",
-                                            left: "14px",
-                                            top: "50%",
-                                            transform: "translateY(-50%)",
-                                            color: "#94A3B8",
-                                            fontSize: "0.82rem"
-                                        }}
-                                    ></i>
-                                    <input
-                                        type="text"
-                                        value={phone}
-                                        onChange={(e) => setPhone(e.target.value)}
-                                        placeholder="e.g. +1 555-0199"
-                                        style={{
-                                            width: "100%",
-                                            padding: "10px 14px 10px 36px",
-                                            borderRadius: "10px",
-                                            border: "1px solid #CBD5E1",
-                                            backgroundColor: "#FFFFFF",
-                                            fontSize: "0.88rem",
-                                            color: "#1E293B",
-                                            outline: "none",
-                                            boxSizing: "border-box"
-                                        }}
-                                    />
-                                </div>
+                                ></i>
+                                <input
+                                    type="tel"
+                                    value={phone}
+                                    onChange={(e) => setPhone(e.target.value)}
+                                    placeholder="e.g. +1 555-0199"
+                                    style={{
+                                        width: "100%",
+                                        padding: "10px 14px 10px 38px",
+                                        borderRadius: "10px",
+                                        border: "1px solid #CBD5E1",
+                                        backgroundColor: "#FFFFFF",
+                                        fontSize: "0.88rem",
+                                        color: "#1E293B",
+                                        outline: "none",
+                                        boxSizing: "border-box"
+                                    }}
+                                />
                             </div>
                         </div>
                     </div>
 
-                    {/* SECTION 2: SELECT CARD TYPE (TABS) */}
+                    {/* SECTION 2: SELECT CARD TYPE */}
                     <div>
-                        <label
-                            style={{
-                                display: "block",
-                                fontSize: "0.88rem",
-                                fontWeight: 700,
-                                color: "#1E293B",
-                                marginBottom: "10px"
-                            }}
-                        >
-                            Step 2: Choose Card Type
-                        </label>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}>
+                            <i className="fas fa-layer-group" style={{ color: cardType ? "#10B981" : "#0E88B8", fontSize: "0.95rem" }}></i>
+                            <span style={{ fontWeight: 700, fontSize: "0.88rem", color: cardType ? "#065F46" : "#1E293B" }}>
+                                Step 2: Choose Card Type
+                            </span>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
                             {/* Stamp Card Choice */}
                             <button
                                 type="button"
@@ -666,8 +658,8 @@ const AddCardCustomer = ({
                                 style={{
                                     padding: "14px 16px",
                                     borderRadius: "14px",
-                                    border: cardType === "stamp" ? "2px solid #0E88B8" : "1.5px solid #E2E8F0",
-                                    backgroundColor: cardType === "stamp" ? "#F0F9FF" : "#FFFFFF",
+                                    border: cardType === "stamp" ? "2px solid #10B981" : "1.5px solid #E2E8F0",
+                                    backgroundColor: cardType === "stamp" ? "#F0FDF4" : "#FFFFFF",
                                     textAlign: "left",
                                     cursor: "pointer",
                                     display: "flex",
@@ -675,7 +667,7 @@ const AddCardCustomer = ({
                                     gap: "12px",
                                     transition: "all 0.2s",
                                     position: "relative",
-                                    boxShadow: cardType === "stamp" ? "0 4px 12px rgba(14, 136, 184, 0.15)" : "none"
+                                    boxShadow: cardType === "stamp" ? "0 4px 12px rgba(16, 185, 129, 0.15)" : "none"
                                 }}
                             >
                                 <div
@@ -683,7 +675,7 @@ const AddCardCustomer = ({
                                         width: "38px",
                                         height: "38px",
                                         borderRadius: "10px",
-                                        backgroundColor: cardType === "stamp" ? "#0E88B8" : "#F1F5F9",
+                                        backgroundColor: cardType === "stamp" ? "#10B981" : "#F1F5F9",
                                         color: cardType === "stamp" ? "#FFFFFF" : "#64748B",
                                         display: "flex",
                                         alignItems: "center",
@@ -696,12 +688,9 @@ const AddCardCustomer = ({
                                 </div>
                                 <div style={{ flex: 1 }}>
                                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                                        <span style={{ fontWeight: 700, fontSize: "0.92rem", color: "#0F172A" }}>
+                                        <span style={{ fontWeight: 700, fontSize: "0.92rem", color: cardType === "stamp" ? "#065F46" : "#0F172A" }}>
                                             Stamp Card
                                         </span>
-                                        {cardType === "stamp" && (
-                                            <i className="fas fa-check-circle" style={{ color: "#0E88B8", fontSize: "0.95rem" }}></i>
-                                        )}
                                     </div>
                                     <p style={{ margin: "2px 0 0", fontSize: "0.76rem", color: "#64748B", lineHeight: 1.3 }}>
                                         Digital punch card with milestone rewards

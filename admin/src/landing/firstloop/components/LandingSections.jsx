@@ -7,6 +7,12 @@ import {
   Palette, QrCode, Bell, BarChart3, Zap, Coffee, Utensils, Dumbbell, 
   Dog, ChevronRight, Scissors, UserCheck, ArrowRight, Check
 } from 'lucide-react';
+import {
+  BrandControlIcon,
+  FastEnrollmentIcon,
+  SimpleStampingIcon,
+  ClearInsightsIcon
+} from './LandingIcons';
 
 export const LandingSections = () => {
   const { navigateToSignup, setActiveTab } = useApp();
@@ -16,28 +22,28 @@ export const LandingSections = () => {
       step: '01',
       title: 'Brand Control',
       description: 'Create digital stamp cards with your exact logo, brand colors, custom rewards, and headers in minutes.',
-      icon: <Palette className="w-6 h-6 transition-transform duration-300 group-hover:scale-110" />,
+      icon: <BrandControlIcon className="w-9 h-9 transition-transform duration-300 group-hover:scale-110" />,
       badgeBg: 'bg-teal-50 text-teal-700 border-teal-200'
     },
     {
       step: '02',
       title: 'Fast Enrollment',
       description: 'Customers join instantly via QR code scan or direct web link straight to Apple Wallet & Google Wallet.',
-      icon: <QrCode className="w-6 h-6 transition-transform duration-300 group-hover:scale-110" />,
+      icon: <FastEnrollmentIcon className="w-9 h-9 transition-transform duration-300 group-hover:scale-110" />,
       badgeBg: 'bg-teal-50 text-teal-700 border-teal-200'
     },
     {
       step: '03',
       title: 'Simple Stamping',
       description: 'Add stamps and redeem customer rewards in seconds with our Stamper App or instant web barcode scanner.',
-      icon: <Zap className="w-6 h-6 transition-transform duration-300 group-hover:scale-110" />,
+      icon: <SimpleStampingIcon className="w-9 h-9 transition-transform duration-300 group-hover:scale-110" />,
       badgeBg: 'bg-teal-50 text-teal-700 border-teal-200'
     },
     {
       step: '04',
       title: 'Clear Insights',
       description: 'Track customer signups, total stamps issued, repeat visit frequency, and real business ROI in real-time.',
-      icon: <BarChart3 className="w-6 h-6 transition-transform duration-300 group-hover:scale-110" />,
+      icon: <ClearInsightsIcon className="w-9 h-9 transition-transform duration-300 group-hover:scale-110" />,
       badgeBg: 'bg-teal-50 text-teal-700 border-teal-200'
     }
   ];
@@ -71,7 +77,7 @@ export const LandingSections = () => {
               >
                 <div>
                   <div className="flex items-center justify-between mb-6">
-                    <div className="w-14 h-14 rounded-2xl bg-slate-900 text-teal-400 group-hover:bg-teal-600 group-hover:text-white flex items-center justify-center shadow-md group-hover:shadow-teal-glow transition-all duration-300 shrink-0">
+                    <div className="w-16 h-16 rounded-2xl bg-slate-900 text-teal-400 group-hover:bg-teal-600 group-hover:text-white flex items-center justify-center shadow-md group-hover:shadow-teal-glow transition-all duration-300 shrink-0">
                       {item.icon}
                     </div>
 
@@ -101,7 +107,7 @@ export const LandingSections = () => {
         </div>
       </section>
 
-      {/* SECTION 2: One-Stop Solution */}
+      {/* SECTION 2: One-Stop Solution (Uploaded Image Section) */}
       <section className="py-20 bg-white border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
@@ -141,42 +147,42 @@ export const LandingSections = () => {
 
             <div className="lg:col-span-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
               
-              <div className="group bg-white p-6 rounded-3xl shadow-card border border-slate-100 hover:shadow-xl hover:border-teal-200 transition-all cursor-pointer">
-                <div className="w-12 h-12 rounded-2xl bg-teal-50 text-teal-600 group-hover:bg-teal-600 group-hover:text-white flex items-center justify-center mb-4 transition-all">
-                  <Palette className="w-6 h-6 group-hover:rotate-6 transition-transform" />
+              <div className="group bg-white p-6 sm:p-7 rounded-3xl shadow-card border border-slate-100 hover:shadow-xl hover:border-teal-300 transition-all cursor-pointer">
+                <div className="w-16 h-16 rounded-2xl bg-teal-50 text-teal-600 border border-teal-100 group-hover:bg-teal-600 group-hover:text-white group-hover:border-teal-600 flex items-center justify-center mb-5 transition-all shadow-sm group-hover:shadow-md">
+                  <BrandControlIcon className="w-9 h-9 group-hover:rotate-6 transition-transform" />
                 </div>
                 <h3 className="text-lg font-bold text-slate-900 group-hover:text-teal-700 transition-colors">Card design</h3>
-                <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+                <p className="text-xs sm:text-sm text-slate-500 mt-2 leading-relaxed">
                   Beautiful digital stamp cards with your brand logo, colors, and graphics.
                 </p>
               </div>
 
-              <div className="group bg-white p-6 rounded-3xl shadow-card border border-slate-100 hover:shadow-xl hover:border-teal-200 transition-all cursor-pointer">
-                <div className="w-12 h-12 rounded-2xl bg-sky-50 text-sky-600 group-hover:bg-sky-600 group-hover:text-white flex items-center justify-center mb-4 transition-all">
-                  <Bell className="w-6 h-6 group-hover:rotate-6 transition-transform" />
+              <div className="group bg-white p-6 sm:p-7 rounded-3xl shadow-card border border-slate-100 hover:shadow-xl hover:border-teal-300 transition-all cursor-pointer">
+                <div className="w-16 h-16 rounded-2xl bg-teal-50 text-teal-600 border border-teal-100 group-hover:bg-teal-600 group-hover:text-white group-hover:border-teal-600 flex items-center justify-center mb-5 transition-all shadow-sm group-hover:shadow-md">
+                  <Bell className="w-9 h-9 group-hover:rotate-6 transition-transform stroke-[2.2]" />
                 </div>
-                <h3 className="text-lg font-bold text-slate-900 group-hover:text-sky-700 transition-colors">Smart messaging</h3>
-                <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+                <h3 className="text-lg font-bold text-slate-900 group-hover:text-teal-700 transition-colors">Smart messaging</h3>
+                <p className="text-xs sm:text-sm text-slate-500 mt-2 leading-relaxed">
                   Send lock-screen push notifications to your customers at the right time.
                 </p>
               </div>
 
-              <div className="group bg-white p-6 rounded-3xl shadow-card border border-slate-100 hover:shadow-xl hover:border-teal-200 transition-all cursor-pointer">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white flex items-center justify-center mb-4 transition-all">
-                  <QrCode className="w-6 h-6 group-hover:rotate-6 transition-transform" />
+              <div className="group bg-white p-6 sm:p-7 rounded-3xl shadow-card border border-slate-100 hover:shadow-xl hover:border-teal-300 transition-all cursor-pointer">
+                <div className="w-16 h-16 rounded-2xl bg-teal-50 text-teal-600 border border-teal-100 group-hover:bg-teal-600 group-hover:text-white group-hover:border-teal-600 flex items-center justify-center mb-5 transition-all shadow-sm group-hover:shadow-md">
+                  <FastEnrollmentIcon className="w-9 h-9 group-hover:rotate-6 transition-transform" />
                 </div>
-                <h3 className="text-lg font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">Enrollment</h3>
-                <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+                <h3 className="text-lg font-bold text-slate-900 group-hover:text-teal-700 transition-colors">Enrollment</h3>
+                <p className="text-xs sm:text-sm text-slate-500 mt-2 leading-relaxed">
                   Share your card via QR code or direct web link so customers join in seconds.
                 </p>
               </div>
 
-              <div className="group bg-white p-6 rounded-3xl shadow-card border border-slate-100 hover:shadow-xl hover:border-teal-200 transition-all cursor-pointer">
-                <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 group-hover:bg-amber-600 group-hover:text-white flex items-center justify-center mb-4 transition-all">
-                  <BarChart3 className="w-6 h-6 group-hover:rotate-6 transition-transform" />
+              <div className="group bg-white p-6 sm:p-7 rounded-3xl shadow-card border border-slate-100 hover:shadow-xl hover:border-teal-300 transition-all cursor-pointer">
+                <div className="w-16 h-16 rounded-2xl bg-teal-50 text-teal-600 border border-teal-100 group-hover:bg-teal-600 group-hover:text-white group-hover:border-teal-600 flex items-center justify-center mb-5 transition-all shadow-sm group-hover:shadow-md">
+                  <ClearInsightsIcon className="w-9 h-9 group-hover:rotate-6 transition-transform" />
                 </div>
-                <h3 className="text-lg font-bold text-slate-900 group-hover:text-amber-700 transition-colors">Insights & Reporting</h3>
-                <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+                <h3 className="text-lg font-bold text-slate-900 group-hover:text-teal-700 transition-colors">Insights & Reporting</h3>
+                <p className="text-xs sm:text-sm text-slate-500 mt-2 leading-relaxed">
                   Track customer behavior and campaign performance to clearly prove ROI.
                 </p>
               </div>
@@ -284,11 +290,11 @@ export const LandingSections = () => {
         </div>
       </section>
 
-      {/* SECTION 4: Simple, Predictable 3-Tier Pricing (Replaces Category Cards) */}
-      <PricingSection />
- 
-      {/* SECTION 5: Dashboard Showcase (3D Wallet Stacking) */}
+      {/* SECTION 4: Dashboard Showcase (Complete Merchant Studio) */}
       <DashboardShowcase />
+
+      {/* SECTION 5: Simple, Predictable 3-Tier Pricing */}
+      <PricingSection />
 
       {/* SECTION 6: Final CTA Section */}
       <section className="py-20 hero-navy-bg text-white">

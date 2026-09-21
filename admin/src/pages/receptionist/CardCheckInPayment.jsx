@@ -1783,7 +1783,7 @@ export default function CardCheckInPayment() {
                                 Live Digital Customer Pass
                             </span>
                             {loadingCardDetails ? (
-                                <div style={{ minHeight: 240, width: '100%', maxWidth: 420, borderRadius: 22, background: '#F1F5F9', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+                                <div style={{ minHeight: 240, width: '100%', maxWidth: 450, borderRadius: 22, background: '#F1F5F9', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
                                     <div className="spinner-border text-primary" role="status" style={{ width: '2rem', height: '2rem' }} />
                                     <small style={{ fontWeight: 700, color: 'var(--text-muted)' }}>Loading Card Design...</small>
                                 </div>
@@ -1795,7 +1795,7 @@ export default function CardCheckInPayment() {
                                         cardType={isStampCard ? 1 : 2}
                                     />
                                     {/* WhatsApp Share Card Quick Action Button */}
-                                    <div style={{ marginTop: 14, width: '100%', maxWidth: 380 }}>
+                                    <div style={{ marginTop: 14, width: '100%', maxWidth: 450 }}>
                                         <button
                                             type="button"
                                             onClick={() => handleShareToWhatsApp(successReceiptModal)}
@@ -1988,84 +1988,120 @@ export default function CardCheckInPayment() {
                                                                     }}
                                                                 >
                                                                     <div
-                                                                        title={`Stamp ${idx + 1}: ${isPaid ? 'Processed (status = 1) • Click to Edit' : (isCurrentNext ? 'Next Stamp in Line • Click to Process' : `Locked • Complete Stamp #${firstUnprocessedIndex + 1} first`)}${levelData?.reward ? ` • ${levelData.reward}` : ''}${hasFree ? ` (Free: ${freePerkText || 'Free Perk'})` : ''}`}
+                                                                        title={`Stamp ${idx + 1}: ${isPaid ? 'Completed • Click to Edit' : (isCurrentNext ? 'Next Stamp in Line • Click to Process' : `Locked • Complete Stamp #${firstUnprocessedIndex + 1} first`)}${levelData?.reward ? ` • ${levelData.reward}` : ''}${hasFree ? ` (Free: ${freePerkText || 'Free Perk'})` : ''}`}
                                                                         style={{
-                                                                            width: 38,
-                                                                            height: 38,
+                                                                            width: 44,
+                                                                            height: 44,
                                                                             borderRadius: `${selectedCardDetails?.stamp_radius ?? 50}%`,
                                                                             background: isSelected
                                                                                 ? 'var(--firstloop-primary, #0E88B8)'
                                                                                 : (isPaid
                                                                                     ? 'linear-gradient(135deg, #059669 0%, #10B981 100%)'
-                                                                                    : (isCurrentNext ? '#FFFFFF' : '#F1F5F9')),
-                                                                            color: (isSelected || isPaid) ? '#FFFFFF' : (isCurrentNext ? 'var(--firstloop-primary, #0E88B8)' : '#94A3B8'),
+                                                                                    : (isCurrentNext ? 'var(--firstloop-primary, #0284C7)' : '#F1F5F9')),
+                                                                            color: (isSelected || isPaid || isCurrentNext) ? '#FFFFFF' : '#334155',
                                                                             border: isSelected
                                                                                 ? '2px solid #0369A1'
-                                                                                : (isPaid ? 'none' : (isCurrentNext ? '2px solid var(--firstloop-primary, #0E88B8)' : '1.5px dashed #CBD5E1')),
+                                                                                : (isPaid
+                                                                                    ? 'none'
+                                                                                    : (isCurrentNext
+                                                                                        ? '2px solid var(--firstloop-primary, #0284C7)'
+                                                                                        : (hasFree ? '1.5px solid #CBD5E1' : '1.5px dashed #CBD5E1'))),
                                                                             display: 'flex',
+                                                                            flexDirection: 'column',
                                                                             alignItems: 'center',
                                                                             justifyContent: 'center',
                                                                             fontWeight: 800,
-                                                                            fontSize: '0.82rem',
+                                                                            fontSize: '0.86rem',
                                                                             boxShadow: isSelected
                                                                                 ? '0 0 0 3px rgba(14, 136, 184, 0.3), 0 4px 10px rgba(14, 136, 184, 0.25)'
                                                                                 : (isPaid
-                                                                                    ? '0 2px 6px rgba(16, 185, 129, 0.25)'
-                                                                                    : (isCurrentNext ? '0 0 0 2px rgba(14, 136, 184, 0.2)' : 'none')),
-                                                                            transform: isSelected ? 'scale(1.06)' : 'scale(1)',
+                                                                                    ? '0 2px 6px rgba(16, 185, 129, 0.3)'
+                                                                                    : (isCurrentNext ? '0 0 0 3px rgba(2, 132, 199, 0.25)' : 'none')),
+                                                                            transform: isSelected ? 'scale(1.08)' : 'scale(1)',
                                                                             transition: 'all 0.2s ease',
-                                                                            position: 'relative'
+                                                                            position: 'relative',
+                                                                            overflow: 'hidden'
                                                                         }}
                                                                     >
                                                                         {isPaid ? (
-                                                                            isSelected ? <i className="fas fa-edit" style={{ fontSize: '0.78rem' }} /> : <i className="fas fa-check" />
-                                                                        ) : (
-                                                                            isCurrentNext ? (
-                                                                                idx + 1
+                                                                            isSelected ? (
+                                                                                <i className="fas fa-edit" style={{ fontSize: '0.84rem' }} />
                                                                             ) : (
-                                                                                <i className="fas fa-lock" style={{ fontSize: '0.72rem', opacity: 0.8 }} />
+                                                                                <i className="fas fa-check" style={{ fontSize: '0.94rem' }} />
                                                                             )
-                                                                        )}
-
-                                                                        {hasFree && (
-                                                                            <span
-                                                                                title={freePerkText ? `Free Perk: ${freePerkText}` : 'Free Bonus Perk'}
-                                                                                style={{
-                                                                                    position: 'absolute',
-                                                                                    top: -5,
-                                                                                    right: -5,
-                                                                                    width: 16,
-                                                                                    height: 16,
-                                                                                    borderRadius: '50%',
-                                                                                    background: '#10B981',
-                                                                                    color: '#FFFFFF',
-                                                                                    border: '1.5px solid #FFFFFF',
-                                                                                    display: 'flex',
-                                                                                    alignItems: 'center',
-                                                                                    justifyContent: 'center',
-                                                                                    fontSize: '0.5rem',
-                                                                                    boxShadow: '0 2px 4px rgba(0,0,0,0.25)',
-                                                                                    pointerEvents: 'none',
-                                                                                    zIndex: 2
-                                                                                }}
-                                                                            >
-                                                                                <i className="fas fa-gift" />
-                                                                            </span>
+                                                                        ) : isCurrentNext ? (
+                                                                            idx + 1
+                                                                        ) : (hasFree && idx !== totalStamps - 1) ? (
+                                                                            (() => {
+                                                                                const freeText = String(freePerkText || 'Free').trim()
+                                                                                const numMatch = freeText.match(/^(\d+)\s*([a-zA-Z]+)?/)
+                                                                                if (numMatch) {
+                                                                                    return (
+                                                                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>
+                                                                                            <span style={{ fontSize: '0.78rem', fontWeight: 800 }}>{numMatch[1]}</span>
+                                                                                            <span style={{ fontSize: '0.52rem', fontWeight: 700, color: '#64748B' }}>{numMatch[2] || 'min'}</span>
+                                                                                        </div>
+                                                                                    )
+                                                                                }
+                                                                                return (
+                                                                                    <span style={{ fontSize: '0.64rem', fontWeight: 800, textTransform: 'uppercase', maxWidth: 36, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                                                        {freeText.slice(0, 4)}
+                                                                                    </span>
+                                                                                )
+                                                                            })()
+                                                                        ) : idx === totalStamps - 1 ? (
+                                                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>
+                                                                                <i className="fas fa-gift" style={{ fontSize: '0.75rem', color: '#64748B', marginBottom: 2 }} />
+                                                                                <span style={{ fontSize: '0.5rem', fontWeight: 800, color: '#64748B' }}>Free</span>
+                                                                            </div>
+                                                                        ) : (
+                                                                            <span style={{ fontSize: '0.82rem', color: '#64748B' }}>{idx + 1}</span>
                                                                         )}
                                                                     </div>
 
-                                                                    <span
-                                                                        style={{
-                                                                            fontSize: '0.68rem',
-                                                                            fontWeight: isSelected ? 800 : (isCurrentNext ? 800 : 700),
-                                                                            color: isSelected
-                                                                                ? 'var(--firstloop-primary, #0E88B8)'
-                                                                                : (isPaid ? '#059669' : (isCurrentNext ? 'var(--firstloop-primary, #0E88B8)' : '#94A3B8')),
-                                                                            marginTop: 4
-                                                                        }}
-                                                                    >
-                                                                        {isPaid ? 'Edit' : (isCurrentNext ? 'Next' : `S-${idx + 1}`)}
-                                                                    </span>
+                                                                    {/* Bottom Label matching Image 2 */}
+                                                                    {isCurrentNext ? (
+                                                                        <span
+                                                                            style={{
+                                                                                fontSize: '0.62rem',
+                                                                                fontWeight: 800,
+                                                                                color: '#0284C7',
+                                                                                background: 'rgba(2, 132, 199, 0.12)',
+                                                                                border: '1px solid rgba(2, 132, 199, 0.3)',
+                                                                                padding: '1px 8px',
+                                                                                borderRadius: 999,
+                                                                                marginTop: 4
+                                                                            }}
+                                                                        >
+                                                                            Next
+                                                                        </span>
+                                                                    ) : (hasFree && !isPaid && idx !== totalStamps - 1) ? (
+                                                                        <span
+                                                                            style={{
+                                                                                fontSize: '0.6rem',
+                                                                                fontWeight: 800,
+                                                                                color: '#475569',
+                                                                                background: '#F1F5F9',
+                                                                                border: '1px solid #CBD5E1',
+                                                                                padding: '1px 7px',
+                                                                                borderRadius: 999,
+                                                                                marginTop: 4
+                                                                            }}
+                                                                        >
+                                                                            Free
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span
+                                                                            style={{
+                                                                                fontSize: '0.68rem',
+                                                                                fontWeight: 700,
+                                                                                color: '#94A3B8',
+                                                                                marginTop: 4
+                                                                            }}
+                                                                        >
+                                                                            {isPaid && isSelected ? 'Edit' : `S-${idx + 1}`}
+                                                                        </span>
+                                                                    )}
                                                                 </div>
                                                             )
                                                         })}

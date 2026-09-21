@@ -5,17 +5,13 @@ import confetti from 'canvas-confetti';
 const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
-  // Load stored merchants or use defaults
-  const [merchants, setMerchants] = useState(() => {
-    const saved = localStorage.getItem('loopy_merchants');
-    return saved ? JSON.parse(saved) : INITIAL_MERCHANTS;
-  });
+  // Load default merchants for sample showcases
+  const [merchants, setMerchants] = useState(INITIAL_MERCHANTS);
 
-  // User session state
-  const [currentUser, setCurrentUser] = useState(() => {
-    const saved = localStorage.getItem('loopy_user');
-    return saved ? JSON.parse(saved) : null;
-  });
+  // Clean up any legacy test user session from localStorage
+  useEffect(() => {
+    localStorage.removeItem('loopy_user');
+  }, []);
 
   // UI state
   const [selectedMerchant, setSelectedMerchant] = useState(null);
@@ -48,18 +44,6 @@ export const AppProvider = ({ children }) => {
   // Wallet Toast notification
   const [toast, setToast] = useState({ visible: false, message: '', title: '', type: 'apple' });
 
-  // Save merchants to localStorage
-  useEffect(() => {
-    localStorage.setItem('loopy_merchants', JSON.stringify(merchants));
-  }, [merchants]);
-
-  // Save user session
-  useEffect(() => {
-    if (currentUser) {
-      localStorage.setItem('loopy_user', JSON.stringify(currentUser));
-    }
-  }, [currentUser]);
-
   // Open merchant modal
   const openMerchantModal = (merchant, cardType = 'loyalty') => {
     setSelectedMerchant(merchant);
@@ -71,20 +55,16 @@ export const AppProvider = ({ children }) => {
     setIsMerchantModalOpen(false);
   };
 
-  // Signup action: Send submitted details to minsway04@gmail.com -> show Merchant List dashboard & open newly registered merchant modal
+  // Enquiry action: Send submitted details to minsway04@gmail.com without creating user sessions
   const registerMerchant = async (formData) => {
-    const newUser = {
-      fullName: formData.fullName,
-      email: formData.email,
+    const enquiryData = {
+      fullName: formData.fullName || formData.name || '',
+      email: formData.email || '',
       phone: formData.phone || '',
-      storeName: formData.storeName || `${formData.fullName}'s Store`,
-      category: formData.category || 'Cafes & Coffee Shops',
       plan: formData.plan || selectedPlan || 'growth',
       billing: formData.billing || selectedBilling || 'monthly',
-      signedUpAt: new Date().toISOString()
+      submittedAt: new Date().toISOString()
     };
-
-    setCurrentUser(newUser);
 
     // Send submitted merchant details to minsway04@gmail.com
     try {
@@ -95,78 +75,20 @@ export const AppProvider = ({ children }) => {
           'Accept': 'application/json'
         },
         body: JSON.stringify({
-          _subject: `New Merchant Registration: ${newUser.storeName} (${newUser.plan.toUpperCase()} Plan)`,
-          fullName: newUser.fullName,
-          email: newUser.email,
-          phone: newUser.phone,
-          storeName: newUser.storeName,
-          category: newUser.category,
-          plan: newUser.plan,
-          billing: newUser.billing,
-          registeredAt: newUser.signedUpAt
+          _subject: `New Store Enquiry: ${enquiryData.fullName} (${enquiryData.plan.toUpperCase()} Plan)`,
+          fullName: enquiryData.fullName,
+          email: enquiryData.email,
+          phone: enquiryData.phone,
+          plan: enquiryData.plan,
+          billing: enquiryData.billing,
+          registeredAt: enquiryData.submittedAt
         })
       }).catch(err => console.log('Email submission dispatch:', err));
     } catch (e) {
       console.log('Email notification handled locally:', e);
     }
 
-    // Create a new merchant entry for this newly registered merchant
-    const newMerchant = {
-      id: `m_${Date.now()}`,
-      name: newUser.storeName,
-      category: newUser.category,
-      logo: 'star',
-      description: `Welcome to ${newUser.storeName}! Created by ${newUser.fullName}. Enjoy our high-value rewards program.`,
-      activeMembers: '1',
-      rating: '5.0',
-      badge: `${newUser.plan.toUpperCase()} Plan`,
-      loyaltyCard: {
-        title: 'Customer Reward Pass',
-        merchantName: newUser.storeName,
-        bgColor: '#4C1D95',
-        cardHeaderBg: '#3730A3',
-        textColor: '#FFFFFF',
-        accentColor: '#FF4785',
-        stampIcon: 'star',
-        totalStamps: 10,
-        currentStamps: 1,
-        rewardText: 'Free Special Reward on 10th Visit',
-        memberId: `NEW-${Math.floor(1000 + Math.random() * 9000)}`,
-        memberName: newUser.fullName,
-        lifetimeStamps: 1,
-        rewardsAvailable: 0,
-        lastVisit: 'Just Now',
-        expiryDate: 'Dec 31, 2026',
-        barcode: `${Math.floor(100000000000 + Math.random() * 900000000000)}`,
-      },
-      membershipCard: {
-        title: 'VIP Founder Member',
-        merchantName: newUser.storeName,
-        tier: 'Founder Tier',
-        bgColor: 'linear-gradient(135deg, #581C87 0%, #7E22CE 100%)',
-        accentColor: '#F472B6',
-        memberName: newUser.fullName,
-        memberId: `FOUNDER-${Math.floor(100 + Math.random() * 900)}`,
-        memberSince: 'Today',
-        expiryDate: 'Dec 31, 2026',
-        perks: [
-          '10% Welcome Discount',
-          'Priority Member Support',
-          'Exclusive Reward Double Stamp Days',
-          'Digital Wallet Instant Access'
-        ],
-        qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(newUser.fullName)}`
-      }
-    };
-
-    setMerchants(prev => [newMerchant, ...prev]);
     setIsSignupModalOpen(false);
-
-    // Switch view to merchant list dashboard immediately and open the merchant modal properly
-    setActiveTab('dashboard');
-    setTimeout(() => {
-      openMerchantModal(newMerchant, 'loyalty');
-    }, 300);
   };
 
   // Add interactive stamp feature to demo card
@@ -215,7 +137,7 @@ export const AppProvider = ({ children }) => {
     <AppContext.Provider
       value={{
         merchants,
-        currentUser,
+        currentUser: null,
         selectedMerchant,
         activeCardType,
         isMerchantModalOpen,

@@ -577,7 +577,20 @@ export default function AddCardCustomer() {
                     <div className="card" style={{ padding: 22, borderRadius: 16, backgroundColor: "#FFFFFF", boxShadow: "0 4px 20px rgba(0,0,0,0.04)", border: "1px solid #E2E8F0" }}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                <div style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "#EFF6FF", color: "#0E88B8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1rem" }}>
+                                <div
+                                    style={{
+                                        width: 36,
+                                        height: 36,
+                                        borderRadius: 10,
+                                        backgroundColor: (selectedCustomerObj || isCreatingNewCustomer) ? "#DCFCE7" : "#EFF6FF",
+                                        color: (selectedCustomerObj || isCreatingNewCustomer) ? "#10B981" : "#0E88B8",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        fontSize: "1rem",
+                                        transition: "all 0.2s ease"
+                                    }}
+                                >
                                     <i className="fas fa-user-circle"></i>
                                 </div>
                                 <div>
@@ -604,7 +617,6 @@ export default function AddCardCustomer() {
                                         color: "#15803D"
                                     }}
                                 >
-                                    <i className="fas fa-check-circle"></i>
                                     Existing Customer (#{selectedCustomerObj.id})
                                 </span>
                             ) : isCreatingNewCustomer ? (
@@ -1074,12 +1086,23 @@ export default function AddCardCustomer() {
                                 </div>
                             </div>
                         )}
-                    </div>
-
-                    {/* CARD 2: CHOOSE CARD TYPE */}
+                                       {/* CARD 2: CHOOSE CARD TYPE */}
                     <div className="card" style={{ padding: 22, borderRadius: 16, backgroundColor: "#FFFFFF", boxShadow: "0 4px 20px rgba(0,0,0,0.04)", border: "1px solid #E2E8F0" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-                            <div style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "#EFF6FF", color: "#0E88B8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1rem" }}>
+                            <div
+                                style={{
+                                    width: 36,
+                                    height: 36,
+                                    borderRadius: 10,
+                                    backgroundColor: cardType ? "#DCFCE7" : "#EFF6FF",
+                                    color: cardType ? "#10B981" : "#0E88B8",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    fontSize: "1rem",
+                                    transition: "all 0.2s ease"
+                                }}
+                            >
                                 <i className="fas fa-layer-group"></i>
                             </div>
                             <div>
@@ -1103,15 +1126,15 @@ export default function AddCardCustomer() {
                                 style={{
                                     padding: "18px 20px",
                                     borderRadius: 14,
-                                    border: cardType === "stamp" ? "2px solid #0E88B8" : "1.5px solid #E2E8F0",
-                                    backgroundColor: cardType === "stamp" ? "#F0F9FF" : "#FFFFFF",
+                                    border: cardType === "stamp" ? "2px solid #10B981" : "1.5px solid #E2E8F0",
+                                    backgroundColor: cardType === "stamp" ? "#F0FDF4" : "#FFFFFF",
                                     textAlign: "left",
                                     cursor: "pointer",
                                     display: "flex",
                                     alignItems: "flex-start",
                                     gap: 14,
                                     transition: "all 0.2s",
-                                    boxShadow: cardType === "stamp" ? "0 6px 16px rgba(14, 136, 184, 0.15)" : "none"
+                                    boxShadow: cardType === "stamp" ? "0 6px 16px rgba(16, 185, 129, 0.15)" : "none"
                                 }}
                             >
                                 <div
@@ -1119,7 +1142,7 @@ export default function AddCardCustomer() {
                                         width: 44,
                                         height: 44,
                                         borderRadius: 12,
-                                        backgroundColor: cardType === "stamp" ? "#0E88B8" : "#F1F5F9",
+                                        backgroundColor: cardType === "stamp" ? "#10B981" : "#F1F5F9",
                                         color: cardType === "stamp" ? "#FFFFFF" : "#64748B",
                                         display: "flex",
                                         alignItems: "center",
@@ -1132,67 +1155,15 @@ export default function AddCardCustomer() {
                                 </div>
                                 <div style={{ flex: 1 }}>
                                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                                        <span style={{ fontWeight: 800, fontSize: "0.98rem", color: "#0F172A" }}>
+                                        <span style={{ fontWeight: 800, fontSize: "0.98rem", color: cardType === "stamp" ? "#065F46" : "#0F172A" }}>
                                             Stamp Card
                                         </span>
-                                        {cardType === "stamp" && (
-                                            <i className="fas fa-check-circle" style={{ color: "#0E88B8", fontSize: "1.1rem" }}></i>
-                                        )}
                                     </div>
                                     <p style={{ margin: "4px 0 0", fontSize: "0.8rem", color: "#64748B", lineHeight: 1.4 }}>
                                         Digital punch loyalty card with reward milestones per purchase or check-in.
                                     </p>
                                 </div>
                             </button>
-
-                            {/* Membership Pass Option */}
-                            {/* <button
-                                type="button"
-                                onClick={() => setCardType("membership")}
-                                style={{
-                                    padding: "18px 20px",
-                                    borderRadius: 14,
-                                    border: cardType === "membership" ? "2px solid #D97706" : "1.5px solid #E2E8F0",
-                                    backgroundColor: cardType === "membership" ? "#FFFBEB" : "#FFFFFF",
-                                    textAlign: "left",
-                                    cursor: "pointer",
-                                    display: "flex",
-                                    alignItems: "flex-start",
-                                    gap: 14,
-                                    transition: "all 0.2s",
-                                    boxShadow: cardType === "membership" ? "0 6px 16px rgba(217, 119, 6, 0.15)" : "none"
-                                }}
-                            >
-                                <div
-                                    style={{
-                                        width: 44,
-                                        height: 44,
-                                        borderRadius: 12,
-                                        backgroundColor: cardType === "membership" ? "#D97706" : "#F1F5F9",
-                                        color: cardType === "membership" ? "#FFFFFF" : "#64748B",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        fontSize: "1.2rem",
-                                        flexShrink: 0
-                                    }}
-                                >
-                                    <i className="fas fa-crown"></i>
-                                </div>
-                                <div style={{ flex: 1 }}>
-                                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                                        <span style={{ fontWeight: 800, fontSize: "0.98rem", color: "#0F172A" }}>
-                                            Membership Pass
-                                        </span>
-                                        {cardType === "membership" && (
-                                            <i className="fas fa-check-circle" style={{ color: "#D97706", fontSize: "1.1rem" }}></i>
-                                        )}
-                                    </div>
-                                    <p style={{ margin: "4px 0 0", fontSize: "0.8rem", color: "#64748B", lineHeight: 1.4 }}>
-                                        Tiered VIP access pass offering persistent discounts, privileges, and lounge access.
-                                    </p>
-                                </div>
-                            </button> */}
                         </div>
                     </div>
 
@@ -1200,7 +1171,20 @@ export default function AddCardCustomer() {
                     <div className="card" style={{ padding: 22, borderRadius: 16, backgroundColor: "#FFFFFF", boxShadow: "0 4px 20px rgba(0,0,0,0.04)", border: "1px solid #E2E8F0" }}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                <div style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "#EFF6FF", color: "#0E88B8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1rem" }}>
+                                <div
+                                    style={{
+                                        width: 36,
+                                        height: 36,
+                                        borderRadius: 10,
+                                        backgroundColor: selectedCardId ? "#DCFCE7" : "#EFF6FF",
+                                        color: selectedCardId ? "#10B981" : "#0E88B8",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        fontSize: "1rem",
+                                        transition: "all 0.2s ease"
+                                    }}
+                                >
                                     <i className="fas fa-id-card"></i>
                                 </div>
                                 <div>
@@ -1216,43 +1200,6 @@ export default function AddCardCustomer() {
                                 {currentCardList.length} card(s) available
                             </span>
                         </div>
-
-                        {/* Dropdown Selector
-                        <div style={{ marginBottom: 14 }}>
-                            <select
-                                value={selectedCardId}
-                                onChange={(e) => setSelectedCardId(e.target.value)}
-                                style={{
-                                    width: "100%",
-                                    padding: "12px 16px",
-                                    borderRadius: 10,
-                                    border: "1.5px solid #CBD5E1",
-                                    backgroundColor: "#FFFFFF",
-                                    fontSize: "0.92rem",
-                                    fontWeight: 600,
-                                    color: "#0F172A",
-                                    outline: "none",
-                                    cursor: "pointer",
-                                    appearance: "none",
-                                    backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
-                                    backgroundRepeat: "no-repeat",
-                                    backgroundPosition: "right 16px center",
-                                    backgroundSize: "18px",
-                                    boxSizing: "border-box"
-                                }}
-                            >
-                                {currentCardList.map((card) => {
-                                    const cId = card.id || card._id;
-                                    const cTitle = card.title || card.name || "Untitled Card";
-                                    const cSub = card.reward || card.tier || "";
-                                    return (
-                                        <option key={cId} value={cId}>
-                                            {cTitle} {cSub ? `— ${cSub}` : ""}
-                                        </option>
-                                    );
-                                })}
-                            </select>
-                        </div> */}
 
                         {/* Quick Card Selection Tiles or Empty State */}
                         {currentCardList.length === 0 ? (
@@ -1298,26 +1245,61 @@ export default function AddCardCustomer() {
                                             key={cId}
                                             onClick={() => setSelectedCardId(cId)}
                                             style={{
-                                                padding: "10px 12px",
-                                                borderRadius: 10,
-                                                border: isSelected ? "2px solid #0E88B8" : "1px solid #E2E8F0",
-                                                backgroundColor: isSelected ? "#F0F9FF" : "#F8FAFC",
+                                                padding: "12px 14px",
+                                                borderRadius: 12,
+                                                border: isSelected ? "2px solid #10B981" : "1px solid #E2E8F0",
+                                                backgroundColor: isSelected ? "#F0FDF4" : "#F8FAFC",
                                                 cursor: "pointer",
-                                                transition: "all 0.15s"
+                                                transition: "all 0.15s",
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "space-between",
+                                                gap: 10
                                             }}
                                         >
-                                            <div style={{ fontWeight: 700, fontSize: "0.85rem", color: "#1E293B", wordBreak: "break-word", lineHeight: 1.35 }}>
-                                                {card.title || card.name}
+                                            <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                                                <div
+                                                    style={{
+                                                        width: 32,
+                                                        height: 32,
+                                                        borderRadius: 8,
+                                                        backgroundColor: isSelected ? "#10B981" : "#E2E8F0",
+                                                        color: isSelected ? "#FFFFFF" : "#64748B",
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        justifyContent: "center",
+                                                        fontSize: "0.9rem",
+                                                        flexShrink: 0
+                                                    }}
+                                                >
+                                                    <i className={cardType === "stamp" ? "fas fa-stamp" : "fas fa-crown"}></i>
+                                                </div>
+                                                <div style={{ minWidth: 0 }}>
+                                                    <div style={{ fontWeight: 700, fontSize: "0.85rem", color: isSelected ? "#065F46" : "#1E293B", wordBreak: "break-word", lineHeight: 1.35 }}>
+                                                        {card.title || card.name}
+                                                    </div>
+                                                    <div style={{ fontSize: "0.74rem", color: "#64748B", marginTop: 2, wordBreak: "break-word", lineHeight: 1.35 }}>
+                                                        {cardType === "stamp" ? `${card.total_stamps || 8} Stamps${card.reward || card.reward_text ? ` • ${card.reward || card.reward_text}` : ''}${card.free_text ? ` • Free: ${card.free_text}` : ''}` : (card.tier || "VIP Tier")}
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div style={{ fontSize: "0.74rem", color: "#64748B", marginTop: 3, wordBreak: "break-word", lineHeight: 1.35 }}>
-                                                {cardType === "stamp" ? `${card.total_stamps || 8} Stamps${card.reward || card.reward_text ? ` • ${card.reward || card.reward_text}` : ''}${card.free_text ? ` • Free: ${card.free_text}` : ''}` : (card.tier || "VIP Tier")}
-                                            </div>
+                                            <div
+                                                style={{
+                                                    width: 18,
+                                                    height: 18,
+                                                    borderRadius: "50%",
+                                                    border: isSelected ? "5px solid #10B981" : "2px solid #CBD5E1",
+                                                    backgroundColor: "#FFFFFF",
+                                                    flexShrink: 0,
+                                                    transition: "all 0.15s"
+                                                }}
+                                            />
                                         </div>
                                     );
                                 })}
                             </div>
                         )}
-                    </div>
+                    </div>           </div>
 
                 </div>
 

@@ -4,8 +4,9 @@ import { useApp } from '../context/AppContext';
 import { 
   Mail, User, AlertCircle, ArrowRight, ArrowLeft,
   CheckCircle2, ShieldCheck, Zap, Crown, Coffee, Check,
-  Lock, Eye, EyeOff, Sparkles
+  Sparkles, Clock, X, Phone, HelpCircle
 } from 'lucide-react';
+import confetti from 'canvas-confetti';
 import PhoneNumberField from '../../../components/PhoneNumberField.jsx';
 import API from '../../../api';
 import { toast } from 'react-hot-toast';
@@ -29,14 +30,11 @@ export const PricingRegistrationPage = () => {
     fullName: '',
     email: '',
     phone: '',
-    countryCode: '+91',
-    password: ''
+    countryCode: '+91'
   });
 
-  const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const formRef = useRef(null);
 
   const plans = [
@@ -146,12 +144,6 @@ export const PricingRegistrationPage = () => {
       }
     }
 
-    if (!formData.password) {
-      errs.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      errs.password = 'Password must be at least 6 characters';
-    }
-
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -162,73 +154,149 @@ export const PricingRegistrationPage = () => {
 
     setIsSubmitting(true);
 
+    const fullPhone = `${formData.countryCode || '+91'} ${formData.phone.trim()}`;
+    const applicantName = formData.fullName.trim();
+    const applicantEmail = formData.email.trim();
+    const selectedPlanName = currentPlan.fullName;
+    const selectedInterval = billing === 'yearly' ? 'Yearly' : 'Monthly';
+
     const payload = {
-    
-      name: formData.fullName.trim(),
-      email: formData.email.trim(),
+      name: applicantName,
+      email: applicantEmail,
       phone: formData.phone.trim(),
       country_code: formData.countryCode || '+91',
-      password: formData.password,
-      // plan: currentPlan.fullName,
-      // planId: currentPlan.id,
-      // plan_id: currentPlan.id,
-      // billing: billing,
-      // billingInterval: billing,
-      // price: billing === 'yearly' ? currentPlan.yearlyPrice : currentPlan.monthlyPrice
+      plan: selectedPlanName,
+      plan_id: currentPlan.id,
+      billing: billing,
+      price: billing === 'yearly' ? currentPlan.yearlyPrice : currentPlan.monthlyPrice
     };
 
     try {
-      const response = await API.post('api/merchant/register-step1', payload);
-      const data = response?.data || {};
-
-      if (data.status === 1) {
-        // Store merchant auth session
-        if (data.access_token || data.token) {
-          localStorage.setItem("mer_access_token", data.access_token || data.token);
-        }
-        if (data.refresh_token) {
-          localStorage.setItem("mer_refresh_token", data.refresh_token);
-        }
-        localStorage.setItem("merchant_data", JSON.stringify(data));
-        localStorage.setItem("role", "merchant");
-        sessionStorage.setItem("role", "merchant");
-
-        // Set theme attributes for FirstLoop merchant dashboard
-        document.documentElement.setAttribute('data-role', 'firstloop');
-        document.body.setAttribute('data-role', 'firstloop');
-        document.documentElement.setAttribute('data-theme', 'firstloop');
-        document.body.setAttribute('data-theme', 'firstloop');
-
-        toast.success('Successfully registered! We will contact you soon.');
-
-        if (registerMerchant) {
-          registerMerchant({
-            ...payload,
-            apiResponse: data
-          });
-        }
-        setRegistrationSuccess(true);
-        setFormData({
-          fullName: '',
-          email: '',
-          phone: '',
-          countryCode: '+91',
-          password: ''
-        });
-      } else {
-        const errMsg = data.message || 'Registration failed';
-        toast.error(errMsg);
-      }
-    } catch (error) {
-      console.error('Merchant Registration Step 1 Error:', error);
-      const apiMsg = error?.response?.data?.message || error?.message || 'Registration failed. Please try again.';
-      toast.error(apiMsg);
-      if (error?.response?.data?.errors) {
-        setErrors(prev => ({ ...prev, ...error.response.data.errors }));
-      }
-    } finally {
-      setIsSubmitting(false);
+      // Dispatch API request if backend endpoint is active
+      await API.post('api/merchant/register-step1', payload).catch(() => {});
+    } catch (err) {
+      console.log('Registration backend dispatch handled:', err);
     }
+
+    // Dispatch email notification to admin
+    try {
+      fetch('https://formsubmit.co/ajax/minsway04@gmail.com', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          _subject: `New Store Enquiry: ${applicantName} (${selectedPlanName})`,
+          fullName: applicantName,
+          email: applicantEmail,
+          phone: fullPhone,
+          plan: selectedPlanName,
+          billing: selectedInterval,
+          submittedAt: new Date().toISOString()
+        })
+      }).catch(() => {});
+    } catch (e) {
+      console.log('Email notification handled:', e);
+    }
+
+    // Call context handler if present without redirecting or creating session
+    if (registerMerchant) {
+      registerMerchant({
+        fullName: applicantName,
+        email: applicantEmail,
+        phone: fullPhone,
+        plan: currentPlan.id,
+        billing: billing
+      });
+    }
+
+    // Trigger celebratory confetti burst
+    try {
+      confetti({
+        particleCount: 80,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#0d9488', '#0284c7', '#38bdf8', '#10b981', '#f59e0b']
+      });
+    } catch (cErr) {}
+
+    // Show custom glassmorphic toaster notification in website theme
+    toast.custom(
+      (t) => (
+        <div
+          className={`${
+            t.visible ? 'animate-in fade-in slide-in-from-top-4' : 'animate-out fade-out slide-out-to-top-4'
+          } max-w-md w-full bg-slate-950/90 backdrop-blur-2xl text-white border border-teal-500/40 rounded-3xl p-5 shadow-2xl shadow-teal-950/50 pointer-events-auto transition-all duration-300 relative overflow-hidden`}
+        >
+          {/* Subtle glow highlight */}
+          <div className="absolute -top-10 -right-10 w-36 h-36 bg-teal-500/20 rounded-full blur-2xl pointer-events-none"></div>
+
+          <div className="flex items-start gap-3.5 relative z-10">
+            <div className="w-10 h-10 rounded-2xl bg-teal-500/20 border border-teal-400/30 flex items-center justify-center text-teal-300 shrink-0 mt-0.5 shadow-sm">
+              <CheckCircle2 className="w-6 h-6 text-teal-400" />
+            </div>
+
+            <div className="flex-1 space-y-1.5 min-w-0">
+              <div className="flex items-center justify-between gap-2">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-teal-400/15 border border-teal-400/30 text-[10px] font-bold text-teal-300 uppercase tracking-wider">
+                  <span>Enquiry Received</span>
+                </div>
+                <button
+                  onClick={() => toast.dismiss(t.id)}
+                  className="p-1 rounded-full text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer shrink-0"
+                  aria-label="Dismiss notification"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <h4 className="text-sm font-black text-white tracking-tight">
+                Our team will contact you soon.
+              </h4>
+              <p className="text-xs text-slate-300 font-medium">
+                Thank you for your enquiry. We will reach out with your store setup details.
+              </p>
+
+              {/* Registered Details Capsule */}
+              <div className="mt-3 pt-2.5 border-t border-slate-800/90 space-y-1 text-[11px]">
+                <div className="flex items-center gap-1.5 text-slate-300 truncate">
+                  <User className="w-3.5 h-3.5 text-teal-400 shrink-0" />
+                  <span className="text-slate-400 font-medium">Name:</span>
+                  <strong className="text-white font-bold truncate">{applicantName}</strong>
+                </div>
+                <div className="flex items-center gap-1.5 text-slate-300 truncate">
+                  <Phone className="w-3.5 h-3.5 text-teal-400 shrink-0" />
+                  <span className="text-slate-400 font-medium">Mobile:</span>
+                  <strong className="text-white font-bold">{fullPhone}</strong>
+                </div>
+                <div className="flex items-center gap-1.5 text-slate-300 truncate">
+                  <Mail className="w-3.5 h-3.5 text-teal-400 shrink-0" />
+                  <span className="text-slate-400 font-medium">Email:</span>
+                  <strong className="text-white font-bold truncate">{applicantEmail}</strong>
+                </div>
+                <div className="flex items-center gap-1.5 text-slate-300 truncate pt-0.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-teal-400"></span>
+                  <span className="text-slate-400 font-medium">Plan:</span>
+                  <strong className="text-teal-300 font-bold truncate">{selectedPlanName} ({selectedInterval})</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ),
+      { duration: 6500, position: 'top-right' }
+    );
+
+    // Reset input fields
+    setFormData({
+      fullName: '',
+      email: '',
+      phone: '',
+      countryCode: '+91'
+    });
+
+    setIsSubmitting(false);
   };
 
   return (
@@ -426,13 +494,13 @@ export const PricingRegistrationPage = () => {
                 
                 <div>
                   <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-500/20 text-xs font-bold text-teal-300 border border-teal-500/30 mb-2">
-                    <span>Merchant Registration</span>
+                    <span>Store Enquiry</span>
                   </div>
                   <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-                    Complete Your Store Registration
+                    Submit Your Store Details
                   </h2>
                   <p className="text-xs sm:text-sm text-slate-300 mt-1">
-                    Enter your details below to activate your digital loyalty program and wallet passes.
+                    Enter your contact details below. Our team will contact you to activate your loyalty cards.
                   </p>
                 </div>
 
@@ -452,213 +520,150 @@ export const PricingRegistrationPage = () => {
               </div>
             </div>
 
-            {/* Registration Form */}
+            {/* Registration Enquiry Form */}
             <div className="p-6 sm:p-10">
               
-              {registrationSuccess ? (
-                <div className="text-center py-10 space-y-4">
-                  <div className="w-16 h-16 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center mx-auto">
-                    <CheckCircle2 className="w-8 h-8" />
+              <form onSubmit={handleSubmit} className="space-y-5">
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  
+                  {/* Full Name */}
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                      Full Name <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                      <input
+                        type="text"
+                        placeholder="e.g. Rahul Sharma"
+                        value={formData.fullName}
+                        onChange={(e) => {
+                          setFormData({ ...formData, fullName: e.target.value });
+                          if (errors.fullName) setErrors({ ...errors, fullName: null });
+                        }}
+                        className={`w-full pl-11 pr-4 py-3.5 rounded-2xl border text-sm font-medium focus:outline-none focus:ring-2 transition-all ${
+                          errors.fullName
+                            ? 'border-rose-300 bg-rose-50/30 focus:ring-rose-500'
+                            : 'border-slate-200 focus:border-teal-600 focus:ring-teal-500/20'
+                        }`}
+                      />
+                    </div>
+                    {errors.fullName && (
+                      <p className="text-xs text-rose-600 font-semibold mt-1 flex items-center gap-1">
+                        <AlertCircle className="w-3.5 h-3.5 text-rose-500" />
+                        <span>{errors.fullName}</span>
+                      </p>
+                    )}
                   </div>
-                  <h3 className="text-2xl font-black text-slate-900">Registration Successful!</h3>
-                  <p className="text-sm text-slate-600 max-w-md mx-auto">
-                    Thank you for signing up. Our team will contact you soon.
-                  </p>
-                  <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-                    <button
-                      onClick={() => setActiveTab('home')}
-                      className="px-8 py-3.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-md"
-                    >
-                      Return to Homepage
-                    </button>
+
+                  {/* Email Address */}
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                      Email Address <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                      <input
+                        type="email"
+                        placeholder="e.g. rahul@artisanroast.com"
+                        value={formData.email}
+                        onChange={(e) => {
+                          setFormData({ ...formData, email: e.target.value });
+                          if (errors.email) setErrors({ ...errors, email: null });
+                        }}
+                        className={`w-full pl-11 pr-4 py-3.5 rounded-2xl border text-sm font-medium focus:outline-none focus:ring-2 transition-all ${
+                          errors.email
+                            ? 'border-rose-300 bg-rose-50/30 focus:ring-rose-500'
+                            : 'border-slate-200 focus:border-teal-600 focus:ring-teal-500/20'
+                        }`}
+                      />
+                    </div>
+                    {errors.email && (
+                      <p className="text-xs text-rose-600 font-semibold mt-1 flex items-center gap-1">
+                        <AlertCircle className="w-3.5 h-3.5 text-rose-500" />
+                        <span>{errors.email}</span>
+                      </p>
+                    )}
+                  </div>
+
+                </div>
+
+                {/* Mandatory Mobile Phone Number */}
+                <div>
+                  <PhoneNumberField
+                    value={formData.phone}
+                    countryCode={formData.countryCode || '+91'}
+                    required={true}
+                    label="Mobile Phone Number"
+                    placeholder="e.g. 98765 43210"
+                    onChange={(value, countryCode) => {
+                      setFormData(prev => ({
+                        ...prev,
+                        phone: value || '',
+                        countryCode: countryCode || '+91'
+                      }));
+                      if (errors.phone) setErrors(prev => ({ ...prev, phone: null }));
+                    }}
+                  />
+                  {errors.phone && (
+                    <p className="text-xs text-rose-600 font-semibold mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-3.5 h-3.5 text-rose-500" />
+                      <span>{errors.phone}</span>
+                    </p>
+                  )}
+                </div>
+
+                {/* Guarantee & Verification Banner */}
+                <div className="p-4 bg-teal-50/80 rounded-2xl border border-teal-200/80 flex items-center gap-3 text-xs text-teal-900">
+                  <ShieldCheck className="w-5 h-5 text-teal-600 shrink-0" />
+                  <div>
+                    <strong className="font-bold">Fast Callback:</strong> Submit your details and our team will review & contact you shortly to activate your digital Apple & Google Wallet loyalty cards.
                   </div>
                 </div>
-              ) : (
-                <form onSubmit={handleSubmit} className="space-y-5">
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    
-                    {/* Full Name */}
-                    <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                        Full Name <span className="text-rose-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                        <input
-                          type="text"
-                          placeholder="e.g. Rahul Sharma"
-                          value={formData.fullName}
-                          onChange={(e) => {
-                            setFormData({ ...formData, fullName: e.target.value });
-                            if (errors.fullName) setErrors({ ...errors, fullName: null });
-                          }}
-                          className={`w-full pl-11 pr-4 py-3.5 rounded-2xl border text-sm font-medium focus:outline-none focus:ring-2 transition-all ${
-                            errors.fullName
-                              ? 'border-rose-300 bg-rose-50/30 focus:ring-rose-500'
-                              : 'border-slate-200 focus:border-teal-600 focus:ring-teal-500/20'
-                          }`}
-                        />
-                      </div>
-                      {errors.fullName && (
-                        <p className="text-xs text-rose-600 font-semibold mt-1 flex items-center gap-1">
-                          <AlertCircle className="w-3.5 h-3.5 text-rose-500" />
-                          <span>{errors.fullName}</span>
-                        </p>
-                      )}
-                    </div>
 
-                    {/* Email Address */}
-                    <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                        Email Address <span className="text-rose-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                        <input
-                          type="email"
-                          placeholder="e.g. rahul@artisanroast.com"
-                          value={formData.email}
-                          onChange={(e) => {
-                            setFormData({ ...formData, email: e.target.value });
-                            if (errors.email) setErrors({ ...errors, email: null });
-                          }}
-                          className={`w-full pl-11 pr-4 py-3.5 rounded-2xl border text-sm font-medium focus:outline-none focus:ring-2 transition-all ${
-                            errors.email
-                              ? 'border-rose-300 bg-rose-50/30 focus:ring-rose-500'
-                              : 'border-slate-200 focus:border-teal-600 focus:ring-teal-500/20'
-                          }`}
-                        />
-                      </div>
-                      {errors.email && (
-                        <p className="text-xs text-rose-600 font-semibold mt-1 flex items-center gap-1">
-                          <AlertCircle className="w-3.5 h-3.5 text-rose-500" />
-                          <span>{errors.email}</span>
-                        </p>
-                      )}
-                    </div>
+                {/* Submit Button */}
+                <div className="pt-2 space-y-2">
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full py-4 rounded-2xl text-base font-extrabold text-white bg-gradient-to-r from-teal-600 via-teal-700 to-sky-700 hover:from-teal-700 hover:to-sky-800 shadow-xl shadow-teal-600/25 hover:shadow-teal-600/40 transition-all flex items-center justify-center gap-2 group cursor-pointer"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                        <span>Submitting Enquiry...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Submit</span>
+                        <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                      </>
+                    )}
+                  </button>
 
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    
-                    {/* Mandatory Mobile Phone Number */}
-                    <div>
-                      <PhoneNumberField
-                        value={formData.phone}
-                        countryCode={formData.countryCode || '+91'}
-                        required={true}
-                        label="Mobile Phone Number"
-                        placeholder="e.g. 98765 43210"
-                        onChange={(value, countryCode) => {
-                          setFormData(prev => ({
-                            ...prev,
-                            phone: value || '',
-                            countryCode: countryCode || '+91'
-                          }));
-                          if (errors.phone) setErrors(prev => ({ ...prev, phone: null }));
-                        }}
-                      />
-                      {errors.phone && (
-                        <p className="text-xs text-rose-600 font-semibold mt-1 flex items-center gap-1">
-                          <AlertCircle className="w-3.5 h-3.5 text-rose-500" />
-                          <span>{errors.phone}</span>
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Account Password */}
-                    <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                        Password <span className="text-rose-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                        <input
-                          type={showPassword ? 'text' : 'password'}
-                          placeholder="Create password (min. 6 characters)"
-                          value={formData.password}
-                          onChange={(e) => {
-                            setFormData({ ...formData, password: e.target.value });
-                            if (errors.password) setErrors({ ...errors, password: null });
-                          }}
-                          className={`w-full pl-11 pr-11 py-3.5 rounded-2xl border text-sm font-medium focus:outline-none focus:ring-2 transition-all ${
-                            errors.password
-                              ? 'border-rose-300 bg-rose-50/30 focus:ring-rose-500'
-                              : 'border-slate-200 focus:border-teal-600 focus:ring-teal-500/20'
-                          }`}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer p-1"
-                          aria-label={showPassword ? 'Hide password' : 'Show password'}
-                        >
-                          {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                        </button>
-                      </div>
-                      {errors.password && (
-                        <p className="text-xs text-rose-600 font-semibold mt-1 flex items-center gap-1">
-                          <AlertCircle className="w-3.5 h-3.5 text-rose-500" />
-                          <span>{errors.password}</span>
-                        </p>
-                      )}
-                    </div>
-
-                  </div>
-
-
-                  {/* Guarantee Banner */}
-                  <div className="p-4 bg-teal-50/80 rounded-2xl border border-teal-200/80 flex items-center gap-3 text-xs text-teal-900">
-                    <ShieldCheck className="w-5 h-5 text-teal-600 shrink-0" />
-                    <div>
-                      <strong className="font-bold">Instant Setup:</strong> Select your package to generate live Apple & Google Wallet passes. Cancel anytime.
-                    </div>
-                  </div>
-
-                  {/* Submit Button (Renamed to Submit) */}
-                  <div className="pt-2 space-y-2">
+                  <p className="text-[11px] text-slate-500 text-center font-medium">
+                    By submitting, you agree to First Loop's{' '}
                     <button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="w-full py-4 rounded-2xl text-base font-extrabold text-white bg-gradient-to-r from-teal-600 via-teal-700 to-sky-700 hover:from-teal-700 hover:to-sky-800 shadow-xl shadow-teal-600/25 hover:shadow-teal-600/40 transition-all flex items-center justify-center gap-2 group cursor-pointer"
+                      type="button"
+                      onClick={() => navigateToLegal('terms')}
+                      className="text-teal-700 hover:text-teal-900 underline font-bold cursor-pointer"
                     >
-                      {isSubmitting ? (
-                        <>
-                          <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                          <span>Submitting...</span>
-                        </>
-                      ) : (
-                        <>
-                          <span>Submit</span>
-                          <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                        </>
-                      )}
+                      Terms of Service
                     </button>
+                    {' '}and{' '}
+                    <button
+                      type="button"
+                      onClick={() => navigateToLegal('privacy')}
+                      className="text-teal-700 hover:text-teal-900 underline font-bold cursor-pointer"
+                    >
+                      Privacy Policy
+                    </button>
+                    .
+                  </p>
+                </div>
 
-                    <p className="text-[11px] text-slate-500 text-center font-medium">
-                      By submitting, you agree to First Loop's{' '}
-                      <button
-                        type="button"
-                        onClick={() => navigateToLegal('terms')}
-                        className="text-teal-700 hover:text-teal-900 underline font-bold cursor-pointer"
-                      >
-                        Terms of Service
-                      </button>
-                      {' '}and{' '}
-                      <button
-                        type="button"
-                        onClick={() => navigateToLegal('privacy')}
-                        className="text-teal-700 hover:text-teal-900 underline font-bold cursor-pointer"
-                      >
-                        Privacy Policy
-                      </button>
-                      .
-                    </p>
-                  </div>
-
-                </form>
-              )}
+              </form>
 
             </div>
 
