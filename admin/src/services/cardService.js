@@ -104,6 +104,62 @@ export const cleanPhoneForWhatsApp = (phone, countryCode = '') => {
     return digits;
 };
 
+/**
+ * Formats perk text into 2 lines for digital stamp circles:
+ * - Upper: 2 letters or number / discount (e.g. "15", "10%", "30", "1H", "4")
+ * - Lower: 3 letters unit/text (e.g. "MIN", "SEC", "HR", "FRE")
+ * - Pure white text with zero background box
+ */
+export const parsePerkTwoLines = (text, rType = '', discountVal = null) => {
+    if (!text && (discountVal === null || discountVal === undefined)) {
+        return { top: 'FREE', bottom: '' };
+    }
+
+    // If discount is specified (e.g. 10% discount + 4 mins free perk)
+    if (rType === 'Discount' && discountVal !== null && discountVal !== undefined && Number(discountVal) > 0) {
+        const discStr = `${Number(discountVal)}%`;
+        if (!text) return { top: discStr, bottom: '' };
+        const raw = String(text).replace(/[\\/]/g, '').trim();
+        const m = raw.match(/^(\d+)\s*([a-zA-Z]+)?/i);
+        if (m) {
+            const num = m[1].slice(0, 2);
+            let unit = (m[2] || 'MIN').toUpperCase();
+            if (unit.startsWith('H')) unit = 'HR';
+            else if (unit.startsWith('M')) unit = 'MIN';
+            else if (unit.startsWith('S')) unit = 'SEC';
+            return { top: discStr, bottom: `${num}${unit.slice(0, 3)}`.slice(0, 4) };
+        }
+        const clean = raw.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+        return { top: discStr, bottom: clean.slice(0, 3) };
+    }
+
+    // For Paid Perk or Free Item with free text: (e.g. "15 mins", "30mins", "1 hour free", "4\\", "FREE")
+    const str = String(text || 'FREE').replace(/[\\/]/g, '').trim();
+
+    // Match number + unit (e.g. "15 mins", "30min", "1 hour", "4m", "10 MIN")
+    const numMatch = str.match(/^(\d+)\s*([a-zA-Z]+)?/i);
+    if (numMatch) {
+        const num = numMatch[1].slice(0, 2);
+        let unit = (numMatch[2] || 'MIN').toUpperCase();
+        if (unit.startsWith('H')) unit = 'HR';
+        else if (unit.startsWith('M')) unit = 'MIN';
+        else if (unit.startsWith('S')) unit = 'SEC';
+        return { top: num, bottom: unit.slice(0, 3) };
+    }
+
+    // If pure text without leading digits
+    const clean = str.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    if (clean.length <= 2) {
+        return { top: clean, bottom: '' };
+    } else if (clean.length === 3) {
+        return { top: clean, bottom: '' };
+    } else if (clean.length === 4) {
+        return { top: clean.slice(0, 2), bottom: clean.slice(2, 4) };
+    } else {
+        return { top: clean.slice(0, 2), bottom: clean.slice(2, 5) };
+    }
+};
+
 
 /**
  * Ensures all fonts (Font Awesome, web fonts), <img> elements, and background images

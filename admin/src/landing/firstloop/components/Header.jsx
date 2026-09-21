@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-import { Menu, X, User, LogIn } from 'lucide-react';
+import { Menu, X, LogIn } from 'lucide-react';
 import mainLogo from '../assets/mainlogo.png';
 
 export const Header = () => {
   const navigate = useNavigate();
-  const { navigateToSignup, currentUser, activeTab, setActiveTab } = useApp();
+  const { navigateToSignup, activeTab, setActiveTab } = useApp();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleNavClick = (hash) => {
@@ -58,18 +58,18 @@ export const Header = () => {
               Features
             </a>
             <a 
-              href="#pricing" 
-              onClick={() => handleNavClick('#pricing')}
-              className="hover:text-teal-600 transition-colors"
-            >
-              Pricing
-            </a>
-            <a 
               href="#dashboard-showcase" 
               onClick={() => handleNavClick('#dashboard-showcase')}
               className="hover:text-teal-600 transition-colors"
             >
               Dashboard
+            </a>
+            <a 
+              href="#pricing" 
+              onClick={() => handleNavClick('#pricing')}
+              className="hover:text-teal-600 transition-colors"
+            >
+              Pricing
             </a>
             <button 
               onClick={() => setActiveTab('dashboard')}
@@ -79,44 +79,21 @@ export const Header = () => {
             </button>
           </nav>
 
-          {/* Right: Log In & Get Started CTA / User Profile */}
+          {/* Right: Log In & Get Started CTA */}
           <div className="hidden sm:flex items-center gap-2.5 shrink-0">
-            {currentUser ? (
-              <button
-                onClick={() => setActiveTab('dashboard')}
-                className="flex items-center gap-2.5 pl-3.5 pr-2 py-1.5 rounded-full bg-slate-900/10 hover:bg-slate-900/20 border border-slate-900/15 text-xs font-bold text-slate-900 transition-all cursor-pointer group shadow-sm"
-                title="View Sample Card Designs"
-              >
-                <div className="flex flex-col items-start leading-tight">
-                  <span className="font-black text-slate-900 text-[11px] truncate max-w-[120px]">
-                    {currentUser.fullName || currentUser.storeName}
-                  </span>
-                  <span className="text-[9px] font-extrabold text-teal-700 uppercase tracking-wider group-hover:text-teal-900 flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-teal-600"></span>
-                    <span>Sample Cards</span>
-                  </span>
-                </div>
-                <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-teal-600 to-sky-600 text-white flex items-center justify-center shadow-sm shrink-0 group-hover:scale-105 transition-transform">
-                  <User className="w-4 h-4" />
-                </div>
-              </button>
-            ) : (
-              <>
-                <button
-                  onClick={() => navigate('/panel/merchant/login')}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold text-slate-700 hover:text-teal-700 hover:bg-slate-100 transition-all cursor-pointer border border-slate-200/80"
-                >
-                  <LogIn className="w-3.5 h-3.5" />
-                  <span>Login</span>
-                </button>
-                <button
-                  onClick={() => navigateToSignup('growth', 'monthly')}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-bold text-white bg-gradient-to-r from-teal-600 to-sky-600 hover:from-teal-700 hover:to-sky-700 shadow-md shadow-teal-600/30 hover:-translate-y-0.5 transition-all cursor-pointer"
-                >
-                  <span>Get Started</span>
-                </button>
-              </>
-            )}
+            <button
+              onClick={() => navigate('/panel/merchant/login')}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold text-slate-700 hover:text-teal-700 hover:bg-slate-100 transition-all cursor-pointer border border-slate-200/80"
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Login</span>
+            </button>
+            <button
+              onClick={() => navigateToSignup('growth', 'monthly')}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-bold text-white bg-gradient-to-r from-teal-600 to-sky-600 hover:from-teal-700 hover:to-sky-700 shadow-md shadow-teal-600/30 hover:-translate-y-0.5 transition-all cursor-pointer"
+            >
+              <span>Get Started</span>
+            </button>
           </div>
 
           {/* Mobile Hamburger Toggle */}
@@ -161,18 +138,18 @@ export const Header = () => {
               Features
             </a>
             <a
-              href="#pricing"
-              onClick={() => { handleNavClick('#pricing'); setMobileMenuOpen(false); }}
-              className="block py-2 text-sm font-bold text-slate-800 hover:text-teal-600"
-            >
-              Pricing
-            </a>
-            <a
               href="#dashboard-showcase"
               onClick={() => { handleNavClick('#dashboard-showcase'); setMobileMenuOpen(false); }}
               className="block py-2 text-sm font-bold text-slate-800 hover:text-teal-600"
             >
               Dashboard
+            </a>
+            <a
+              href="#pricing"
+              onClick={() => { handleNavClick('#pricing'); setMobileMenuOpen(false); }}
+              className="block py-2 text-sm font-bold text-slate-800 hover:text-teal-600"
+            >
+              Pricing
             </a>
             <button
               onClick={() => { setActiveTab('dashboard'); setMobileMenuOpen(false); }}

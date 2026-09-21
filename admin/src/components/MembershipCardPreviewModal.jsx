@@ -356,10 +356,10 @@ export default function MembershipCardPreviewModal({
                                      {hasCustomer && (activeCard.qr_token || activeCard.qrImg) ? (
                                          <QRCodeCanvas
                                              value={activeCard.qr_token || activeCard.qrImg}
-                                             size={92}
+                                             size={76}
                                              style={{
-                                                 width: 92,
-                                                 height: 92,
+                                                 width: 76,
+                                                 height: 76,
                                                  objectFit: 'contain',
                                                  display: 'block'
                                              }}
@@ -370,14 +370,14 @@ export default function MembershipCardPreviewModal({
                                              alt="QR Code"
                                              crossOrigin="anonymous"
                                              style={{
-                                                 width: 92,
-                                                 height: 92,
+                                                 width: 76,
+                                                 height: 76,
                                                  objectFit: 'contain',
                                                  display: 'block'
                                              }}
                                          />
                                      )}
-                                     <small style={{ fontSize: '0.6rem', fontWeight: 700, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.5px', opacity: 0.9 }}>
+                                     <small style={{ fontSize: '0.54rem', fontWeight: 700, marginTop: 3, textTransform: 'uppercase', letterSpacing: '0.4px', opacity: 0.9, lineHeight: 1.2 }}>
                                          SCAN PASS
                                      </small>
                                  </div>

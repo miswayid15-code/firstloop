@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import API from '../api.js'
-import { fetchCustomerCardDetailsApi, formatExpiryDate } from '../services/cardService.js'
+import { fetchCustomerCardDetailsApi, formatExpiryDate, parsePerkTwoLines } from '../services/cardService.js'
 
 /**
  * CustomerCardHistory Component (Popup Modal)
@@ -424,48 +424,77 @@ const CustomerCardHistory = ({ isOpen, onClose, cardId, card }) => {
                                                         <tr key={item.id} style={{ verticalAlign: 'middle' }}>
                                                             {/* STAMP CIRCLE */}
                                                             <td style={{ padding: '12px 14px' }}>
-                                                                <div style={{ position: 'relative', width: 32, height: 32 }}>
+                                                                <div style={{ position: 'relative', width: 36, height: 36 }}>
                                                                     <div
                                                                         style={{
-                                                                            width: 32,
-                                                                            height: 32,
+                                                                            width: 36,
+                                                                            height: 36,
                                                                             borderRadius: '50%',
                                                                             background: isPaid ? 'var(--firstloop-gradient-primary)' : '#F1F5F9',
                                                                             color: isPaid ? '#FFFFFF' : '#64748B',
                                                                             display: 'flex',
+                                                                            flexDirection: 'column',
                                                                             alignItems: 'center',
                                                                             justifyContent: 'center',
                                                                             fontWeight: 800,
                                                                             fontSize: '0.8rem',
-                                                                            border: isPaid ? 'none' : '1px dashed #CBD5E1'
+                                                                            border: isPaid ? 'none' : '1px dashed #CBD5E1',
+                                                                            overflow: 'hidden',
+                                                                            padding: '2px'
                                                                         }}
                                                                     >
-                                                                        {isPaid ? <i className="fas fa-check" /> : item.stamp_number}
+                                                                        {isPaid ? (
+                                                                            hasFree ? (
+                                                                                <div
+                                                                                    style={{
+                                                                                        width: '100%',
+                                                                                        height: '100%',
+                                                                                        borderRadius: 'inherit',
+                                                                                        border: '1.5px solid rgba(255, 255, 255, 0.8)',
+                                                                                        display: 'flex',
+                                                                                        alignItems: 'center',
+                                                                                        justifyContent: 'center',
+                                                                                        background: 'radial-gradient(circle, rgba(255, 255, 255, 0.38) 0%, rgba(255, 255, 255, 0.15) 65%, transparent 100%)',
+                                                                                        backdropFilter: 'blur(2px)',
+                                                                                        WebkitBackdropFilter: 'blur(2px)',
+                                                                                        boxShadow: 'inset 0 0 6px rgba(255, 255, 255, 0.5), 0 0 6px rgba(255, 255, 255, 0.35)',
+                                                                                        boxSizing: 'border-box'
+                                                                                    }}
+                                                                                >
+                                                                                    <i className="fas fa-heart" style={{ fontSize: '0.86rem', color: '#FFFFFF', filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25))' }} />
+                                                                                </div>
+                                                                            ) : (
+                                                                                item.icon ? <i className={`fas ${item.icon}`} /> : item.stamp_number
+                                                                            )
+                                                                        ) : (
+                                                                            hasFree ? (() => {
+                                                                                const perkLines = parsePerkTwoLines(freePerkText, rewardTypeStr, item.discount)
+                                                                                return (
+                                                                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', lineHeight: 1.05 }}>
+                                                                                        <span style={{ fontSize: perkLines.bottom ? '0.72rem' : '0.8rem', fontWeight: 800, color: '#334155' }}>
+                                                                                            {perkLines.top}
+                                                                                        </span>
+                                                                                        {perkLines.bottom && (
+                                                                                            <span
+                                                                                                style={{
+                                                                                                    fontSize: '0.44rem',
+                                                                                                    fontWeight: 800,
+                                                                                                    letterSpacing: '0.3px',
+                                                                                                    textTransform: 'uppercase',
+                                                                                                    color: '#64748B',
+                                                                                                    marginTop: 1
+                                                                                                }}
+                                                                                            >
+                                                                                                {perkLines.bottom}
+                                                                                            </span>
+                                                                                        )}
+                                                                                    </div>
+                                                                                )
+                                                                            })() : (
+                                                                                item.stamp_number
+                                                                            )
+                                                                        )}
                                                                     </div>
-                                                                    {hasFree && (
-                                                                        <span
-                                                                            title={freePerkText ? `Free Perk: ${freePerkText}` : 'Free Bonus Perk'}
-                                                                            style={{
-                                                                                position: 'absolute',
-                                                                                top: -4,
-                                                                                right: -4,
-                                                                                width: 15,
-                                                                                height: 15,
-                                                                                borderRadius: '50%',
-                                                                                background: '#10B981',
-                                                                                color: '#FFFFFF',
-                                                                                border: '1.5px solid #FFFFFF',
-                                                                                display: 'flex',
-                                                                                alignItems: 'center',
-                                                                                justifyContent: 'center',
-                                                                                fontSize: '0.45rem',
-                                                                                boxShadow: '0 2px 4px rgba(0,0,0,0.25)',
-                                                                                pointerEvents: 'none'
-                                                                            }}
-                                                                        >
-                                                                            <i className="fas fa-gift" />
-                                                                        </span>
-                                                                    )}
                                                                 </div>
                                                             </td>
 

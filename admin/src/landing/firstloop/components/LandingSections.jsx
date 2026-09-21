@@ -290,11 +290,11 @@ export const LandingSections = () => {
         </div>
       </section>
 
-      {/* SECTION 4: Simple, Predictable 3-Tier Pricing (Replaces Category Cards) */}
-      <PricingSection />
- 
-      {/* SECTION 5: Dashboard Showcase (3D Wallet Stacking) */}
+      {/* SECTION 4: Dashboard Showcase (Complete Merchant Studio) */}
       <DashboardShowcase />
+
+      {/* SECTION 5: Simple, Predictable 3-Tier Pricing */}
+      <PricingSection />
 
       {/* SECTION 6: Final CTA Section */}
       <section className="py-20 hero-navy-bg text-white">

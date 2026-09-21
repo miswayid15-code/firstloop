@@ -14,7 +14,8 @@ import {
     waitForCardAssets,
     cleanPhoneForWhatsApp,
     fetchCustomerStampLevelsApi,
-    formatExpiryDate
+    formatExpiryDate,
+    parsePerkTwoLines
 } from '../services/cardService.js'
 import CardIcon from './CardIcon.jsx'
 
@@ -318,184 +319,51 @@ function StampCardPreviewModal({
                         id="stamp-card-preview-canvas"
                         style={{
                             width: '100%',
-                            maxWidth: 380,
+                            maxWidth: 450,
                             borderRadius: 20,
                             ...getCardStyle(activeCard, '#0E88B8'),
                             color: activeCard.textColor || activeCard.text_color || '#FFFFFF',
-                            padding: 20,
+                            padding: '16px 20px',
                             boxShadow: '0 16px 36px -8px rgba(0,0,0,0.25)',
                             position: 'relative',
-                            minHeight: 230
+                            minHeight: 215
                         }}
                     >
-                        <div style={{ position: 'relative', zIndex: 2 }}>
-                            <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-                                {/* Left Side: Brand Logo, Title & Stamp Slots */}
+                        <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between' }}>
+                            {/* 1. TOP HEADER ROW: Left = Brand Logo & Title | Right = QR Code */}
+                            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
+                                {/* Brand Logo & Name */}
                                 <div style={{ flex: 1, minWidth: 0 }}>
-                                    {/* Brand Logo & Name */}
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
                                         <div style={{ width: 28, height: 28, borderRadius: 8, background: '#FFFFFF', padding: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.1)', flexShrink: 0 }}>
                                             <img src={brandLogo} alt="Logo" crossOrigin="anonymous" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                                         </div>
-                                        <span style={{ fontSize: '1rem', fontWeight: 800, color: 'inherit', lineHeight: 1.35, display: 'inline-block' }}>
+                                        <span style={{ fontSize: '1rem', fontWeight: 800, color: 'inherit', lineHeight: 1.25, display: 'inline-block' }}>
                                             {brandName}
                                         </span>
                                     </div>
 
                                     {/* Card Title */}
-                                    <div style={{ fontSize: '0.85rem', opacity: 0.95, marginBottom: 4, lineHeight: 1.35 }}>
+                                    <div style={{ fontSize: '0.84rem', opacity: 0.95, marginBottom: 3, lineHeight: 1.3 }}>
                                         <strong>{activeCard.title || 'Stamp Pass'}</strong>
                                     </div>
 
                                     {/* Cardholder Name with User Icon */}
                                     {cardholder && (
-                                        <div style={{ fontSize: '0.95rem', opacity: 0.95, fontWeight: 700, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6, lineHeight: 1.35 }}>
-                                            <CardIcon name="fa-user" style={{ fontSize: '0.75rem' }} />
+                                        <div style={{ fontSize: '0.88rem', opacity: 0.95, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5, lineHeight: 1.3 }}>
+                                            <CardIcon name="fa-user" style={{ fontSize: '0.72rem' }} />
                                             <span>{cardholder}</span>
-                                        </div>
-                                    )}
-
-                                    {/* Stamp Circles Grid */}
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 6, maxWidth: 220 }}>
-                                        {Array.from({ length: totalStamps }).map((_, i) => {
-                                            const stampNum = i + 1
-                                            const levels = activeCard.CustomerStampLevels || activeCard.levelRewards || activeCard.stamp_levels || []
-                                            const rewardItem = Array.isArray(levels) ? (levels.find(l => Number(l.stamp_number) === stampNum) || levels[i]) : null
-                                            let iconMarkup = stampNum
-
-                                            const rType = rewardItem
-                                                ? (rewardItem.type || (rewardItem.reward_type === '2' ? 'Discount' : (rewardItem.reward_type === '3' ? 'Paid' : 'Free')))
-                                                : null
-
-                                            if (rewardItem) {
-                                                if (rType === 'Free') {
-                                                    iconMarkup = <CardIcon name={rewardItem.icon || 'fa-gift'} style={{ fontSize: '0.85rem' }} />
-                                                } else if (rType === 'Discount') {
-                                                    iconMarkup = <CardIcon name="fa-percent" style={{ fontSize: '0.82rem' }} />
-                                                } else if (rType === 'Paid') {
-                                                    const paidIcon = rewardItem.icon || 'fa-tag'
-                                                    iconMarkup = <CardIcon name={paidIcon} style={{ fontSize: '0.82rem' }} />
-                                                }
-                                            }
-
-                                            // If no special reward was resolved, fallback to stamp number
-                                            if (typeof iconMarkup === 'number') {
-                                                iconMarkup = (
-                                                    <span
-                                                        style={{
-                                                            fontSize: '0.82rem',
-                                                            fontWeight: 800,
-                                                            display: 'inline-flex',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'center',
-                                                            lineHeight: 1,
-                                                            verticalAlign: '0',
-                                                            margin: 0,
-                                                            padding: 0
-                                                        }}
-                                                    >
-                                                        {i + 1}
-                                                    </span>
-                                                )
-                                            }
-
-                                            const hasCustomer = Boolean(
-                                                activeCard.card_number ||
-                                                activeCard.customer_id ||
-                                                activeCard.cus_id ||
-                                                activeCard.customer_name ||
-                                                activeCard.cardholderName ||
-                                                activeCard.customer ||
-                                                activeCard.qr_token ||
-                                                activeCard.customer_card_id
-                                            )
-
-                                            const isStamped = Boolean(
-                                                (rewardItem && (Number(rewardItem.status) === 1 || rewardItem.status === true || rewardItem.status === '1')) ||
-                                                (hasCustomer && Number(activeCard.current_stamp ?? activeCard.current_stamps ?? activeCard.collected ?? 0) >= stampNum)
-                                            )
-
-                                            return (
-                                                <div
-                                                    key={i}
-                                                    title={isStamped ? `Stamp #${stampNum} - Completed` : `Stamp #${stampNum}`}
-                                                    style={{
-                                                        width: 36,
-                                                        height: 36,
-                                                        borderRadius: `${activeCard.stamp_radius ?? activeCard.stampRadius ?? 50}%`,
-                                                        border: `2px solid ${activeCard.stampBorderColor || activeCard.stamp_border_color || '#FFFFFF'}`,
-                                                        background: activeCard.stampBgColor || activeCard.stamp_background || 'rgba(255, 255, 255, 0.3)',
-                                                        color: activeCard.stampTextColor || activeCard.stamp_text_color || 'inherit',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        textAlign: 'center',
-                                                        fontSize: '0.85rem',
-                                                        fontWeight: 800,
-                                                        flexShrink: 0,
-                                                        boxSizing: 'border-box',
-                                                        position: 'relative'
-                                                    }}
-                                                >
-                                                    {isStamped ? (
-                                                        <CardIcon
-                                                            name="fa-check"
-                                                            style={{
-                                                                fontSize: '0.88rem',
-                                                                display: 'inline-flex',
-                                                                alignItems: 'center',
-                                                                justifyContent: 'center',
-                                                                lineHeight: 1
-                                                            }}
-                                                        />
-                                                    ) : (
-                                                        iconMarkup
-                                                    )}
-                                                    {/* {hasFreeStamp && (
-                                                        <span
-                                                            title={rewardItem.free_text ? `Free Perk: ${rewardItem.free_text}` : 'Free Perk Included'}
-                                                            style={{
-                                                                position: 'absolute',
-                                                                top: -4,
-                                                                right: -4,
-                                                                width: 15,
-                                                                height: 15,
-                                                                borderRadius: '50%',
-                                                                background: '#10B981',
-                                                                color: '#FFFFFF',
-                                                                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.35)',
-                                                                border: '1.5px solid #FFFFFF',
-                                                                zIndex: 4,
-                                                                pointerEvents: 'none',
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                justifyContent: 'center',
-                                                                fontSize: '0.45rem',
-                                                                lineHeight: 1
-                                                            }}
-                                                        >
-                                                        <CardIcon name="fa-gift" style={{ fontSize: '0.45rem', lineHeight: 1 }} />
-                                                        </span>
-                                                    )} */}
-                                                </div>
-                                            )
-                                        })}
-                                    </div>
-                                    {(activeCard.expires_at || activeCard.expiry) && (
-                                        <div style={{ fontSize: '0.68rem', opacity: 0.9, fontWeight: 700, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
-                                            <CardIcon name="fa-calendar-alt" style={{ fontSize: '0.62rem' }} />
-                                            <span>Expires: {formatExpiryDate(activeCard.expires_at || activeCard.expiry)}</span>
                                         </div>
                                     )}
                                 </div>
 
                                 {/* Right Side: QR CODE */}
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', flexShrink: 0 }}>
                                     <div
                                         style={{
                                             backgroundColor: '#FFFFFF',
-                                            padding: 4,
-                                            borderRadius: 8,
+                                            padding: 3,
+                                            borderRadius: 6,
                                             display: 'inline-flex',
                                             alignItems: 'center',
                                             justifyContent: 'center'
@@ -503,28 +371,249 @@ function StampCardPreviewModal({
                                     >
                                         <QRCodeCanvas
                                             value={activeCard.qr_token || (activeCard.qrImg && typeof activeCard.qrImg === 'string' && !activeCard.qrImg.includes('/') && !activeCard.qrImg.startsWith('data:') ? activeCard.qrImg : '') || 'https://firstloop.co.in/'}
-                                            size={84}
+                                            size={56}
                                             fgColor={(activeCard.qr_color && activeCard.qr_color !== '#FFFFFF') ? activeCard.qr_color : (activeCard.qrColor && activeCard.qrColor !== '#FFFFFF' ? activeCard.qrColor : '#000000')}
                                             bgColor="#FFFFFF"
                                             style={{
-                                                width: 84,
-                                                height: 84,
+                                                width: 56,
+                                                height: 56,
                                                 objectFit: 'contain',
                                                 display: 'block'
                                             }}
                                         />
                                     </div>
-                                    <small style={{ fontSize: '0.6rem', fontWeight: 700, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.5px', opacity: 0.9 }}>
+                                    <small style={{ fontSize: '0.52rem', fontWeight: 700, marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.35px', opacity: 0.9, lineHeight: 1.15 }}>
                                         SCAN TO STAMP
                                     </small>
                                 </div>
                             </div>
 
-                            {/* Powered by FirstLoop badge */}
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 5, fontSize: '0.65rem', opacity: 0.9, fontWeight: 600, marginTop: 10, lineHeight: 1 }}>
-                                <span style={{ lineHeight: 1, display: 'inline-flex', alignItems: 'center' }}>powered by</span>
-                                <img src={flLogo} alt="FirstLoop" crossOrigin="anonymous" style={{ height: 13, width: 'auto', display: 'inline-block', verticalAlign: 'middle', objectFit: 'contain', margin: '0 1px' }} />
-                                <strong style={{ color: 'inherit', lineHeight: 1, display: 'inline-flex', alignItems: 'center' }}>firstloop</strong>
+                            {/* 2. MIDDLE SECTION: Stamp Circles Grid - 5 Columns x 2 Rows with equal space on both sides */}
+                            <div style={{ marginTop: 10, marginBottom: 4, width: '100%' }}>
+                                <div
+                                    style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: 'repeat(5, 52px)',
+                                        justifyContent: 'space-between',
+                                        gap: '8px 0',
+                                        width: '100%'
+                                    }}
+                                >
+                                    {Array.from({ length: totalStamps }).map((_, i) => {
+                                        const stampNum = i + 1
+                                        const levels = activeCard.CustomerStampLevels || activeCard.levelRewards || activeCard.stamp_levels || []
+                                        const rewardItem = Array.isArray(levels) ? (levels.find(l => Number(l.stamp_number) === stampNum) || levels[i]) : null
+
+                                        const rType = rewardItem
+                                            ? (rewardItem.type || (rewardItem.reward_type === '2' ? 'Discount' : (rewardItem.reward_type === '3' ? 'Paid' : 'Free')))
+                                            : null
+
+                                        const inheritedRewards = Array.isArray(rewardItem?.InheritedRewards) ? rewardItem.InheritedRewards : []
+                                        const hasInheritedFree = inheritedRewards.some(r => Number(r.free_stamp) === 1 || r.free_stamp === true || r.free_stamp === '1')
+                                        const hasFreeStamp = rewardItem && (Number(rewardItem.free_stamp) === 1 || rewardItem.free_stamp === true || rewardItem.free_stamp === '1' || hasInheritedFree || Boolean(rewardItem.free_text))
+                                        const freeTextDesc = rewardItem?.free_text || (inheritedRewards.map(r => r.free_text).filter(Boolean).join(', ')) || ''
+
+                                        const perkLines = hasFreeStamp
+                                            ? parsePerkTwoLines(freeTextDesc, rType, rType === 'Discount' ? (rewardItem?.discount ?? rewardItem?.discountVal) : null)
+                                            : null
+
+                                        let iconMarkup = null
+                                        if (rewardItem && rType === 'Free') {
+                                            iconMarkup = <CardIcon name={rewardItem.icon || 'fa-gift'} style={{ fontSize: '0.88rem' }} />
+                                        } else if (rewardItem && rType === 'Discount') {
+                                            const disc = Number(rewardItem.discount ?? rewardItem.discountVal ?? (parseInt(rewardItem.reward_text) || 0))
+                                            iconMarkup = (
+                                                <span style={{ fontSize: '0.76rem', fontWeight: 800, lineHeight: 1 }}>
+                                                    {disc}%
+                                                </span>
+                                            )
+                                        } else if (rewardItem && rType === 'Paid') {
+                                            iconMarkup = <CardIcon name={rewardItem.icon || 'fa-tag'} style={{ fontSize: '0.88rem' }} />
+                                        } else {
+                                            iconMarkup = (
+                                                <span style={{ fontSize: '0.88rem', fontWeight: 800, lineHeight: 1 }}>
+                                                    {i + 1}
+                                                </span>
+                                            )
+                                        }
+
+                                        const hasCustomer = Boolean(
+                                            activeCard.card_number ||
+                                            activeCard.customer_id ||
+                                            activeCard.cus_id ||
+                                            activeCard.customer_name ||
+                                            activeCard.cardholderName ||
+                                            activeCard.customer ||
+                                            activeCard.qr_token ||
+                                            activeCard.customer_card_id
+                                        )
+
+                                        const isStamped = Boolean(
+                                            (rewardItem && (Number(rewardItem.status) === 1 || rewardItem.status === true || rewardItem.status === '1')) ||
+                                            (hasCustomer && Number(activeCard.current_stamp ?? activeCard.current_stamps ?? activeCard.collected ?? 0) >= stampNum)
+                                        )
+
+                                        return (
+                                            <div
+                                                key={i}
+                                                title={isStamped ? `Stamp #${stampNum} - Completed` : (hasFreeStamp ? `${rewardItem?.reward || (rType === 'Discount' ? `${rewardItem.discount ?? rewardItem.discountVal}% Off` : 'Paid Perk')} Free: ${freeTextDesc || 'Free Perk'}` : `Stamp #${stampNum}`)}
+                                                style={{
+                                                    width: 52,
+                                                    height: 52,
+                                                    borderRadius: `${activeCard.stamp_radius ?? activeCard.stampRadius ?? 50}%`,
+                                                    border: isStamped
+                                                        ? '2px solid #10B981'
+                                                        : `2px solid ${activeCard.stampBorderColor || activeCard.stamp_border_color || '#FFFFFF'}`,
+                                                    background: isStamped
+                                                        ? '#10B981'
+                                                        : (activeCard.stampBgColor || activeCard.stamp_background || 'rgba(255, 255, 255, 0.3)'),
+                                                    color: isStamped ? '#FFFFFF' : (activeCard.stampTextColor || activeCard.stamp_text_color || 'inherit'),
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    textAlign: 'center',
+                                                    fontSize: '0.88rem',
+                                                    fontWeight: 800,
+                                                    flexShrink: 0,
+                                                    boxSizing: 'border-box',
+                                                    position: 'relative',
+                                                    overflow: 'hidden',
+                                                    padding: '2px'
+                                                }}
+                                            >
+                                                {isStamped && hasFreeStamp ? (
+                                                    <div
+                                                        style={{
+                                                            width: '100%',
+                                                            height: '100%',
+                                                            borderRadius: 'inherit',
+                                                            border: '1.5px solid rgba(255, 255, 255, 0.8)',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            background: 'radial-gradient(circle, rgba(255, 255, 255, 0.38) 0%, rgba(255, 255, 255, 0.15) 65%, transparent 100%)',
+                                                            backdropFilter: 'blur(2px)',
+                                                            WebkitBackdropFilter: 'blur(2px)',
+                                                            boxShadow: 'inset 0 0 6px rgba(255, 255, 255, 0.5), 0 0 6px rgba(255, 255, 255, 0.35)',
+                                                            boxSizing: 'border-box'
+                                                        }}
+                                                    >
+                                                        <CardIcon name="fa-heart" style={{ fontSize: '0.92rem', color: '#FFFFFF', filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25))' }} />
+                                                    </div>
+                                                ) : (
+                                                    hasFreeStamp && perkLines ? (
+                                                        <div
+                                                            style={{
+                                                                display: 'flex',
+                                                                flexDirection: 'column',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                width: '100%',
+                                                                height: '100%',
+                                                                lineHeight: 1.05
+                                                            }}
+                                                        >
+                                                            <span
+                                                                style={{
+                                                                    fontSize: perkLines.bottom ? '0.82rem' : '0.90rem',
+                                                                    fontWeight: 800,
+                                                                    lineHeight: 1,
+                                                                    color: '#FFFFFF',
+                                                                    textAlign: 'center',
+                                                                    letterSpacing: '0.2px'
+                                                                }}
+                                                            >
+                                                                {perkLines.top}
+                                                            </span>
+                                                            {perkLines.bottom && (
+                                                                <span
+                                                                    style={{
+                                                                        fontSize: '0.50rem',
+                                                                        fontWeight: 800,
+                                                                        lineHeight: 1,
+                                                                        letterSpacing: '0.4px',
+                                                                        textTransform: 'uppercase',
+                                                                        color: '#FFFFFF',
+                                                                        marginTop: 2,
+                                                                        textAlign: 'center',
+                                                                        opacity: 0.95
+                                                                    }}
+                                                                >
+                                                                    {perkLines.bottom}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        iconMarkup
+                                                    )
+                                                )}
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* 3. BOTTOM FOOTER: Left = Expiry Date | Right = Powered by firstloop badge */}
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    marginTop: 8,
+                                    width: '100%',
+                                    minHeight: 22
+                                }}
+                            >
+                                {/* Left: Expiry Date */}
+                                {(activeCard.expires_at || activeCard.expiry) ? (
+                                    <div
+                                        style={{
+                                            fontSize: '0.65rem',
+                                            opacity: 0.95,
+                                            fontWeight: 700,
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: 5,
+                                            background: 'rgba(0, 0, 0, 0.22)',
+                                            backdropFilter: 'blur(6px)',
+                                            WebkitBackdropFilter: 'blur(6px)',
+                                            padding: '3px 8px',
+                                            borderRadius: 12,
+                                            border: '1px solid rgba(255, 255, 255, 0.14)',
+                                            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+                                        }}
+                                    >
+                                        <CardIcon name="fa-calendar-alt" style={{ fontSize: '0.6rem' }} />
+                                        <span>Expires: {formatExpiryDate(activeCard.expires_at || activeCard.expiry)}</span>
+                                    </div>
+                                ) : (
+                                    <div />
+                                )}
+
+                                {/* Right: Powered by FirstLoop Pill Badge */}
+                                <div
+                                    style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: 5,
+                                        fontSize: '0.62rem',
+                                        opacity: 0.95,
+                                        fontWeight: 600,
+                                        background: 'rgba(0, 0, 0, 0.22)',
+                                        backdropFilter: 'blur(6px)',
+                                        WebkitBackdropFilter: 'blur(6px)',
+                                        padding: '3px 8px',
+                                        borderRadius: 12,
+                                        border: '1px solid rgba(255, 255, 255, 0.14)',
+                                        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                                        lineHeight: 1
+                                    }}
+                                >
+                                    <span style={{ lineHeight: 1, display: 'inline-flex', alignItems: 'center' }}>powered by</span>
+                                    <img src={flLogo} alt="FirstLoop" crossOrigin="anonymous" style={{ height: 12, width: 'auto', display: 'inline-block', verticalAlign: 'middle', objectFit: 'contain', margin: '0 1px' }} />
+                                    <strong style={{ color: 'inherit', lineHeight: 1, display: 'inline-flex', alignItems: 'center', fontWeight: 800 }}>firstloop</strong>
+                                </div>
                             </div>
                         </div>
                     </div>

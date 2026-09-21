@@ -569,12 +569,12 @@ export default function AddCardCustomerModal({
                                 }}
                             >
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: (selectedCustomerObj || isCreatingNewCustomer) ? '#059669' : 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                                         Step 1: Customer Profile
                                     </span>
                                     {selectedCustomerObj ? (
                                         <span style={{ background: '#DCFCE7', color: '#059669', fontSize: '0.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: 6, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                                            <i className="fas fa-check-circle" /> Existing Customer (#{selectedCustomerObj.id})
+                                            Existing Customer (#{selectedCustomerObj.id})
                                         </span>
                                     ) : isCreatingNewCustomer ? (
                                         <span style={{ background: '#E0F2FE', color: '#0284C7', fontSize: '0.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: 6 }}>
@@ -902,11 +902,11 @@ export default function AddCardCustomerModal({
                                     <div
                                         onClick={() => setCardType('stamp')}
                                         style={{
-                                            border: cardType === 'stamp' ? '2px solid var(--firstloop-primary)' : '1px solid #E2E8F0',
+                                            border: cardType === 'stamp' ? '2px solid #10B981' : '1px solid #E2E8F0',
                                             borderRadius: 10,
                                             padding: '10px 14px',
                                             cursor: 'pointer',
-                                            background: cardType === 'stamp' ? 'rgba(14, 136, 184, 0.08)' : '#FFFFFF',
+                                            background: cardType === 'stamp' ? '#F0FDF4' : '#FFFFFF',
                                             display: 'flex',
                                             alignItems: 'center',
                                             gap: 10,
@@ -918,7 +918,7 @@ export default function AddCardCustomerModal({
                                                 width: 34,
                                                 height: 34,
                                                 borderRadius: 8,
-                                                background: cardType === 'stamp' ? 'var(--firstloop-primary)' : '#F1F5F9',
+                                                background: cardType === 'stamp' ? '#10B981' : '#F1F5F9',
                                                 color: cardType === 'stamp' ? '#FFFFFF' : '#64748B',
                                                 display: 'flex',
                                                 alignItems: 'center',
@@ -929,7 +929,7 @@ export default function AddCardCustomerModal({
                                             <i className="fas fa-stamp" />
                                         </div>
                                         <div>
-                                            <strong style={{ fontSize: '0.85rem', color: cardType === 'stamp' ? 'var(--firstloop-primary)' : '#1E293B', display: 'block' }}>
+                                            <strong style={{ fontSize: '0.85rem', color: cardType === 'stamp' ? '#065F46' : '#1E293B', display: 'block' }}>
                                                 Stamp Loyalty
                                             </strong>
                                             <small style={{ color: '#64748B', fontSize: '0.72rem' }}>
@@ -937,45 +937,6 @@ export default function AddCardCustomerModal({
                                             </small>
                                         </div>
                                     </div>
-
-                                    {/* <div
-                                        onClick={() => setCardType('membership')}
-                                        style={{
-                                            border: cardType === 'membership' ? '2px solid #D97706' : '1px solid #E2E8F0',
-                                            borderRadius: 10,
-                                            padding: '10px 14px',
-                                            cursor: 'pointer',
-                                            background: cardType === 'membership' ? 'rgba(217, 119, 6, 0.08)' : '#FFFFFF',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 10,
-                                            transition: 'all 0.15s ease'
-                                        }}
-                                    >
-                                        <div
-                                            style={{
-                                                width: 34,
-                                                height: 34,
-                                                borderRadius: 8,
-                                                background: cardType === 'membership' ? '#D97706' : '#F1F5F9',
-                                                color: cardType === 'membership' ? '#FFFFFF' : '#64748B',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                fontSize: '1rem'
-                                            }}
-                                        >
-                                            <i className="fas fa-crown" />
-                                        </div>
-                                        <div>
-                                            <strong style={{ fontSize: '0.85rem', color: cardType === 'membership' ? '#B45309' : '#1E293B', display: 'block' }}>
-                                                VIP Membership
-                                            </strong>
-                                            <small style={{ color: '#64748B', fontSize: '0.72rem' }}>
-                                                {membershipCardsList.length} tier{membershipCardsList.length !== 1 ? 's' : ''} available
-                                            </small>
-                                        </div>
-                                    </div> */}
                                 </div>
                             </div>
 
@@ -1014,9 +975,9 @@ export default function AddCardCustomerModal({
                                                     style={{
                                                         padding: '10px 12px',
                                                         borderRadius: 10,
-                                                        background: '#FFFFFF',
-                                                        border: isSelected ? '2px solid var(--firstloop-primary)' : '1px solid #E2E8F0',
-                                                        boxShadow: isSelected ? '0 4px 14px rgba(14, 136, 184, 0.2)' : '0 1px 3px rgba(0,0,0,0.02)',
+                                                        background: isSelected ? '#F0FDF4' : '#FFFFFF',
+                                                        border: isSelected ? '2px solid #10B981' : '1px solid #E2E8F0',
+                                                        boxShadow: isSelected ? '0 4px 14px rgba(16, 185, 129, 0.2)' : '0 1px 3px rgba(0,0,0,0.02)',
                                                         cursor: 'pointer',
                                                         display: 'flex',
                                                         alignItems: 'center',
@@ -1032,7 +993,7 @@ export default function AddCardCustomerModal({
                                                                 width: 32,
                                                                 height: 32,
                                                                 borderRadius: 8,
-                                                                background: cardTheme.background || 'var(--firstloop-primary)',
+                                                                background: isSelected ? '#10B981' : (cardTheme.background || 'var(--firstloop-primary)'),
                                                                 color: '#FFFFFF',
                                                                 display: 'flex',
                                                                 alignItems: 'center',
@@ -1044,7 +1005,7 @@ export default function AddCardCustomerModal({
                                                             <i className={cardType === 'stamp' ? 'fas fa-stamp' : 'fas fa-crown'} />
                                                         </div>
                                                         <div style={{ minWidth: 0 }}>
-                                                            <strong style={{ fontSize: '0.82rem', color: '#0F172A', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                            <strong style={{ fontSize: '0.82rem', color: isSelected ? '#065F46' : '#0F172A', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                                                 {card.title || card.name || 'Card Pass'}
                                                             </strong>
                                                             <div style={{ fontSize: '0.7rem', color: '#64748B', display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
@@ -1053,7 +1014,7 @@ export default function AddCardCustomerModal({
                                                                 ) : (
                                                                     <span><i className="fas fa-tag" style={{ marginRight: 3, color: '#D97706' }} />{card.tier || 'VIP'}</span>
                                                                 )}
-                                                                {card.reward && <span style={{ color: 'var(--firstloop-primary)', fontWeight: 700, wordBreak: 'break-word', lineHeight: 1.3 }}>• {card.reward}</span>}
+                                                                {card.reward && <span style={{ color: isSelected ? '#059669' : 'var(--firstloop-primary)', fontWeight: 700, wordBreak: 'break-word', lineHeight: 1.3 }}>• {card.reward}</span>}
                                                             </div>
                                                         </div>
                                                     </div>
@@ -1063,7 +1024,7 @@ export default function AddCardCustomerModal({
                                                             width: 18,
                                                             height: 18,
                                                             borderRadius: '50%',
-                                                            border: isSelected ? '5px solid var(--firstloop-primary)' : '2px solid #CBD5E1',
+                                                            border: isSelected ? '5px solid #10B981' : '2px solid #CBD5E1',
                                                             flexShrink: 0,
                                                             transition: 'all 0.15s'
                                                         }}
